@@ -1,20 +1,28 @@
 "use client";
 
-import { AlertCircle, ArrowRight, Banknote, ChartColumn, Clock, MessageCircle, ShieldCheck, TrendingUp, Users, Wallet } from "lucide-react";
+import { AlertCircle, ArrowRight, Banknote, ChartColumn, Clock, LockOpen, MessageCircle, ShieldCheck, TrendingUp, Users, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { formatTime, rs } from "@/lib/format";
-import { startNextDayAction } from "../actions";
+import { reopenDayAction, startNextDayAction } from "../actions";
 import { buildSummaryText } from "../summary-text";
 import type { SnapshotRow } from "../types";
 
-export function ClosedView({ snapshot }: { snapshot: SnapshotRow }) {
+/** `canReopen` is true only for the Owner: reopening a closed day is theirs alone. */
+export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; canReopen: boolean }) {
   const router = useRouter();
   const [showSummary, setShowSummary] = useState(false);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  const [reopening, setReopening] = useState(false);
+  const [reason, setReason] = useState("");
+  const [reopenError, setReopenError] = useState("");
+  // Its own transition, so starting the next day does not look like it is running.
+  const [reopenPending, startReopen] = useTransition();
   const { difference } = snapshot;
 
   function nextDay() {
@@ -23,6 +31,16 @@ export function ClosedView({ snapshot }: { snapshot: SnapshotRow }) {
       const result = await startNextDayAction();
       if (!result.ok) return setError(result.error);
       router.push("/billing");
+      router.refresh();
+    });
+  }
+
+  function confirmReopen() {
+    setReopenError("");
+    startReopen(async () => {
+      const result = await reopenDayAction({ reason });
+      if (!result.ok) return setReopenError(result.error);
+      setReopening(false);
       router.refresh();
     });
   }
@@ -48,6 +66,20 @@ export function ClosedView({ snapshot }: { snapshot: SnapshotRow }) {
               <MessageCircle aria-hidden />
               {showSummary ? "Hide summary" : "Preview WhatsApp summary"}
             </Button>
+            {canReopen ? (
+              <Button
+                variant="outline"
+                className="h-10"
+                onClick={() => {
+                  setReason("");
+                  setReopenError("");
+                  setReopening(true);
+                }}
+              >
+                <LockOpen aria-hidden />
+                Reopen this day
+              </Button>
+            ) : null}
             <Button className="h-10" onClick={nextDay} disabled={pending}>
               {pending ? "Starting..." : "Start next business day"}
               {pending ? null : <ArrowRight aria-hidden />}
@@ -99,6 +131,40 @@ export function ClosedView({ snapshot }: { snapshot: SnapshotRow }) {
         />
         <StatCard icon={Clock} label="Tomorrow's opening cash" value={rs(snapshot.countedCash)} />
       </div>
+
+      <Dialog open={reopening} onOpenChange={(next) => !next && setReopening(false)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reopen this day?</DialogTitle>
+            <DialogDescription>
+              The day goes back to being open so it can be corrected and closed again. Today&apos;s closing record is kept
+              with its security code, and the staff earnings and payments this close created are reversed, not deleted.
+              A new security code is made at the next close.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="Reason (required), e.g. closed before the last two bills were entered"
+            aria-label="Reason for reopening"
+            rows={3}
+          />
+          {reopenError ? (
+            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+              <AlertCircle className="size-4 shrink-0" aria-hidden />
+              {reopenError}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReopening(false)}>
+              Keep it closed
+            </Button>
+            <Button onClick={confirmReopen} disabled={reopenPending}>
+              {reopenPending ? "Reopening..." : "Reopen day"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

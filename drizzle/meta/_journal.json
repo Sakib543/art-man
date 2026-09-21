@@ -64,6 +64,13 @@
       "when": 1790033267280,
       "tag": "0008_busy_lockjaw",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790034371948,
+      "tag": "0009_fast_green_goblin",
+      "breakpoints": true
     }
   ]
 }

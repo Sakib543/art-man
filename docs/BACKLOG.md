@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0.1 done)
+Last updated: 2026-09-22 (P0.1, P1.0, P0.2 done)
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-09-22 (P0.1 done)
 | ID | Item | Status | Owner |
 |---|---|---|---|
 | P0.1 | Show the real login error | ✅ | done 2026-09-22 |
-| P0.2 | Reopen a closed day (Owner) | ⬜ | — |
+| P0.2 | Reopen a closed day (Owner) | ✅ | done 2026-09-22 |
 | P0.3 | Cancel a bill/entry in a closed day (Owner) | ⬜ | — |
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ⬜ | — |
@@ -61,20 +61,57 @@ the password.
 
 ---
 
-### ⬜ P0.2 — Reopen a closed day (Owner only)
-**Owner:** —
-`src/features/day-close/service.ts`
+### ✅ P0.2 — Reopen a closed day (Owner only)
+**Done:** 2026-09-22
 
-Over 20 days the counter staff will close a day by mistake at some point. There is currently **no
-way back** — for anyone.
+The screen had claimed *"Only the Owner can reopen a closed day"* while no such function existed.
 
-The screen already claims otherwise: *"Only the Owner can reopen a closed day"*
-(`src/app/(app)/day-close/page.tsx:39`). That function does not exist.
+**The part that needed care.** Simply clearing `closed_at` would have been wrong. A close writes
+khata earnings, khata payments and staff-payment cash rows, and all three are append-only. Closing
+again would have written them a second time and **doubled every staff member's pay** in the khata
+and in expected cash. Undoing a close properly means reversing what it wrote.
 
-**What to do:** let the Owner reopen, record it in the audit log, and refuse once the month is
-closed.
+**How it works now** — `reopenDay()` in `src/features/day-close/service.ts`, one transaction:
 
-**Size:** medium
+1. The closing record is copied into the new `day_snapshot_history` table with the reason, who did
+   it and when. That table is fully append-only, so the original figures **and the original
+   security code** survive for good.
+2. The khata lines the close wrote (`earning`, `payment`) are reversed with `adjustment` rows that
+   point back at them through the new `khata_entries.reverses_entry_id` column. A line an earlier
+   reopen already reversed is skipped, so reopening twice cannot subtract it twice.
+3. The staff-payment cash rows are cancelled with negative rows carrying `voids_entry_id` — exactly
+   how a folder entry is cancelled.
+4. Attendance for the day is cleared; it is marked again at the next close.
+5. The live snapshot is deleted and `closed_at` is cleared, under a conditional update so two
+   reopens cannot race.
+
+**Guards:** Owner only (`requireRole("owner")`); a reason of at least 3 characters; only the
+**latest** business day, and only while it is closed; refused once the month is closed. Only the
+latest day can be reopened because a later day's opening cash is this day's count and its security
+code is built on this one's.
+
+**Migration `0009_fast_green_goblin.sql`** also narrows one trigger: `day_snapshots` still can
+never be **updated**, but it may now be **deleted**. The snapshot is derived data — the bills and
+cash entries it is computed from stay fully append-only — and nothing is lost, because the row is
+archived in `day_snapshot_history` and its security code is written to the audit log first.
+
+**Verified** end to end in the browser, not just in tests. Closed the day (code `2916-A3FE-B0D3`,
+expected Rs 4,200, Sherry paid Rs 800), reopened it with a reason, then closed it again:
+
+| Check | Result |
+|---|---|
+| Day reopened | `closed_at` cleared, wizard back at step 1 |
+| Old closing record | kept in history with its code, reason and actor |
+| Khata | original rows intact, two reversal rows added, balance back to 0 |
+| Staff payment | cancelled with a matching negative row |
+| Attendance | cleared, then re-marked at the next close |
+| **No double counting** | second close showed *staff payments −800*, not −1,600; expected cash Rs 4,200 again; `staff_earned` 800, `day_profit` −800, same as the first close |
+| Security code | changed to `6373-6907-1EA0`, so the reopen is detectable |
+| Audit log | `day.close` → `day.reopen` → `day.close` |
+| Empty reason | rejected |
+| Manager | sees neither the button nor the action |
+
+139 tests pass, lint clean, build passes.
 
 ---
 

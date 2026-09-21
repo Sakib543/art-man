@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0.1, P1.0 done)
+Last updated: 2026-09-22 (P0.1, P1.0, P0.2 done)
 
 ---
 
@@ -92,7 +92,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm build` | pass — 17 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
 | `pnpm test` | **139 passed** (18 files) |
-| Database | Neon, PostgreSQL 18.6, **27 tables**, all seeds loaded |
+| Database | Neon, PostgreSQL 18.6, **28 tables**, all seeds loaded |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
@@ -178,12 +178,23 @@ Measured, not guessed. Do not spend time re-deriving these.
 | `cash_entries.pin_confirmed` now means Owner-confirmed only | set for `owner_took` / `owner_added`, never for staff rows |
 | `src/lib/pin.ts` and `src/db/pin-guard.ts` are still live | they serve the Owner PIN, including the 5-wrong-tries lock |
 | `staff` rows can be deleted when nothing references them | no append-only trigger; the app still prefers deactivating |
+| **`day_snapshots` can be DELETED but never UPDATED** | narrowed in `0009` for P0.2. Every other financial table is still fully append-only |
+| Every superseded closing record lives in `day_snapshot_history` | fully append-only, keeps the old security code, reason and actor |
+| `khata_entries.reverses_entry_id` marks a reversed line | added in `0009`; lets a second reopen skip lines already reversed |
+| Only the **latest** business day can be reopened | a later day's opening cash is this day's count, and its security code is built on this one's |
 
 ---
 
 ## 8. Traps that have already cost time
 
 **Read this before debugging anything.**
+
+### 8.0 Undoing a close means reversing what it wrote, not clearing a flag
+
+A close writes khata earnings, khata payments and staff-payment cash rows — all append-only. Simply
+clearing `business_days.closed_at` would let the next close write them **again**, doubling every
+staff member's pay in the khata and in expected cash. `reopenDay()` reverses each of them with a new
+row first. Anything else that "undoes" a close must do the same. P0.3 will face exactly this.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -281,8 +292,8 @@ Detail for each item is in `docs/BACKLOG.md`.
 STAGE 1 — before the client trial
   1. P0.1  Show the real login error                     DONE 2026-09-22
   2. P1.0  Remove the staff PIN (keep the Owner PIN)     DONE 2026-09-22
-  3. P0.2  Reopen a closed day (Owner)                   medium   <- next
-  4. P0.3  Cancel a bill/entry in a closed day (Owner)   medium
+  3. P0.2  Reopen a closed day (Owner)                   DONE 2026-09-22
+  4. P0.3  Cancel a bill/entry in a closed day (Owner)   medium   <- next
   5. P2.1  Paper bill-book number field                  small
 
 STAGE 2 — go live

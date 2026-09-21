@@ -1,4 +1,4 @@
-import { boolean, date, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { AnyPgColumn, boolean, date, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, rupees } from "./_shared";
 import { cashEntryKindEnum, khataKindEnum, paidFromEnum } from "./enums";
 import { staff } from "./config";
@@ -38,5 +38,7 @@ export const khataEntries = pgTable("khata_entries", {
   amount: rupees("amount").notNull(),
   billId: uuid("bill_id"),
   cashEntryId: uuid("cash_entry_id").references(() => cashEntries.id),
+  /** Set on a reversal row: the khata line it cancels out (used when a day is reopened). */
+  reversesEntryId: uuid("reverses_entry_id").references((): AnyPgColumn => khataEntries.id),
   createdAt: createdAt(),
 });

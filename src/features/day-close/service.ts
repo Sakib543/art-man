@@ -1,11 +1,19 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay, getOpenBusinessDay } from "@/db/queries/business-day";
-import { attendance, businessDays, cashEntries, daySnapshots, khataEntries } from "@/db/schema";
+import {
+  attendance,
+  businessDays,
+  cashEntries,
+  daySnapshotHistory,
+  daySnapshots,
+  khataEntries,
+  monthCloses,
+} from "@/db/schema";
 import { cashDifference, expectedCashBreakdown, summarizeDay, type DayCloseSummary } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
-import { nextDate } from "@/lib/business-date";
+import { formatMonth, monthOf, monthStart, nextDate } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
 import { loadDay, type LoadedDay } from "@/db/queries/day-data";
 import type { CloseInput, ReviewInput } from "./schemas";
@@ -206,5 +214,121 @@ export async function openFirstDay(user: SessionUser, businessDate: string, open
   await db.transaction(async (tx) => {
     await tx.insert(businessDays).values({ businessDate, openingCash });
     await writeAudit(tx, { actor: actorOf(user), action: "day.open", target: businessDate, after: { openingCash } });
+  });
+}
+
+/**
+ * The Owner reopens the day that was just closed, so a mistake made at close can
+ * be put right. Everything the close wrote is undone the way this system always
+ * undoes things: the closing record is archived before it is replaced, and the
+ * khata and cash rows are reversed with new rows rather than deleted.
+ *
+ * Only the latest business day can be reopened, and only before the next day is
+ * started. A later day's opening cash is this day's count and its security code
+ * is built on this one's, so reopening underneath it would quietly break both.
+ */
+export async function reopenDay(user: SessionUser, reason: string): Promise<void> {
+  const latest = await getLatestBusinessDay();
+  if (!latest) throw new UserError("No business day has been opened yet.");
+  if (!latest.closedAt) throw new UserError("This day is already open.");
+
+  const month = monthOf(latest.businessDate);
+  const [closedMonth] = await db.select().from(monthCloses).where(eq(monthCloses.month, monthStart(month))).limit(1);
+  if (closedMonth) throw new UserError(`${formatMonth(month)} is closed. A closed month can only be corrected in the next month.`);
+
+  const date = latest.businessDate;
+  const actor = actorOf(user);
+
+  await db.transaction(async (tx) => {
+    // Claiming the day first stops two reopens from running at the same time.
+    const claimed = await tx
+      .update(businessDays)
+      .set({ closedAt: null })
+      .where(and(eq(businessDays.businessDate, date), isNotNull(businessDays.closedAt)))
+      .returning({ businessDate: businessDays.businessDate });
+    if (claimed.length === 0) throw new UserError("This day has already been reopened.");
+
+    const [snapshot] = await tx.select().from(daySnapshots).where(eq(daySnapshots.businessDate, date)).limit(1);
+    if (!snapshot) throw new UserError("This day has no closing record to undo.");
+
+    // 1. Keep the closing record, with its security code, before replacing it.
+    await tx.insert(daySnapshotHistory).values({
+      businessDate: snapshot.businessDate,
+      sale: snapshot.sale,
+      cash: snapshot.cash,
+      online: snapshot.online,
+      expenses: snapshot.expenses,
+      staffEarned: snapshot.staffEarned,
+      staffPaid: snapshot.staffPaid,
+      dayProfit: snapshot.dayProfit,
+      openingCash: snapshot.openingCash,
+      expectedCash: snapshot.expectedCash,
+      countedCash: snapshot.countedCash,
+      difference: snapshot.difference,
+      diffReason: snapshot.diffReason,
+      securityCode: snapshot.securityCode,
+      closedBy: snapshot.closedBy,
+      closedAt: snapshot.createdAt,
+      reopenReason: reason,
+      reopenedBy: actor,
+    });
+
+    // 2. Reverse the khata lines the close wrote. Earnings and payments are only
+    //    ever written by a close, and a line an earlier reopen already reversed
+    //    is left alone so a second reopen cannot subtract it twice.
+    const dayLines = await tx.select().from(khataEntries).where(eq(khataEntries.businessDate, date));
+    const reversed = new Set(dayLines.flatMap((line) => (line.reversesEntryId ? [line.reversesEntryId] : [])));
+
+    for (const line of dayLines) {
+      if (line.kind !== "earning" && line.kind !== "payment") continue;
+      if (reversed.has(line.id)) continue;
+      await tx.insert(khataEntries).values({
+        staffId: line.staffId,
+        businessDate: date,
+        kind: "adjustment",
+        label: `Day reopened: reversal of "${line.label}"`,
+        amount: -line.amount,
+        reversesEntryId: line.id,
+      });
+    }
+
+    // 3. Cancel the cash handed to staff at close, exactly as a folder entry is
+    //    cancelled: a negative row that points back at the original.
+    const dayEntries = await tx.select().from(cashEntries).where(eq(cashEntries.businessDate, date));
+    const voided = new Set(dayEntries.flatMap((entry) => (entry.voidsEntryId ? [entry.voidsEntryId] : [])));
+
+    for (const entry of dayEntries) {
+      if (entry.kind !== "staff_payment" || entry.voidsEntryId) continue;
+      if (voided.has(entry.id)) continue;
+      await tx.insert(cashEntries).values({
+        businessDate: date,
+        kind: "staff_payment",
+        amount: -entry.amount,
+        description: "Cancelled: day reopened",
+        staffId: entry.staffId,
+        voidsEntryId: entry.id,
+        createdBy: actor,
+      });
+    }
+
+    // 4. Attendance is marked again at the next close.
+    await tx.delete(attendance).where(eq(attendance.businessDate, date));
+
+    // 5. The snapshot itself. Its copy is safe in day_snapshot_history above.
+    await tx.delete(daySnapshots).where(eq(daySnapshots.businessDate, date));
+
+    await writeAudit(tx, {
+      actor,
+      action: "day.reopen",
+      target: date,
+      before: {
+        securityCode: snapshot.securityCode,
+        countedCash: snapshot.countedCash,
+        expectedCash: snapshot.expectedCash,
+        dayProfit: snapshot.dayProfit,
+        closedBy: snapshot.closedBy,
+      },
+      after: { reason },
+    });
   });
 }

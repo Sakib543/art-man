@@ -18,6 +18,10 @@ export const closeSchema = z.object({
   reason: z.string().trim().max(300).optional(),
 });
 
+export const reopenSchema = z.object({
+  reason: z.string().trim().min(3, "Write why the day is being reopened").max(300),
+});
+
 export const openFirstDaySchema = z.object({
   businessDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date"),
   openingCash: rupees,

@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { failure, type ActionResult } from "@/lib/action-result";
 import { requireRole, requireUser } from "@/lib/auth/session";
-import { closeSchema, openFirstDaySchema, reviewSchema } from "./schemas";
-import { closeDay, openFirstDay, reviewClose, startNextDay } from "./service";
+import { closeSchema, openFirstDaySchema, reopenSchema, reviewSchema } from "./schemas";
+import { closeDay, openFirstDay, reopenDay, reviewClose, startNextDay } from "./service";
 import type { CloseReview } from "./types";
 
 const firstIssue = (error: { issues: { message: string }[] }, fallback: string) => error.issues[0]?.message ?? fallback;
@@ -35,6 +35,21 @@ export async function closeDayAction(input: unknown): Promise<ActionResult<{ sec
     const result = await closeDay(user, parsed.data);
     refresh();
     return { ok: true, data: result };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/** Only the Owner, and only for the day that was closed last. */
+export async function reopenDayAction(input: unknown): Promise<ActionResult<null>> {
+  const user = await requireRole("owner");
+  const parsed = reopenSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error, "Write why the day is being reopened") };
+
+  try {
+    await reopenDay(user, parsed.data.reason);
+    refresh();
+    return { ok: true, data: null };
   } catch (error) {
     return failure(error);
   }
