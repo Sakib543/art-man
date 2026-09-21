@@ -31,12 +31,15 @@ export async function getBillingData(): Promise<BillingData | null> {
     businessDate: day.businessDate,
     nextBillNo: Number(next),
     services: serviceRows.map(({ id, name, category, price, minutes }) => ({ id, name, category, price, minutes })),
-    deals: dealRows.map(({ id, name, price }) => ({
-      id,
-      name,
-      price,
-      serviceIds: dealItemRows.filter((item) => item.dealId === id).map((item) => item.serviceId),
-    })),
+    // A deal is only offered while every one of its services is active.
+    deals: dealRows
+      .map(({ id, name, price }) => ({
+        id,
+        name,
+        price,
+        serviceIds: dealItemRows.filter((item) => item.dealId === id).map((item) => item.serviceId),
+      }))
+      .filter((deal) => deal.serviceIds.every((serviceId) => serviceRows.some((s) => s.id === serviceId))),
     staff: staffRows,
   };
 }

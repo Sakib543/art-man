@@ -6,4 +6,5 @@ export * from "./deal";
 export * from "./khata";
 export * from "./month";
 export * from "./pricing";
+export * from "./staff-pay";
 export type * from "./types";

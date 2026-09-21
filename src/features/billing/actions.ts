@@ -1,19 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { failure, type ActionResult } from "@/lib/action-result";
 import { requireUser } from "@/lib/auth/session";
-import { UserError } from "@/lib/errors";
 import { findCustomer } from "./queries";
 import { cancelBillSchema, createBillSchema, lookupCustomerSchema } from "./schemas";
 import { cancelBill, createBill } from "./service";
-import type { ActionResult, CustomerInfo, Receipt } from "./types";
-
-/** Turn a thrown error into a result the screen can show. Real bugs stay generic. */
-function failure(error: unknown): { ok: false; error: string } {
-  if (error instanceof UserError) return { ok: false, error: error.message };
-  console.error(error);
-  return { ok: false, error: "Something went wrong. Please try again." };
-}
+import type { CustomerInfo, Receipt } from "./types";
 
 export async function createBillAction(input: unknown): Promise<ActionResult<Receipt>> {
   const user = await requireUser();

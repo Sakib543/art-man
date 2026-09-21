@@ -73,5 +73,3 @@ export interface TodaysBill {
 }
 
 export type { PayMode };
-
-export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
