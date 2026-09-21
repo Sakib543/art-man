@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { capitalContributions, capitalItems, capitalRepayments, partners } from "@/db/schema";
 import { funderPosition } from "@/lib/accounting";
+import { karachiDate } from "@/lib/business-date";
 import type { CapitalData, InvestmentRow } from "./types";
 
 export async function getCapitalData(): Promise<CapitalData> {
@@ -32,7 +33,7 @@ export async function getCapitalData(): Promise<CapitalData> {
     return {
       id: item.id,
       name: item.name,
-      addedOn: item.createdAt.toISOString().slice(0, 10),
+      addedOn: karachiDate(item.createdAt),
       total: item.totalCost,
       paid,
       remaining: item.totalCost - paid,

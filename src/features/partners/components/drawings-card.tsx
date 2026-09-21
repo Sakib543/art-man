@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { karachiDate } from "@/lib/business-date";
 import { formatDate, num, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { addDrawingAction, voidDrawingAction } from "../actions";
@@ -91,7 +92,7 @@ export function DrawingsCard({ partnerId, month, rows, closed }: DrawingsCardPro
         <tbody>
           {rows.map((row) => (
             <tr key={row.id} className={cn("border-b last:border-b-0", (row.voided || row.isVoid) && "text-muted-foreground")}>
-              <td className="px-[18px] py-2.5">{formatDate(row.createdAt.slice(0, 10))}</td>
+              <td className="px-[18px] py-2.5">{formatDate(karachiDate(row.createdAt))}</td>
               <td className={cn("px-[18px] py-2.5", row.voided && "line-through")}>
                 {row.note}
                 {row.voided ? <Badge className="ml-2 bg-danger-soft text-destructive">Cancelled</Badge> : null}

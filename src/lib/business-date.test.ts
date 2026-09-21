@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { formatMonth, monthOf, monthStart, nextDate, nextMonth, todayInKarachi } from "./business-date";
+import { formatMonth, karachiDate, monthOf, monthStart, nextDate, nextMonth, todayInKarachi } from "./business-date";
+
+describe("karachiDate", () => {
+  it("is the next day in Karachi for a late-evening UTC time", () => {
+    expect(karachiDate("2026-09-21T20:00:00Z")).toBe("2026-09-22");
+  });
+
+  it("is the same day for a daytime UTC time", () => {
+    expect(karachiDate("2026-09-21T08:00:00Z")).toBe("2026-09-21");
+  });
+
+  it("accepts a Date too", () => {
+    expect(karachiDate(new Date("2026-09-21T19:30:00Z"))).toBe("2026-09-22");
+  });
+});
 
 describe("months", () => {
   it("identifies a month from a date", () => {

@@ -25,6 +25,14 @@ export function nextDate(isoDate: BusinessDate): BusinessDate {
   return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
 }
 
+/**
+ * The Karachi calendar date of a moment in time ("2026-09-21T20:00:00Z" -> "2026-09-22").
+ * Servers run in UTC, so never cut the date off an ISO timestamp with slice().
+ */
+export function karachiDate(moment: string | Date): BusinessDate {
+  return new Date(moment).toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
+}
+
 /** Today's calendar date in Karachi, as "YYYY-MM-DD". Used only to open the very first day. */
 export function todayInKarachi(now: Date = new Date()): BusinessDate {
   return now.toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });

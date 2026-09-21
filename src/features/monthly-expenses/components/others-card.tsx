@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import type { PaidFrom } from "@/lib/accounting";
+import { karachiDate } from "@/lib/business-date";
 import { formatDate, num, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { addOtherAction, voidOtherAction } from "../actions";
@@ -115,7 +116,7 @@ export function OthersCard({ month, rows, total, closed }: OthersCardProps) {
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className={cn("border-b", (row.voided || row.isVoid) && "text-muted-foreground")}>
-                <td className="px-[18px] py-2.5">{formatDate(row.createdAt.slice(0, 10))}</td>
+                <td className="px-[18px] py-2.5">{formatDate(karachiDate(row.createdAt))}</td>
                 <td className={cn("px-[18px] py-2.5", row.voided && "line-through")}>
                   {row.reason}
                   {row.paidFrom === "owner" ? <span className="text-[12.5px] text-muted-foreground"> (paid by Owner)</span> : null}
