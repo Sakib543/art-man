@@ -15,6 +15,13 @@
       "when": 1789974156585,
       "tag": "0001_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789974479470,
+      "tag": "0002_living_taskmaster",
+      "breakpoints": true
     }
   ]
 }
