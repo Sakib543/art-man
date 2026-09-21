@@ -1,7 +1,10 @@
 import { asc } from "drizzle-orm";
 import { db } from "@/db";
+import { getLatestBusinessDay } from "@/db/queries/business-day";
+import { isMonthClosed } from "@/db/queries/months";
 import { khataEntries, staff } from "@/db/schema";
 import { withRunningBalance, type PayType, type Rupees } from "@/lib/accounting";
+import { monthOf } from "@/lib/business-date";
 
 export interface KhataStaff {
   id: string;
@@ -26,6 +29,8 @@ export interface KhataData {
   staff: KhataStaff[];
   selected: KhataStaff;
   ledger: LedgerRow[];
+  /** Has the current month been closed? Until then the khata figures are provisional. */
+  monthClosed: boolean;
 }
 
 /**
@@ -70,5 +75,8 @@ export async function getKhataData(requestedId?: string): Promise<KhataData | nu
       .map(({ id, businessDate, label, amount }) => ({ id, businessDate, label, amount })),
   );
 
-  return { staff: list, selected, ledger };
+  const latest = await getLatestBusinessDay();
+  const monthClosed = latest ? await isMonthClosed(monthOf(latest.businessDate)) : false;
+
+  return { staff: list, selected, ledger, monthClosed };
 }

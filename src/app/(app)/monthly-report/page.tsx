@@ -3,8 +3,10 @@ import { MonthSelect } from "@/components/month-select";
 import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
+import { getMonthlyReport } from "@/db/queries/month-report";
+import { CloseMonthCard } from "@/features/month-close/components/close-month-card";
+import { getCloseState } from "@/features/month-close/queries";
 import { ClosedDaysTable, OwnerAccountCard, ProfitAndLoss } from "@/features/monthly-report/components/report-tables";
-import { getMonthlyReport } from "@/features/monthly-report/queries";
 import { requireRole } from "@/lib/auth/session";
 import { rs } from "@/lib/format";
 
@@ -25,6 +27,7 @@ export default async function MonthlyReportPage({ searchParams }: { searchParams
   }
 
   const { report } = data;
+  const closeState = data.closed ? null : await getCloseState(data.month);
 
   return (
     <>
@@ -55,6 +58,8 @@ export default async function MonthlyReportPage({ searchParams }: { searchParams
         <ProfitAndLoss report={report} />
         <OwnerAccountCard report={report} />
       </div>
+
+      {closeState ? <CloseMonthCard state={closeState} monthLabel={data.monthLabel} /> : null}
 
       <ClosedDaysTable days={data.days} report={report} openDay={data.openDay} />
     </>

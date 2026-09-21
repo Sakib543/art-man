@@ -34,7 +34,7 @@ export default async function StaffKhataPage({ searchParams }: { searchParams: P
 
       <div className="grid items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
         <StaffList staff={data.staff} selectedId={data.selected.id} />
-        <Ledger member={data.selected} rows={data.ledger} />
+        <Ledger member={data.selected} rows={data.ledger} monthClosed={data.monthClosed} />
       </div>
     </>
   );

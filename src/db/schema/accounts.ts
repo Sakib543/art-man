@@ -1,4 +1,4 @@
-import { AnyPgColumn, boolean, date, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { AnyPgColumn, boolean, date, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, rupees } from "./_shared";
 import { monthlyExpenseKindEnum, paidFromEnum } from "./enums";
 import { partners } from "./config";
@@ -72,9 +72,35 @@ export const capitalRepayments = pgTable("capital_repayments", {
   createdAt: createdAt(),
 });
 
-/** Once a month is closed it is frozen. Corrections go in next month as adjustments. */
+/**
+ * Profit a partner took out during a month. A money entry: append-only.
+ * A mistake is cancelled with a negative row that points back at it.
+ */
+export const partnerDrawings = pgTable("partner_drawings", {
+  id: id(),
+  partnerId: uuid("partner_id")
+    .notNull()
+    .references(() => partners.id),
+  /** First day of the month it belongs to, e.g. 2026-09-01. */
+  month: date("month", { mode: "string" }).notNull(),
+  amount: rupees("amount").notNull(),
+  note: text("note"),
+  voidsId: uuid("voids_id").references((): AnyPgColumn => partnerDrawings.id),
+  createdBy: text("created_by").notNull().default("system"),
+  createdAt: createdAt(),
+});
+
+/**
+ * Once a month is closed it is frozen. Corrections go in next month as
+ * adjustments. The report and the partners' shares are saved here at that
+ * moment, so a later change to a staff salary or a share % cannot alter them.
+ */
 export const monthCloses = pgTable("month_closes", {
   month: date("month", { mode: "string" }).primaryKey(),
   closedBy: text("closed_by").notNull(),
   closedAt: timestamp("closed_at", { withTimezone: true }).notNull().defaultNow(),
+  /** The month's report as it was when closed. */
+  report: jsonb("report"),
+  /** Each partner's share % and rupee share as it was when closed. */
+  shares: jsonb("shares"),
 });

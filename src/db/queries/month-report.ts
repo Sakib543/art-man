@@ -1,8 +1,8 @@
 import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
-import { getMonthChoices, isMonthClosed, type MonthChoice } from "@/db/queries/months";
-import { capitalRepayments, cashEntries, daySnapshots, monthlyExpenses, staff } from "@/db/schema";
+import { getMonthChoices, type MonthChoice } from "@/db/queries/months";
+import { capitalRepayments, cashEntries, daySnapshots, monthCloses, monthlyExpenses, staff } from "@/db/schema";
 import { buildMonthReport, type MonthDay, type MonthReport } from "@/lib/accounting";
 import { formatMonth, monthOf, monthStart, nextMonth } from "@/lib/business-date";
 
@@ -15,7 +15,10 @@ export interface MonthlyReportData {
   monthLabel: string;
   closed: boolean;
   months: MonthChoice[];
+  /** What the screen shows: the saved report for a closed month, otherwise the live one. */
   report: MonthReport;
+  /** Always freshly worked out from the entries. Month close saves this. */
+  live: MonthReport;
   days: ClosedDayRow[];
   /** The day still open in this month. It is added to the report when it is closed. */
   openDay: string | null;
@@ -34,12 +37,12 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
   const start = monthStart(month);
   const end = monthStart(nextMonth(month));
 
-  const [snapshots, expenseRows, repayments, staffRows, closed, latest] = await Promise.all([
+  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest] = await Promise.all([
     db.select().from(daySnapshots).where(and(gte(daySnapshots.businessDate, start), lt(daySnapshots.businessDate, end))).orderBy(asc(daySnapshots.businessDate)),
     db.select().from(monthlyExpenses).where(eq(monthlyExpenses.month, start)),
     db.select({ amount: capitalRepayments.amount }).from(capitalRepayments).where(and(gte(capitalRepayments.paidOn, start), lt(capitalRepayments.paidOn, end))),
     db.select({ salary: staff.salary, payType: staff.payType, active: staff.active }).from(staff),
-    isMonthClosed(month),
+    db.select().from(monthCloses).where(eq(monthCloses.month, start)).limit(1),
     getLatestBusinessDay(),
   ]);
 
@@ -72,7 +75,7 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
     dayProfit: s.dayProfit,
   }));
 
-  const report = buildMonthReport({
+  const live = buildMonthReport({
     days,
     monthlyExpenses: expenseRows.map((e) => ({ kind: e.kind, amount: e.amount, paidFrom: e.paidFrom })),
     salaries,
@@ -81,7 +84,12 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
     capitalRepaid: repayments.reduce((sum, r) => sum + r.amount, 0),
   });
 
+  // A closed month shows the report saved at the moment it was closed, not a fresh
+  // calculation, so a later change (a new salary, say) cannot alter it.
+  const closed = closeRow !== undefined;
+  const report = (closeRow?.report as MonthReport | null | undefined) ?? live;
+
   const openDay = latest && latest.closedAt === null && monthOf(latest.businessDate) === month ? latest.businessDate : null;
 
-  return { month, monthLabel: formatMonth(month), closed, months: choices.choices, report, days, openDay };
+  return { month, monthLabel: formatMonth(month), closed, months: choices.choices, report, live, days, openDay };
 }

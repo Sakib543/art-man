@@ -1,7 +1,7 @@
 import type { MonthReport } from "@/lib/accounting";
 import { formatDayMonth, num, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { ClosedDayRow } from "../queries";
+import type { ClosedDayRow } from "@/db/queries/month-report";
 
 /** "-3,000" for a cost, "0" when there is none. */
 const minus = (amount: number) => (amount ? `-${num(amount)}` : "0");

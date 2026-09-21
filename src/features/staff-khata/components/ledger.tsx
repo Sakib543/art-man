@@ -7,12 +7,16 @@ const th = "px-3.5 py-2 text-left text-[12.5px] font-medium text-muted-foregroun
 const td = "px-3.5 py-2.5";
 
 /** One staff member's running account: earnings add, payments and advances subtract. */
-export function Ledger({ member, rows }: { member: KhataStaff; rows: LedgerRow[] }) {
+export function Ledger({ member, rows, monthClosed }: { member: KhataStaff; rows: LedgerRow[]; monthClosed: boolean }) {
   return (
     <div className="rounded-[14px] border bg-card">
       <div className="flex items-center justify-between gap-2.5 border-b px-[18px] py-3.5">
         <h2 className="text-[15px] font-semibold">{member.name}</h2>
-        <Badge className="bg-warning-soft text-warning">Provisional until month close</Badge>
+        {monthClosed ? (
+          <Badge className="bg-success-soft text-success">Final, month closed</Badge>
+        ) : (
+          <Badge className="bg-warning-soft text-warning">Provisional until month close</Badge>
+        )}
       </div>
 
       <div className="overflow-x-auto">
