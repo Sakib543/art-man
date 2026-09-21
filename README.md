@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Art Men's Salon: POS & accounts
 
-## Getting Started
+POS and bookkeeping for a men's salon: billing, daily cash reconciliation, staff khata, monthly accounts, partners.
+Built with Next.js, shadcn/ui, PostgreSQL (Neon), Drizzle and Better Auth.
 
-First, run the development server:
+- **Full guide (Roman Urdu):** [docs/PROJECT_GUIDE.md](docs/PROJECT_GUIDE.md)
+- Business rules: [docs/Art_Salon_Dev_Spec.md](docs/Art_Salon_Dev_Spec.md)
+- Code layout rules: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+## Run it locally
+
+Needs Node.js 20+ and pnpm. You need **your own** Postgres database (a free [Neon](https://neon.tech) project, or a local Postgres). Do not ask for anyone else's connection string.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env.local     # then fill in DATABASE_URL and BETTER_AUTH_SECRET
+pnpm db:migrate                # create the tables
+pnpm db:seed                   # Owner and Manager accounts (passwords are printed once)
+pnpm db:seed:sample            # sample services, deals, staff, customers
+pnpm db:seed:accounts          # sample partners and fixed monthly lines
+pnpm dev                       # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Sign in as `owner` or `manager` with the passwords printed by `pnpm db:seed`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Other commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm test     # unit tests (accounting rules, security code, ...)
+pnpm lint
+pnpm build
+pnpm db:generate   # after changing src/db/schema, then pnpm db:migrate
+```
 
-## Learn More
+## The one rule to keep
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Money entries (bills, expenses, payments, ...) are never edited or deleted, not even by the Owner. A mistake is cancelled by adding a new entry. A database trigger enforces this.
