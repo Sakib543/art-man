@@ -5,6 +5,15 @@ export function khataBalance(entries: KhataEntry[]): Rupees {
   return entries.reduce((sum, entry) => sum + entry.amount, 0);
 }
 
+/** Each entry with the balance after it, in the order given. */
+export function withRunningBalance<T extends { amount: Rupees }>(entries: T[]): (T & { balance: Rupees })[] {
+  let balance = 0;
+  return entries.map((entry) => {
+    balance += entry.amount;
+    return { ...entry, balance };
+  });
+}
+
 /** Money taken beyond what was earned. Adjusted against next month. */
 export function advanceOutstanding(entries: KhataEntry[]): Rupees {
   return Math.max(0, -khataBalance(entries));

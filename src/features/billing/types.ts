@@ -58,18 +58,4 @@ export interface Receipt {
   online: Rupees;
 }
 
-export interface TodaysBill {
-  id: string;
-  billNo: number;
-  createdAt: string;
-  customerName: string | null;
-  total: Rupees;
-  cash: Rupees;
-  online: Rupees;
-  status: "active" | "cancelled" | "reversal";
-  cancelReason: string | null;
-  reversesBillNo: number | null;
-  lines: ReceiptLine[];
-}
-
 export type { PayMode };

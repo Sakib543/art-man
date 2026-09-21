@@ -8,18 +8,18 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { formatTime, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { DayBill } from "@/db/queries/day-bills";
 import { cancelBillAction } from "../actions";
-import type { TodaysBill } from "../types";
 
-export function TodaysBills({ bills }: { bills: TodaysBill[] }) {
+export function TodaysBills({ bills }: { bills: DayBill[] }) {
   // `target` is kept after closing so the dialog does not go blank while it animates out.
-  const [target, setTarget] = useState<TodaysBill | null>(null);
+  const [target, setTarget] = useState<DayBill | null>(null);
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
-  function openFor(bill: TodaysBill) {
+  function openFor(bill: DayBill) {
     setTarget(bill);
     setReason("");
     setError("");

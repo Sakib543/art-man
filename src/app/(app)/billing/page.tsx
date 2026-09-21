@@ -1,9 +1,10 @@
+import { getDayBills } from "@/db/queries/day-bills";
 import { BusinessDayPill } from "@/components/business-day-pill";
 import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
 import { BillingScreen } from "@/features/billing/components/billing-screen";
 import { TodaysBills } from "@/features/billing/components/todays-bills";
-import { getBillingData, getBillsForDay } from "@/features/billing/queries";
+import { getBillingData } from "@/features/billing/queries";
 import { requireUser } from "@/lib/auth/session";
 
 export const metadata = { title: "Billing | Art Men's Salon" };
@@ -21,7 +22,7 @@ export default async function BillingPage() {
     );
   }
 
-  const bills = await getBillsForDay(data.businessDate);
+  const bills = await getDayBills(data.businessDate);
 
   return (
     <>

@@ -16,6 +16,7 @@ import {
   partnerShares,
   salesTotals,
   splitDealPrice,
+  withRunningBalance,
   workByStaff,
   type Bill,
   type StaffPay,
@@ -104,6 +105,15 @@ describe("khata (spec 6.2)", () => {
     ];
     expect(khataBalance(entries)).toBe(-2000);
     expect(advanceOutstanding(entries)).toBe(2000);
+  });
+
+  it("shows the running balance after each line (Sherry's day)", () => {
+    const rows = withRunningBalance([
+      { label: "Commission", amount: 500 },
+      { label: "Daily wage", amount: 800 },
+      { label: "Payment", amount: -1300 },
+    ]);
+    expect(rows.map((r) => r.balance)).toEqual([500, 1300, 0]);
   });
 
   it("a cancelled bill reverses its commission", () => {

@@ -6,7 +6,6 @@ import { OpenFirstDay } from "@/features/day-close/components/open-first-day";
 import { getDayCloseData } from "@/features/day-close/queries";
 import { requireUser } from "@/lib/auth/session";
 import { todayInKarachi } from "@/lib/business-date";
-import { formatDateLong } from "@/lib/format";
 
 export const metadata = { title: "Day close | Art Men's Salon" };
 
@@ -33,10 +32,7 @@ export default async function DayClosePage() {
     return (
       <>
         <PageHeader title="Day close" subtitle={SUBTITLE}>
-          <div className="flex items-center gap-2.5 rounded-full border bg-card py-1.5 pr-2 pl-3 text-[13px] text-muted-foreground">
-            <span>Business day: {formatDateLong(data.snapshot.businessDate)}</span>
-            <span className="rounded-full bg-brass-soft px-2 py-0.5 text-xs font-medium text-brass-strong">Closed</span>
-          </div>
+          <BusinessDayPill businessDate={data.snapshot.businessDate} closed />
         </PageHeader>
         <ClosedView snapshot={data.snapshot} />
         {user.role === "manager" ? (
