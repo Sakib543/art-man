@@ -15,3 +15,9 @@ export async function getOpenBusinessDay() {
     .limit(1);
   return day ?? null;
 }
+
+/** The most recent business day, open or closed. Null only before the first day is opened. */
+export async function getLatestBusinessDay() {
+  const [day] = await db.select().from(businessDays).orderBy(desc(businessDays.businessDate)).limit(1);
+  return day ?? null;
+}

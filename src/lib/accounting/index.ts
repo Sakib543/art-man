@@ -2,6 +2,7 @@ export * from "./allocate";
 export * from "./capital";
 export * from "./commission";
 export * from "./day";
+export * from "./day-close";
 export * from "./deal";
 export * from "./folders";
 export * from "./khata";

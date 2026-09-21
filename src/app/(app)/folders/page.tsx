@@ -1,5 +1,6 @@
-import { Lock, QrCode, UserRound, Users, Wallet } from "lucide-react";
+import { QrCode, UserRound, Users, Wallet } from "lucide-react";
 import { BusinessDayPill } from "@/components/business-day-pill";
+import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { EntriesTable } from "@/features/folders/components/entries-table";
@@ -20,10 +21,7 @@ export default async function FoldersPage() {
     return (
       <>
         <PageHeader title="Daily folders" subtitle={SUBTITLE} />
-        <div className="flex items-start gap-2.5 rounded-[10px] border border-[#efe0c8] bg-brass-soft px-3.5 py-3 text-brass-strong">
-          <Lock className="mt-0.5 size-[17px]" aria-hidden />
-          <p>No business day is open. Ask the Owner to open the first business day.</p>
-        </div>
+        <NoOpenDay />
       </>
     );
   }
