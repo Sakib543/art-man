@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22
+Last updated: 2026-09-22 (P0.1 done)
 
 ---
 
@@ -17,7 +17,7 @@ Last updated: 2026-09-22
 
 | ID | Item | Status | Owner |
 |---|---|---|---|
-| P0.1 | Show the real login error | ⬜ | — |
+| P0.1 | Show the real login error | ✅ | done 2026-09-22 |
 | P0.2 | Reopen a closed day (Owner) | ⬜ | — |
 | P0.3 | Cancel a bill/entry in a closed day (Owner) | ⬜ | — |
 | P1.0 | Remove the staff PIN | ⬜ | — |
@@ -36,21 +36,26 @@ Last updated: 2026-09-22
 
 Without these three, the 20-day trial is likely to get stuck.
 
-### ⬜ P0.1 — Show the real login error
-**Owner:** —
-`src/features/auth/components/login-form.tsx:30`
+### ✅ P0.1 — Show the real login error
+**Done:** 2026-09-22
 
-Right now **every** failure shows `"Wrong username or password."` — a database that is unreachable,
-a bad connection string, anything. The real cause is never visible.
+Every failure used to show `"Wrong username or password."` — an unreachable database, a bad
+connection string, anything. The real cause was never visible. This is why the Vercel problem could
+not be diagnosed, and it wasted time locally twice.
 
-This is why the Vercel problem could not be diagnosed, and it wasted time locally too: a correct
-password looked like a wrong one because the running dev server held a stale `DATABASE_URL`.
+**What was built:**
 
-**What to do:** separate a wrong password from a system failure. Keep the vague message for a bad
-password (so it does not reveal which accounts exist), but say plainly when the server or database
-is the problem.
+- `src/lib/auth/sign-in-error.ts` — a pure function mapping a failure to a message. A wrong
+  password keeps the vague wording (it must not reveal which accounts exist); a server fault says
+  plainly that it is not the password, and names the HTTP status so support has something to go on.
+  Separate messages for no-reply (status 0) and rate limiting (429).
+- `src/lib/auth/sign-in-error.test.ts` — 6 tests.
+- `login-form.tsx` — calls it, and now also survives a request that throws instead of returning an
+  error. Full detail goes to the browser console; the screen shows one sentence.
 
-**Size:** small
+**Verified:** 139 tests pass (was 133), lint clean, build passes. Proven against a live 500 while
+the database was genuinely down — the screen now reads *"…This is a problem with the system, not
+your password (error 500)…"* instead of blaming the password.
 
 ---
 

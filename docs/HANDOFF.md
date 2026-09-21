@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22
+Last updated: 2026-09-22 (P0.1 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (133 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (139 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -91,7 +91,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — 17 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **133 passed** (17 files) |
+| `pnpm test` | **139 passed** (18 files) |
 | Database | Neon, PostgreSQL 18.6, **27 tables**, all seeds loaded |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 
@@ -116,9 +116,12 @@ pnpm db:seed:sample   # services, deals, staff, customers, opens the first busin
 pnpm db:seed:accounts # partners + fixed expense lines
 ```
 
-`.env.local` exists and is correct. It points at a **Neon dev database** (not a local Postgres,
-despite earlier discussion). Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty —
-optional), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
+`.env.local` exists and points at a **Neon dev database** (not a local Postgres, despite earlier
+discussion). Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty — optional),
+`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
+
+> ⚠️ **As of 2026-09-22 its `DATABASE_URL` password is stale** — the Neon password was rotated and
+> the file was not updated, so every query fails with `28P01`. See section 9.
 
 Local logins: `owner` and `manager`. Passwords were printed once during seeding and the user noted
 them down. `seed-users.ts` **skips accounts that already exist**, so re-running it will not print
@@ -194,11 +197,18 @@ Rules:
 - Push the migration as soon as it is generated — do not sit on it.
 - **Never edit an already-committed migration file.** Always add a new one.
 
-### 8.2 The login form hides every real error
+### 8.2 The login form used to hide every real error — FIXED 2026-09-22 (P0.1)
 
-`login-form.tsx:30` shows `"Wrong username or password."` for *any* failure — including an
-unreachable database. A correct password looks like a wrong one. This is backlog **P0.1** and it is
-first for a reason. Suspect it whenever login "fails".
+It showed `"Wrong username or password."` for *any* failure, including an unreachable database, so
+a correct password looked like a wrong one. This hid a broken deployment and cost time twice.
+
+Now `src/lib/auth/sign-in-error.ts` decides the message: 401/403 and Better Auth's credential codes
+keep the vague wording, status 0 says the server could not be reached, 429 explains the rate limit,
+and anything else says plainly that the fault is the system's and names the HTTP status. The full
+error object goes to the browser console.
+
+Kept here as history: if a login problem is ever confusing again, read the browser console and the
+dev server log, not just the screen.
 
 ### 8.3 A stale `next dev` server serves stale env
 
@@ -237,8 +247,11 @@ step 4 says "sign in as owner". Very likely why the Vercel deployment never work
 ## 9. Open actions and questions
 
 **Owed by the user:**
-- [ ] **Rotate the Neon database password.** It was leaked into a transcript on 2026-09-22.
-      Neon → project → Roles → `neondb_owner` → Reset password, then update `.env.local` only.
+- [x] **Rotate the Neon database password** — done on 2026-09-22.
+- [ ] **Put the new connection string into `.env.local`.** The password was rotated but the file
+      still holds the old one, so the database is currently unreachable: Postgres answers
+      `28P01 password authentication failed for user 'neondb_owner'` and every page 500s. Paste the
+      new string into `.env.local` (never `.env.example`) and restart `pnpm dev`.
 
 **Questions blocking work:**
 1. **Does a Vercel project already exist, or does it need creating?** Blocks P5.1.
@@ -264,8 +277,8 @@ Detail for each item is in `docs/BACKLOG.md`.
 
 ```
 STAGE 1 — before the client trial
-  1. P0.1  Show the real login error                     small
-  2. P1.0  Remove the staff PIN (keep the Owner PIN)     medium
+  1. P0.1  Show the real login error                     DONE 2026-09-22
+  2. P1.0  Remove the staff PIN (keep the Owner PIN)     medium   <- next
   3. P0.2  Reopen a closed day (Owner)                   medium
   4. P0.3  Cancel a bill/entry in a closed day (Owner)   medium
   5. P2.1  Paper bill-book number field                  small

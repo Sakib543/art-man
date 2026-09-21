@@ -7,6 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/client";
+import { signInErrorMessage, type SignInFailure } from "@/lib/auth/sign-in-error";
+
+/**
+ * Never throws. A request that does not complete at all comes back as status 0,
+ * so the caller has one shape to deal with. The detail goes to the console for
+ * whoever is debugging; the screen only ever shows a short sentence.
+ */
+async function attemptSignIn(username: string, password: string): Promise<SignInFailure | null> {
+  try {
+    const { error } = await authClient.signIn.username({ username, password });
+    if (error) console.error("Sign-in failed:", error);
+    return error ?? null;
+  } catch (cause) {
+    console.error("Sign-in request did not complete:", cause);
+    return { status: 0 };
+  }
+}
 
 export function LoginForm() {
   const router = useRouter();
@@ -26,10 +43,10 @@ export function LoginForm() {
 
     setError("");
     startTransition(async () => {
-      const { error: signInError } = await authClient.signIn.username({ username, password });
-      if (signInError) {
-        // Same message for a wrong username or password, so it does not reveal which one exists.
-        setError("Wrong username or password.");
+      const failure = await attemptSignIn(username, password);
+      if (failure) {
+        // A wrong password stays vague; a broken server says so. See sign-in-error.ts.
+        setError(signInErrorMessage(failure));
         return;
       }
       router.push("/billing");
