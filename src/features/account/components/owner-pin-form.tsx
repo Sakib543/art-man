@@ -1,0 +1,51 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { Field } from "@/components/field";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { isValidPin } from "@/lib/pin";
+import { changePinAction } from "../actions";
+import { FormFeedback } from "./form-feedback";
+import { useFormAction } from "./use-form-action";
+
+export function OwnerPinForm() {
+  const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
+  const [again, setAgain] = useState("");
+  const { error, done, pending, run, fail } = useFormAction();
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!isValidPin(pin)) return fail("The PIN must be exactly 4 digits.");
+    if (pin !== again) return fail("The two PINs do not match.");
+
+    run(() => changePinAction({ password, newPin: pin }), "Your PIN has been changed.", () => {
+      setPassword("");
+      setPin("");
+      setAgain("");
+    });
+  }
+
+  const digits = (value: string) => value.replace(/\D/g, "").slice(0, 4);
+
+  return (
+    <form onSubmit={submit} className="space-y-3.5" noValidate>
+      <Field label="Your account password" htmlFor="pin-password" hint="Confirms that it is really you changing the PIN.">
+        <Input id="pin-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="h-10" />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="New PIN (4 digits)" htmlFor="pin-new">
+          <Input id="pin-new" type="password" inputMode="numeric" maxLength={4} autoComplete="off" value={pin} onChange={(e) => setPin(digits(e.target.value))} className="h-10 tracking-widest" />
+        </Field>
+        <Field label="New PIN again" htmlFor="pin-again">
+          <Input id="pin-again" type="password" inputMode="numeric" maxLength={4} autoComplete="off" value={again} onChange={(e) => setAgain(digits(e.target.value))} className="h-10 tracking-widest" />
+        </Field>
+      </div>
+      <FormFeedback error={error} done={done} />
+      <Button type="submit" className="h-10" disabled={pending}>
+        {pending ? "Saving..." : "Change PIN"}
+      </Button>
+    </form>
+  );
+}

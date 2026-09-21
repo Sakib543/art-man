@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Lock,
   Receipt,
+  Settings,
   SlidersHorizontal,
   Wallet,
   type LucideIcon,
@@ -56,6 +57,11 @@ export const NAV: NavSection[] = [
       { href: "/partners", label: "Partners", icon: ChartPie },
       { href: "/staff-rates", label: "Staff & rates", icon: SlidersHorizontal },
     ],
+  },
+  {
+    title: "Account",
+    roles: ["owner", "manager"],
+    items: [{ href: "/settings", label: "Settings", icon: Settings }],
   },
 ];
 
