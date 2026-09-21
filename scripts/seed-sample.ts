@@ -4,10 +4,7 @@
  * nothing if services already exist.
  *
  *   pnpm db:seed:sample
- *
- * Sample staff PINs: Arshad 1111, Hamid 2222, Sherry 3333.
  */
-import { hashPassword } from "better-auth/crypto";
 import { count } from "drizzle-orm";
 import { db } from "../src/db";
 import {
@@ -38,9 +35,9 @@ const DEALS = [
 ];
 
 const STAFF = [
-  { name: "Arshad", payType: 2, salary: 40000, dailyWage: 0, commissionRate: 10, pin: "1111" },
-  { name: "Hamid", payType: 2, salary: 40000, dailyWage: 0, commissionRate: 10, pin: "2222" },
-  { name: "Sherry", payType: 3, salary: 0, dailyWage: 800, commissionRate: 10, pin: "3333" },
+  { name: "Arshad", payType: 2, salary: 40000, dailyWage: 0, commissionRate: 10 },
+  { name: "Hamid", payType: 2, salary: 40000, dailyWage: 0, commissionRate: 10 },
+  { name: "Sherry", payType: 3, salary: 0, dailyWage: 800, commissionRate: 10 },
 ];
 
 async function main() {
@@ -61,8 +58,8 @@ async function main() {
     await db.insert(dealItems).values(items.map((key) => ({ dealId: deal.id, serviceId: serviceIds[key] })));
   }
 
-  for (const { pin, ...row } of STAFF) {
-    await db.insert(staff).values({ ...row, pinHash: await hashPassword(pin) });
+  for (const row of STAFF) {
+    await db.insert(staff).values(row);
   }
 
   const [ashfaq] = await db

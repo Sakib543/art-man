@@ -14,7 +14,11 @@ export const cashEntries = pgTable("cash_entries", {
   paidFrom: paidFromEnum("paid_from"),
   /** Staff advances and payments only. */
   staffId: uuid("staff_id").references(() => staff.id),
-  /** True once the staff member (or owner) confirmed with their PIN. */
+  /**
+   * True once the owner confirmed with their PIN. Only owner cash movements ask
+   * for one: staff PINs were removed, so staff advances and payments are recorded
+   * on the manager's word alone.
+   */
   pinConfirmed: boolean("pin_confirmed").notNull().default(false),
   /** Set on a reversal row: the entry it voids. */
   voidsEntryId: uuid("voids_entry_id"),

@@ -30,8 +30,8 @@ export function EntryForm({ staff }: { staff: StaffOption[] }) {
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
-  const needsPin = kind !== "expense";
-  const pinOwner = kind === "staff_advance" ? `${staff.find((s) => s.id === staffId)?.name ?? "Staff"}'s PIN` : "Owner's PIN";
+  // Only the Owner's own cash movements are confirmed with a PIN. Staff PINs were removed.
+  const needsPin = kind === "owner_took" || kind === "owner_added";
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,7 +42,7 @@ export function EntryForm({ staff }: { staff: StaffOption[] }) {
       kind === "expense"
         ? { ...base, description, paidFrom }
         : kind === "staff_advance"
-          ? { ...base, staffId, pin }
+          ? { ...base, staffId }
           : { ...base, description, pin };
 
     startTransition(async () => {
@@ -150,9 +150,9 @@ export function EntryForm({ staff }: { staff: StaffOption[] }) {
 
         {needsPin ? (
           <Field
-            label={`${pinOwner} to confirm`}
+            label="Owner's PIN to confirm"
             htmlFor="entry-pin"
-            hint="The person receiving or giving the cash confirms with their own PIN."
+            hint="The Owner confirms cash taken from or added to the drawer with their own PIN."
           >
             <Input
               id="entry-pin"

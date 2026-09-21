@@ -5,7 +5,6 @@ import { dealItems, deals, services, staff } from "@/db/schema";
 import { normalizeStaffPay } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
 import { UserError } from "@/lib/errors";
-import { hashPin, isValidPin } from "@/lib/pin";
 import type { DealInput, ServiceInput, StaffInput } from "./schemas";
 
 const actorOf = (user: SessionUser) => user.username || user.name;
@@ -18,24 +17,17 @@ export async function saveStaff(user: SessionUser, input: StaffInput): Promise<v
     dailyWage: input.dailyWage,
     commissionRate: input.commissionRate,
   });
-  const pin = input.pin ?? "";
-
-  if (pin && !isValidPin(pin)) throw new UserError("The PIN must be exactly 4 digits");
-
   const values = { name: input.name, ...pay, active: input.active };
 
   if (!input.id) {
-    if (!pin) throw new UserError("Set a 4-digit PIN for the new staff member");
-    const pinHash = await hashPin(pin);
     await db.transaction(async (tx) => {
-      await tx.insert(staff).values({ ...values, pinHash });
+      await tx.insert(staff).values(values);
       await writeAudit(tx, { actor: actorOf(user), action: "staff.create", target: input.name, after: values });
     });
     return;
   }
 
   const id = input.id;
-  // The PIN hash is deliberately not selected, so it can never end up in the audit log.
   const [before] = await db
     .select({
       name: staff.name,
@@ -49,13 +41,9 @@ export async function saveStaff(user: SessionUser, input: StaffInput): Promise<v
     .where(eq(staff.id, id))
     .limit(1);
   if (!before) throw new UserError("Staff member not found");
-  const pinHash = pin ? await hashPin(pin) : null;
 
   await db.transaction(async (tx) => {
-    await tx
-      .update(staff)
-      .set(pinHash ? { ...values, pinHash } : values)
-      .where(eq(staff.id, id));
+    await tx.update(staff).set(values).where(eq(staff.id, id));
 
     await writeAudit(tx, {
       actor: actorOf(user),
@@ -64,7 +52,6 @@ export async function saveStaff(user: SessionUser, input: StaffInput): Promise<v
       before,
       after: values,
     });
-    if (pinHash) await writeAudit(tx, { actor: actorOf(user), action: "staff.pin-reset", target: before.name });
   });
 }
 

@@ -10,7 +10,7 @@ import type { EntryInput } from "./schemas";
 
 const actorOf = (u: SessionUser) => u.username || u.name;
 
-/** Add an entry to today's folders. Staff advances and owner cash need the right PIN. */
+/** Add an entry to today's folders. Only the Owner's own cash movements need a PIN. */
 export async function addEntry(current: SessionUser, input: EntryInput): Promise<void> {
   const day = await getOpenBusinessDay();
   if (!day) throw new UserError("No business day is open. Ask the Owner to open one.");
@@ -24,7 +24,6 @@ export async function addEntry(current: SessionUser, input: EntryInput): Promise
     if (!member || !member.active) throw new UserError("That staff member is not available");
     staffId = member.id;
     staffName = member.name;
-    await confirmPin({ actor, subject: `staff:${member.name}`, pin: input.pin, hash: member.pinHash });
   }
 
   if (input.kind === "owner_took" || input.kind === "owner_added") {
@@ -46,8 +45,8 @@ export async function addEntry(current: SessionUser, input: EntryInput): Promise
         description,
         paidFrom: input.kind === "expense" ? input.paidFrom : null,
         staffId,
-        // Expenses need no PIN; everything else was confirmed above.
-        pinConfirmed: input.kind !== "expense",
+        // Only the Owner's own cash movements are confirmed with a PIN, above.
+        pinConfirmed: input.kind === "owner_took" || input.kind === "owner_added",
         createdBy: actor,
       })
       .returning({ id: cashEntries.id });

@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { failure, type ActionResult } from "@/lib/action-result";
 import { requireRole, requireUser } from "@/lib/auth/session";
-import { closeSchema, openFirstDaySchema, reviewSchema, verifyPayoutsSchema } from "./schemas";
-import { closeDay, openFirstDay, reviewClose, startNextDay, verifyPayouts } from "./service";
+import { closeSchema, openFirstDaySchema, reviewSchema } from "./schemas";
+import { closeDay, openFirstDay, reviewClose, startNextDay } from "./service";
 import type { CloseReview } from "./types";
 
 const firstIssue = (error: { issues: { message: string }[] }, fallback: string) => error.issues[0]?.message ?? fallback;
@@ -12,19 +12,6 @@ const firstIssue = (error: { issues: { message: string }[] }, fallback: string) 
 function refresh() {
   // The open/closed state of the day changes what Billing and Folders show.
   for (const path of ["/day-close", "/billing", "/folders"]) revalidatePath(path);
-}
-
-export async function verifyPayoutsAction(input: unknown): Promise<ActionResult<null>> {
-  const user = await requireUser();
-  const parsed = verifyPayoutsSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error, "Invalid payments") };
-
-  try {
-    await verifyPayouts(user, parsed.data.payouts);
-    return { ok: true, data: null };
-  } catch (error) {
-    return failure(error);
-  }
 }
 
 export async function reviewCloseAction(input: unknown): Promise<ActionResult<CloseReview>> {

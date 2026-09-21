@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0.1 done)
+Last updated: 2026-09-22 (P0.1, P1.0 done)
 
 ---
 
@@ -120,9 +120,6 @@ pnpm db:seed:accounts # partners + fixed expense lines
 discussion). Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty — optional),
 `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
 
-> ⚠️ **As of 2026-09-22 its `DATABASE_URL` password is stale** — the Neon password was rotated and
-> the file was not updated, so every query fails with `28P01`. See section 9.
-
 Local logins: `owner` and `manager`. Passwords were printed once during seeding and the user noted
 them down. `seed-users.ts` **skips accounts that already exist**, so re-running it will not print
 new ones — reset through the Settings screen instead.
@@ -136,8 +133,8 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | Topic | Decision |
 |---|---|
 | **Manager's limit** | View-only on past daily reports; cannot edit. Only the Owner can. **Already works this way** — no change needed. |
-| **Staff (karigar) PIN** | **Remove from the whole project.** No replacement confirmation wanted. |
-| **Owner PIN** | **Keep.** Two different columns: `staff.pin_hash` (removing), `user.pin_hash` (keeping). |
+| **Staff (karigar) PIN** | **Removed from the whole project** (P1.0, done 2026-09-22). No replacement confirmation wanted. |
+| **Owner PIN** | **Kept.** They were two different columns: `staff.pin_hash` (dropped), `user.pin_hash` (still there). |
 | **Developer role** | A 4th role above Owner: sees everything, resets any password/PIN, manages users, maintenance mode, edits config. |
 | **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. Constraints below. |
 | **Offline** | Real offline required — 6–8 hours with no internet, then sync on reconnect. |
@@ -177,6 +174,10 @@ Measured, not guessed. Do not spend time re-deriving these.
 | Not locked to Neon | driver is standard `pg`; "Neon" appears in `src/` only in one comment |
 | `bills.book_no` exists but is **never read or written** | dead field — backlog P2.1 will use it |
 | Pages run 5–11 DB queries each | matters for the VPS move: keep server and database in the same region |
+| **Only the Owner has a PIN** | `user.pin_hash`. `staff.pin_hash` was dropped in `0008_busy_lockjaw.sql` (P1.0) |
+| `cash_entries.pin_confirmed` now means Owner-confirmed only | set for `owner_took` / `owner_added`, never for staff rows |
+| `src/lib/pin.ts` and `src/db/pin-guard.ts` are still live | they serve the Owner PIN, including the 5-wrong-tries lock |
+| `staff` rows can be deleted when nothing references them | no append-only trigger; the app still prefers deactivating |
 
 ---
 
@@ -210,11 +211,15 @@ error object goes to the browser console.
 Kept here as history: if a login problem is ever confusing again, read the browser console and the
 dev server log, not just the screen.
 
-### 8.3 A stale `next dev` server serves stale env
+### 8.3 A stale `next dev` server serves stale env — and a hot reload is not enough
 
-After changing `.env.local`, kill and restart the dev server. A server started before the change
-keeps the old values and fails in confusing ways — this exact thing made a correct password look
-wrong.
+After changing `.env.local`, **fully stop and restart** the dev server. Next reloads the env file
+(it even logs `Reload env: .env.local`) but that does **not** fix the database connection:
+`src/db/index.ts` caches the `pg` pool on `globalThis` in development, so the old pool — built with
+the old connection string — survives every hot reload.
+
+Seen twice on 2026-09-22. Both times a correct password looked wrong. If the database works from a
+plain `node --env-file=.env.local` script but the app still fails, this is why.
 
 ### 8.4 `.env.local` had a malformed `DATABASE_URL`
 
@@ -248,10 +253,7 @@ step 4 says "sign in as owner". Very likely why the Vercel deployment never work
 
 **Owed by the user:**
 - [x] **Rotate the Neon database password** — done on 2026-09-22.
-- [ ] **Put the new connection string into `.env.local`.** The password was rotated but the file
-      still holds the old one, so the database is currently unreachable: Postgres answers
-      `28P01 password authentication failed for user 'neondb_owner'` and every page 500s. Paste the
-      new string into `.env.local` (never `.env.example`) and restart `pnpm dev`.
+- [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
 
 **Questions blocking work:**
 1. **Does a Vercel project already exist, or does it need creating?** Blocks P5.1.
@@ -278,8 +280,8 @@ Detail for each item is in `docs/BACKLOG.md`.
 ```
 STAGE 1 — before the client trial
   1. P0.1  Show the real login error                     DONE 2026-09-22
-  2. P1.0  Remove the staff PIN (keep the Owner PIN)     medium   <- next
-  3. P0.2  Reopen a closed day (Owner)                   medium
+  2. P1.0  Remove the staff PIN (keep the Owner PIN)     DONE 2026-09-22
+  3. P0.2  Reopen a closed day (Owner)                   medium   <- next
   4. P0.3  Cancel a bill/entry in a closed day (Owner)   medium
   5. P2.1  Paper bill-book number field                  small
 
@@ -296,8 +298,8 @@ STAGE 4 — after the trial
   P5.3  Move to a VPS + carry trial data over with pg_dump
 ```
 
-P1.0 sits before P0.2 because both touch `day-close`; removing the PIN first means the reopen work
-lands on cleaner code. **These two must not run in parallel across the two developers.**
+P1.0 was done before P0.2 because both touch `day-close`; the reopen work now lands on code with
+the PIN already removed.
 
 Offline comes after the trial because the trial's purpose is to prove the **accounting** is correct
 (spec Phase 1: run in parallel with the paper register, 7 straight days with a difference of 0).

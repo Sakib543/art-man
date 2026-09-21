@@ -21,11 +21,13 @@ Owner apne phone se live dekh sakta hai.
 
 ## 2. Kaun kya kar sakta hai
 
-Sirf **2 log login** karte hain. Staff (karigar) login nahi karte, wo sirf **4-digit PIN** se paise milne ki tasdeeq karte hain.
+Sirf **2 log login** karte hain. Staff (karigar) na login karte hain, na un ka koi PIN hai.
+
+> **22 Sep 2026 ko badla (client ka faisla):** pehle staff apne 4-digit PIN se paise milne ki tasdeeq karta tha. Client ne ise hatane ko kaha aur koi metabadal nahi chaha. Ab staff ka advance aur payment sirf Manager ke likhne par darj hota hai. **Owner ka PIN waisa hi hai** — Owner ab bhi drawer se cash lene/daalne par apna PIN deta hai.
 
 | | Owner | Manager (counter) | Staff |
 |---|---|---|---|
-| Bill banana, kharche, advance, worksheet, day close, daily report, staff khata | Haan | Haan | Nahi (sirf PIN) |
+| Bill banana, kharche, advance, worksheet, day close, daily report, staff khata | Haan | Haan | Nahi |
 | Staff, prices, deals badalna | Haan | Nahi | Nahi |
 | Overview, monthly report, monthly expenses | Haan | **Nahi** | Nahi |
 | Capital, partners, month close | Haan | **Nahi** | Nahi |
@@ -42,13 +44,13 @@ SUBAH
 
 DIN BHAR (Manager)
   Billing ─► customer ki bill: service/deal chuno, har service par kaun karigar, cash/online
-  Daily folders ─► chai/kharcha, staff ko advance (staff ke PIN se), Owner ne cash liya/diya (Owner ke PIN se)
+  Daily folders ─► chai/kharcha, staff ko advance, Owner ne cash liya/diya (Owner ke PIN se)
   Daily worksheet ─► register jaisa: har karigar ka column, neeche total, "quick add"
 
 RAAT (Manager) ─► Day close, 5 qadam
   1. Attendance (kaun aaya)
   2. Staff ki kamai (commission + daily wage) khud hisaab hoti hai
-  3. Staff ko payment (unke PIN se)
+  3. Staff ko payment
   4. Drawer ki cash gin kar total likhna  (expected abhi CHHUPA rehta hai)
   5. Expected vs counted, farq ki wajah, phir "Close day"
      ─► din lock, security code Owner ko, agla din khulta hai
@@ -83,7 +85,7 @@ MAHINA (Owner)
 | Monthly expenses | Fixed lines (rent...) aur others (reason ke saath) |
 | Capital / Outstanding | Partner ki investment aur kiston mein wapsi |
 | Partners | Profit share %, partner accounts, profit drawn |
-| Staff & rates | Staff (pay type, PIN), services, deals |
+| Staff & rates | Staff (pay type), services, deals |
 | Settings | Password, Owner PIN, Manager ka password reset |
 
 ---
@@ -127,7 +129,7 @@ Form ─► actions.ts   ("use server")
           ├─ requireUser()/requireRole()      kaun hai, ijazat hai?
           ├─ Zod schema                       data theek hai?
           └─ service.ts
-               ├─ PIN check (galat PIN audit + 5 baar par lock)
+               ├─ Owner PIN check (galat PIN audit + 5 baar par lock)
                ├─ hisaab: src/lib/accounting  (pure functions)
                └─ ek DATABASE TRANSACTION:  entry + khata + audit log, sab ya kuch nahi
 ```
@@ -196,7 +198,7 @@ Purani migration files kabhi edit na karein, hamesha nayi banayein.
 | Login | Username + password, sirf Owner aur Manager. Website se naya account nahi banta |
 | Do darje ki jaanch | `proxy.ts` jaldi cookie dekhta hai; **asal jaanch har page/action khud** karta hai |
 | Roles | Owner-only pages Manager ke liye `/billing` par wapas bhej dete hain |
-| Staff PIN / Owner PIN | Hash karke rakhe jate hain, wapas padhe nahi ja sakte, sirf reset |
+| Owner PIN | Hash karke rakha jata hai, wapas padha nahi ja sakta, sirf reset |
 | Galat PIN | Audit log mein (failed), **5 galat par 15 minute lock** (PIN sirf 10,000 mumkin hain) |
 | Password | 8+ characters, sirf numbers nahi; galat try ka lock; badalne par baaki devices sign out |
 | Audit log | Har zaroori kaam: kisne, kab, kya (secret kabhi nahi likha jata) |
@@ -258,7 +260,7 @@ pnpm db:seed:accounts  # 2 sample partners aur 4 fixed lines (rent, bijli...)
 pnpm db:studio         # database dekhne ki screen
 ```
 
-Sample staff PIN: **Arshad 1111, Hamid 2222, Sherry 3333**. Owner ka PIN `db:seed` khud banata hai aur screen par dikhata hai. Asli use se pehle sab kuch **Settings** aur **Staff & rates** se badlein.
+Owner ka PIN `db:seed` khud banata hai aur screen par ek dafa dikhata hai. Asli use se pehle sab kuch **Settings** aur **Staff & rates** se badlein. (Staff ka koi PIN nahi hota.)
 
 ---
 
@@ -320,7 +322,7 @@ Behtar hai ke pehle `neon branches create --name friend` se alag branch banayen,
 | Cheez | Halat |
 |---|---|
 | **Deployment (Vercel)** | Baad mein (plan mein hai) |
-| Asli data (staff, PIN, prices, partners ke naam) | Owner khud daalega |
+| Asli data (staff, prices, partners ke naam) | Owner khud daalega |
 | Receipt print / thermal printer | Jaan-boojh kar chhoda |
 | WhatsApp par summary/receipt bhejna | Abhi sirf preview |
 | Band din ki bill cancel (sirf Owner), din dobara kholna | Nahi bana |

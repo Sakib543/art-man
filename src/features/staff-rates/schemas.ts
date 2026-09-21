@@ -10,8 +10,6 @@ export const staffSchema = z.object({
   salary: rupees,
   dailyWage: rupees,
   commissionRate: z.number().min(0, "Cannot be negative").max(100, "Commission cannot be more than 100%"),
-  /** Required for a new staff member. When editing, blank keeps the current PIN. */
-  pin: z.string().trim().optional(),
   active: z.boolean(),
 });
 

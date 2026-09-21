@@ -2,20 +2,18 @@ import { z } from "zod";
 
 const rupees = z.number().int("Use whole rupees").min(0, "Cannot be negative").max(100_000_000);
 const attendance = z.record(z.uuid(), z.boolean());
-const payoutAmounts = z.record(z.uuid(), rupees);
-const payoutsWithPin = z.record(z.uuid(), z.object({ amount: rupees, pin: z.string().max(4) }));
+/** Cash handed to each staff member at close. Staff PINs were removed, so no confirmation. */
+const payouts = z.record(z.uuid(), rupees);
 
 export const reviewSchema = z.object({
   attendance,
-  payouts: payoutAmounts,
+  payouts,
   counted: rupees,
 });
 
-export const verifyPayoutsSchema = z.object({ payouts: payoutsWithPin });
-
 export const closeSchema = z.object({
   attendance,
-  payouts: payoutsWithPin,
+  payouts,
   counted: rupees,
   reason: z.string().trim().max(300).optional(),
 });

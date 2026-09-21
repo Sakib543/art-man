@@ -35,7 +35,7 @@ export default async function SettingsPage() {
           <>
             <Section
               title="Your PIN"
-              description="You confirm cash you take from or add to the drawer with this 4-digit PIN. Staff PINs are set in Staff & rates."
+              description="You confirm cash you take from or add to the drawer with this 4-digit PIN."
             >
               <OwnerPinForm />
             </Section>

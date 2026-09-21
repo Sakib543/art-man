@@ -2,8 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay, getOpenBusinessDay } from "@/db/queries/business-day";
-import { confirmPin } from "@/db/pin-guard";
-import { attendance, businessDays, cashEntries, daySnapshots, khataEntries, staff } from "@/db/schema";
+import { attendance, businessDays, cashEntries, daySnapshots, khataEntries } from "@/db/schema";
 import { cashDifference, expectedCashBreakdown, summarizeDay, type DayCloseSummary } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
 import { nextDate } from "@/lib/business-date";
@@ -59,20 +58,6 @@ export async function reviewClose(input: ReviewInput): Promise<CloseReview> {
   };
 }
 
-/** Check each paid staff member's PIN. Nothing is saved: this only catches a wrong PIN early. */
-export async function verifyPayouts(
-  user: SessionUser,
-  payouts: Record<string, { amount: number; pin: string }>,
-): Promise<void> {
-  for (const [staffId, { amount, pin }] of Object.entries(payouts)) {
-    if (amount <= 0) continue;
-    const [member] = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
-    if (!member) throw new UserError("Staff member not found");
-    if (!/^\d{4}$/.test(pin)) throw new UserError(`Enter ${member.name}'s 4-digit PIN`);
-    await confirmPin({ actor: actorOf(user), subject: `staff:${member.name}`, pin, hash: member.pinHash });
-  }
-}
-
 /**
  * Close the day in one transaction: attendance, staff earnings into the khata,
  * payments made now, the day's snapshot with its security code, then lock.
@@ -81,10 +66,7 @@ export async function verifyPayouts(
 export async function closeDay(user: SessionUser, input: CloseInput): Promise<{ securityCode: string }> {
   const day = await requireOpenDay();
   const actor = actorOf(user);
-
-  // Wrong PINs are audited and counted, so check them before the transaction.
-  await verifyPayouts(user, input.payouts);
-  const payouts = Object.fromEntries(Object.entries(input.payouts).map(([id, p]) => [id, p.amount]));
+  const payouts = input.payouts;
 
   return db.transaction(async (tx) => {
     // Claiming the day first stops a second close from running at the same time.
@@ -134,7 +116,7 @@ export async function closeDay(user: SessionUser, input: CloseInput): Promise<{ 
       }
     }
 
-    // 3. Payments made now, each confirmed with the staff member's PIN above.
+    // 3. Payments handed over now.
     for (const member of loaded.staff) {
       const paid = payouts[member.id] ?? 0;
       if (paid <= 0) continue;
@@ -146,7 +128,6 @@ export async function closeDay(user: SessionUser, input: CloseInput): Promise<{ 
           amount: paid,
           description: `Payment to ${member.name}`,
           staffId: member.id,
-          pinConfirmed: true,
           createdBy: actor,
         })
         .returning({ id: cashEntries.id });
@@ -154,7 +135,7 @@ export async function closeDay(user: SessionUser, input: CloseInput): Promise<{ 
         staffId: member.id,
         businessDate: day.businessDate,
         kind: "payment",
-        label: "Payment, PIN confirmed",
+        label: "Payment",
         amount: -paid,
         cashEntryId: entry.id,
       });

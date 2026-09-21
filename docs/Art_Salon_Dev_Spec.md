@@ -22,13 +22,15 @@ The owner must be able to see live status from his phone.
 ---
 
 ## 2. Roles & access
-Three actors. **Only Owner and Manager log in.** Staff never log in — they only confirm receipt of money with a **4-digit PIN**.
+Three actors. **Only Owner and Manager log in.** Staff never log in and have no PIN.
+
+> **Changed 2026-09-22 (client decision).** Staff used to confirm receipt of money with a 4-digit PIN. The client asked for this to be removed and wanted no replacement. Staff advances and payments are now recorded on the Manager's word alone. The **Owner's** PIN is unchanged: the Owner still confirms cash taken from or added to the drawer. The trade-off was put to the client: without the staff PIN, neither side has evidence if a payment is later disputed.
 
 | Role | Who | Can do |
 |---|---|---|
 | **Super Admin / Owner** | Saud Sahab | Everything: rates, staff pay, bonuses, monthly accounts, net profit, partners, capital, month close. |
 | **Manager (Admin)** | Counter person | Billing, daily expenses, staff payments, day close, daily reports, staff khata (balances). **Cannot** see monthly totals, net profit, rent, partner accounts or capital. |
-| **Staff (Karigar)** | Arshad, Hamid, Sherry… | No login. Confirm payments/advances with their own PIN. |
+| **Staff (Karigar)** | Arshad, Hamid, Sherry… | No login, no PIN. Their earnings and payments are recorded by the Manager. |
 
 **Default landing = Manager**, on the Billing screen. Owner is an explicit switch/login, never the default.
 
@@ -56,13 +58,13 @@ Model these as first-class entities. Field lists are the minimum; add ids, times
 
 - **Service** — `{ id, name, category, price, active }`. Owner-managed (CRUD).
 - **Deal** — `{ id, name, price, serviceIds[], active }`. A bundle sold at a fixed price; the price is **split across its services by list price** so each staff member earns correct commission (see §6.3).
-- **Staff** — `{ id, name, payType (1|2|3), salary, dailyWage, commissionRate, pin, active }`.
+- **Staff** — `{ id, name, payType (1|2|3), salary, dailyWage, commissionRate, active }`.
   - Type 1: monthly salary only.
   - Type 2: monthly salary + commission.
   - Type 3: daily wage + commission.
 - **Customer** — `{ id, phone, name, visits, lastVisit, specialRates:{serviceId:price} }`. Looked up by phone; special rate auto-applies.
 - **Bill** — `{ no, businessDate, time, customerId, lines:[{serviceId, name, amount, staffId}], cash, online, status: active|cancelled, reason, voidOf? }`.
-- **CashFolderEntry** — one of four folders (see §5.2): `{ type: expense|staff|ownerCash|online, amount, businessDate, meta, pinConfirmedBy?, status, voidOf? }`.
+- **CashFolderEntry** — one of four folders (see §5.2): `{ type: expense|staff|ownerCash|online, amount, businessDate, meta, pinConfirmed?, status, voidOf? }`. `pinConfirmed` applies to Owner cash only.
 - **KhataEntry (staff ledger line)** — `{ staffId, businessDate, kind: earning|payment|advance|bonus|adjustment, label, amount(+/−) }`.
 - **DaySnapshot** — created at Day Close: `{ businessDate, sale, cash, online, expenses, staffPaid, dayProfit, openingCash, expectedCash, countedCash, difference, diffReason, securityCode, locked:true }`.
 - **MonthlyExpense** — `{ month, kind: fixed|other, label, amount, reason? }`.
@@ -95,7 +97,7 @@ Model these as first-class entities. Field lists are the minimum; add ids, times
 
 ### 5.2 Daily folders (four)
 1. **Expenses** — tea, lunch, towels, etc. If the owner paid an expense from his own pocket/bank instead of the drawer, record that separately (it doesn't leave the drawer).
-2. **Staff** — advances, or paying a staff member their earning (commission/wage/bonus). **Confirmed by the staff member's PIN.**
+2. **Staff** — advances, or paying a staff member their earning (commission/wage/bonus). Recorded by the Manager; no confirmation (see §2).
 3. **Owner cash** — owner took cash from the drawer (personal / bank deposit) or added cash (change). **Confirmed by the owner's PIN.**
 4. **Online** — QR/online payments. These go **straight to the owner's bank** and **never enter the drawer** — so they are excluded from the cash-drawer formula.
 
@@ -110,7 +112,7 @@ A grid that mirrors the salon's register:
 Runs in this order:
 1. **Attendance** — mark which daily-wage staff were present.
 2. **Staff earnings** — system computes each staff member's earning for the day (commission + daily wage).
-3. **Staff payments** — anyone paid today confirms with their **PIN**.
+3. **Staff payments** — the Manager records what was handed over. No confirmation (see §2).
 4. **Cash count** — Manager enters notes by denomination (5000 × n, 1000 × n …). System reveals expected only **after** counting (honest count).
 5. **Difference** — short → reason **required**; extra → recorded too.
 6. **Lock** — day locks; no further entries. A **daily summary + security code** goes to the owner on WhatsApp.
@@ -315,7 +317,7 @@ Each phase must be independently usable — never ship a half-finished flow live
 
 ## 12. Notes for the Next.js build
 - Preserve the **look and flows** of `art-saloon.html`; that file is the approved UX contract.
-- Suggested stack direction (developer's call): Next.js (App Router), a relational DB (Postgres) since accounting needs integrity, an append-only/void model for financial tables, role-based auth for Owner/Manager only, PIN confirmation as a lightweight per-staff check (not a login).
+- Suggested stack direction (developer's call): Next.js (App Router), a relational DB (Postgres) since accounting needs integrity, an append-only/void model for financial tables, role-based auth for Owner/Manager only, a PIN for the Owner's own cash movements (not a login).
 - Money as integer minor units; never floats. All computations (commission, deal split, expected cash, net profit, partner shares) must be reproducible from stored entries — snapshots are derived, entries are the source of truth.
 - Build for a **narrow/tablet** screen first (counter device), scaling up for the Owner's desktop/phone dashboard.
 - Everything auditable, nothing destructive.

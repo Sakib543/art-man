@@ -41,7 +41,7 @@ export default async function FoldersPage() {
           value={rs(totals.expensesFromDrawer)}
           hint={`+ ${rs(totals.expensesFromOwner)} paid by Owner`}
         />
-        <StatCard icon={Users} label="Staff advances" value={rs(totals.staffAdvances)} hint="PIN confirmed" />
+        <StatCard icon={Users} label="Staff advances" value={rs(totals.staffAdvances)} hint="Comes off the khata" />
         <StatCard
           icon={UserRound}
           label="Owner took cash"

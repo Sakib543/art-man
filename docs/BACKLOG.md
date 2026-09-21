@@ -20,7 +20,7 @@ Last updated: 2026-09-22 (P0.1 done)
 | P0.1 | Show the real login error | ✅ | done 2026-09-22 |
 | P0.2 | Reopen a closed day (Owner) | ⬜ | — |
 | P0.3 | Cancel a bill/entry in a closed day (Owner) | ⬜ | — |
-| P1.0 | Remove the staff PIN | ⬜ | — |
+| P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ⬜ | — |
 | P1.2 | Users screen — create admins | ⬜ | — |
 | P1.3 | Manager's limit | ✅ | no change needed |
@@ -53,9 +53,11 @@ not be diagnosed, and it wasted time locally twice.
 - `login-form.tsx` — calls it, and now also survives a request that throws instead of returning an
   error. Full detail goes to the browser console; the screen shows one sentence.
 
-**Verified:** 139 tests pass (was 133), lint clean, build passes. Proven against a live 500 while
-the database was genuinely down — the screen now reads *"…This is a problem with the system, not
-your password (error 500)…"* instead of blaming the password.
+**Verified:** 139 tests pass (was 133), lint clean, build passes. Both paths then confirmed
+against the live server: a wrong password returns 401 with `INVALID_USERNAME_OR_PASSWORD` and still
+reads *"Wrong username or password."*, while a genuinely unreachable database returns 500 and now
+reads *"…This is a problem with the system, not your password (error 500)…"* instead of blaming
+the password.
 
 ---
 
@@ -99,8 +101,8 @@ staff commission in the khata automatically; refuse once the month is closed.
 
 Only two roles exist today: `owner` and `manager` (`src/lib/auth/roles.ts`).
 
-### ⬜ P1.0 — Remove the staff (karigar) PIN from the whole project
-**Owner:** —
+### ✅ P1.0 — Remove the staff (karigar) PIN from the whole project
+**Done:** 2026-09-22
 
 **Client decision (2026-09-22):** the staff PIN is not needed.
 
@@ -126,9 +128,28 @@ wages are calculated from, so in a dispute neither side has evidence. (Spec §5.
 | Docs | Fix the references in the spec, `PROJECT_GUIDE.md`, `README.md` |
 | Tests | Update affected tests |
 
-**Size:** medium (~10 files + 1 migration)
-**Note:** this touches `day-close`, same as P0.2. Do not run both at once — see the coordination
-rules.
+**What was done:**
+
+- Migration `drizzle/0008_busy_lockjaw.sql` — `ALTER TABLE "staff" DROP COLUMN "pin_hash";`
+- `staff-rates`: PIN field gone from the form, schema and service. Adding a staff member no longer
+  demands a PIN, and the `staff.pin-reset` audit action is gone with it.
+- `folders`: a staff advance no longer asks for or checks a PIN. `pinConfirmed` is now set only for
+  `owner_took` / `owner_added`.
+- `day-close`: `verifyPayouts()` and `verifyPayoutsAction()` deleted, the PIN column removed from
+  step 3, and step 3 → 4 is now a plain move instead of a server round-trip. A staff payment is no
+  longer written as "PIN confirmed".
+- `scripts/seed-sample.ts`: PINs 1111 / 2222 / 3333 gone.
+- Docs: the spec and `PROJECT_GUIDE.md` record the change and its date, rather than pretending the
+  PIN was never there.
+
+**Kept, as decided:** the Owner PIN (`user.pin_hash`), `src/lib/pin.ts`, `src/db/pin-guard.ts`, the
+Settings PIN form, and the wrong-PIN lock and audit trail — all of which now serve the Owner alone.
+
+**Verified:** 139 tests pass, lint clean, build passes, migration applied. Then checked in the
+browser: the Add-staff dialog has no PIN field and saves (audit log recorded `staff.create`), a
+staff advance shows only the person and the amount, Owner-took-cash still asks for the 4-digit PIN,
+and Day Close step 3 no longer has a Staff PIN column. Confirmed in the database that
+`staff.pin_hash` is gone and `user.pin_hash` survives.
 
 ---
 

@@ -126,17 +126,15 @@ interface PaymentsStepProps {
   staff: CloseStaffRow[];
   earnings: Record<string, DayEarning>;
   payouts: Record<string, string>;
-  pins: Record<string, string>;
   onPayout: (id: string, value: string) => void;
-  onPin: (id: string, value: string) => void;
   error: string;
   pending: boolean;
   onBack: () => void;
   onNext: () => void;
 }
 
-/** Step 3: cash handed to staff now. Each person confirms with their own PIN. */
-export function PaymentsStep({ staff, earnings, payouts, pins, onPayout, onPin, error, pending, onBack, onNext }: PaymentsStepProps) {
+/** Step 3: cash handed to staff now. */
+export function PaymentsStep({ staff, earnings, payouts, onPayout, error, pending, onBack, onNext }: PaymentsStepProps) {
   return (
     <StepCard
       title="Payments to staff today"
@@ -154,7 +152,6 @@ export function PaymentsStep({ staff, earnings, payouts, pins, onPayout, onPin, 
               <th className={cn(th, "text-right")}>Khata balance</th>
               <th className={cn(th, "text-right")}>Earned today</th>
               <th className={cn(th, "w-36")}>Paid today</th>
-              <th className={cn(th, "w-32")}>Staff PIN</th>
             </tr>
           </thead>
           <tbody>
@@ -173,19 +170,6 @@ export function PaymentsStep({ staff, earnings, payouts, pins, onPayout, onPin, 
                     onChange={(event) => onPayout(row.id, event.target.value)}
                     aria-label={`Paid to ${row.name}`}
                     className="h-9 tabular-nums"
-                  />
-                </td>
-                <td className={td}>
-                  <Input
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={4}
-                    autoComplete="off"
-                    value={pins[row.id] ?? ""}
-                    onChange={(event) => onPin(row.id, event.target.value.replace(/\D/g, ""))}
-                    placeholder="PIN"
-                    aria-label={`${row.name} PIN`}
-                    className="h-9 tracking-widest"
                   />
                 </td>
               </tr>

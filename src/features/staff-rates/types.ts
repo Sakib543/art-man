@@ -1,6 +1,6 @@
 import type { PayType, Rupees } from "@/lib/accounting";
 
-/** Plain rows for the Staff & rates screen. Never includes a PIN hash. */
+/** Plain rows for the Staff & rates screen. */
 
 export interface StaffRow {
   id: string;

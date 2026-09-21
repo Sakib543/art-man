@@ -62,8 +62,6 @@ export const staff = pgTable(
     commissionRate: numeric("commission_rate", { precision: 5, scale: 2, mode: "number" })
       .notNull()
       .default(0),
-    /** Hashed 4-digit PIN. Staff never log in; they only confirm receipts. */
-    pinHash: text("pin_hash").notNull(),
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
   },

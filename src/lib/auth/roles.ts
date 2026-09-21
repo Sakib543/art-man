@@ -1,5 +1,5 @@
 /**
- * Only Owner and Manager log in. Staff never log in; they confirm with a PIN.
+ * Only Owner and Manager log in. Staff never log in and have no PIN.
  * This file is pure (no React, no database) so it is safe to import anywhere.
  */
 export const ROLES = ["owner", "manager"] as const;

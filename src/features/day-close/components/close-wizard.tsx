@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { dayEarning, type DayEarning } from "@/lib/accounting";
-import { closeDayAction, reviewCloseAction, verifyPayoutsAction } from "../actions";
+import { closeDayAction, reviewCloseAction } from "../actions";
 import type { CloseReview, CloseStaffRow } from "../types";
 import { CountStep, ReviewStep } from "./count-steps";
 import { AttendanceStep, EarningsStep, PaymentsStep } from "./staff-steps";
@@ -21,7 +21,6 @@ export function CloseWizard({ staff }: { staff: CloseStaffRow[] }) {
   const [present, setPresent] = useState<Record<string, boolean>>(() => Object.fromEntries(staff.map((s) => [s.id, true])));
   // null until step 3 opens, then pre-filled with what daily-wage staff earned.
   const [payouts, setPayouts] = useState<Record<string, string> | null>(null);
-  const [pins, setPins] = useState<Record<string, string>>({});
   const [counted, setCounted] = useState("");
   const [review, setReview] = useState<CloseReview | null>(null);
   const [reason, setReason] = useState("");
@@ -46,8 +45,6 @@ export function CloseWizard({ staff }: { staff: CloseStaffRow[] }) {
   };
 
   const payoutAmounts = () => Object.fromEntries(staff.map((row) => [row.id, toRupees(payouts?.[row.id])]));
-  const payoutsWithPins = () =>
-    Object.fromEntries(staff.map((row) => [row.id, { amount: toRupees(payouts?.[row.id]), pin: pins[row.id] ?? "" }]));
 
   function toPayments() {
     // Daily-wage staff usually take their day's earning in hand, so start from that.
@@ -55,15 +52,6 @@ export function CloseWizard({ staff }: { staff: CloseStaffRow[] }) {
       setPayouts(Object.fromEntries(staff.map((row) => [row.id, String(row.payType === 3 ? earnings[row.id].total : 0)])));
     }
     go(3);
-  }
-
-  function toCount() {
-    setError("");
-    startTransition(async () => {
-      const result = await verifyPayoutsAction({ payouts: payoutsWithPins() });
-      if (!result.ok) return setError(result.error);
-      setStep(4);
-    });
   }
 
   function countDone() {
@@ -82,7 +70,7 @@ export function CloseWizard({ staff }: { staff: CloseStaffRow[] }) {
     startTransition(async () => {
       const result = await closeDayAction({
         attendance: present,
-        payouts: payoutsWithPins(),
+        payouts: payoutAmounts(),
         counted: toRupees(counted),
         reason,
       });
@@ -111,13 +99,11 @@ export function CloseWizard({ staff }: { staff: CloseStaffRow[] }) {
           staff={staff}
           earnings={earnings}
           payouts={payouts}
-          pins={pins}
           onPayout={(id, value) => setPayouts((current) => ({ ...current, [id]: value }))}
-          onPin={(id, value) => setPins((current) => ({ ...current, [id]: value }))}
           error={error}
           pending={pending}
           onBack={() => go(2)}
-          onNext={toCount}
+          onNext={() => go(4)}
         />
       ) : null}
 

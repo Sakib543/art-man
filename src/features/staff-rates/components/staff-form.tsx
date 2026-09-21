@@ -30,7 +30,6 @@ export function StaffForm({ staff, open, onClose }: StaffFormProps) {
   const [salary, setSalary] = useState(String(staff?.salary ?? ""));
   const [dailyWage, setDailyWage] = useState(String(staff?.dailyWage ?? ""));
   const [commission, setCommission] = useState(String(staff?.commissionRate ?? "10"));
-  const [pin, setPin] = useState("");
   const [active, setActive] = useState(staff?.active ?? true);
 
   const editing = staff !== null;
@@ -49,7 +48,6 @@ export function StaffForm({ staff, open, onClose }: StaffFormProps) {
           salary: Number(salary) || 0,
           dailyWage: Number(dailyWage) || 0,
           commissionRate: Number(commission) || 0,
-          pin,
           active,
         })
       }
@@ -118,23 +116,6 @@ export function StaffForm({ staff, open, onClose }: StaffFormProps) {
           </Field>
         ) : null}
       </div>
-
-      <Field
-        label={editing ? "New PIN (leave blank to keep the current one)" : "PIN (4 digits)"}
-        htmlFor="staff-pin"
-        hint="The staff member confirms advances and payments with this PIN. It cannot be viewed later, only reset."
-      >
-        <Input
-          id="staff-pin"
-          type="password"
-          inputMode="numeric"
-          maxLength={4}
-          autoComplete="off"
-          value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-          className="h-10 tracking-widest"
-        />
-      </Field>
 
       {editing ? (
         <label className="flex cursor-pointer items-center gap-2 text-sm">
