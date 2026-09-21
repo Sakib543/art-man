@@ -21,6 +21,11 @@ export const user = pgTable("user", {
   displayUsername: text("display_username"),
   /** "owner" or "manager". */
   role: text("role").notNull().default("manager"),
+  /**
+   * Hashed 4-digit PIN. Only the owner has one: it confirms cash the owner
+   * takes from or adds to the drawer. Not part of Better Auth; set by our own code.
+   */
+  pinHash: text("pin_hash"),
 });
 
 export const session = pgTable(

@@ -5,15 +5,17 @@
  *   pnpm db:seed
  *
  * Passwords come from SEED_OWNER_PASSWORD / SEED_MANAGER_PASSWORD if set,
- * otherwise a random one is generated and printed once. Change them after
- * the first login.
+ * otherwise a random one is generated and printed once. The owner PIN comes
+ * from SEED_OWNER_PIN or is generated the same way. Change them after the
+ * first login.
  */
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { user } from "../src/db/schema";
 import { auth } from "../src/lib/auth/server";
 import type { Role } from "../src/lib/auth/roles";
+import { hashPin } from "../src/lib/pin";
 
 const accounts: { username: string; name: string; role: Role; passwordEnv: string }[] = [
   { username: "owner", name: "Saud Sahab", role: "owner", passwordEnv: "SEED_OWNER_PASSWORD" },
@@ -50,6 +52,14 @@ async function main() {
     });
 
     console.log(`create ${account.username}  password: ${password}`);
+  }
+
+  // The owner also needs a 4-digit PIN to confirm cash taken from or added to the drawer.
+  const [owner] = await db.select().from(user).where(eq(user.role, "owner")).limit(1);
+  if (owner && !owner.pinHash) {
+    const pin = process.env.SEED_OWNER_PIN ?? String(randomInt(0, 10000)).padStart(4, "0");
+    await db.update(user).set({ pinHash: await hashPin(pin) }).where(eq(user.id, owner.id));
+    console.log(`set    owner PIN: ${pin}`);
   }
   process.exit(0);
 }
