@@ -1,0 +1,4265 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Art Men's Salon — POS preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --navy: #15263d;
+        --navy-2: #24405f;
+        --brass: #a67c45;
+        --brass-50: #f8f1e6;
+        --brass-100: #efe0c8;
+        --brass-700: #7a5a2e;
+        --bg: #f4f5f7;
+        --surface: #ffffff;
+        --line: #e3e6eb;
+        --line-2: #eff1f4;
+        --text: #101828;
+        --text-2: #475467;
+        --text-3: #6b7584;
+        --green: #12795a;
+        --green-50: #e9f6f0;
+        --red: #b42318;
+        --red-50: #fef1ef;
+        --amber: #8a5a00;
+        --amber-50: #fff6e3;
+        --blue: #2e4c85;
+        --blue-50: #eef3fb;
+        --r: 10px;
+        --r-lg: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+      }
+
+      body {
+        font-family:
+          "IBM Plex Sans",
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 14px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+        color: inherit;
+      }
+
+      .tnum {
+        font-variant-numeric: tabular-nums;
+      }
+
+      svg.i {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex: none;
+      }
+
+      .demobar {
+        background: var(--navy);
+        color: #d5deea;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 20px;
+        font-size: 13px;
+        flex-wrap: wrap;
+      }
+
+      .demobar .l {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .demobar .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #e0b870;
+      }
+
+      .demobar .r {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .seg-dark {
+        display: flex;
+        background: var(--navy-2);
+        border-radius: 8px;
+        padding: 3px;
+      }
+
+      .seg-dark button {
+        border: 0;
+        background: transparent;
+        color: #b9c7d8;
+        padding: 4px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .seg-dark button.on {
+        background: #fff;
+        color: var(--navy);
+        font-weight: 500;
+      }
+
+      .dbtn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #3b5577;
+        background: transparent;
+        color: #dce4ee;
+        padding: 4px 10px;
+        border-radius: 7px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .dbtn:hover {
+        background: var(--navy-2);
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 248px minmax(0, 1fr);
+        min-height: calc(100vh - 44px);
+      }
+
+      .side {
+        background: var(--surface);
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        padding: 18px 14px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 4px 8px 18px;
+      }
+
+      .mark {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: var(--navy);
+        color: #e6c58f;
+        display: grid;
+        place-items: center;
+      }
+
+      .mark svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .logo .n {
+        font-weight: 600;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+
+      .logo .s {
+        font-size: 12.5px;
+        color: var(--text-3);
+      }
+
+      .nav-sec {
+        font-size: 12px;
+        color: var(--text-3);
+        padding: 14px 10px 6px;
+      }
+
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .nav button {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 0;
+        background: transparent;
+        padding: 9px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        color: var(--text-2);
+        font-size: 14px;
+        text-align: left;
+        width: 100%;
+      }
+
+      .nav button:hover {
+        background: var(--line-2);
+        color: var(--text);
+      }
+
+      .nav button.on {
+        background: var(--brass-50);
+        color: var(--brass-700);
+        font-weight: 500;
+      }
+
+      .nav button .lock {
+        margin-left: auto;
+        color: var(--text-3);
+      }
+
+      .nav button .lock svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .me {
+        margin-top: auto;
+        border-top: 1px solid var(--line);
+        padding: 14px 8px 2px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .av {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--brass-100);
+        color: var(--brass-700);
+        display: grid;
+        place-items: center;
+        font-weight: 600;
+        font-size: 13px;
+        flex: none;
+      }
+
+      .me .n {
+        font-weight: 500;
+        font-size: 13.5px;
+        line-height: 1.2;
+      }
+
+      .me .s {
+        font-size: 12.5px;
+        color: var(--text-3);
+      }
+
+      .main {
+        padding: 22px 28px 90px;
+        min-width: 0;
+      }
+
+      .ph {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+
+      .ph h1 {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: -0.2px;
+      }
+
+      .ph .sub {
+        color: var(--text-3);
+        margin-top: 3px;
+        font-size: 13.5px;
+      }
+
+      .dayp {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 5px 6px 5px 12px;
+        font-size: 13px;
+        color: var(--text-2);
+      }
+
+      .dayp svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+      }
+
+      .ch {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line-2);
+      }
+
+      .ch h2 {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .cb {
+        padding: 16px 18px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .g-pos {
+        grid-template-columns: minmax(0, 1fr) 400px;
+        align-items: start;
+      }
+
+      .g-2 {
+        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+        align-items: start;
+      }
+
+      .g-2e {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+      }
+
+      .g-kh {
+        grid-template-columns: 300px minmax(0, 1fr);
+        align-items: start;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .stat {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: 14px 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .stat .ic {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        background: var(--line-2);
+        color: var(--text-2);
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+
+      .stat .k {
+        font-size: 12.5px;
+        color: var(--text-3);
+      }
+
+      .stat .v {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.3px;
+        line-height: 1.25;
+      }
+
+      .stat .h {
+        font-size: 12px;
+        color: var(--text-3);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 2px 9px;
+        border-radius: 999px;
+        white-space: nowrap;
+        line-height: 1.6;
+      }
+
+      .b-green {
+        background: var(--green-50);
+        color: var(--green);
+      }
+
+      .b-red {
+        background: var(--red-50);
+        color: var(--red);
+      }
+
+      .b-amber {
+        background: var(--amber-50);
+        color: var(--amber);
+      }
+
+      .b-grey {
+        background: var(--line-2);
+        color: var(--text-2);
+      }
+
+      .b-blue {
+        background: var(--blue-50);
+        color: var(--blue);
+      }
+
+      .b-brass {
+        background: var(--brass-50);
+        color: var(--brass-700);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        border-radius: 8px;
+        padding: 8px 14px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .btn:hover {
+        background: var(--line-2);
+      }
+
+      .btn-p {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: #fff;
+      }
+
+      .btn-p:hover {
+        background: var(--navy-2);
+      }
+
+      .btn-sm {
+        padding: 5px 10px;
+        font-size: 13px;
+      }
+
+      .btn-lg {
+        padding: 12px 16px;
+        font-size: 15px;
+        width: 100%;
+      }
+
+      .btn-ghost {
+        border-color: transparent;
+        background: transparent;
+        color: var(--text-2);
+      }
+
+      .btn-danger {
+        color: var(--red);
+      }
+
+      .btn svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      label.l {
+        display: block;
+        font-size: 12.5px;
+        color: var(--text-2);
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+
+      .inp,
+      select.inp,
+      textarea.inp {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 8px;
+        padding: 8px 11px;
+        font-size: 14px;
+        transition: border-color 0.12s;
+      }
+
+      .inp:focus,
+      select.inp:focus,
+      textarea.inp:focus {
+        outline: none;
+        border-color: var(--brass);
+        box-shadow: 0 0 0 3px var(--brass-50);
+      }
+
+      button:focus-visible {
+        outline: 2px solid var(--brass);
+        outline-offset: 2px;
+      }
+
+      .f {
+        margin-bottom: 12px;
+      }
+
+      .iw {
+        position: relative;
+      }
+
+      .iw svg {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        color: var(--text-3);
+      }
+
+      .iw .inp {
+        padding-left: 34px;
+      }
+
+      .err {
+        color: var(--red);
+        font-size: 12.5px;
+        margin-top: 8px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .help {
+        font-size: 12.5px;
+        color: var(--text-3);
+      }
+
+      .tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--line-2);
+        padding: 0 18px;
+      }
+
+      .tabs button {
+        border: 0;
+        background: transparent;
+        padding: 11px 10px;
+        cursor: pointer;
+        color: var(--text-3);
+        font-size: 14px;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+
+      .tabs button.on {
+        color: var(--text);
+        border-color: var(--navy);
+        font-weight: 500;
+      }
+
+      .tabs .cnt {
+        font-size: 12px;
+        color: var(--text-3);
+        margin-left: 4px;
+      }
+
+      .seg {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        background: var(--line-2);
+        border-radius: 9px;
+        padding: 3px;
+        gap: 2px;
+      }
+
+      .seg button {
+        border: 0;
+        background: transparent;
+        padding: 7px 8px;
+        border-radius: 7px;
+        cursor: pointer;
+        color: var(--text-2);
+        font-size: 13.5px;
+      }
+
+      .seg button.on {
+        background: #fff;
+        color: var(--text);
+        font-weight: 500;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+      }
+
+      .svc {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 10px;
+        padding: 16px 18px;
+      }
+
+      .svc button {
+        text-align: left;
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: var(--r);
+        padding: 12px 13px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 92px;
+        transition: border-color 0.12s;
+      }
+
+      .svc button:hover {
+        border-color: var(--brass);
+      }
+
+      .svc .n {
+        font-weight: 500;
+      }
+
+      .svc .m {
+        font-size: 12.5px;
+        color: var(--text-3);
+        flex: 1;
+      }
+
+      .svc .p {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .svc .p b {
+        font-weight: 600;
+        font-size: 15px;
+      }
+
+      .cust {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--brass-100);
+        background: var(--brass-50);
+        border-radius: var(--r);
+      }
+
+      .cust .n {
+        font-weight: 500;
+      }
+
+      .cust .s {
+        font-size: 12.5px;
+        color: var(--brass-700);
+      }
+
+      .recent {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+        align-items: center;
+      }
+
+      .recent button {
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 12.5px;
+        cursor: pointer;
+        color: var(--text-2);
+      }
+
+      .recent button:hover {
+        border-color: var(--brass);
+        color: var(--text);
+      }
+
+      .li {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 128px 70px 26px;
+        gap: 8px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line-2);
+      }
+
+      .li .n {
+        font-weight: 500;
+      }
+
+      .li .m {
+        font-size: 12px;
+        color: var(--text-3);
+      }
+
+      .li select {
+        padding: 5px 8px;
+        font-size: 13px;
+      }
+
+      .li .a {
+        text-align: right;
+        font-weight: 500;
+      }
+
+      .icon-btn {
+        border: 0;
+        background: transparent;
+        color: var(--text-3);
+        cursor: pointer;
+        padding: 3px;
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+      }
+
+      .icon-btn:hover {
+        background: var(--line-2);
+        color: var(--red);
+      }
+
+      .icon-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .grp {
+        font-size: 12px;
+        color: var(--brass-700);
+        font-weight: 500;
+        padding-top: 10px;
+      }
+
+      .empty {
+        text-align: center;
+        padding: 28px 10px;
+        color: var(--text-3);
+      }
+
+      .empty svg {
+        width: 28px;
+        height: 28px;
+        margin-bottom: 6px;
+        color: #b7bec9;
+      }
+
+      .sum {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        color: var(--text-2);
+      }
+
+      .sum.t {
+        color: var(--text);
+        font-weight: 600;
+        font-size: 20px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line-2);
+        margin-top: 6px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th {
+        text-align: left;
+        font-weight: 500;
+        color: var(--text-3);
+        font-size: 12.5px;
+        padding: 9px 14px;
+        background: #fafbfc;
+        border-bottom: 1px solid var(--line);
+      }
+
+      td {
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line-2);
+        vertical-align: middle;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .r {
+        text-align: right;
+      }
+
+      .c {
+        text-align: center;
+      }
+
+      .neg {
+        color: var(--red);
+      }
+
+      .pos {
+        color: var(--green);
+      }
+
+      .muted {
+        color: var(--text-3);
+      }
+
+      .sm {
+        font-size: 12.5px;
+      }
+
+      .tot td {
+        font-weight: 600;
+        background: #fbf8f3;
+      }
+
+      .tbl-wrap {
+        overflow-x: auto;
+      }
+
+      .stepper {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 18px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: 14px 18px;
+        overflow-x: auto;
+      }
+
+      .st {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        white-space: nowrap;
+        color: var(--text-3);
+        font-size: 13.5px;
+      }
+
+      .st .cir {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1.5px solid var(--line);
+        display: grid;
+        place-items: center;
+        font-size: 12.5px;
+        font-weight: 600;
+        background: #fff;
+      }
+
+      .st.on {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .st.on .cir {
+        border-color: var(--navy);
+        color: var(--navy);
+      }
+
+      .st.done {
+        color: var(--text-2);
+      }
+
+      .st.done .cir {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: #fff;
+      }
+
+      .st.done .cir svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .bar {
+        flex: 1;
+        height: 1.5px;
+        background: var(--line);
+        margin: 0 12px;
+        min-width: 20px;
+      }
+
+      .bar.done {
+        background: var(--navy);
+      }
+
+      /* Day close: one big "cash in drawer" amount field */
+      .cash-in {
+        font-size: 26px;
+        font-weight: 600;
+        padding: 12px 14px;
+        letter-spacing: -0.3px;
+      }
+
+      .hidden {
+        border: 1px dashed #cbd1da;
+        border-radius: var(--r);
+        padding: 26px 16px;
+        text-align: center;
+        color: var(--text-3);
+        background: #fbfbfc;
+      }
+
+      .hidden svg {
+        width: 26px;
+        height: 26px;
+        color: #9aa3b0;
+        margin-bottom: 6px;
+      }
+
+      .res {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .res .x {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: 16px 18px;
+      }
+
+      .res .x .v {
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.4px;
+      }
+
+      .res .short {
+        background: var(--red-50);
+        border-color: #f6d2cc;
+      }
+
+      .res .extra {
+        background: var(--green-50);
+        border-color: #c9e6d8;
+      }
+
+      .done-card {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 20px 22px;
+      }
+
+      .seal {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: var(--green-50);
+        color: var(--green);
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+
+      .seal svg {
+        width: 28px;
+        height: 28px;
+      }
+
+      .code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 22px;
+        font-weight: 500;
+        letter-spacing: 2px;
+        color: var(--navy);
+        background: var(--line-2);
+        border-radius: 8px;
+        padding: 6px 12px;
+        display: inline-block;
+        margin-top: 6px;
+      }
+
+      .wa {
+        background: #f1f8f3;
+        border: 1px solid #d3e8da;
+        border-radius: 12px;
+        padding: 14px 16px;
+        font-size: 13.5px;
+        white-space: pre-line;
+        max-width: 440px;
+      }
+
+      .list-staff button {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        border-bottom: 1px solid var(--line-2);
+        background: transparent;
+        padding: 12px 16px;
+        cursor: pointer;
+      }
+
+      .list-staff button:last-child {
+        border-bottom: 0;
+      }
+
+      .list-staff button:hover {
+        background: #fafbfc;
+      }
+
+      .list-staff button.on {
+        background: var(--brass-50);
+      }
+
+      .list-staff .n {
+        font-weight: 500;
+      }
+
+      .list-staff .s {
+        font-size: 12.5px;
+        color: var(--text-3);
+      }
+
+      .list-staff .b {
+        margin-left: auto;
+        font-weight: 600;
+      }
+
+      .alert {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        border-radius: var(--r);
+        padding: 11px 14px;
+        margin-bottom: 14px;
+        font-size: 13.5px;
+      }
+
+      .alert svg {
+        width: 17px;
+        height: 17px;
+        margin-top: 1px;
+      }
+
+      .a-amber {
+        background: var(--amber-50);
+        color: var(--amber);
+        border: 1px solid #f3dfb2;
+      }
+
+      .a-blue {
+        background: var(--blue-50);
+        color: var(--blue);
+        border: 1px solid #d6e0f2;
+      }
+
+      .a-brass {
+        background: var(--brass-50);
+        color: var(--brass-700);
+        border: 1px solid var(--brass-100);
+      }
+
+      .feed div.it {
+        display: flex;
+        gap: 12px;
+        padding: 11px 18px;
+        border-bottom: 1px solid var(--line-2);
+      }
+
+      .feed div.it:last-child {
+        border-bottom: 0;
+      }
+
+      .feed .dt {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-top: 7px;
+        flex: none;
+      }
+
+      .feed .t {
+        font-size: 13.5px;
+      }
+
+      .feed .s {
+        font-size: 12.5px;
+        color: var(--text-3);
+      }
+
+      .chart {
+        padding: 12px 18px 16px;
+      }
+
+      .chart svg text {
+        font-family: inherit;
+      }
+
+      .locked-screen {
+        text-align: center;
+        padding: 64px 20px;
+      }
+
+      .locked-screen .ic {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: var(--line-2);
+        display: grid;
+        place-items: center;
+        margin: 0 auto 14px;
+        color: var(--text-2);
+      }
+
+      .pl td {
+        padding: 10px 18px;
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(16, 24, 40, 0.45);
+        display: grid;
+        place-items: center;
+        z-index: 40;
+        padding: 20px;
+      }
+
+      .modal {
+        background: var(--surface);
+        border-radius: 16px;
+        width: min(420px, 100%);
+        max-height: 90vh;
+        overflow: auto;
+      }
+
+      .receipt {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 12.5px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 16px 18px;
+        margin: 0 auto;
+        width: 280px;
+        color: #1d2433;
+        line-height: 1.55;
+      }
+
+      .receipt .ce {
+        text-align: center;
+      }
+
+      .receipt .rw {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .receipt hr {
+        border: 0;
+        border-top: 1px dashed #9aa3b0;
+        margin: 8px 0;
+      }
+
+      .tour {
+        margin: 16px 0 12px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      .tour .hd {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px 0;
+      }
+
+      .tour .prog {
+        display: flex;
+        gap: 3px;
+        flex: 1;
+      }
+
+      .tour .prog i {
+        flex: 1;
+        height: 3px;
+        border-radius: 2px;
+        background: var(--line);
+      }
+
+      .tour .prog i.on {
+        background: var(--brass);
+      }
+
+      .tour .bd {
+        padding: 8px 12px 12px;
+      }
+
+      .tour h3 {
+        margin: 0 0 5px;
+        font-size: 14.5px;
+        font-weight: 600;
+      }
+
+      .tour p {
+        margin: 0;
+        color: var(--text-2);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .tour .ft {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        border-top: 1px solid var(--line);
+        gap: 8px;
+      }
+
+      .tour-fab {
+        margin: 16px 0 12px;
+        width: 100%;
+      }
+
+      .focus {
+        box-shadow:
+          0 0 0 3px var(--brass),
+          0 0 0 8px rgba(166, 124, 69, 0.18) !important;
+        border-radius: var(--r-lg);
+        transition: box-shadow 0.25s;
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        transform: translate(-50%, 10px);
+        background: var(--navy);
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 9px;
+        font-size: 13.5px;
+        opacity: 0;
+        transition: all 0.2s;
+        pointer-events: none;
+        z-index: 50;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      .toast svg {
+        width: 16px;
+        height: 16px;
+        color: #8fd3b5;
+      }
+
+      @media (max-width: 1180px) {
+        .g-pos {
+          grid-template-columns: minmax(0, 1fr) 360px;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .side {
+          position: static;
+          height: auto;
+        }
+
+        .tour {
+          position: fixed;
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          margin: 0;
+          z-index: 30;
+          background: var(--surface);
+          box-shadow: 0 12px 32px rgba(16, 24, 40, 0.18);
+        }
+
+        .tour-fab {
+          position: fixed;
+          right: 16px;
+          bottom: 16px;
+          width: auto;
+          margin: 0;
+          z-index: 30;
+        }
+
+        .shell {
+          grid-template-columns: 1fr;
+        }
+
+        .side {
+          flex-direction: row;
+          align-items: center;
+          gap: 8px;
+          overflow-x: auto;
+          padding: 10px 12px;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .logo {
+          padding: 0 8px 0 0;
+        }
+
+        .logo .s {
+          display: none;
+        }
+
+        .logo .n {
+          white-space: nowrap;
+        }
+
+        .nav-sec,
+        .me {
+          display: none;
+        }
+
+        .nav {
+          flex-direction: row;
+        }
+
+        .nav button {
+          white-space: nowrap;
+        }
+
+        .g-pos,
+        .g-2,
+        .g-2e,
+        .g-kh {
+          grid-template-columns: 1fr;
+        }
+
+        .main {
+          padding: 18px 16px 110px;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .res {
+          grid-template-columns: 1fr;
+        }
+
+        .st span.lb {
+          display: none;
+        }
+
+        .li {
+          grid-template-columns: minmax(0, 1fr) 110px 62px 24px;
+        }
+      }
+
+      /* v2: Daily worksheet grid (one column per karigar), reuses table styles */
+      .sheet th,
+      .sheet td {
+        min-width: 130px;
+        border-left: 1px solid var(--line-2);
+        vertical-align: top;
+      }
+
+      .sheet th:first-child,
+      .sheet td:first-child {
+        border-left: 0;
+      }
+
+      .sheet th.own,
+      .sheet td.own {
+        background: var(--brass-50);
+      }
+
+      .sheet th.own {
+        color: var(--brass-700);
+      }
+
+      .sheet .qa td {
+        padding: 8px 10px;
+        background: #fafbfc;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .sheet .qa .inp {
+        padding: 6px 9px;
+      }
+
+      .strike {
+        text-decoration: line-through;
+      }
+
+      .chk {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        cursor: pointer;
+      }
+
+      .chk input {
+        width: 17px;
+        height: 17px;
+        accent-color: #15263d;
+        flex: none;
+      }
+
+      .modal.wide {
+        width: min(560px, 100%);
+      }
+
+      .row-f {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+      }
+
+      .row-f > div {
+        flex: 1;
+        min-width: 120px;
+      }
+
+      .off td {
+        color: var(--text-3);
+      }
+
+      /* v2: tablet / narrow counter screens, tap-friendly controls */
+      @media (max-width: 980px) {
+        .btn,
+        .seg button,
+        .tabs button,
+        .nav button {
+          min-height: 42px;
+        }
+
+        .btn-sm {
+          min-height: 36px;
+        }
+
+        .inp {
+          min-height: 40px;
+        }
+
+        .tabs {
+          overflow-x: auto;
+        }
+
+        .tabs button {
+          white-space: nowrap;
+        }
+      }
+
+      /* v2: printable receipts / staff statements (window.print) */
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        .demobar,
+        .shell,
+        .toast,
+        .noprint {
+          display: none !important;
+        }
+
+        .overlay {
+          position: static;
+          background: none;
+          padding: 0;
+          display: block;
+        }
+
+        .modal {
+          width: auto;
+          max-height: none;
+          overflow: visible;
+        }
+
+        .modal .cb {
+          background: #fff !important;
+        }
+
+        .receipt {
+          border: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="demobar">
+      <div class="l">
+        <span class="dot"></span
+        ><span>Interactive preview with sample data. Nothing is saved.</span>
+      </div>
+      <div class="r">
+        <span>View as</span>
+        <div class="seg-dark" id="roleSeg"></div>
+        <button class="dbtn" data-a="tourOpen" id="guideBtn"></button>
+        <button class="dbtn" data-a="reset" id="resetBtn"></button>
+      </div>
+    </div>
+    <div class="shell">
+      <aside class="side" id="side"></aside>
+      <main class="main" id="main"></main>
+    </div>
+    <div id="layer"></div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const IC = {
+        scissors:
+          '<circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/>',
+        receipt:
+          '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+        wallet:
+          '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+        lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+        file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>',
+        book: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+        chart:
+          '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+        cal: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+        sliders:
+          '<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
+        search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+        x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        printer:
+          '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+        msg: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+        clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+        help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        cash: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+        qr: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+        shield:
+          '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+        alert:
+          '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+        info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
+        user: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+        users:
+          '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        arrowR: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+        arrowL: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
+        trend: '<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+        gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
+        grid: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/><path d="M15 21V9"/>',
+        list: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
+        landmark:
+          '<path d="M3 22h18"/><path d="M6 18v-7"/><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M12 2 20 7H4z"/>',
+        pie: '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+        edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+      };
+      const ic = (n, cls) =>
+        `<svg class="i ${cls || ""}" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
+
+      // v2: business dates are ISO strings ("2026-09-11") so a second day can be closed.
+      const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const MONL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const pad2 = (n) => String(n).padStart(2, "0");
+      const dObj = (iso) => {
+        const [y, m, d] = iso.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      };
+      const dShort = (iso) => dObj(iso).getDate() + " " + MON[dObj(iso).getMonth()];
+      const dMed = (iso) => dShort(iso) + " " + dObj(iso).getFullYear();
+      const dLong = (iso) => {
+        const d = dObj(iso);
+        return `${DOW[d.getDay()]}, ${d.getDate()} ${MONL[d.getMonth()]} ${d.getFullYear()}`;
+      };
+      const addDay = (iso) => {
+        const d = dObj(iso);
+        d.setDate(d.getDate() + 1);
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+      };
+      // Configuration records (staff, services, deals) are never hard-deleted,
+      // only deactivated. Anything without active:false counts as active.
+      const on = (x) => x.active !== false;
+      // Commission % a staff member earns right now. Type 1 (monthly salary) earns none.
+      const rateFor = (s) => (s.type === 1 ? 0 : s.rate);
+
+      function freshClose(staff) {
+        const present = {};
+        staff.filter(on).forEach((s) => (present[s.id] = true));
+        return {
+          step: 1,
+          present,
+          payouts: null,
+          pins: {},
+          cash: "", // counted cash in drawer, one total amount
+          reason: "",
+          err: "",
+          locked: false,
+          code: "",
+          wa: false,
+        };
+      }
+
+      // Sample data: 1 to 10 September are already closed. Built from one small
+      // table so the day snapshots, staff khata and Monthly report agree.
+      function sampleMonth() {
+        // date, sale, online, expenses, cash the Owner took, Sherry present
+        const T = [
+          ["2026-09-01", 27400, 5200, 1900, 2000, true],
+          ["2026-09-02", 31200, 6400, 2300, 2000, true],
+          ["2026-09-03", 24800, 4600, 1600, 1000, true],
+          ["2026-09-04", 29600, 6000, 2100, 2000, true],
+          ["2026-09-05", 26200, 5400, 1800, 1000, true],
+          ["2026-09-06", 30800, 6800, 2400, 2000, true],
+          ["2026-09-07", 25400, 4800, 1700, 1000, true],
+          ["2026-09-08", 34600, 7600, 2600, 2000, true],
+          ["2026-09-09", 23900, 4200, 1500, 1000, false],
+          ["2026-09-10", 28300, 5800, 2000, 1000, true],
+        ];
+        const days = [];
+        const com = { arshad: 0, hamid: 0 };
+        const sherry = [];
+        T.forEach(([date, sale, online, expense, ownerOut, sp]) => {
+          const sh = sp ? Math.round((sale * 0.28) / 100) * 100 : 0;
+          const ar = Math.round((sale * (sp ? 0.4 : 0.55)) / 100) * 100;
+          const hm = sale - ar - sh;
+          const c = { arshad: ar / 10, hamid: hm / 10, sherry: sh / 10 };
+          com.arshad += c.arshad;
+          com.hamid += c.hamid;
+          const d = dShort(date);
+          const sherryDay = sp ? 800 + c.sherry : 0;
+          if (sp) {
+            sherry.push([d, `Daily wage + commission (work ${fmt(sh)})`, sherryDay]);
+            sherry.push([d, "Payment, PIN confirmed", -sherryDay]);
+          }
+          const bonus = date === "2026-09-08" ? 1000 : 0;
+          if (bonus) sherry.push([d, "Bonus: weekend rush", 1000]);
+          const staffEarned = c.arshad + c.hamid + c.sherry + (sp ? 800 : 0) + bonus;
+          const staffPaid =
+            sherryDay + (date === "2026-09-05" ? 2000 : 0) + (date === "2026-09-07" ? 3000 : 0);
+          days.push({
+            date,
+            sale,
+            cash: sale - online,
+            online,
+            expense,
+            staffEarned,
+            staffPaid,
+            ownerOut,
+            profit: sale - expense - staffEarned,
+            short: 0,
+          });
+        });
+        return {
+          days,
+          history: {
+            arshad: [
+              ["1 Sep", "Opening balance", 0],
+              ["1–10 Sep", "Commission", com.arshad],
+              ["5 Sep", "Payment", -2000],
+            ],
+            hamid: [
+              ["1 Sep", "Opening balance", 0],
+              ["1–10 Sep", "Commission", com.hamid],
+              ["7 Sep", "Advance", -3000],
+            ],
+            sherry: [["1 Sep", "Opening balance", 0], ...sherry],
+          },
+        };
+      }
+
+      function seed() {
+        const sm = sampleMonth();
+        const s0 = {
+          role: "manager",
+          page: "billing",
+          opening: 5000,
+          services: [
+            { id: "hc", name: "Haircut", cat: "Hair", price: 800, min: 30 },
+            {
+              id: "kc",
+              name: "Kids haircut",
+              cat: "Hair",
+              price: 500,
+              min: 20,
+            },
+            {
+              id: "col",
+              name: "Hair color",
+              cat: "Hair",
+              price: 1500,
+              min: 60,
+            },
+            { id: "wash", name: "Hair wash", cat: "Hair", price: 300, min: 10 },
+            { id: "bd", name: "Beard trim", cat: "Beard", price: 400, min: 15 },
+            { id: "sh", name: "Shave", cat: "Beard", price: 300, min: 15 },
+            { id: "fc", name: "Facial", cat: "Facial", price: 1800, min: 45 },
+            {
+              id: "dfc",
+              name: "Deep facial",
+              cat: "Facial",
+              price: 2500,
+              min: 60,
+            },
+          ],
+          deals: [
+            {
+              id: "vip",
+              name: "VIP deal",
+              price: 2000,
+              items: ["hc", "bd", "fc"],
+            },
+            {
+              id: "basic",
+              name: "Basic deal",
+              price: 1000,
+              items: ["hc", "bd"],
+            },
+          ],
+          staff: [
+            {
+              id: "arshad",
+              name: "Arshad",
+              type: 2,
+              salary: 40000,
+              wage: 0,
+              rate: 10,
+              pin: "1111",
+              active: true,
+            },
+            {
+              id: "hamid",
+              name: "Hamid",
+              type: 2,
+              salary: 40000,
+              wage: 0,
+              rate: 10,
+              pin: "2222",
+              active: true,
+            },
+            {
+              id: "sherry",
+              name: "Sherry",
+              type: 3,
+              salary: 0,
+              wage: 800,
+              rate: 10,
+              pin: "3333",
+              active: true,
+            },
+          ],
+          customers: [
+            {
+              phone: "03001234567",
+              name: "Ashfaq Bhai",
+              visits: 14,
+              last: "4 Sep",
+              special: { hc: 1500 },
+            },
+            {
+              phone: "03217654321",
+              name: "Kamran",
+              visits: 3,
+              last: "28 Aug",
+              special: {},
+            },
+          ],
+          history: sm.history,
+          bills: [
+            {
+              no: 101,
+              time: "11:20",
+              customer: "Ashfaq Bhai",
+              items: [{ name: "Haircut", amount: 500, staff: "arshad" }],
+              cash: 500,
+              online: 0,
+              status: "cancelled",
+              reason: "Wrong rate applied",
+            },
+            {
+              no: 102,
+              time: "11:22",
+              customer: "Ashfaq Bhai",
+              items: [
+                { name: "Reversal of #101", amount: -500, staff: "arshad" },
+              ],
+              cash: -500,
+              online: 0,
+              status: "reversal",
+              reverses: 101,
+            },
+            {
+              no: 103,
+              time: "11:22",
+              customer: "Ashfaq Bhai",
+              items: [
+                {
+                  name: "Haircut",
+                  amount: 1500,
+                  staff: "arshad",
+                  note: "Special rate",
+                },
+              ],
+              cash: 1500,
+              online: 0,
+              status: "active",
+            },
+            {
+              no: 104,
+              time: "12:05",
+              customer: "Walk-in",
+              items: [
+                {
+                  name: "Haircut",
+                  amount: 533,
+                  staff: "sherry",
+                  deal: "VIP deal",
+                },
+                {
+                  name: "Beard trim",
+                  amount: 267,
+                  staff: "sherry",
+                  deal: "VIP deal",
+                },
+                {
+                  name: "Facial",
+                  amount: 1200,
+                  staff: "hamid",
+                  deal: "VIP deal",
+                },
+              ],
+              cash: 0,
+              online: 2000,
+              status: "active",
+            },
+            {
+              no: 105,
+              time: "13:10",
+              customer: "Walk-in",
+              items: [
+                { name: "Haircut", amount: 800, staff: "sherry" },
+                { name: "Beard trim", amount: 400, staff: "sherry" },
+              ],
+              cash: 1200,
+              online: 0,
+              status: "active",
+            },
+            {
+              no: 106,
+              time: "14:30",
+              customer: "Kamran",
+              items: [{ name: "Hair color", amount: 1500, staff: "arshad" }],
+              cash: 1500,
+              online: 0,
+              status: "active",
+            },
+            {
+              no: 107,
+              time: "15:45",
+              customer: "Walk-in",
+              items: [{ name: "Facial", amount: 1800, staff: "sherry" }],
+              cash: 1800,
+              online: 0,
+              status: "active",
+            },
+            {
+              no: 108,
+              time: "17:20",
+              customer: "Walk-in",
+              items: [
+                { name: "Haircut", amount: 800, staff: "sherry" },
+                { name: "Beard trim", amount: 400, staff: "sherry" },
+              ],
+              cash: 700,
+              online: 500,
+              status: "active",
+            },
+            {
+              no: 109,
+              time: "18:05",
+              customer: "Walk-in",
+              items: [{ name: "Haircut", amount: 800, staff: "hamid" }],
+              cash: 800,
+              online: 0,
+              status: "active",
+            },
+          ],
+          entries: [
+            {
+              time: "10:30",
+              type: "expense",
+              desc: "Tea",
+              amount: 300,
+              paidFrom: "drawer",
+            },
+            {
+              time: "12:30",
+              type: "expense",
+              desc: "Shampoo stock",
+              amount: 2000,
+              paidFrom: "owner",
+            },
+            {
+              time: "14:00",
+              type: "expense",
+              desc: "Staff lunch",
+              amount: 600,
+              paidFrom: "drawer",
+            },
+            {
+              time: "16:00",
+              type: "advance",
+              staff: "arshad",
+              amount: 1000,
+              desc: "Advance",
+            },
+            {
+              time: "19:00",
+              type: "owner_out",
+              amount: 3000,
+              desc: "Bank deposit",
+            },
+          ],
+          bonuses: [],
+          cart: [],
+          cat: "Hair",
+          q: "",
+          customer: null,
+          custQuery: "",
+          custErr: "",
+          payMode: "cash",
+          pay: { cash: "", online: "" },
+          billErr: "",
+          receipt: null,
+          fType: "expense",
+          form: {
+            desc: "",
+            amount: "",
+            paidFrom: "drawer",
+            staff: "arshad",
+            pin: "",
+          },
+          formErr: "",
+          fFilter: "all",
+          cancelling: null,
+          cancelReason: "",
+          cancelErr: "",
+          close: null,
+          khata: "sherry",
+          bonus: { staff: "sherry", amount: "", reason: "" },
+          bonusErr: "",
+          monthClosed: false,
+          monthSnap: null,
+          tour: 0,
+          tourOpen: true,
+
+          // ---- v2 state ----
+          date: "2026-09-11", // current business day
+          lastNo: 100, // last bill number used on earlier days
+          // Per-day P&L snapshots written at Day Close. Monthly report = sum of these.
+          days: sm.days,
+          archive: [], // earlier days' bills and folder entries (kept, never deleted)
+          // Monthly expenses (Owner). Fixed lines hold this month's bill amount and can be
+          // corrected until Month Close. "Others" are money entries: void + re-enter only.
+          monthExp: {
+            fixed: [
+              { id: "rent", name: "Rent", amount: 0 },
+              { id: "elec", name: "Electricity", amount: 14000 },
+              { id: "net", name: "Internet / bills", amount: 3500 },
+              { id: "sup", name: "Supplies", amount: 6000 },
+            ],
+            others: [
+              { date: "2026-09-06", amount: 1500, reason: "AC gas refill", void: false },
+            ],
+          },
+          fixedForm: { name: "", amount: "" },
+          otherForm: { amount: "", reason: "" },
+          mexpErr: "",
+          otherErr: "",
+          voiding: null,
+          voidReason: "",
+          voidErr: "",
+          // Partners: profit share % is configuration (editable, recomputes the open month).
+          partners: [
+            { id: "pa", name: "Partner A", share: 50 },
+            { id: "pb", name: "Partner B", share: 50 },
+          ],
+          pDraft: null,
+          pErr: "",
+          partnerTab: "all",
+          drawings: [],
+          drawForm: { amount: "", note: "" },
+          drawErr: "",
+          // Capital / Outstanding: partner-funded investments, repaid in installments.
+          // Capital is a liability to the partner, not an expense; it never touches net profit.
+          capital: [
+            {
+              id: "chairs",
+              name: "Salon chairs (4)",
+              date: "2026-09-01",
+              cost: 120000,
+              funders: [{ partner: "pb", amount: 120000 }],
+              repayments: [
+                { date: "2026-09-05", partner: "pb", amount: 20000, note: "Installment 1" },
+              ],
+            },
+          ],
+          capForm: { name: "", cost: "", funds: {} },
+          capErr: "",
+          repay: {},
+          // Worksheet quick add
+          quick: {},
+          quickPay: "cash",
+          // Staff & rates editing (modal) and the settings change log
+          edit: null,
+          configLog: [
+            { date: "10 Sep", time: "09:15", text: "Hamid: commission 8% → 10% (applies from 10 Sep)" },
+          ],
+          stmt: null, // staff id whose monthly receipt is open
+        };
+        s0.close = freshClose(s0.staff);
+        // Each bill line keeps the commission % that applied when it was billed,
+        // so a later rate change never alters past records.
+        s0.bills.forEach((b) =>
+          b.items.forEach((i) => (i.rate = rateFor(s0.staff.find((x) => x.id === i.staff)))),
+        );
+        return s0;
+      }
+
+      const $ = (id) => document.getElementById(id);
+      const fmt = (n) =>
+        (n < 0 ? "−" : "") + Math.abs(Math.round(n)).toLocaleString("en-US");
+      const rs = (n) => "Rs " + fmt(n);
+      const esc = (s) =>
+        String(s == null ? "" : s).replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+      const staffBy = (id) => S.staff.find((s) => s.id === id);
+      const now = () => {
+        const d = new Date();
+        return (
+          String(d.getHours()).padStart(2, "0") +
+          ":" +
+          String(d.getMinutes()).padStart(2, "0")
+        );
+      };
+      const typeLabel = (t, r = 10) =>
+        ({
+          1: "Monthly salary",
+          2: `Salary + ${r}% commission`,
+          3: `Daily wage + ${r}% commission`,
+        })[t];
+      const initials = (n) =>
+        n
+          .split(" ")
+          .filter(Boolean)
+          .map((x) => x[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase();
+      const sumBy = (a, f) => a.reduce((x, y) => x + f(y), 0);
+      const activeStaff = () => S.staff.filter(on);
+      // Staff shown on today's screens: active ones, plus anyone deactivated
+      // who still has work on today's bills (so totals always reconcile).
+      const dayStaff = (c) => S.staff.filter((s) => on(s) || (c || calc()).work[s.id]);
+      const monthKey = () => S.date.slice(0, 7);
+      const monthName = () => MONL[dObj(S.date).getMonth()];
+
+      let S = seed();
+
+      function toast(msg) {
+        const t = $("toast");
+        t.innerHTML = ic("check") + esc(msg);
+        t.classList.add("show");
+        clearTimeout(t._h);
+        t._h = setTimeout(() => t.classList.remove("show"), 2300);
+      }
+
+      function calc() {
+        const sum = (a, f) => a.reduce((x, y) => x + f(y), 0);
+        const cashSales = sum(S.bills, (b) => b.cash),
+          onlineSales = sum(S.bills, (b) => b.online);
+        const work = {},
+          comRaw = {};
+        S.staff.forEach((s) => {
+          work[s.id] = 0;
+          comRaw[s.id] = 0;
+        });
+        // Commission uses the % stored on each bill line (forward-only rate changes).
+        S.bills.forEach((b) =>
+          b.items.forEach((i) => {
+            const r = i.rate != null ? i.rate : rateFor(staffBy(i.staff));
+            work[i.staff] += i.amount;
+            comRaw[i.staff] += (i.amount * r) / 100;
+          }),
+        );
+        const earn = {};
+        S.staff.forEach((s) => {
+          const com = Math.round(comRaw[s.id]);
+          const wage = s.type === 3 && S.close.present[s.id] ? s.wage : 0;
+          earn[s.id] = { work: work[s.id], com, wage, total: com + wage };
+        });
+        const expDrawer = sum(
+          S.entries.filter(
+            (e) => e.type === "expense" && e.paidFrom === "drawer",
+          ),
+          (e) => e.amount,
+        );
+        const expOwner = sum(
+          S.entries.filter(
+            (e) => e.type === "expense" && e.paidFrom === "owner",
+          ),
+          (e) => e.amount,
+        );
+        const advances = sum(
+          S.entries.filter((e) => e.type === "advance"),
+          (e) => e.amount,
+        );
+        const ownerOut = sum(
+          S.entries.filter((e) => e.type === "owner_out"),
+          (e) => e.amount,
+        );
+        const ownerIn = sum(
+          S.entries.filter((e) => e.type === "owner_in"),
+          (e) => e.amount,
+        );
+        const payouts = S.close.payouts
+          ? sum(Object.values(S.close.payouts), (v) => Number(v) || 0)
+          : 0;
+        const expected =
+          S.opening +
+          cashSales +
+          ownerIn -
+          expDrawer -
+          advances -
+          payouts -
+          ownerOut;
+        const counted = Math.round(Number(S.close.cash) || 0);
+        // Day P&L (same rules as the monthly net profit): staff advances and
+        // cash the Owner took are NOT expenses; staff earnings are.
+        const bonusToday = sum(S.bonuses, (b) => b.amount);
+        const staffEarned = sum(Object.values(earn), (e) => e.total) + bonusToday;
+        const expTotal = expDrawer + expOwner;
+        return {
+          bonusToday,
+          staffEarned,
+          expTotal,
+          profit: cashSales + onlineSales - expTotal - staffEarned,
+          cashSales,
+          onlineSales,
+          total: cashSales + onlineSales,
+          work,
+          earn,
+          expDrawer,
+          expOwner,
+          advances,
+          ownerOut,
+          ownerIn,
+          payouts,
+          expected,
+          counted,
+          cancels: S.bills.filter((b) => b.status === "cancelled").length,
+          active: S.bills.filter((b) => b.status === "active").length,
+        };
+      }
+
+      const PAGES = [
+        { id: "billing", name: "Billing", icon: "receipt", sec: "Counter" },
+        { id: "sheet", name: "Daily worksheet", icon: "grid", sec: "Counter" },
+        {
+          id: "folders",
+          name: "Daily folders",
+          icon: "wallet",
+          sec: "Counter",
+        },
+        { id: "close", name: "Day close", icon: "lock", sec: "Counter" },
+        { id: "report", name: "Daily report", icon: "file", sec: "Counter" },
+        { id: "khata", name: "Staff khata", icon: "book", sec: "Counter" },
+        {
+          id: "overview",
+          name: "Overview",
+          icon: "chart",
+          sec: "Owner",
+          owner: true,
+        },
+        { id: "monthly", name: "Monthly report", icon: "cal", sec: "Owner", owner: true },
+        { id: "mexp", name: "Monthly expenses", icon: "list", sec: "Owner", owner: true },
+        {
+          id: "capital",
+          name: "Capital / Outstanding",
+          icon: "landmark",
+          sec: "Owner",
+          owner: true,
+        },
+        { id: "partners", name: "Partners", icon: "pie", sec: "Owner", owner: true },
+        {
+          id: "setup",
+          name: "Staff & rates",
+          icon: "sliders",
+          sec: "Owner",
+          owner: true,
+        },
+      ];
+
+      function render() {
+        $("roleSeg").innerHTML = ["manager", "owner"]
+          .map(
+            (r) =>
+              `<button data-a="role" data-v="${r}" class="${S.role === r ? "on" : ""}">${r === "manager" ? "Manager" : "Owner"}</button>`,
+          )
+          .join("");
+        $("guideBtn").innerHTML = ic("help") + "Guide";
+        $("resetBtn").innerHTML = ic("undo") + "Reset";
+        let side = `<div class="logo"><div class="mark">${ic("scissors")}</div><div><div class="n">Art Men's Salon</div><div class="s">Karachi</div></div></div>`;
+        ["Counter", "Owner"].forEach((sec) => {
+          side +=
+            `<div class="nav-sec">${sec}</div><div class="nav">` +
+            PAGES.filter((p) => p.sec === sec)
+              .map(
+                (p) =>
+                  `<button data-a="go" data-v="${p.id}" class="${S.page === p.id ? "on" : ""}">${ic(p.icon)}<span>${p.name}</span>${p.owner && S.role === "manager" ? `<span class="lock">${ic("lock")}</span>` : ""}</button>`,
+              )
+              .join("") +
+            `</div>`;
+        });
+        const me =
+          S.role === "owner" ? ["Saud", "Owner"] : ["Manager", "Counter"];
+        side += tourHtml();
+        side += `<div class="me"><div class="av">${initials(me[0])}</div><div><div class="n">${me[0]}</div><div class="s">${me[1]}</div></div></div>`;
+        $("side").innerHTML = side;
+        const p = PAGES.find((x) => x.id === S.page);
+        $("main").innerHTML =
+          p.owner && S.role === "manager"
+            ? head(p.name, "Owner access") + lockedScreen()
+            : V[S.page]();
+        renderLayer();
+        applyFocus();
+      }
+
+      function head(title, sub) {
+        const L = S.close.locked;
+        return `<div class="ph"><div><h1>${title}</h1><div class="sub">${sub}</div></div>
+  <div class="dayp">${ic("clock")}<span>Business day: ${dLong(S.date)}</span><span class="badge ${L ? "b-brass" : "b-green"}">${L ? "Closed" : "Open"}</span></div></div>`;
+      }
+      function lockedScreen() {
+        return `<div class="card locked-screen"><div class="ic">${ic("lock")}</div><h2 style="margin:0 0 6px;font-size:17px">Only the Owner can see this</h2>
+  <p class="muted" style="max-width:420px;margin:0 auto 16px">Monthly totals, net profit, rent and staff salary settings are hidden from the Manager account.</p>
+  <button class="btn" data-a="role" data-v="owner">Switch to Owner view</button></div>`;
+      }
+
+      const V = {};
+
+      V.billing = () => {
+        // Only active services and deals can be billed; categories follow the service list.
+        const svcs = S.services.filter(on),
+          deals = S.deals.filter(on);
+        const cats = [...new Set(svcs.map((s) => s.cat)), "Deals"];
+        const count = (k) =>
+          k === "Deals" ? deals.length : svcs.filter((s) => s.cat === k).length;
+        const q = S.q.trim().toLowerCase();
+        let grid;
+        const svcBtn = (s) => {
+          const sp = S.customer && S.customer.special[s.id];
+          return `<button data-a="add" data-v="${s.id}"><span class="n">${s.name}</span><span class="m">${s.cat}, ${s.min} min</span><span class="p"><b class="tnum">${rs(sp || s.price)}</b>${sp ? '<span class="badge b-brass">Special rate</span>' : ""}</span></button>`;
+        };
+        const dealBtn = (d) =>
+          `<button data-a="addDeal" data-v="${d.id}"><span class="n">${d.name}</span><span class="m">${d.items.map((id) => S.services.find((s) => s.id === id).name).join(", ")}</span><span class="p"><b class="tnum">${rs(d.price)}</b><span class="badge b-brass">Deal</span></span></button>`;
+        if (q) {
+          grid =
+            svcs
+              .filter((s) => s.name.toLowerCase().includes(q))
+              .map(svcBtn)
+              .join("") +
+            deals
+              .filter((d) => d.name.toLowerCase().includes(q))
+              .map(dealBtn)
+              .join("");
+        } else if (S.cat === "Deals") {
+          grid = deals.map(dealBtn).join("");
+        } else {
+          grid = svcs
+            .filter(
+              (s) =>
+                s.cat === S.cat && (!q || s.name.toLowerCase().includes(q)),
+            )
+            .map((s) => {
+              const sp = S.customer && S.customer.special[s.id];
+              return `<button data-a="add" data-v="${s.id}"><span class="n">${s.name}</span><span class="m">${s.min} min</span><span class="p"><b class="tnum">${rs(sp || s.price)}</b>${sp ? '<span class="badge b-brass">Special rate</span>' : ""}</span></button>`;
+            })
+            .join("");
+        }
+        const total = S.cart.reduce((a, i) => a + i.amount, 0);
+        let lastG = null;
+        const lines = S.cart.length
+          ? S.cart
+              .map((i, idx) => {
+                let g = "";
+                if (i.deal && i.deal !== lastG)
+                  g = `<div class="grp">${esc(i.deal)} (${rs(i.dealPrice)})</div>`;
+                lastG = i.deal || null;
+                return (
+                  g +
+                  `<div class="li"><div><div class="n">${esc(i.name)}</div>${i.note ? `<div class="m">${esc(i.note)}</div>` : ""}</div>
+    <select class="inp" data-in="cartStaff" data-i="${idx}" aria-label="Staff for ${esc(i.name)}"><option value="">Select staff</option>${S.staff.filter((s) => on(s) || s.id === i.staff).map((s) => `<option value="${s.id}" ${i.staff === s.id ? "selected" : ""}>${s.name}</option>`).join("")}</select>
+    <div class="a tnum">${fmt(i.amount)}</div><button class="icon-btn" data-a="rm" data-v="${idx}" aria-label="Remove ${esc(i.name)}">${ic("x")}</button></div>`
+                );
+              })
+              .join("")
+          : `<div class="empty">${ic("receipt")}<div>Add a service or deal to start the bill</div></div>`;
+        const cust = S.customer
+          ? `<div class="cust"><div class="av">${initials(S.customer.name)}</div><div style="flex:1"><div class="n">${S.customer.name}</div><div class="s">${S.customer.visits} visits, last on ${S.customer.last}</div></div>${Object.keys(S.customer.special).length ? '<span class="badge b-brass">Special rate</span>' : ""}<button class="btn btn-sm btn-ghost" data-a="clearCust">Change</button></div>`
+          : `<div class="iw"><svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC.search}</svg><input class="inp" id="cq" type="tel" data-in="custQuery" value="${esc(S.custQuery)}" placeholder="Customer mobile number" aria-label="Customer mobile number"></div>
+       ${S.custErr ? `<div class="err">${ic("info")}${S.custErr}</div>` : ""}`;
+        // v2: "One person did everything" fills staff on every cart line at once.
+        // Per-line dropdowns still work afterwards for the mixed case.
+        const same =
+          S.cart.length && S.cart.every((i) => i.staff && i.staff === S.cart[0].staff)
+            ? S.cart[0].staff
+            : "";
+        const mixed = !same && S.cart.some((i) => i.staff);
+        const allPick = S.cart.length
+          ? `<div class="cb" id="allStaff" style="padding-top:12px;padding-bottom:12px;border-bottom:1px solid var(--line-2)"><label class="l" for="as">One person did everything</label><select class="inp" id="as" data-in="allStaff"><option value="">${mixed ? "Mixed staff: choose to set all" : "Choose staff for all services"}</option>${activeStaff().map((s) => `<option value="${s.id}" ${same === s.id ? "selected" : ""}>${s.name}</option>`).join("")}</select>${S.cart.length > 1 ? `<div class="help" style="margin-top:5px">Different staff per service? Change the line below.</div>` : ""}</div>`
+          : "";
+        const pm = S.payMode;
+        const payFields =
+          pm === "split"
+            ? `<div class="grid g-2e" style="gap:10px;margin-top:10px"><div><label class="l" for="pc">Cash</label><input class="inp tnum" id="pc" type="number" min="0" step="1" data-in="payCash" value="${S.pay.cash}"></div><div><label class="l" for="po">Online</label><input class="inp tnum" id="po" type="number" min="0" step="1" data-in="payOnline" value="${S.pay.online}"></div></div><div class="help" id="payLeft" style="margin-top:6px">${payLeft(total)}</div>`
+            : "";
+        return (
+          head(
+            "Billing",
+            "Create a bill and assign each service to a staff member",
+          ) +
+          (S.close.locked
+            ? `<div class="alert a-brass" style="align-items:center">${ic("lock")}<div style="flex:1">Today is closed. New bills will go into the next business day.</div><button class="btn btn-sm" data-a="nextDay">Start next business day</button></div>`
+            : "") +
+          `<div class="grid g-pos">
+    <div class="card" id="catalog">
+      <div class="cb" style="padding-bottom:0"><div class="iw"><svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC.search}</svg><input class="inp" id="sq" type="text" data-in="q" value="${esc(S.q)}" placeholder="Search services" aria-label="Search services"></div></div>
+      <div class="tabs" style="margin-top:10px">${cats.map((k) => `<button data-a="cat" data-v="${k}" class="${S.cat === k && !q ? "on" : ""}">${k}<span class="cnt">${count(k)}</span></button>`).join("")}</div>
+      <div class="svc">${grid || '<div class="empty" style="grid-column:1/-1">No services match your search</div>'}</div>
+      ${S.cat === "Deals" ? `<div class="cb" style="border-top:1px solid var(--line-2)"><div class="help">Deal price is split across its services by list price, so each staff member's commission is correct.</div></div>` : ""}
+    </div>
+    <div class="card" id="orderPanel">
+      <div class="ch"><h2>New bill</h2><span class="muted tnum">#${nextNo()}</span></div>
+      <div class="cb" style="border-bottom:1px solid var(--line-2)">${cust}</div>
+      ${allPick}
+      <div class="cb" style="padding-top:4px;padding-bottom:4px">${lines}</div>
+      <div class="cb" style="border-top:1px solid var(--line-2)">
+        <div class="sum"><span>Items</span><span class="tnum">${S.cart.length}</span></div>
+        <div class="sum t"><span>Total</span><span class="tnum">${rs(total)}</span></div>
+        <div style="margin-top:14px"><label class="l">Payment</label>
+          <div class="seg">${[
+            ["cash", "Cash"],
+            ["online", "Online (QR)"],
+            ["split", "Split"],
+          ]
+            .map(
+              ([k, n]) =>
+                `<button data-a="payMode" data-v="${k}" class="${pm === k ? "on" : ""}">${n}</button>`,
+            )
+            .join("")}</div>${payFields}</div>
+        ${S.billErr ? `<div class="err">${ic("alert")}${S.billErr}</div>` : ""}
+        <button class="btn btn-p btn-lg" style="margin-top:14px" data-a="charge">${ic("printer")}Save and print ${total ? rs(total) : ""}</button>
+      </div>
+    </div>
+  </div>`
+        );
+      };
+      function nextNo() {
+        return Math.max(S.lastNo || 0, ...S.bills.map((b) => b.no)) + 1;
+      }
+      function payLeft(total) {
+        const p = (Number(S.pay.cash) || 0) + (Number(S.pay.online) || 0);
+        if (!total) return "";
+        if (p === total) return "Payment matches total";
+        return p < total
+          ? `Remaining ${rs(total - p)}`
+          : `Over by ${rs(p - total)}`;
+      }
+
+      V.folders = () => {
+        const c = calc();
+        const f = S.form;
+        const t = S.fType;
+        const L = S.close.locked;
+        const tt = {
+          expense: "Expense",
+          advance: "Staff advance",
+          owner_out: "Owner took cash",
+          owner_in: "Owner added cash",
+        };
+        let flds = "";
+        if (t === "expense")
+          flds = `<div class="f"><label class="l" for="fd">Description</label><input class="inp" id="fd" type="text" data-in="form.desc" value="${esc(f.desc)}" placeholder="Tea, lunch, towels"></div>
+    <div class="f"><label class="l">Paid from</label><div class="seg"><button data-a="paidFrom" data-v="drawer" class="${f.paidFrom === "drawer" ? "on" : ""}">Cash drawer</button><button data-a="paidFrom" data-v="owner" class="${f.paidFrom === "owner" ? "on" : ""}">Owner's pocket or bank</button></div></div>`;
+        else if (t === "advance")
+          flds = `<div class="f"><label class="l" for="fs">Staff member</label><select class="inp" id="fs" data-in="form.staff">${activeStaff().map((s) => `<option value="${s.id}" ${f.staff === s.id ? "selected" : ""}>${s.name}</option>`).join("")}</select></div>`;
+        else
+          flds = `<div class="f"><label class="l" for="fd">Purpose</label><input class="inp" id="fd" type="text" data-in="form.desc" value="${esc(f.desc)}" placeholder="${t === "owner_out" ? "Bank deposit" : "Change for the drawer"}"></div>`;
+        const pinWho =
+          t === "advance" ? staffBy(f.staff).name + "'s PIN" : "Owner's PIN";
+        const typeBadge = (e) =>
+          e.type === "expense"
+            ? '<span class="badge b-grey">Expense</span>'
+            : e.type === "advance"
+              ? '<span class="badge b-brass">Staff</span>'
+              : '<span class="badge b-blue">Owner</span>';
+        const desc = (e) =>
+          e.type === "expense"
+            ? esc(e.desc) +
+              (e.paidFrom === "owner"
+                ? ' <span class="sm muted">(paid by Owner, not from drawer)</span>'
+                : "")
+            : e.type === "advance"
+              ? "Advance to " + staffBy(e.staff).name
+              : e.type === "owner_out"
+                ? "Cash taken: " + esc(e.desc)
+                : "Cash added: " + esc(e.desc);
+        const filt = S.fFilter;
+        const list = [];
+        S.entries.forEach((e) => {
+          if (
+            filt === "all" ||
+            (filt === "expense" && e.type === "expense") ||
+            (filt === "staff" && e.type === "advance") ||
+            (filt === "owner" && e.type.startsWith("owner"))
+          )
+            list.push({
+              t: e.time,
+              h: `<td>${typeBadge(e)}</td><td>${desc(e)}</td><td>${e.type === "expense" ? "" : '<span class="badge b-green">PIN confirmed</span>'}</td><td class="r tnum" style="font-weight:500">${fmt(e.amount)}</td>`,
+            });
+        });
+        if (filt === "all" || filt === "online")
+          S.bills
+            .filter((b) => b.online !== 0)
+            .forEach((b) =>
+              list.push({
+                t: b.time,
+                h: `<td><span class="badge b-green">Online</span></td><td>Bill #${b.no}, ${esc(b.customer)} <span class="sm muted">(to Owner's bank)</span></td><td></td><td class="r tnum" style="font-weight:500">${fmt(b.online)}</td>`,
+              }),
+            );
+        list.sort((a, b) => b.t.localeCompare(a.t));
+        const rows = list.map(
+          (x) => `<tr><td class="muted tnum">${x.t}</td>${x.h}</tr>`,
+        );
+        return (
+          head(
+            "Daily folders",
+            "Expenses, staff advances, Owner cash and online payments for today",
+          ) +
+          `<div class="stats">
+    ${stat("wallet", "Expenses from drawer", rs(c.expDrawer), "+ " + rs(c.expOwner) + " paid by Owner")}
+    ${stat("users", "Staff advances", rs(c.advances), "PIN confirmed")}
+    ${stat("user", "Owner took cash", rs(c.ownerOut), "Bank deposit")}
+    ${stat("qr", "Online payments", rs(c.onlineSales), "Goes to Owner's bank")}
+  </div>
+  <div class="grid g-2">
+    <div class="card"><div class="tabs">${[
+      ["all", "All"],
+      ["expense", "Expenses"],
+      ["staff", "Staff"],
+      ["owner", "Owner"],
+      ["online", "Online"],
+    ]
+      .map(
+        ([k, n]) =>
+          `<button data-a="fFilter" data-v="${k}" class="${filt === k ? "on" : ""}">${n}</button>`,
+      )
+      .join("")}</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Folder</th><th>Details</th><th></th><th class="r">Amount</th></tr></thead><tbody>${rows.join("") || '<tr><td colspan="5" class="empty">No entries yet</td></tr>'}</tbody></table></div></div>
+    <div class="card" id="entryForm"><div class="ch"><h2>New entry</h2></div><div class="cb">
+      ${
+        L
+          ? `<div class="alert a-brass" style="margin:0">${ic("lock")}<div>Today is closed. New entries go into the next business day.</div></div>`
+          : `
+      <div class="f"><label class="l" for="ft">Folder</label><select class="inp" id="ft" data-in="fType">${Object.entries(
+        tt,
+      )
+        .map(
+          ([k, v]) =>
+            `<option value="${k}" ${t === k ? "selected" : ""}>${v}</option>`,
+        )
+        .join("")}</select></div>
+      ${flds}
+      <div class="f"><label class="l" for="fa">Amount (Rs)</label><input class="inp tnum" id="fa" type="number" min="1" step="1" data-in="form.amount" value="${f.amount}" placeholder="500"></div>
+      ${t !== "expense" ? `<div class="f"><label class="l" for="fp">${pinWho} to confirm</label><input class="inp" id="fp" type="password" inputmode="numeric" maxlength="4" data-in="form.pin" value="${f.pin}" placeholder="4-digit PIN"><div class="help" style="margin-top:5px">The person receiving or giving cash confirms with their own PIN.</div></div>` : ""}
+      ${S.formErr ? `<div class="err">${ic("alert")}${S.formErr}</div>` : ""}
+      <button class="btn btn-p btn-lg" style="margin-top:6px" data-a="saveEntry">Save entry</button>`
+      }
+    </div></div>
+  </div>`
+        );
+      };
+      function stat(icn, k, v, h) {
+        return `<div class="stat"><div class="ic">${ic(icn)}</div><div><div class="k">${k}</div><div class="v tnum">${v}</div>${h ? `<div class="h">${h}</div>` : ""}</div></div>`;
+      }
+
+      function khataRows(id) {
+        const today = dShort(S.date);
+        const rows = (S.history[id] || []).map((r) => ({ d: r[0], t: r[1], a: r[2] }));
+        S.bonuses
+          .filter((b) => b.staff === id)
+          .forEach((b) =>
+            rows.push({ d: today, t: "Bonus: " + b.reason, a: b.amount }),
+          );
+        S.entries
+          .filter((e) => e.type === "advance" && e.staff === id)
+          .forEach((e) =>
+            rows.push({ d: today, t: "Advance", a: -e.amount }),
+          );
+        if (S.close.locked) {
+          const e = calc().earn[id];
+          if (e.com)
+            rows.push({
+              d: today,
+              t: `Commission (on work of ${fmt(e.work)})`,
+              a: e.com,
+            });
+          if (e.wage) rows.push({ d: today, t: "Daily wage", a: e.wage });
+          const p = Number((S.close.payouts || {})[id]) || 0;
+          if (p) rows.push({ d: today, t: "Payment, PIN confirmed", a: -p });
+        }
+        return rows;
+      }
+      const bal = (id) => khataRows(id).reduce((a, r) => a + r.a, 0);
+
+      V.close = () => {
+        const c = calc();
+        const cl = S.close;
+        const names = [
+          "Attendance",
+          "Staff earnings",
+          "Staff payments",
+          "Cash count",
+          "Review and close",
+        ];
+        const cur = cl.locked ? 6 : cl.step;
+        const stepper = `<div class="stepper">${names
+          .map((n, i) => {
+            const k = i + 1;
+            const s = k < cur ? "done" : k === cur ? "on" : "";
+            return (
+              `<div class="st ${s}"><span class="cir">${k < cur ? ic("check") : k}</span><span class="lb">${n}</span></div>` +
+              (k < 5 ? `<div class="bar ${k < cur ? "done" : ""}"></div>` : "")
+            );
+          })
+          .join("")}</div>`;
+        let body = "";
+        const nav = (back, nextLbl, act) =>
+          `<div class="cb" style="display:flex;justify-content:space-between;border-top:1px solid var(--line-2)">${back ? `<button class="btn" data-a="back">${ic("arrowL")}Back</button>` : "<span></span>"}<button class="btn btn-p" data-a="${act || "next"}">${nextLbl}${act === "lockDay" ? "" : ic("arrowR")}</button></div>`;
+        if (cl.locked) body = closedView(c);
+        else if (cl.step === 1)
+          body = `<div class="card"><div class="ch"><h2>Who worked today?</h2></div><div class="tbl-wrap"><table><thead><tr><th>Staff</th><th>Pay type</th><th class="r">Work today</th><th class="c">Present</th></tr></thead><tbody>
+    ${dayStaff(c).map((s) => `<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="av">${initials(s.name)}</div>${s.name}</div></td><td class="muted">${typeLabel(s.type, s.rate)}</td><td class="r tnum">${rs(c.work[s.id])}</td><td class="c"><input type="checkbox" data-in="present" data-v="${s.id}" ${cl.present[s.id] ? "checked" : ""} aria-label="${s.name} present" style="width:17px;height:17px;accent-color:#15263D"></td></tr>`).join("")}
+    </tbody></table></div><div class="cb help" style="border-top:1px solid var(--line-2)">Daily wage is paid only to staff on the daily wage plan who were present.</div>${nav(false, "Continue")}</div>`;
+        else if (cl.step === 2)
+          body = `<div class="card"><div class="ch"><h2>Earnings calculated from today's bills</h2><span class="badge b-grey">Automatic</span></div><div class="tbl-wrap"><table><thead><tr><th>Staff</th><th class="r">Work</th><th class="r">Commission</th><th class="r">Daily wage</th><th class="r">Earned today</th></tr></thead><tbody>
+    ${dayStaff(c)
+      .map((s) => {
+        const e = c.earn[s.id];
+        return `<tr><td>${s.name}<div class="sm muted">${typeLabel(s.type, s.rate)}</div></td><td class="r tnum">${fmt(e.work)}</td><td class="r tnum">${fmt(e.com)}</td><td class="r tnum">${e.wage ? fmt(e.wage) : '<span class="muted">—</span>'}</td><td class="r tnum" style="font-weight:600">${rs(e.total)}</td></tr>`;
+      })
+      .join("")}
+    </tbody></table></div><div class="cb help" style="border-top:1px solid var(--line-2)">Cancelled bills and their reversals are already included, so nobody earns commission on a cancelled service.</div>${nav(true, "Continue")}</div>`;
+        else if (cl.step === 3) {
+          if (!cl.payouts) {
+            cl.payouts = {};
+            S.staff.forEach(
+              (s) => (cl.payouts[s.id] = s.type === 3 ? c.earn[s.id].total : 0),
+            );
+          }
+          body = `<div class="card"><div class="ch"><h2>Payments to staff today</h2></div><div class="tbl-wrap"><table><thead><tr><th>Staff</th><th class="r">Khata balance</th><th class="r">Earned today</th><th style="width:140px">Paid today</th><th style="width:130px">Staff PIN</th></tr></thead><tbody>
+    ${dayStaff(c).map((s) => `<tr><td>${s.name}</td><td class="r tnum">${fmt(bal(s.id))}</td><td class="r tnum">${fmt(c.earn[s.id].total)}</td><td><input class="inp tnum" type="number" min="0" step="1" data-in="payout" data-v="${s.id}" value="${cl.payouts[s.id]}" aria-label="Paid to ${s.name}"></td><td><input class="inp" type="password" inputmode="numeric" maxlength="4" data-in="pin" data-v="${s.id}" value="${cl.pins[s.id] || ""}" placeholder="PIN" aria-label="${s.name} PIN"></td></tr>`).join("")}
+    </tbody></table></div><div class="cb help" style="border-top:1px solid var(--line-2)">Anything not taken today stays in the staff member's khata and is paid with salary.${cl.err ? `<div class="err">${ic("alert")}${cl.err}</div>` : ""}</div>${nav(true, "Continue")}</div>`;
+        } else if (cl.step === 4) {
+          body = `<div class="grid g-2"><div class="card" id="countCard"><div class="ch"><h2>Cash in drawer</h2></div><div class="cb">
+    <label class="l" for="cashIn">Total cash counted (Rs)</label>
+    <input class="inp tnum cash-in" id="cashIn" type="number" inputmode="numeric" min="0" step="1" data-in="cashCount" value="${esc(cl.cash)}" placeholder="0" aria-label="Total cash counted in drawer">
+    <div class="help" style="margin-top:8px">Drawer ka saara cash gin kar sirf total likhein, phir Enter dabayein.</div></div></div>
+    <div class="card"><div class="ch"><h2>Expected cash</h2></div><div class="cb"><div class="hidden">${ic("lock")}<div style="font-weight:500;color:var(--text-2)">Hidden until the count is complete</div><div class="sm" style="margin-top:4px">The Manager counts first, so the count is honest and not adjusted to match.</div></div>
+    ${cl.err ? `<div class="err">${ic("alert")}${cl.err}</div>` : ""}</div>${nav(true, "Count complete", "countDone")}</div></div>`;
+        } else {
+          const diff = c.counted - c.expected;
+          const rows = [
+            ["Opening cash (from yesterday)", S.opening],
+            ["Cash sales", c.cashSales],
+            ["Owner added cash", c.ownerIn],
+            ["Expenses from drawer", -c.expDrawer],
+            ["Staff advances", -c.advances],
+            ["Staff payments today", -c.payouts],
+            ["Owner took cash", -c.ownerOut],
+          ];
+          body = `<div class="res"><div class="x"><div class="muted sm">Expected</div><div class="v tnum">${rs(c.expected)}</div></div><div class="x"><div class="muted sm">Counted</div><div class="v tnum">${rs(c.counted)}</div></div>
+      <div class="x ${diff < 0 ? "short" : diff > 0 ? "extra" : ""}"><div class="sm ${diff < 0 ? "neg" : diff > 0 ? "pos" : "muted"}">${diff < 0 ? "Short" : diff > 0 ? "Extra" : "Difference"}</div><div class="v tnum ${diff < 0 ? "neg" : diff > 0 ? "pos" : ""}">${rs(Math.abs(diff))}</div></div></div>
+    <div class="grid g-2"><div class="card"><div class="ch"><h2>How expected cash is calculated</h2></div><table class="pl"><tbody>${rows.map((r) => `<tr><td>${r[0]}</td><td class="r tnum">${r[1] < 0 ? "−" + fmt(-r[1]) : r[1] > 0 ? "+" + fmt(r[1]) : "0"}</td></tr>`).join("")}<tr class="tot"><td>Expected cash in drawer</td><td class="r tnum">${rs(c.expected)}</td></tr></tbody></table>
+      <div class="cb help" style="border-top:1px solid var(--line-2)">Online payments (${rs(c.onlineSales)}) are not included because they never enter the drawer.</div></div>
+    <div class="card"><div class="ch"><h2>Close the day</h2></div><div class="cb">
+      ${diff !== 0 ? `<label class="l" for="rsn">${diff < 0 ? "Reason for shortage (required)" : "Reason for extra cash"}</label><textarea class="inp" id="rsn" rows="3" data-in="reason" placeholder="${diff < 0 ? "Wrong change given to a customer" : "Customer left the change"}">${esc(cl.reason)}</textarea>` : `<div class="alert a-blue" style="margin:0">${ic("check")}<div>The drawer matches exactly.</div></div>`}
+      ${cl.err ? `<div class="err">${ic("alert")}${cl.err}</div>` : ""}
+      <p class="help" style="margin:12px 0 0">After closing, no entries can be added to today. Only the Owner can reopen a closed day.</p></div>
+      <div class="cb" style="display:flex;justify-content:space-between;border-top:1px solid var(--line-2)"><button class="btn" data-a="back">${ic("arrowL")}Recount</button><button class="btn btn-p" data-a="lockDay">${ic("lock")}Close day</button></div></div></div>`;
+        }
+        return (
+          head("Day close", "End-of-day cash check in five steps") +
+          stepper +
+          `<div id="closeArea">${body}</div>`
+        );
+      };
+
+      function closedView(c) {
+        const cl = S.close;
+        const diff = c.counted - c.expected;
+        const snap = S.days.find((d) => d.date === S.date) || daySnapshot(c);
+        const msg = `Art Men's Salon: ${dMed(S.date)} closed\nSales ${rs(c.total)} (cash ${fmt(c.cashSales)}, online ${fmt(c.onlineSales)})\nExpenses ${rs(c.expDrawer)}\nDay profit ${rs(snap.profit)}\nPaid to staff ${rs(c.payouts + c.advances)}\nExpected ${rs(c.expected)}, counted ${rs(c.counted)}\n${diff < 0 ? "Short " + rs(-diff) + ": " + cl.reason : diff > 0 ? "Extra " + rs(diff) : "No difference"}\nCancelled bills: ${c.cancels}\nSecurity code ${cl.code}`;
+        return `<div class="card"><div class="done-card"><div class="seal">${ic("shield")}</div><div style="flex:1;min-width:240px"><div style="font-weight:600;font-size:16px">Day closed at ${cl.lockedAt}</div><div class="muted">Security code sent with the daily summary. If any old entry is changed later, this code will no longer match.</div><div class="code">${cl.code}</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-a="wa">${ic("msg")}${cl.wa ? "Hide summary" : "Preview WhatsApp summary"}</button>${S.role === "owner" ? `<button class="btn" data-a="reopen">${ic("undo")}Reopen day</button>` : ""}<button class="btn btn-p" data-a="nextDay">Start next business day${ic("arrowR")}</button></div></div>
+    ${cl.wa ? `<div class="cb" style="border-top:1px solid var(--line-2)"><div class="help" style="margin-bottom:8px">Sent to the Owner on WhatsApp</div><div class="wa">${esc(msg)}</div></div>` : ""}</div>
+  <div class="card" id="glance" style="margin-top:16px"><div class="ch"><h2>Today at a glance</h2><span class="badge b-brass">Saved for the monthly report</span></div>
+    <div class="cb" style="padding-bottom:0"><div class="stats">${stat("trend", "Sale", rs(snap.sale), `Cash ${fmt(snap.cash)} + online ${fmt(snap.online)}`)}${stat("wallet", "Expenses", rs(snap.expense), "Drawer and Owner-paid")}${stat("users", "Staff salary / earnings", rs(snap.staffEarned), `Paid in hand today ${fmt(snap.staffPaid)}`)}${stat("chart", "Day profit", rs(snap.profit), "Sale − expenses − staff earnings")}</div></div>
+    <div class="cb help" style="border-top:1px solid var(--line-2)">Staff advances and cash the Owner took are not expenses, so they do not reduce the day profit. Each closed day is one row in the Monthly report.</div></div>
+  <div class="stats" style="margin-top:16px">${stat("cash", "Expected", rs(c.expected))}${stat("wallet", "Counted", rs(c.counted))}${stat("alert", diff < 0 ? "Short" : diff > 0 ? "Extra" : "Difference", rs(Math.abs(diff)), diff < 0 ? esc(cl.reason) : "")}${stat("clock", "Tomorrow's opening cash", rs(c.counted))}</div>
+  ${S.role === "manager" ? '<p class="help">Only the Owner can reopen a closed day.</p>' : ""}`;
+      }
+
+      V.report = () => {
+        const c = calc();
+        const L = S.close.locked;
+        const canCancel = S.role === "owner" || !L;
+        const rows = S.bills
+          .slice()
+          .reverse()
+          .map((b) => {
+            const st =
+              b.status === "cancelled"
+                ? '<span class="badge b-red">Cancelled</span>'
+                : b.status === "reversal"
+                  ? '<span class="badge b-grey">Reversal</span>'
+                  : '<span class="badge b-green">Paid</span>';
+            const items = b.items
+              .map(
+                (i) =>
+                  `${esc(i.name)}${i.deal ? ` <span class="muted">(${esc(i.deal)})</span>` : ""} <span class="badge b-grey" style="margin-left:4px">${staffBy(i.staff).name}</span>`,
+              )
+              .join("<br>");
+            const pay = [
+              b.cash ? "Cash " + fmt(b.cash) : "",
+              b.online ? "Online " + fmt(b.online) : "",
+            ]
+              .filter(Boolean)
+              .join("<br>");
+            const amt = b.items.reduce((a, i) => a + i.amount, 0);
+            const act =
+              b.status === "active" && canCancel && S.cancelling !== b.no
+                ? `<button class="btn btn-sm btn-danger" data-a="cancelStart" data-v="${b.no}">Cancel</button>`
+                : "";
+            let extra = "";
+            if (S.cancelling === b.no)
+              extra = `<tr><td colspan="6" style="background:#FDF7F6"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input class="inp" style="flex:1;min-width:220px" type="text" data-in="cancelReason" value="${esc(S.cancelReason)}" placeholder="Reason for cancelling (required)" aria-label="Reason for cancelling"><button class="btn btn-sm btn-danger" data-a="cancelConfirm" data-v="${b.no}">Confirm cancel</button><button class="btn btn-sm btn-ghost" data-a="cancelAbort">Keep bill</button></div>${S.cancelErr ? `<div class="err">${ic("alert")}${S.cancelErr}</div>` : ""}<div class="help" style="margin-top:6px">The bill is not deleted. A reversal entry is added and both stay on record.</div></td></tr>`;
+            if (b.status === "cancelled" && b.reason)
+              extra = `<tr><td></td><td colspan="5" class="sm muted" style="padding-top:0">Reason: ${esc(b.reason)}</td></tr>`;
+            return (
+              `<tr><td class="tnum" style="font-weight:500">#${b.no}<div class="sm muted">${b.time}</div></td><td>${esc(b.customer)}</td><td class="sm">${items}</td><td class="sm muted tnum">${pay}</td><td class="r tnum ${amt < 0 ? "neg" : ""}" style="font-weight:500">${fmt(amt)}</td><td class="r">${st}${act ? `<div style="margin-top:6px">${act}</div>` : ""}</td></tr>` +
+              extra
+            );
+          })
+          .join("");
+        return (
+          head(
+            "Daily report",
+            "All bills for today, including cancelled ones",
+          ) +
+          (c.cancels >= 3
+            ? `<div class="alert a-amber">${ic("alert")}<div>${c.cancels} bills were cancelled today. The Owner has been alerted.</div></div>`
+            : "") +
+          (L && S.role === "manager"
+            ? `<div class="alert a-brass">${ic("lock")}<div>Today is closed. Only the Owner can cancel a bill now.</div></div>`
+            : "") +
+          `<div class="stats">${stat("trend", "Total sales", rs(c.total))}${stat("cash", "Cash", rs(c.cashSales))}${stat("qr", "Online", rs(c.onlineSales))}${stat("receipt", "Paid bills", c.active)}${stat("undo", "Cancelled", c.cancels)}</div>
+  <div class="card" id="billsTable"><div class="tbl-wrap"><table><thead><tr><th style="width:80px">Bill</th><th>Customer</th><th>Services and staff</th><th>Payment</th><th class="r">Amount</th><th class="r" style="width:130px">Status</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="cb help" style="border-top:1px solid var(--line-2)">Totals include every line, cancelled bills and reversals too. The mistake stays visible and the total stays correct.</div></div>`
+        );
+      };
+
+      V.khata = () => {
+        const s = staffBy(S.khata);
+        const rows = khataRows(s.id);
+        let run = 0;
+        const body = rows
+          .map((r) => {
+            run += r.a;
+            return `<tr><td class="muted">${r.d}</td><td>${esc(r.t)}</td><td class="r tnum ${r.a > 0 ? "pos" : r.a < 0 ? "neg" : ""}">${r.a > 0 ? "+" + fmt(r.a) : r.a < 0 ? fmt(r.a) : "0"}</td><td class="r tnum">${fmt(run)}</td></tr>`;
+          })
+          .join("");
+        return (
+          head(
+            "Staff khata",
+            "Earnings are added, payments and advances are subtracted",
+          ) +
+          (S.close.locked
+            ? ""
+            : `<div class="alert a-blue">${ic("info")}<div>Today's earnings and payments are added to the khata when the day is closed.</div></div>`) +
+          `<div class="grid g-kh"><div class="card list-staff">${S.staff.map((x) => `<button data-a="khata" data-v="${x.id}" class="${S.khata === x.id ? "on" : ""}"><div class="av">${initials(x.name)}</div><div><div class="n">${x.name}</div><div class="s">${typeLabel(x.type, x.rate)}${on(x) ? "" : ' <span class="badge b-grey">Inactive</span>'}</div></div><span class="b tnum">${fmt(bal(x.id))}</span></button>`).join("")}</div>
+  <div class="card" id="ledger"><div class="ch"><h2>${s.name}, ${monthName()} ${dObj(S.date).getFullYear()}</h2>${S.monthClosed ? '<span class="badge b-green">Final, month closed</span>' : '<span class="badge b-amber">Provisional until month close</span>'}</div>
+  <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Details</th><th class="r">Amount</th><th class="r">Balance</th></tr></thead><tbody>${body}<tr class="tot"><td></td><td>Balance owed to ${s.name}</td><td></td><td class="r tnum">${rs(run)}</td></tr></tbody></table></div>
+  <div class="cb" style="border-top:1px solid var(--line-2);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span class="help">${s.type !== 3 ? `Monthly salary of ${rs(s.salary)} is added at month end.` : "Daily wage and commission are added every night at day close."}</span>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm btn-p" data-a="stmt" data-v="${s.id}">${ic("receipt")}Monthly receipt</button><button class="btn btn-sm" data-a="slip">${ic("msg")}Send slip</button></div></div></div></div>`
+        );
+      };
+
+      V.overview = () => {
+        const c = calc();
+        // v2: chart reads the stored day snapshots (closed days) plus today.
+        const days = S.days
+          .filter((d) => d.date !== S.date)
+          .slice(-6)
+          .map((d) => [dShort(d.date), d.sale])
+          .concat([["Today", c.total]]);
+        const n = days.length;
+        const max = Math.max(...days.map((d) => d[1]), 1) * 1.12,
+          W = 560,
+          H = 190,
+          bw = 44,
+          gap = n > 1 ? (W - 40 - bw * n) / (n - 1) : 0;
+        const bars = days
+          .map((d, i) => {
+            const h = Math.max(2, (d[1] / max) * (H - 40));
+            const x = 30 + i * (bw + gap);
+            const y = H - 24 - h;
+            return `<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="5" fill="${i === n - 1 ? "#A67C45" : "#D9DEE6"}"/><text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" font-size="12" fill="#6B7584">${d[0]}</text><text x="${x + bw / 2}" y="${y - 6}" text-anchor="middle" font-size="11.5" fill="#475467">${(d[1] / 1000).toFixed(1)}k</text>`;
+          })
+          .join("");
+        const drawer =
+          S.opening +
+          c.cashSales +
+          c.ownerIn -
+          c.expDrawer -
+          c.advances -
+          c.ownerOut -
+          c.payouts;
+        const feed = [];
+        S.bills.forEach((b) =>
+          feed.push({
+            t: b.time,
+            txt:
+              b.status === "cancelled"
+                ? `Bill #${b.no} cancelled`
+                : b.status === "reversal"
+                  ? `Reversal for #${b.reverses}`
+                  : `Bill #${b.no} for ${esc(b.customer)}`,
+            sub:
+              b.status === "cancelled"
+                ? "Reason: " + esc(b.reason)
+                : rs(b.items.reduce((a, i) => a + i.amount, 0)),
+            col:
+              b.status === "cancelled"
+                ? "#B42318"
+                : b.status === "reversal"
+                  ? "#98A2B3"
+                  : "#12795A",
+          }),
+        );
+        S.entries.forEach((e) =>
+          feed.push({
+            t: e.time,
+            txt:
+              e.type === "expense"
+                ? `Expense: ${esc(e.desc)}`
+                : e.type === "advance"
+                  ? `Advance to ${staffBy(e.staff).name}`
+                  : e.type === "owner_out"
+                    ? `Owner took cash`
+                    : "Owner added cash",
+            sub: rs(e.amount),
+            col: "#A67C45",
+          }),
+        );
+        feed.sort((a, b) => b.t.localeCompare(a.t));
+        return (
+          head(
+            "Overview",
+            "Live view of the salon, available on the Owner's phone",
+          ) +
+          `<div class="stats" id="kpis">${stat("trend", "Sales today", rs(c.total), c.active + " bills paid")}${stat("cash", S.close.locked ? "Cash in drawer" : "Cash in drawer (expected)", rs(S.close.locked ? c.counted : drawer), S.close.locked ? "Counted at day close" : "Before day close")}${stat("qr", "Online to your bank", rs(c.onlineSales))}${stat("wallet", "Expenses today", rs(c.expDrawer + c.expOwner))}</div>
+  <div class="grid g-2"><div class="card"><div class="ch"><h2>Sales, last 7 days</h2><span class="help">Rs</span></div><div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Sales for the last 7 days">${bars}</svg></div></div>
+  <div class="card"><div class="ch"><h2>Alerts</h2></div><div class="cb">
+    <div class="alert a-amber" style="margin-bottom:10px">${ic("undo")}<div>${c.cancels} bill${c.cancels === 1 ? "" : "s"} cancelled today. Reason recorded for each.</div></div>
+    ${S.entries
+      .filter((e) => e.type === "advance")
+      .map((e) => `<div class="alert a-blue" style="margin-bottom:10px">${ic("user")}<div>${staffBy(e.staff).name} took an advance of ${rs(e.amount)}.</div></div>`)
+      .join("")}
+    ${S.close.locked ? `<div class="alert ${c.counted < c.expected ? "a-amber" : "a-blue"}" style="margin:0">${ic("shield")}<div>Day closed. ${c.counted < c.expected ? "Short " + rs(c.expected - c.counted) + ": " + esc(S.close.reason) : "Cash matched."}</div></div>` : `<div class="alert a-brass" style="margin:0">${ic("clock")}<div>Day is still open. Close expected after 11 pm.</div></div>`}
+  </div></div></div>
+  <div class="card feed" style="margin-top:16px"><div class="ch"><h2>Today's activity</h2></div>${feed
+    .slice(0, 8)
+    .map(
+      (f) =>
+        `<div class="it"><span class="dt" style="background:${f.col}"></span><div style="flex:1"><div class="t">${f.txt}</div><div class="s">${f.sub}</div></div><span class="s tnum">${f.t}</span></div>`,
+    )
+    .join("")}</div>`
+        );
+      };
+
+      // ---------------------------------------------------------------
+      // v2: Daily worksheet, the salon's paper register as a live grid.
+      // It only READS today's bills (no separate data store). Quick add
+      // writes a normal minimal bill, so commission and Day Close stay correct.
+      // ---------------------------------------------------------------
+      V.sheet = () => {
+        const c = calc();
+        const L = S.close.locked;
+        const cols = dayStaff(c);
+        const cell = {};
+        cols.forEach((s) => (cell[s.id] = []));
+        S.bills.forEach((b) =>
+          b.items.forEach((i) => {
+            if (cell[i.staff]) cell[i.staff].push({ a: i.amount, no: b.no, n: i.name, st: b.status });
+          }),
+        );
+        const own = S.bills
+          .filter((b) => b.online !== 0)
+          .map((b) => ({ a: b.online, no: b.no, n: "Online", st: b.status }));
+        const rowsN = Math.max(1, own.length, ...cols.map((s) => cell[s.id].length));
+        const cellHtml = (x) =>
+          x
+            ? `<div class="tnum ${x.st === "cancelled" ? "muted strike" : ""} ${x.a < 0 ? "neg" : ""}" style="font-weight:500">${fmt(x.a)}</div><div class="sm muted">#${x.no} ${esc(x.n)}</div>`
+            : "";
+        let body = "";
+        for (let r = 0; r < rowsN; r++)
+          body += `<tr>${cols.map((s) => `<td>${cellHtml(cell[s.id][r])}</td>`).join("")}<td class="own">${cellHtml(own[r])}</td></tr>`;
+        const qp = S.quickPay;
+        return (
+          head("Daily worksheet", "Today's bills as columns per person, like the paper register") +
+          `<div class="alert a-brass">${ic("book")}<div>Jaise aap register par likhte hain — har karigar ka apna column, neeche total.</div></div>` +
+          (L
+            ? `<div class="alert a-blue" style="align-items:center">${ic("lock")}<div style="flex:1">Today is closed. Quick add is off until the next business day starts.</div><button class="btn btn-sm" data-a="nextDay">Start next business day</button></div>`
+            : "") +
+          `<div class="card" id="sheetCard"><div class="ch" style="flex-wrap:wrap"><h2>${dLong(S.date)}</h2>
+      <div style="display:flex;align-items:center;gap:8px"><span class="help">Quick add paid by</span><div class="seg" style="min-width:170px"><button data-a="quickPay" data-v="cash" class="${qp === "cash" ? "on" : ""}">Cash</button><button data-a="quickPay" data-v="online" class="${qp === "online" ? "on" : ""}">Online</button></div>
+      <button class="btn btn-sm" data-a="go" data-v="billing">${ic("receipt")}Full bill</button></div></div>
+    <div class="tbl-wrap"><table class="sheet"><thead><tr>${cols.map((s) => `<th class="r">${s.name}${on(s) ? "" : ' <span class="badge b-grey">Inactive</span>'}</th>`).join("")}<th class="r own">Owner / Account</th></tr>
+    <tr class="qa">${cols.map((s) => `<td>${on(s) && !L ? `<input class="inp tnum" type="number" inputmode="numeric" min="1" step="1" data-in="quick" data-v="${s.id}" value="${esc(S.quick[s.id] || "")}" placeholder="+ amount, Enter" aria-label="Quick add for ${s.name}">` : ""}</td>`).join("")}<td class="own sm muted">Online bills land here</td></tr></thead>
+    <tbody>${body}<tr class="tot">${cols.map((s) => `<td class="r tnum">${rs(c.work[s.id])}</td>`).join("")}<td class="r tnum own">${rs(c.onlineSales)}</td></tr></tbody></table></div>
+    <div class="cb" style="border-top:1px solid var(--line-2)"><div class="sum t" style="border-top:0;margin-top:0;padding-top:0"><span>Grand total for the day</span><span class="tnum">${rs(c.total)}</span></div>
+      <div class="sum"><span>Cash in drawer from sales</span><span class="tnum">${rs(c.cashSales)}</span></div>
+      <div class="sum"><span>Owner / Account (online, straight to Saud Sahab)</span><span class="tnum">${rs(c.onlineSales)}</span></div>
+      <div class="help" style="margin-top:6px">Grand total = all staff columns, and matches Total sales in the Daily report. The Owner / Account column is the online part of that total, not extra. Type an amount in a column and press Enter: it saves a small bill for that person. Cancelled amounts are struck through and their reversal is shown in minus.</div></div></div>`
+        );
+      };
+
+      // v2: Monthly figures = sum of closed-day snapshots + monthly expenses.
+      // Frozen into S.monthSnap at Month Close.
+      function monthCalc() {
+        const mk = monthKey();
+        const days = S.days.filter((d) => d.date.startsWith(mk));
+        const sales = sumBy(days, (d) => d.sale),
+          cash = sumBy(days, (d) => d.cash),
+          online = sumBy(days, (d) => d.online),
+          dailyExp = sumBy(days, (d) => d.expense),
+          staffEarned = sumBy(days, (d) => d.staffEarned),
+          staffPaid = sumBy(days, (d) => d.staffPaid),
+          ownerOut = sumBy(days, (d) => d.ownerOut),
+          dayProfit = sumBy(days, (d) => d.profit);
+        const fixed = sumBy(S.monthExp.fixed, (f) => Number(f.amount) || 0);
+        const others = sumBy(S.monthExp.others.filter((o) => !o.void), (o) => o.amount);
+        const salaries = sumBy(S.staff.filter((s) => on(s) && s.type !== 3), (s) => s.salary);
+        // Net profit. NOT subtracted: staff advances, cash the Owner took,
+        // partner capital and capital repayments.
+        const net = sales - dailyExp - fixed - others - staffEarned - salaries;
+        const repaid = sumBy(S.capital, (k) =>
+          sumBy(k.repayments.filter((r) => r.date.startsWith(mk)), (r) => r.amount),
+        );
+        const ownerRecv = online + ownerOut;
+        return {
+          days: days.map((d) => Object.assign({}, d)),
+          sales, cash, online, dailyExp, staffEarned, staffPaid, ownerOut, dayProfit,
+          fixed, others, salaries, net, repaid, ownerRecv,
+          balance: net - ownerRecv - repaid,
+        };
+      }
+      const M = () => (S.monthClosed && S.monthSnap ? S.monthSnap : monthCalc());
+      const minus = (n) => (n ? "−" + fmt(n) : "0");
+
+      V.monthly = () => {
+        const m = M();
+        const mn = monthName();
+        const todayOpen = !S.days.some((d) => d.date === S.date);
+        const P = [
+          [`Total sales (sum of ${m.days.length} closed days)`, fmt(m.sales)],
+          ["Daily expenses (from day close)", minus(m.dailyExp)],
+          ["Fixed monthly expenses (rent, electricity, bills, supplies)", minus(m.fixed)],
+          ["Other expenses (with reason)", minus(m.others)],
+          ["Staff earnings from day close (commission, wage, bonus)", minus(m.staffEarned)],
+          ["Monthly salaries (Type 1 and 2 staff)", minus(m.salaries)],
+        ];
+        const dayRows = m.days
+          .map(
+            (d) =>
+              `<tr><td>${dShort(d.date)}</td><td class="r tnum">${fmt(d.sale)}</td><td class="r tnum">${fmt(d.cash)}</td><td class="r tnum">${fmt(d.online)}</td><td class="r tnum">${fmt(d.expense)}</td><td class="r tnum">${fmt(d.staffEarned)}</td><td class="r tnum muted">${fmt(d.staffPaid)}</td><td class="r tnum ${d.profit < 0 ? "neg" : ""}" style="font-weight:500">${fmt(d.profit)}</td></tr>`,
+          )
+          .join("");
+        return (
+          head("Monthly report", `${mn} ${dObj(S.date).getFullYear()}, month to date. Built from closed days plus monthly expenses`) +
+          (S.monthClosed
+            ? `<div class="alert a-brass">${ic("lock")}<div>${mn} is closed and frozen. Any correction found later is added as an adjustment next month.</div></div>`
+            : "") +
+          `<div class="stats">${stat("trend", "Total sales", rs(m.sales), m.days.length + " closed days")}${stat("chart", "Net profit", rs(m.net))}${stat("user", "Received by Owner", rs(m.ownerRecv), `Online ${fmt(m.online)} + cash ${fmt(m.ownerOut)}`)}${stat("wallet", "Balance with business", rs(m.balance))}</div>
+  <div class="grid g-2e"><div class="card"><div class="ch"><h2>Profit and loss</h2></div><table class="pl"><tbody>${P.map((l) => `<tr><td>${l[0]}</td><td class="r tnum">${l[1]}</td></tr>`).join("")}<tr class="tot"><td>Net profit</td><td class="r tnum">${rs(m.net)}</td></tr></tbody></table>
+    <div class="cb help" style="border-top:1px solid var(--line-2)">Staff advances and cash taken by the Owner are not expenses, so they are not subtracted here. Partner capital and its repayments are not expenses either (see Capital / Outstanding).</div></div>
+  <div class="card"><div class="ch"><h2>Owner account</h2></div><table class="pl"><tbody><tr><td>Net profit</td><td class="r tnum">${fmt(m.net)}</td></tr><tr><td>Online payments received in Owner's bank</td><td class="r tnum">${minus(m.online)}</td></tr><tr><td>Cash taken from drawer</td><td class="r tnum">${minus(m.ownerOut)}</td></tr><tr><td>Capital repaid to partners (not an expense)</td><td class="r tnum">${minus(m.repaid)}</td></tr><tr class="tot"><td>Balance with business</td><td class="r tnum">${rs(m.balance)}</td></tr></tbody></table>
+    <div class="cb" style="border-top:1px solid var(--line-2)">${S.monthClosed ? '<span class="badge b-brass">Closed and frozen</span>' : `<button class="btn btn-p" data-a="monthClose">${ic("cal")}Close ${mn}</button><div class="help" style="margin-top:8px">Closing freezes the month, adds monthly salaries to the khata and makes staff receipts final.</div>`}</div></div></div>
+  <div class="card" style="margin-top:16px" id="daysTable"><div class="ch"><h2>Closed days</h2><span class="help">From the Day close snapshot</span></div><div class="tbl-wrap"><table><thead><tr><th>Date</th><th class="r">Sale</th><th class="r">Cash</th><th class="r">Online</th><th class="r">Expenses</th><th class="r">Staff earned</th><th class="r">Staff paid</th><th class="r">Day profit</th></tr></thead><tbody>${dayRows}
+    <tr class="tot"><td>Sum of ${m.days.length} days</td><td class="r tnum">${fmt(m.sales)}</td><td class="r tnum">${fmt(m.cash)}</td><td class="r tnum">${fmt(m.online)}</td><td class="r tnum">${fmt(m.dailyExp)}</td><td class="r tnum">${fmt(m.staffEarned)}</td><td class="r tnum">${fmt(m.staffPaid)}</td><td class="r tnum">${fmt(m.dayProfit)}</td></tr></tbody></table></div>
+    <div class="cb help" style="border-top:1px solid var(--line-2)">Sum of day profits ${rs(m.dayProfit)} − fixed ${fmt(m.fixed)} − others ${fmt(m.others)} − salaries ${fmt(m.salaries)} = net profit ${rs(m.net)}.${todayOpen ? ` Today (${dShort(S.date)}) is added when the day is closed.` : ""}</div></div>`
+        );
+      };
+
+      // v2: Monthly expenses (Owner only). Fixed lines = this month's bill amount,
+      // editable until Month Close. "Others" are money entries: never edited or
+      // deleted, only voided with a reason (and re-entered if needed).
+      V.mexp = () => {
+        const m = monthCalc();
+        const F = S.monthClosed;
+        const ff = S.fixedForm,
+          of = S.otherForm;
+        const fixedRows = S.monthExp.fixed
+          .map(
+            (f) =>
+              `<tr><td>${esc(f.name)}${!Number(f.amount) ? ' <span class="badge b-amber">Not entered</span>' : ""}</td><td style="width:170px"><input class="inp tnum" type="number" inputmode="numeric" min="0" step="1" data-in="fixedAmt" data-v="${f.id}" value="${Number(f.amount) || ""}" placeholder="0" aria-label="${esc(f.name)} amount" ${F ? "disabled" : ""}></td></tr>`,
+          )
+          .join("");
+        const otherRows = S.monthExp.others
+          .map((o, idx) => {
+            let r = `<tr class="${o.void ? "off" : ""}"><td class="muted">${dShort(o.date)}</td><td><span class="${o.void ? "strike" : ""}">${esc(o.reason)}</span>${o.void ? `<div class="sm"><span class="badge b-red">Voided</span> ${esc(o.voidReason)}</div>` : ""}</td><td class="r tnum ${o.void ? "strike" : ""}" style="font-weight:500">${fmt(o.amount)}</td><td class="r">${!o.void && !F && S.voiding !== idx ? `<button class="btn btn-sm btn-danger" data-a="voidStart" data-v="${idx}">Void</button>` : ""}</td></tr>`;
+            if (S.voiding === idx)
+              r += `<tr><td colspan="4" style="background:#FDF7F6"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input class="inp" style="flex:1;min-width:200px" type="text" data-in="voidReason" value="${esc(S.voidReason)}" placeholder="Reason for voiding (required)"><button class="btn btn-sm btn-danger" data-a="voidConfirm" data-v="${idx}">Confirm void</button><button class="btn btn-sm btn-ghost" data-a="voidAbort">Keep</button></div>${S.voidErr ? `<div class="err">${ic("alert")}${S.voidErr}</div>` : ""}<div class="help" style="margin-top:6px">The entry is not deleted. It stays visible as voided.</div></td></tr>`;
+            return r;
+          })
+          .join("");
+        return (
+          head("Monthly expenses", `${monthName()} bills and one-off expenses. Owner only.`) +
+          (F ? `<div class="alert a-brass">${ic("lock")}<div>${monthName()} is closed. Expenses are frozen.</div></div>` : "") +
+          `<div class="stats">${stat("list", "Fixed monthly", rs(m.fixed))}${stat("wallet", "Others", rs(m.others))}${stat("receipt", "Monthly expenses total", rs(m.fixed + m.others), "Feeds the Monthly report")}${stat("chart", "Net profit (month to date)", rs(m.net))}</div>
+  <div class="grid g-2e"><div class="card" id="fixedCard"><div class="ch"><h2>Fixed monthly</h2><span class="help">Rs</span></div><div class="tbl-wrap"><table><tbody>${fixedRows}<tr class="tot"><td>Total fixed</td><td class="r tnum">${rs(m.fixed)}</td></tr></tbody></table></div>
+    ${F ? "" : `<div class="cb" style="border-top:1px solid var(--line-2)"><label class="l">Add a fixed line</label><div class="row-f"><div><input class="inp" type="text" data-in="fixedForm.name" value="${esc(ff.name)}" placeholder="Generator fuel" aria-label="Fixed line name"></div><div><input class="inp tnum" type="number" inputmode="numeric" min="0" step="1" data-in="fixedForm.amount" value="${ff.amount}" placeholder="Amount" aria-label="Amount"></div><button class="btn" data-a="addFixed">${ic("plus")}Add</button></div>${S.mexpErr ? `<div class="err">${ic("alert")}${S.mexpErr}</div>` : ""}<div class="help" style="margin-top:6px">Type the amount and press Enter or Tab. It can be corrected until the month is closed.</div></div>`}</div>
+  <div class="card" id="othersCard"><div class="ch"><h2>Others</h2></div>
+    ${F ? "" : `<div class="cb" style="border-bottom:1px solid var(--line-2)"><div class="row-f"><div style="flex:2"><label class="l" for="orr">Reason (required)</label><input class="inp" id="orr" type="text" data-in="otherForm.reason" value="${esc(of.reason)}" placeholder="Chair repair"></div><div><label class="l" for="ora">Amount (Rs)</label><input class="inp tnum" id="ora" type="number" inputmode="numeric" min="1" step="1" data-in="otherForm.amount" value="${of.amount}" placeholder="4000"></div><button class="btn btn-p" data-a="addOther">Add</button></div>${S.otherErr ? `<div class="err">${ic("alert")}${S.otherErr}</div>` : ""}</div>`}
+    <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Reason</th><th class="r">Amount</th><th></th></tr></thead><tbody>${otherRows || '<tr><td colspan="4" class="empty">No other expenses yet</td></tr>'}<tr class="tot"><td></td><td>Total others</td><td class="r tnum">${rs(m.others)}</td><td></td></tr></tbody></table></div></div></div>`
+        );
+      };
+
+      // v2: Capital / Outstanding (Owner only). A partner-funded investment is a
+      // liability to that partner, repaid in installments from business cash.
+      // It is NOT an operating expense and never changes net profit.
+      // Investments and installments are money entries: append-only.
+      const capPaid = (k, pid) =>
+        sumBy(k.repayments.filter((r) => !pid || r.partner === pid), (r) => r.amount);
+      const capIn = (k, pid) =>
+        sumBy(k.funders.filter((f) => !pid || f.partner === pid), (f) => f.amount);
+      const partnerBy = (id) => S.partners.find((p) => p.id === id) || { name: id };
+
+      V.capital = () => {
+        const tot = sumBy(S.capital, (k) => k.cost),
+          paid = sumBy(S.capital, (k) => capPaid(k));
+        const cf = S.capForm;
+        const cards = S.capital
+          .slice()
+          .reverse()
+          .map((k) => {
+            const p = capPaid(k),
+              left = k.cost - p;
+            const rp = S.repay[k.id] || { partner: "", amount: "", note: "", err: "" };
+            const owed = k.funders.filter((f) => f.amount - capPaid(k, f.partner) > 0);
+            return `<div class="card" style="margin-bottom:16px"><div class="ch"><div><h2>${esc(k.name)}</h2><div class="sm muted">Added ${dShort(k.date)}</div></div>${left > 0 ? '<span class="badge b-amber">Outstanding</span>' : '<span class="badge b-green">Fully repaid</span>'}</div>
+      <div class="cb" style="padding-bottom:0"><div class="res"><div class="x"><div class="muted sm">Total</div><div class="v tnum">${rs(k.cost)}</div></div><div class="x"><div class="muted sm">Paid back</div><div class="v tnum">${rs(p)}</div></div><div class="x ${left > 0 ? "short" : "extra"}"><div class="sm ${left > 0 ? "neg" : "pos"}">Remaining</div><div class="v tnum">${rs(left)}</div></div></div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Funded by</th><th class="r">Contributed</th><th class="r">Paid back</th><th class="r">Remaining</th></tr></thead><tbody>${k.funders.map((f) => `<tr><td>${esc(partnerBy(f.partner).name)}</td><td class="r tnum">${fmt(f.amount)}</td><td class="r tnum">${fmt(capPaid(k, f.partner))}</td><td class="r tnum" style="font-weight:500">${fmt(f.amount - capPaid(k, f.partner))}</td></tr>`).join("")}</tbody></table></div>
+      <div class="tbl-wrap" style="border-top:1px solid var(--line)"><table><thead><tr><th>Installment date</th><th>Paid to</th><th>Note</th><th class="r">Amount</th></tr></thead><tbody>${k.repayments.map((r) => `<tr><td class="muted">${dShort(r.date)}</td><td>${esc(partnerBy(r.partner).name)}</td><td>${esc(r.note)}</td><td class="r tnum">${fmt(r.amount)}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">No installments yet</td></tr>'}</tbody></table></div>
+      ${owed.length ? `<div class="cb" style="border-top:1px solid var(--line-2)"><label class="l">Record an installment</label><div class="row-f"><div><select class="inp" data-in="repay.partner" data-v="${k.id}" aria-label="Paid to">${owed.map((f) => `<option value="${f.partner}" ${rp.partner === f.partner ? "selected" : ""}>${esc(partnerBy(f.partner).name)}</option>`).join("")}</select></div><div><input class="inp tnum" type="number" inputmode="numeric" min="1" step="1" data-in="repay.amount" data-v="${k.id}" value="${rp.amount}" placeholder="Amount" aria-label="Installment amount"></div><div><input class="inp" type="text" data-in="repay.note" data-v="${k.id}" value="${esc(rp.note)}" placeholder="Installment ${k.repayments.length + 1}" aria-label="Note"></div><button class="btn btn-p" data-a="repay" data-v="${k.id}">Record</button></div>${rp.err ? `<div class="err">${ic("alert")}${rp.err}</div>` : ""}<div class="help" style="margin-top:6px">Paid from business cash. It lowers what the business owes the partner. It is not an expense and not profit.</div></div>` : ""}</div>`;
+          })
+          .join("");
+        return (
+          head("Capital / Outstanding", "Big one-off investments funded by partners and repaid in installments") +
+          `<div class="alert a-blue">${ic("info")}<div>Ye kharcha nahi, capital hai: partner ne paisa lagaya, business kiston mein wapas karta hai. Is se mahine ka net profit kam nahi hota.</div></div>
+  <div class="stats">${stat("landmark", "Total invested", rs(tot), S.capital.length + " investments")}${stat("cash", "Paid back", rs(paid))}${stat("alert", "Outstanding to partners", rs(tot - paid), "Liability, not an expense")}</div>
+  <div class="grid g-2"><div>${cards || `<div class="card"><div class="empty">${ic("landmark")}<div>No investments yet</div></div></div>`}</div>
+  <div class="card" id="capForm"><div class="ch"><h2>New investment</h2></div><div class="cb">
+    <div class="f"><label class="l" for="cn">Name</label><input class="inp" id="cn" type="text" data-in="capForm.name" value="${esc(cf.name)}" placeholder="Solar system"></div>
+    <div class="f"><label class="l" for="cc">Total cost (Rs)</label><input class="inp tnum" id="cc" type="number" inputmode="numeric" min="1" step="1" data-in="capForm.cost" value="${cf.cost}" placeholder="300000"></div>
+    <label class="l">Who contributed how much</label>
+    ${S.partners.map((p) => `<div class="f" style="display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:8px;align-items:center"><span>${esc(p.name)}</span><input class="inp tnum" type="number" inputmode="numeric" min="0" step="1" data-in="capForm.fund" data-v="${p.id}" value="${cf.funds[p.id] || ""}" placeholder="0" aria-label="${esc(p.name)} contributed"></div>`).join("")}
+    ${S.capErr ? `<div class="err">${ic("alert")}${S.capErr}</div>` : ""}
+    <button class="btn btn-p btn-lg" style="margin-top:6px" data-a="addCapital">Add investment</button>
+    <div class="help" style="margin-top:8px">Contributions must add up to the total cost.</div></div></div></div>`
+        );
+      };
+
+      // v2: Partners (Owner only). Share % is configuration: editable, and it
+      // recomputes the open month. A closed month keeps its frozen figures.
+      function partnerAccount(p, m) {
+        const profit = Math.round((m.net * p.share) / 100);
+        const injected = sumBy(S.capital, (k) => capIn(k, p.id));
+        const repaid = sumBy(S.capital, (k) => capPaid(k, p.id));
+        const drawn = sumBy(S.drawings.filter((d) => d.partner === p.id), (d) => d.amount);
+        return { profit, injected, repaid, owed: injected - repaid, drawn, net: profit + injected - repaid - drawn };
+      }
+
+      V.partners = () => {
+        const m = M();
+        if (!S.pDraft) S.pDraft = S.partners.map((p) => Object.assign({}, p));
+        const totalPct = sumBy(S.pDraft, (p) => Number(p.share) || 0);
+        const tab = S.partners.some((p) => p.id === S.partnerTab) ? S.partnerTab : "all";
+        const tabs = `<div class="tabs"><button data-a="pTab" data-v="all" class="${tab === "all" ? "on" : ""}">All partners</button>${S.partners.map((p) => `<button data-a="pTab" data-v="${p.id}" class="${tab === p.id ? "on" : ""}">${esc(p.name)}</button>`).join("")}</div>`;
+        let body;
+        if (tab === "all") {
+          body = `<div class="card" id="sharesCard"><div class="ch"><h2>Profit share</h2><span class="badge ${totalPct === 100 ? "b-green" : "b-red"}">Total ${totalPct}%</span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Partner</th><th style="width:120px">Share %</th><th class="r">Share of net profit</th></tr></thead><tbody>
+      ${S.pDraft.map((p, i) => `<tr><td><input class="inp" type="text" data-in="pName" data-v="${i}" value="${esc(p.name)}" aria-label="Partner name"></td><td><input class="inp tnum" type="number" inputmode="numeric" min="0" max="100" step="1" data-in="pShare" data-v="${i}" value="${p.share}" aria-label="${esc(p.name)} share"></td><td class="r tnum">${rs(Math.round((m.net * (Number(p.share) || 0)) / 100))}</td></tr>`).join("")}
+      <tr class="tot"><td>Net profit, ${monthName()}</td><td class="tnum">${totalPct}%</td><td class="r tnum">${rs(m.net)}</td></tr></tbody></table></div>
+      <div class="cb" style="border-top:1px solid var(--line-2)">${S.pErr ? `<div class="err" style="margin:0 0 10px">${ic("alert")}${S.pErr}</div>` : ""}<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-p" data-a="saveShares">Save shares</button><button class="btn" data-a="addPartner">${ic("plus")}Add partner</button></div><div class="help" style="margin-top:8px">Shares must add up to 100%.</div></div></div>
+    <div class="card" style="margin-top:16px"><div class="ch"><h2>Partner accounts</h2><span class="badge b-grey">Sample figures</span></div><div class="tbl-wrap"><table><thead><tr><th>Partner</th><th class="r">Share</th><th class="r">Profit share</th><th class="r">Capital injected</th><th class="r">Repaid</th><th class="r">Capital owed</th><th class="r">Drawn</th><th class="r">Net position</th></tr></thead><tbody>
+      ${S.partners.map((p) => { const a = partnerAccount(p, m); return `<tr><td>${esc(p.name)}</td><td class="r tnum">${p.share}%</td><td class="r tnum">${fmt(a.profit)}</td><td class="r tnum">${fmt(a.injected)}</td><td class="r tnum">${fmt(a.repaid)}</td><td class="r tnum">${fmt(a.owed)}</td><td class="r tnum">${fmt(a.drawn)}</td><td class="r tnum" style="font-weight:600">${rs(a.net)}</td></tr>`; }).join("")}
+      </tbody></table></div><div class="cb help" style="border-top:1px solid var(--line-2)">Net position = profit share + capital still owed − drawn. It is what the business owes the partner.</div></div>`;
+        } else {
+          const p = S.partners.find((x) => x.id === tab);
+          const a = partnerAccount(p, m);
+          const df = S.drawForm;
+          const caps = S.capital.filter((k) => capIn(k, p.id));
+          const draws = S.drawings.filter((d) => d.partner === p.id);
+          body = `<div class="alert a-brass">${ic("pie")}<div>Your profit share = <b class="tnum">${p.share}%</b> of ${rs(m.net)} → <b class="tnum">${rs(a.profit)}</b></div></div>
+    <div class="stats">${stat("chart", "Profit share", rs(a.profit), p.share + "% of net profit")}${stat("landmark", "Capital injected", rs(a.injected))}${stat("cash", "Repayments received", rs(a.repaid), "Capital owed " + fmt(a.owed))}${stat("wallet", "Net position", rs(a.net), "Business owes " + esc(p.name))}</div>
+    <div class="grid g-2e"><div class="card"><div class="ch"><h2>Capital, separate from profit</h2></div><div class="tbl-wrap"><table><thead><tr><th>Investment</th><th class="r">Put in</th><th class="r">Repaid</th><th class="r">Owed back</th></tr></thead><tbody>
+      ${caps.map((k) => `<tr><td>${esc(k.name)}</td><td class="r tnum">${fmt(capIn(k, p.id))}</td><td class="r tnum">${fmt(capPaid(k, p.id))}</td><td class="r tnum" style="font-weight:500">${fmt(capIn(k, p.id) - capPaid(k, p.id))}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">No capital from this partner</td></tr>'}
+      </tbody></table></div></div>
+    <div class="card"><div class="ch"><h2>Profit drawn</h2></div><div class="cb" style="border-bottom:1px solid var(--line-2)"><div class="row-f"><div><input class="inp tnum" type="number" inputmode="numeric" min="1" step="1" data-in="drawForm.amount" value="${df.amount}" placeholder="Amount" aria-label="Amount drawn"></div><div><input class="inp" type="text" data-in="drawForm.note" value="${esc(df.note)}" placeholder="Note" aria-label="Note"></div><button class="btn btn-p" data-a="addDraw" data-v="${p.id}">Record</button></div>${S.drawErr ? `<div class="err">${ic("alert")}${S.drawErr}</div>` : ""}</div>
+      <div class="tbl-wrap"><table><tbody>${draws.map((d) => `<tr><td class="muted">${dShort(d.date)}</td><td>${esc(d.note)}</td><td class="r tnum">${fmt(d.amount)}</td></tr>`).join("") || '<tr><td class="empty">Nothing drawn this month</td></tr>'}</tbody></table></div></div></div>`;
+        }
+        return (
+          head("Partners", `${monthName()} ${dObj(S.date).getFullYear()}, sample figures. Profit comes from the Monthly report.`) +
+          `<div class="card" style="margin-bottom:16px">${tabs}</div>${body}`
+        );
+      };
+
+      // v2: Staff & rates, full add / edit / deactivate (Owner only).
+      // AUDIT RULE: this is CONFIGURATION. It can be edited, but only applies
+      // forward: bills keep the amount and commission % saved on each line,
+      // closed days keep their snapshot, and the khata history never changes.
+      // (Money ENTRIES such as bills, payments and cash movements are never
+      // edited or deleted, only voided / reversed and re-entered.)
+      // Nothing here is hard-deleted: deactivating hides it from new bills.
+      V.setup = () => {
+        const b = S.bonus;
+        const edBtn = (kind, id) =>
+          `<button class="btn btn-sm" data-a="editOpen" data-v="${kind}:${id}">${ic("edit")}Edit</button>`;
+        const status = (x) => (on(x) ? '<span class="badge b-green">Active</span>' : '<span class="badge b-grey">Inactive</span>');
+        return (
+          head("Staff & rates", "Staff, services, deals and bonuses. Owner only.") +
+          `<div class="grid g-2"><div style="display:grid;gap:16px;min-width:0">
+    <div class="card" id="staffCard"><div class="ch"><h2>Staff pay plans</h2><button class="btn btn-sm btn-p" data-a="editOpen" data-v="staff:">${ic("plus")}Add staff</button></div><div class="tbl-wrap"><table><thead><tr><th>Staff</th><th>Plan</th><th class="r">Salary</th><th class="r">Daily wage</th><th class="r">Commission</th><th>Status</th><th></th></tr></thead><tbody>
+    ${S.staff.map((s) => `<tr class="${on(s) ? "" : "off"}"><td>${esc(s.name)}</td><td class="muted sm">${typeLabel(s.type, s.rate)}</td><td class="r tnum">${s.type !== 3 && s.salary ? fmt(s.salary) : '<span class="muted">—</span>'}</td><td class="r tnum">${s.type === 3 && s.wage ? fmt(s.wage) : '<span class="muted">—</span>'}</td><td class="r tnum">${s.type === 1 ? '<span class="muted">—</span>' : s.rate + "%"}</td><td>${status(s)}</td><td class="r">${edBtn("staff", s.id)}</td></tr>`).join("")}
+    </tbody></table></div><div class="cb help" style="border-top:1px solid var(--line-2)">Changing a rate applies from that day forward. Past records stay as they were. Deactivated staff are hidden from new bills; their khata stays.</div></div>
+    <div class="card" id="svcCard"><div class="ch"><h2>Service prices</h2><button class="btn btn-sm btn-p" data-a="editOpen" data-v="service:">${ic("plus")}Add service</button></div><div class="tbl-wrap"><table><thead><tr><th>Service</th><th>Category</th><th class="r">Price</th><th>Status</th><th></th></tr></thead><tbody>
+    ${S.services.map((s) => `<tr class="${on(s) ? "" : "off"}"><td>${esc(s.name)}</td><td class="muted">${esc(s.cat)}</td><td class="r tnum">${fmt(s.price)}</td><td>${status(s)}</td><td class="r">${edBtn("service", s.id)}</td></tr>`).join("")}
+    <tr><td>Haircut for Ashfaq Bhai</td><td><span class="badge b-brass">Special rate</span></td><td class="r tnum">1,500</td><td></td><td></td></tr></tbody></table></div></div>
+    <div class="card" id="dealCard"><div class="ch"><h2>Deals</h2><button class="btn btn-sm btn-p" data-a="editOpen" data-v="deal:">${ic("plus")}Add deal</button></div><div class="tbl-wrap"><table><thead><tr><th>Deal</th><th>Services included</th><th class="r">Deal price</th><th>Status</th><th></th></tr></thead><tbody>
+    ${S.deals.map((d) => `<tr class="${on(d) ? "" : "off"}"><td>${esc(d.name)}</td><td class="sm muted">${d.items.map((id) => esc(S.services.find((s) => s.id === id).name)).join(", ")}</td><td class="r tnum">${fmt(d.price)}</td><td>${status(d)}</td><td class="r">${edBtn("deal", d.id)}</td></tr>`).join("")}
+    </tbody></table></div><div class="cb help" style="border-top:1px solid var(--line-2)">Deal price is split across its services by list price, so each staff member's commission is correct.</div></div>
+  </div>
+  <div style="display:grid;gap:16px;align-content:start;min-width:0">
+  <div class="card"><div class="ch"><h2>Give a bonus</h2>${ic("gift")}</div><div class="cb">
+    <div class="f"><label class="l" for="bs">Staff member</label><select class="inp" id="bs" data-in="bonus.staff">${activeStaff().map((s) => `<option value="${s.id}" ${b.staff === s.id ? "selected" : ""}>${s.name}</option>`).join("")}</select></div>
+    <div class="f"><label class="l" for="ba">Amount (Rs)</label><input class="inp tnum" id="ba" type="number" inputmode="numeric" min="1" step="1" data-in="bonus.amount" value="${b.amount}" placeholder="1000"></div>
+    <div class="f"><label class="l" for="br">Reason</label><input class="inp" id="br" type="text" data-in="bonus.reason" value="${esc(b.reason)}" placeholder="Extra shift on Sunday"></div>
+    ${S.bonusErr ? `<div class="err">${ic("alert")}${S.bonusErr}</div>` : ""}
+    <button class="btn btn-p btn-lg" style="margin-top:4px" data-a="giveBonus">Add bonus</button>
+    <div class="help" style="margin-top:8px">The bonus is added to the staff member's khata. It can be paid today or with salary.</div></div></div>
+  <div class="card"><div class="ch"><h2>Settings change log</h2></div><div class="feed">${S.configLog
+    .slice()
+    .reverse()
+    .map((l) => `<div class="it"><span class="dt" style="background:#A67C45"></span><div style="flex:1"><div class="t">${esc(l.text)}</div><div class="s">${l.date}, ${l.time}</div></div></div>`)
+    .join("")}</div></div>
+  </div></div>`
+        );
+      };
+
+      // v2: add / edit modal for staff, services and deals (Staff & rates).
+      function editModal() {
+        const e = S.edit,
+          d = e.d;
+        const isNew = !e.id;
+        const title = (isNew ? "Add " : "Edit ") + e.kind;
+        let f = "";
+        if (e.kind === "staff") {
+          const t = Number(d.type);
+          f = `<div class="f"><label class="l" for="en">Name</label><input class="inp" id="en" type="text" data-in="edit.name" value="${esc(d.name)}" placeholder="Bilal"></div>
+      <div class="f"><label class="l" for="et">Pay plan</label><select class="inp" id="et" data-in="edit.type">${[1, 2, 3].map((k) => `<option value="${k}" ${t === k ? "selected" : ""}>Type ${k}: ${["Monthly salary", "Salary + commission", "Daily wage + commission"][k - 1]}</option>`).join("")}</select></div>
+      <div class="row-f">${t !== 3 ? `<div class="f"><label class="l" for="es">Monthly salary (Rs)</label><input class="inp tnum" id="es" type="number" inputmode="numeric" min="0" step="1" data-in="edit.salary" value="${d.salary}"></div>` : ""}
+      ${t === 3 ? `<div class="f"><label class="l" for="ew">Daily wage (Rs)</label><input class="inp tnum" id="ew" type="number" inputmode="numeric" min="0" step="1" data-in="edit.wage" value="${d.wage}"></div>` : ""}
+      ${t !== 1 ? `<div class="f"><label class="l" for="er">Commission %</label><input class="inp tnum" id="er" type="number" inputmode="numeric" min="0" max="100" step="1" data-in="edit.rate" value="${d.rate}"></div>` : ""}</div>
+      <div class="f"><label class="l" for="ep">4-digit PIN</label><input class="inp tnum" id="ep" type="password" inputmode="numeric" maxlength="4" data-in="edit.pin" value="${esc(d.pin)}" placeholder="PIN"><div class="help" style="margin-top:5px">Used by the staff member to confirm payments and advances.</div></div>`;
+        } else if (e.kind === "service") {
+          const cats = [...new Set(S.services.map((s) => s.cat))];
+          f = `<div class="f"><label class="l" for="en">Name</label><input class="inp" id="en" type="text" data-in="edit.name" value="${esc(d.name)}" placeholder="Threading"></div>
+      <div class="f"><label class="l" for="ec">Category</label><select class="inp" id="ec" data-in="edit.cat">${cats.map((c) => `<option ${d.cat === c ? "selected" : ""}>${esc(c)}</option>`).join("")}<option value="__new" ${d.cat === "__new" ? "selected" : ""}>+ New category</option></select></div>
+      ${d.cat === "__new" ? `<div class="f"><label class="l" for="enc">New category name</label><input class="inp" id="enc" type="text" data-in="edit.newCat" value="${esc(d.newCat)}" placeholder="Beard"></div>` : ""}
+      <div class="f"><label class="l" for="epr">Price (Rs)</label><input class="inp tnum" id="epr" type="number" inputmode="numeric" min="1" step="1" data-in="edit.price" value="${d.price}" placeholder="250"></div>`;
+        } else {
+          const items = d.items.filter((id) => S.services.some((s) => s.id === id));
+          const list = sumBy(items, (id) => S.services.find((s) => s.id === id).price);
+          const price = Number(d.price) || 0;
+          const preview =
+            items.length && price
+              ? splitDeal({ name: d.name, price, items }).map((x) => `${esc(x.name)} ${fmt(x.amount)}`).join(" · ")
+              : "";
+          f = `<div class="f"><label class="l" for="en">Name</label><input class="inp" id="en" type="text" data-in="edit.name" value="${esc(d.name)}" placeholder="Groom deal"></div>
+      <div class="f"><label class="l" for="edp">Deal price (Rs)</label><input class="inp tnum" id="edp" type="number" inputmode="numeric" min="1" step="1" data-in="edit.price" value="${d.price}" placeholder="1500"></div>
+      <label class="l">Services included</label><div style="border:1px solid var(--line);border-radius:8px;padding:4px 11px;margin-bottom:8px;max-height:220px;overflow:auto">${S.services
+        .filter((s) => on(s) || items.includes(s.id))
+        .map((s) => `<label class="chk"><input type="checkbox" data-in="editItem" data-v="${s.id}" ${items.includes(s.id) ? "checked" : ""}><span style="flex:1">${esc(s.name)}</span><span class="tnum muted">${fmt(s.price)}</span></label>`)
+        .join("")}</div>
+      <div class="help" style="margin-bottom:12px">List price total <span class="tnum">${rs(list)}</span>${preview ? `. Split by list price: <span class="tnum">${preview}</span>` : ""}</div>`;
+        }
+        f += `<label class="chk" style="margin-bottom:6px"><input type="checkbox" data-in="edit.active" ${d.active ? "checked" : ""}><span>Active</span></label>
+      <div class="help">${e.kind === "staff" ? "Inactive staff are hidden from new bills. Their khata and past bills stay." : "Inactive items are hidden from Billing. Past bills stay as they were."}</div>
+      ${!isNew ? `<div class="alert a-blue" style="margin:12px 0 0">${ic("info")}<div>Changing a rate applies from that day forward. Past records stay as they were.</div></div>` : ""}
+      ${e.err ? `<div class="err">${ic("alert")}${e.err}</div>` : ""}`;
+        return `<div class="overlay" data-a="editCancel" data-self="1"><div class="modal wide" role="dialog" aria-label="${title}"><div class="ch"><h2 style="text-transform:capitalize">${title}</h2><button class="icon-btn" data-a="editCancel" aria-label="Close">${ic("x")}</button></div>
+      <div class="cb">${f}</div><div class="cb" style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--line-2)"><button class="btn" data-a="editCancel">Cancel</button><button class="btn btn-p" data-a="editSave">${isNew ? "Add" : "Save changes"}</button></div></div></div>`;
+      }
+
+      // v2: month-end receipt per staff member (reuses receipt + modal pattern).
+      function stmtModal() {
+        const s = staffBy(S.stmt);
+        const rows = khataRows(s.id).filter((r) => r.a);
+        const earned = rows.filter((r) => r.a > 0),
+          took = rows.filter((r) => r.a < 0);
+        const tE = sumBy(earned, (r) => r.a),
+          tT = -sumBy(took, (r) => r.a);
+        const final = S.monthClosed;
+        const yr = dObj(S.date).getFullYear();
+        const line = (r) => `<div class="rw"><span>${esc(r.d)} ${esc(r.t)}</span><span>${fmt(Math.abs(r.a))}</span></div>`;
+        return `<div class="overlay" data-a="stmtClose" data-self="1"><div class="modal" role="dialog" aria-label="Monthly receipt"><div class="ch noprint"><h2>${esc(s.name)}, monthly receipt</h2><button class="icon-btn" data-a="stmtClose" aria-label="Close">${ic("x")}</button></div><div class="cb" style="background:var(--bg)">
+      <div class="receipt" style="width:320px"><div class="ce" style="font-weight:500">ART MEN'S SALON</div><div class="ce">Karachi</div><hr>
+      <div class="rw"><span>Staff</span><span>${esc(s.name)}</span></div><div class="rw"><span>Month</span><span>${monthName()} ${yr}</span></div><div class="rw"><span>Plan</span><span>${esc(typeLabel(s.type, s.rate))}</span></div>
+      <div class="ce" style="font-weight:500;margin-top:4px">${final ? "FINAL STATEMENT" : "PROVISIONAL"}</div><hr>
+      <div style="font-weight:500">EARNED</div>${earned.map(line).join("") || '<div class="muted">Nothing yet</div>'}<div class="rw" style="font-weight:500"><span>Total earned</span><span>${fmt(tE)}</span></div><hr>
+      <div style="font-weight:500">TAKEN (payments, advances)</div>${took.map(line).join("") || '<div class="muted">Nothing yet</div>'}<div class="rw" style="font-weight:500"><span>Total taken</span><span>${fmt(tT)}</span></div><hr>
+      <div class="rw" style="font-weight:600;font-size:14px"><span>PAYABLE NOW</span><span>${fmt(tE - tT)}</span></div>
+      ${!final && s.type !== 3 && s.salary ? `<div class="ce muted" style="margin-top:4px">Salary ${fmt(s.salary)} is added at month close</div>` : ""}
+      <hr><div>Received by: ____________</div><div class="ce" style="margin-top:6px">${dMed(S.date)}</div></div>
+      <div class="help ce noprint" style="margin-top:8px;text-align:center">Payable now: aaj kitna de raha hoon.${final ? "" : " Provisional until the month is closed."}</div></div>
+      <div class="cb noprint" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" data-a="slip">${ic("msg")}Send on WhatsApp</button><button class="btn" data-a="print">${ic("printer")}Print</button><button class="btn btn-p" data-a="stmtClose">Done</button></div></div></div>`;
+      }
+
+      function tourHtml() {
+        let h = "";
+        if (S.tourOpen) {
+          const t = TOUR[S.tour];
+          h += `<div class="tour" role="dialog" aria-label="Guided tour"><div class="hd"><div class="prog">${TOUR.map((_, i) => `<i class="${i <= S.tour ? "on" : ""}"></i>`).join("")}</div><button class="icon-btn" data-a="tourClose" aria-label="Close guide">${ic("x")}</button></div>
+    <div class="bd"><div class="help" style="margin-bottom:4px">Step ${S.tour + 1} of ${TOUR.length}</div><h3>${t.title}</h3><p>${t.text}</p>${t.act ? `<button class="btn btn-sm" style="margin-top:10px" data-a="tourAct">${t.actLabel}</button>` : ""}</div>
+    <div class="ft"><button class="btn btn-sm btn-ghost" data-a="tourPrev" ${S.tour === 0 ? 'style="visibility:hidden"' : ""}>${ic("arrowL")}Back</button><button class="btn btn-sm btn-p" data-a="tourNext">${S.tour === TOUR.length - 1 ? "Finish" : "Next"}${S.tour === TOUR.length - 1 ? "" : ic("arrowR")}</button></div></div>`;
+        } else
+          h += `<button class="btn tour-fab" data-a="tourOpen">${ic("help")}Guide</button>`;
+        return h;
+      }
+      function renderLayer() {
+        let h = "";
+        if (S.receipt) {
+          const b = S.receipt;
+          const tot = b.items.reduce((a, i) => a + i.amount, 0);
+          h += `<div class="overlay" data-a="closeReceipt" data-self="1"><div class="modal" role="dialog" aria-label="Receipt"><div class="ch noprint"><h2>Bill #${b.no} saved</h2><button class="icon-btn" data-a="closeReceipt" aria-label="Close">${ic("x")}</button></div><div class="cb" style="background:var(--bg)">
+      <div class="receipt"><div class="ce" style="font-weight:500">ART MEN'S SALON</div><div class="ce">Karachi</div><hr><div class="rw"><span>Bill #${b.no}</span><span>${b.time}</span></div><div class="rw"><span>${dMed(S.date)}</span><span>${esc(b.customer)}</span></div><hr>
+      ${b.items.map((i) => `<div class="rw"><span>${esc(i.name)}</span><span>${fmt(i.amount)}</span></div>`).join("")}<hr>
+      <div class="rw" style="font-weight:500"><span>TOTAL</span><span>${fmt(tot)}</span></div>${b.cash ? `<div class="rw"><span>Cash</span><span>${fmt(b.cash)}</span></div>` : ""}${b.online ? `<div class="rw"><span>Online</span><span>${fmt(b.online)}</span></div>` : ""}<hr><div class="ce">Thank you for visiting</div></div></div>
+      <div class="cb noprint" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" data-a="slip">${ic("msg")}Send on WhatsApp</button><button class="btn" data-a="print">${ic("printer")}Print</button><button class="btn btn-p" data-a="closeReceipt">New bill</button></div></div></div>`;
+        }
+        if (S.edit) h += editModal();
+        if (S.stmt) h += stmtModal();
+        $("layer").innerHTML = h;
+      }
+
+      const TOUR = [
+        {
+          page: "billing",
+          role: "manager",
+          focus: "orderPanel",
+          title: "Billing",
+          text: 'Har service ke saath karigar chuna jata hai. Isi se us ka commission khud banta hai. "Recent" mein Ashfaq Bhai par click karein: un ka special rate khud lag jayega.',
+          act: "custDemo",
+          actLabel: "Ashfaq Bhai ka bill shuru karein",
+        },
+        {
+          page: "billing",
+          role: "manager",
+          focus: "catalog",
+          pre: () => {
+            S.cat = "Deals";
+          },
+          title: "Deals",
+          text: "VIP deal (Rs 2,000) add karein. System deal ki qeemat ko har service ki list price ke hisab se baant deta hai: 533, 267 aur 1,200. Is tarah har karigar ka commission sahi banta hai.",
+          act: "dealDemo",
+          actLabel: "VIP deal add karein",
+        },
+        {
+          page: "billing",
+          role: "manager",
+          focus: "orderPanel",
+          title: "Ek karigar, saari services",
+          text: "Agar saara kaam ek hi banda kare to \"One person did everything\" se ek dafa chunein, har line par wahi karigar lag jayega. Alag alag karigar hon to har line par alag chunein.",
+          act: "allDemo",
+          actLabel: "Arshad ko sab par lagayein",
+        },
+        {
+          page: "sheet",
+          role: "manager",
+          focus: "sheetCard",
+          title: "Daily worksheet",
+          text: "Bilkul register jaisa: har karigar ka apna column aur neeche total. Online paisa Saud Sahab ke Owner / Account column mein aata hai. Column mein amount likh kar Enter dabayein, bill khud ban jata hai.",
+        },
+        {
+          page: "folders",
+          role: "manager",
+          focus: "entryForm",
+          title: "Daily folders",
+          text: "Kharcha, staff advance aur Owner ka cash yahan darj hota hai. Advance par karigar, aur cash lene par Owner apne PIN se tasdeeq karta hai. Owner ki jeb se diya kharcha drawer ke hisab ko nahi chhedta.",
+        },
+        {
+          page: "close",
+          role: "manager",
+          focus: "closeArea",
+          title: "Day close",
+          text: "Raat ko paanch steps: hazri, karigaron ki earning (khud), payment PIN ke saath, cash ginti, aur din band. Demo mein koi bhi 4 digit PIN chalega.",
+        },
+        {
+          page: "close",
+          role: "manager",
+          focus: "closeArea",
+          title: "Blind cash count",
+          text: "Manager drawer ka cash gin kar sirf total likhta hai, notes alag alag nahi. Drawer mein kitna hona chahiye, ye system ginti ke baad batata hai. Is tarah ginti imaandari se hoti hai.",
+          act: "countDemo",
+          actLabel: "Sample ginti ke saath result dekhein",
+        },
+        {
+          page: "report",
+          role: "manager",
+          focus: "billsTable",
+          title: "Koi bill delete nahi hota",
+          text: "Ghalti ho to bill cancel hota hai, wajah likhna lazmi hai, aur ulti entry (reversal) banti hai. Bill #101 aur #102 dekhein: ghalti bhi dikhti hai aur total bhi sahi rehta hai.",
+        },
+        {
+          page: "khata",
+          role: "manager",
+          focus: "ledger",
+          title: "Staff khata",
+          text: "Har karigar ka khata, bilkul dukaan ke khate ki tarah. Jo kamaya wo jama, jo liya wo minus. \"Monthly receipt\" se mahine ki raseed banti hai: kab kamaya, kab liya, aur aaj kitna dena hai.",
+        },
+        {
+          page: "overview",
+          role: "owner",
+          focus: "kpis",
+          title: "Owner ka dashboard",
+          text: "Owner kahin se bhi mobile par aaj ki sale, drawer ka cash, alerts aur har entry dekh sakta hai. Manager ko ye screen nazar nahi aati.",
+        },
+        {
+          page: "monthly",
+          role: "owner",
+          focus: null,
+          title: "Mahine ka hisab",
+          text: "Har band din ka hisab (sale, kharcha, staff, profit) yahan jurta hai, phir mahine ke kharche minus hote hain. Net profit, Owner tak kitna paisa pohancha, aur business ke paas kitna bacha.",
+        },
+        {
+          page: "mexp",
+          role: "owner",
+          focus: "othersCard",
+          title: "Mahine ke kharche",
+          text: "Kiraya, bijli, internet aur supplies mahine mein ek dafa. \"Others\" mein har kharche ki wajah lazmi hai. Ghalat entry delete nahi hoti, void hoti hai.",
+        },
+        {
+          page: "capital",
+          role: "owner",
+          focus: "capForm",
+          title: "Capital / Outstanding",
+          text: "Solar jaisi bari investment partner ka qarz hai, kharcha nahi. Kiston mein wapsi darj karein, baqi raqam khud dikhti hai. Net profit par koi asar nahi.",
+        },
+        {
+          page: "partners",
+          role: "owner",
+          focus: "sharesCard",
+          title: "Partners",
+          text: "Har partner ka % aur us ka hissa. Profit share aur lagaya hua capital alag alag dikhte hain. Har partner ka apna tab hai.",
+        },
+        {
+          page: "setup",
+          role: "owner",
+          focus: "staffCard",
+          title: "Staff & rates",
+          text: "Owner naya karigar, service ya deal add / edit kar sakta hai. Rate badalne se sirf aage ka hisab badalta hai, purane bill waise hi rehte hain. Upar \"View as\" se Manager aur Owner ka farq khud dekh sakte hain.",
+        },
+      ];
+      let focusId = null;
+      function applyFocus() {
+        document
+          .querySelectorAll(".focus")
+          .forEach((e) => e.classList.remove("focus"));
+        if (S.tourOpen && focusId) {
+          const el = $(focusId);
+          if (el) el.classList.add("focus");
+        }
+      }
+      function goTour(i) {
+        S.tour = i;
+        const t = TOUR[i];
+        S.role = t.role;
+        S.page = t.page;
+        if (t.pre) t.pre();
+        focusId = t.focus;
+        S.receipt = null;
+      }
+
+      // v2: per-day P&L snapshot (a stored record written at Day Close).
+      // Day profit = sale − expenses − staff earnings (commission, wage, bonus).
+      // Advances and cash the Owner took are not expenses.
+      function daySnapshot(c) {
+        return {
+          date: S.date,
+          sale: c.total,
+          cash: c.cashSales,
+          online: c.onlineSales,
+          expense: c.expTotal,
+          staffEarned: c.staffEarned,
+          staffPaid: c.payouts + c.advances,
+          ownerOut: c.ownerOut,
+          profit: c.profit,
+          short: c.counted - c.expected,
+        };
+      }
+
+      // v2: worksheet quick add. Creates a normal minimal same-day bill for that
+      // person (named after a matching service price if there is one).
+      function quickAdd(id) {
+        const amt = Math.round(Number(S.quick[id]));
+        if (S.close.locked || !amt || amt < 1) return;
+        const s = staffBy(id);
+        const svc = S.services.find((x) => on(x) && x.price === amt);
+        const no = nextNo();
+        S.bills.push({
+          no,
+          time: now(),
+          customer: "Walk-in",
+          items: [{ name: svc ? svc.name : "Service", amount: amt, staff: id, rate: rateFor(s), note: "Quick add" }],
+          cash: S.quickPay === "cash" ? amt : 0,
+          online: S.quickPay === "online" ? amt : 0,
+          status: "active",
+        });
+        S.quick[id] = "";
+        render();
+        const n = document.querySelector('[data-in="quick"][data-v="' + id + '"]');
+        if (n) n.focus();
+        toast(`${rs(amt)} added to ${s.name}, bill #${no}`);
+      }
+
+      function splitDeal(d) {
+        const items = d.items.map((id) => S.services.find((s) => s.id === id));
+        const tot = items.reduce((a, s) => a + s.price, 0);
+        const raw = items.map((s) => (s.price / tot) * d.price);
+        const fl = raw.map(Math.floor);
+        const left = d.price - fl.reduce((a, x) => a + x, 0);
+        raw
+          .map((r, i) => [r - fl[i], i])
+          .sort((a, b) => b[0] - a[0])
+          .slice(0, left)
+          .forEach(([, i]) => fl[i]++);
+        return items.map((s, i) => ({
+          name: s.name,
+          amount: fl[i],
+          note: `Share of list price ${fmt(s.price)}`,
+          staff: "",
+          deal: d.name,
+          dealPrice: d.price,
+        }));
+      }
+      function applyCustomer(c) {
+        S.customer = c;
+        S.custErr = "";
+        S.cart.forEach((i) => {
+          const s = S.services.find((x) => x.name === i.name);
+          if (!i.deal && s && c.special[s.id]) {
+            i.amount = c.special[s.id];
+            i.note = "Special rate";
+          }
+        });
+      }
+
+      const A = {
+        role: (v) => {
+          S.role = v;
+        },
+        go: (v) => {
+          S.page = v;
+          S.cancelling = null;
+          S.voiding = null;
+          S.edit = null;
+          S.stmt = null;
+        },
+        cat: (v) => {
+          S.cat = v;
+          S.q = "";
+        },
+        add: (v) => {
+          const s = S.services.find((x) => x.id === v);
+          const sp = S.customer && S.customer.special[v];
+          S.cart.push({
+            name: s.name,
+            amount: sp || s.price,
+            note: sp ? "Special rate" : "",
+            staff: "",
+          });
+          S.billErr = "";
+        },
+        addDeal: (v) => {
+          S.cart.push(...splitDeal(S.deals.find((d) => d.id === v)));
+          S.billErr = "";
+        },
+        rm: (v) => {
+          S.cart.splice(Number(v), 1);
+        },
+        pickCust: (v) => {
+          applyCustomer(S.customers.find((c) => c.phone === v));
+        },
+        findCust: () => {
+          const q = S.custQuery.replace(/\D/g, "");
+          const c = S.customers.find((x) => x.phone === q);
+          if (c) applyCustomer(c);
+          else if (q)
+            S.custErr =
+              "New customer. The number will be saved with this bill.";
+        },
+        clearCust: () => {
+          S.customer = null;
+          S.custQuery = "";
+        },
+        payMode: (v) => {
+          S.payMode = v;
+          S.billErr = "";
+        },
+        charge: () => {
+          if (S.close.locked) {
+            S.billErr =
+              "Today is closed. Start the next business day to create bills.";
+            return;
+          }
+          if (!S.cart.length) {
+            S.billErr = "Add at least one service.";
+            return;
+          }
+          if (S.cart.some((i) => !i.staff)) {
+            S.billErr = "Select a staff member for every service.";
+            return;
+          }
+          const t = S.cart.reduce((a, i) => a + i.amount, 0);
+          let cash = 0,
+            online = 0;
+          if (S.payMode === "cash") cash = t;
+          else if (S.payMode === "online") online = t;
+          else {
+            cash = Number(S.pay.cash) || 0;
+            online = Number(S.pay.online) || 0;
+            if (cash + online !== t) {
+              S.billErr = `Cash and online must add up to ${rs(t)}.`;
+              return;
+            }
+          }
+          const no = nextNo();
+          const bill = {
+            no,
+            time: now(),
+            customer: S.customer ? S.customer.name : "Walk-in",
+            items: S.cart.map((i) => ({
+              name: i.name,
+              amount: i.amount,
+              staff: i.staff,
+              rate: rateFor(staffBy(i.staff)), // forward-only: % frozen on the bill line
+              deal: i.deal,
+              note: i.note,
+            })),
+            cash,
+            online,
+            status: "active",
+          };
+          S.bills.push(bill);
+          S.receipt = bill;
+          S.cart = [];
+          S.pay = { cash: "", online: "" };
+          S.payMode = "cash";
+          S.customer = null;
+          S.custQuery = "";
+          S.billErr = "";
+        },
+        closeReceipt: () => {
+          S.receipt = null;
+        },
+        fFilter: (v) => {
+          S.fFilter = v;
+        },
+        paidFrom: (v) => {
+          S.form.paidFrom = v;
+        },
+        saveEntry: () => {
+          const f = S.form,
+            t = S.fType,
+            amt = Number(f.amount);
+          if (t === "expense" && !f.desc.trim()) {
+            S.formErr = "Enter a description.";
+            return;
+          }
+          if (!amt || amt < 1) {
+            S.formErr = "Enter an amount.";
+            return;
+          }
+          if (t !== "expense" && !/^\d{4}$/.test(f.pin)) {
+            S.formErr = "Enter a 4-digit PIN to confirm.";
+            return;
+          }
+          const e = {
+            time: now(),
+            type: t,
+            amount: amt,
+            desc:
+              f.desc.trim() ||
+              (t === "owner_in"
+                ? "Change for the drawer"
+                : t === "owner_out"
+                  ? "Personal"
+                  : "Advance"),
+          };
+          if (t === "expense") e.paidFrom = f.paidFrom;
+          if (t === "advance") e.staff = f.staff;
+          S.entries.push(e);
+          S.form = {
+            desc: "",
+            amount: "",
+            paidFrom: "drawer",
+            staff: f.staff,
+            pin: "",
+          };
+          S.formErr = "";
+          toast("Entry saved");
+        },
+        cancelStart: (v) => {
+          S.cancelling = Number(v);
+          S.cancelReason = "";
+          S.cancelErr = "";
+        },
+        cancelAbort: () => {
+          S.cancelling = null;
+        },
+        cancelConfirm: (v) => {
+          if (!S.cancelReason.trim()) {
+            S.cancelErr = "A reason is required to cancel a bill.";
+            return;
+          }
+          const b = S.bills.find((x) => x.no === Number(v));
+          b.status = "cancelled";
+          b.reason = S.cancelReason.trim();
+          S.bills.push({
+            no: nextNo(),
+            time: now(),
+            customer: b.customer,
+            items: b.items.map((i) => ({
+              name: "Reversal of #" + b.no,
+              amount: -i.amount,
+              staff: i.staff,
+            })),
+            cash: -b.cash,
+            online: -b.online,
+            status: "reversal",
+            reverses: b.no,
+          });
+          S.cancelling = null;
+          toast(`Bill #${b.no} cancelled and reversal added`);
+        },
+        next: () => {
+          const cl = S.close;
+          cl.err = "";
+          if (cl.step === 3) {
+            const c = calc();
+            for (const s of S.staff) {
+              const p = Number(cl.payouts[s.id]) || 0;
+              const av = bal(s.id) + c.earn[s.id].total;
+              if (p > av) {
+                cl.err = `${s.name} can be paid up to ${rs(av)}. Record anything more as an advance.`;
+                return;
+              }
+              if (p > 0 && !/^\d{4}$/.test(cl.pins[s.id] || "")) {
+                cl.err = `${s.name} needs to enter a 4-digit PIN to confirm the payment.`;
+                return;
+              }
+            }
+          }
+          cl.step++;
+        },
+        back: () => {
+          S.close.err = "";
+          S.close.step--;
+        },
+        countDone: () => {
+          if (calc().counted <= 0) {
+            S.close.err = "Enter the total cash in the drawer first.";
+            return;
+          }
+          S.close.err = "";
+          S.close.step = 5;
+        },
+        lockDay: () => {
+          const c = calc();
+          if (c.counted < c.expected && !S.close.reason.trim()) {
+            S.close.err = "Cash is short. Enter a reason to close the day.";
+            return;
+          }
+          const h = () =>
+            Math.floor(Math.random() * 65536)
+              .toString(16)
+              .toUpperCase()
+              .padStart(4, "0");
+          Object.assign(S.close, {
+            code: h() + "-" + h(),
+            locked: true,
+            lockedAt: now(),
+            err: "",
+          });
+          // Store the per-day P&L snapshot; the Monthly report sums these rows.
+          S.days = S.days.filter((d) => d.date !== S.date).concat(daySnapshot(calc()));
+          toast("Day closed");
+        },
+        wa: () => {
+          S.close.wa = !S.close.wa;
+        },
+        reopen: () => {
+          // Owner reopen: the day leaves the monthly sums until it is closed again.
+          S.days = S.days.filter((d) => d.date !== S.date);
+          S.close.locked = false;
+          S.close.step = 5;
+          S.close.wa = false;
+          toast("Day reopened and logged");
+        },
+        khata: (v) => {
+          S.khata = v;
+        },
+        slip: () => toast("Sent"),
+        giveBonus: () => {
+          const b = S.bonus,
+            a = Number(b.amount);
+          if (!a || a < 1) {
+            S.bonusErr = "Enter a bonus amount.";
+            return;
+          }
+          if (!b.reason.trim()) {
+            S.bonusErr = "Enter a reason for the bonus.";
+            return;
+          }
+          S.bonuses.push({
+            staff: b.staff,
+            amount: a,
+            reason: b.reason.trim(),
+          });
+          toast(`${rs(a)} bonus added to ${staffBy(b.staff).name}'s khata`);
+          S.bonus = { staff: b.staff, amount: "", reason: "" };
+          S.bonusErr = "";
+        },
+        monthClose: () => {
+          const mn = monthName();
+          // Month Close adds each salaried staff member's salary to the khata
+          // (a money entry, written once) and freezes the monthly figures.
+          S.staff
+            .filter((s) => on(s) && s.type !== 3 && s.salary)
+            .forEach((s) => S.history[s.id].push([dShort(S.date), "Monthly salary, " + mn, s.salary]));
+          S.monthSnap = monthCalc();
+          S.monthClosed = true;
+          toast(mn + " closed");
+        },
+        reset: () => {
+          // Reset restores seed state and always lands on Manager > Billing.
+          S = seed();
+          focusId = null;
+          goTour(0);
+          S.role = "manager";
+          S.page = "billing";
+          toast("Preview reset");
+        },
+
+        // ---- v2 actions ----
+        // Start the next business day after Day Close: carry each khata forward and
+        // archive today's bills and folder entries (kept, never deleted).
+        nextDay: () => {
+          if (!S.close.locked) return;
+          const c = calc();
+          S.staff.forEach((s) => {
+            S.history[s.id] = khataRows(s.id).map((r) => [r.d, r.t, r.a]);
+          });
+          S.archive.push({ date: S.date, bills: S.bills, entries: S.entries, bonuses: S.bonuses, code: S.close.code });
+          S.lastNo = nextNo() - 1;
+          S.opening = c.counted;
+          S.bills = [];
+          S.entries = [];
+          S.bonuses = [];
+          S.date = addDay(S.date);
+          S.close = freshClose(S.staff);
+          S.cart = [];
+          S.receipt = null;
+          S.cancelling = null;
+          S.quick = {};
+          S.page = "billing";
+          toast(dShort(S.date) + " started. Opening cash " + rs(c.counted));
+        },
+        quickPay: (v) => {
+          S.quickPay = v;
+        },
+        stmt: (v) => {
+          S.stmt = v;
+        },
+        stmtClose: () => {
+          S.stmt = null;
+        },
+        print: () => {
+          window.print();
+        },
+        editOpen: (v) => {
+          const [kind, id] = v.split(":");
+          const list = { staff: S.staff, service: S.services, deal: S.deals }[kind];
+          const x = id ? list.find((y) => y.id === id) : null;
+          const blank = {
+            staff: { name: "", type: 3, salary: 0, wage: 700, rate: 10, pin: "", active: true },
+            service: { name: "", cat: S.services[0].cat, newCat: "", price: "", active: true },
+            deal: { name: "", price: "", items: [], active: true },
+          }[kind];
+          const d = x ? JSON.parse(JSON.stringify(x)) : blank;
+          d.active = x ? on(x) : true;
+          if (kind === "service") d.newCat = "";
+          S.edit = { kind, id: id || null, d, err: "" };
+        },
+        editCancel: () => {
+          S.edit = null;
+        },
+        editSave: () => {
+          const e = S.edit,
+            d = e.d;
+          const n = String(d.name || "").trim();
+          const num = (v) => Number(v) || 0;
+          const fail = (m) => {
+            e.err = m;
+          };
+          if (!n) return fail("Enter a name.");
+          const list = { staff: S.staff, service: S.services, deal: S.deals }[e.kind];
+          if (list.some((x) => x.id !== e.id && x.name.toLowerCase() === n.toLowerCase()))
+            return fail("That name is already used.");
+          let rec;
+          if (e.kind === "staff") {
+            const t = Number(d.type);
+            if (t !== 3 && num(d.salary) <= 0) return fail("Enter the monthly salary.");
+            if (t === 3 && num(d.wage) <= 0) return fail("Enter the daily wage.");
+            if (t !== 1 && (d.rate === "" || num(d.rate) < 0 || num(d.rate) > 100))
+              return fail("Commission must be 0 to 100%.");
+            if (!/^\d{4}$/.test(d.pin || "")) return fail("Enter a 4-digit PIN.");
+            rec = {
+              name: n,
+              type: t,
+              salary: t === 3 ? 0 : num(d.salary),
+              wage: t === 3 ? num(d.wage) : 0,
+              rate: t === 1 ? 0 : num(d.rate),
+              pin: d.pin,
+              active: !!d.active,
+            };
+          } else if (e.kind === "service") {
+            const cat = d.cat === "__new" ? String(d.newCat || "").trim() : d.cat;
+            if (!cat) return fail("Enter the new category name.");
+            if (num(d.price) <= 0) return fail("Enter a price.");
+            rec = { name: n, cat, price: num(d.price), active: !!d.active };
+          } else {
+            if (num(d.price) <= 0) return fail("Enter the deal price.");
+            if (d.items.length < 2) return fail("Choose at least two services.");
+            rec = { name: n, price: num(d.price), items: d.items.slice(), active: !!d.active };
+          }
+          const when = dShort(S.date);
+          const log = (text) => S.configLog.push({ date: when, time: now(), text });
+          if (!e.id) {
+            const id = e.kind[0] + Date.now().toString(36);
+            if (e.kind === "service") rec.min = 20;
+            list.push(Object.assign({ id }, rec));
+            if (e.kind === "staff") {
+              S.history[id] = [[when, "Opening balance", 0]];
+              if (!S.close.locked) S.close.present[id] = true;
+            }
+            log(`${e.kind === "staff" ? "Staff" : e.kind === "service" ? "Service" : "Deal"} added: ${n}`);
+            toast(n + " added");
+          } else {
+            const x = list.find((y) => y.id === e.id);
+            const labels = { name: "name", type: "plan", salary: "salary", wage: "daily wage", rate: "commission %", pin: "PIN", cat: "category", price: "price", items: "services", active: "status" };
+            const cur = (k) => (k === "active" ? on(x) : x[k]);
+            const show = (k, v) =>
+              k === "active" ? (v ? "active" : "inactive") : k === "pin" ? "••••" : k === "items" ? v.length + " services" : k === "type" ? "Type " + v : v;
+            const ch = Object.keys(rec)
+              .filter((k) => JSON.stringify(cur(k)) !== JSON.stringify(rec[k]))
+              .map((k) => (k === "pin" ? "PIN changed" : `${labels[k]} ${show(k, cur(k))} → ${show(k, rec[k])}`));
+            // Configuration edit: applies from today forward. Past bills keep their saved amount and %.
+            Object.assign(x, rec);
+            if (ch.length) log(`${n}: ${ch.join(", ")} (applies from ${when})`);
+            toast(ch.length ? "Saved. Applies from today forward" : "No changes");
+          }
+          S.edit = null;
+        },
+        addFixed: () => {
+          const ff = S.fixedForm;
+          if (!ff.name.trim()) {
+            S.mexpErr = "Enter a name for the fixed line.";
+            return;
+          }
+          S.monthExp.fixed.push({ id: "f" + Date.now().toString(36), name: ff.name.trim(), amount: Number(ff.amount) || 0 });
+          S.fixedForm = { name: "", amount: "" };
+          S.mexpErr = "";
+          toast("Fixed line added");
+        },
+        addOther: () => {
+          const of = S.otherForm,
+            a = Math.round(Number(of.amount));
+          if (!a || a < 1) {
+            S.otherErr = "Enter an amount.";
+            return;
+          }
+          if (!of.reason.trim()) {
+            S.otherErr = "A reason is required for every other expense.";
+            return;
+          }
+          S.monthExp.others.push({ date: S.date, amount: a, reason: of.reason.trim(), void: false });
+          S.otherForm = { amount: "", reason: "" };
+          S.otherErr = "";
+          toast(rs(a) + " expense added");
+        },
+        voidStart: (v) => {
+          S.voiding = Number(v);
+          S.voidReason = "";
+          S.voidErr = "";
+        },
+        voidAbort: () => {
+          S.voiding = null;
+        },
+        voidConfirm: (v) => {
+          if (!S.voidReason.trim()) {
+            S.voidErr = "A reason is required to void an entry.";
+            return;
+          }
+          const o = S.monthExp.others[Number(v)];
+          o.void = true;
+          o.voidReason = S.voidReason.trim();
+          S.voiding = null;
+          toast("Entry voided. It stays on record");
+        },
+        addCapital: () => {
+          const cf = S.capForm,
+            cost = Math.round(Number(cf.cost));
+          if (!cf.name.trim()) {
+            S.capErr = "Enter a name, for example Solar system.";
+            return;
+          }
+          if (!cost || cost < 1) {
+            S.capErr = "Enter the total cost.";
+            return;
+          }
+          const funders = S.partners
+            .map((p) => ({ partner: p.id, amount: Math.round(Number(cf.funds[p.id]) || 0) }))
+            .filter((x) => x.amount > 0);
+          const given = sumBy(funders, (x) => x.amount);
+          if (given !== cost) {
+            S.capErr = `Contributions add up to ${rs(given)}. They must equal ${rs(cost)}.`;
+            return;
+          }
+          S.capital.push({ id: "k" + Date.now().toString(36), name: cf.name.trim(), date: S.date, cost, funders, repayments: [] });
+          S.capForm = { name: "", cost: "", funds: {} };
+          S.capErr = "";
+          toast(cf.name.trim() + " added as outstanding capital");
+        },
+        repay: (v) => {
+          const k = S.capital.find((x) => x.id === v);
+          const owed = k.funders.filter((f) => f.amount - capPaid(k, f.partner) > 0);
+          if (!owed.length) return;
+          const rp = S.repay[v] || (S.repay[v] = { partner: "", amount: "", note: "", err: "" });
+          const pid = rp.partner && owed.some((f) => f.partner === rp.partner) ? rp.partner : owed[0].partner;
+          const left = k.funders.find((f) => f.partner === pid).amount - capPaid(k, pid);
+          const a = Math.round(Number(rp.amount));
+          if (!a || a < 1) {
+            rp.err = "Enter the installment amount.";
+            return;
+          }
+          if (a > left) {
+            rp.err = `Only ${rs(left)} is left to repay to ${partnerBy(pid).name}.`;
+            return;
+          }
+          k.repayments.push({ date: S.date, partner: pid, amount: a, note: rp.note.trim() || "Installment " + (k.repayments.length + 1) });
+          S.repay[v] = { partner: pid, amount: "", note: "", err: "" };
+          toast(`${rs(a)} repaid. Remaining ${rs(k.cost - capPaid(k))}`);
+        },
+        pTab: (v) => {
+          S.partnerTab = v;
+        },
+        addPartner: () => {
+          if (!S.pDraft) S.pDraft = S.partners.map((p) => Object.assign({}, p));
+          S.pDraft.push({ id: "p" + Date.now().toString(36), name: "Partner " + String.fromCharCode(65 + S.pDraft.length), share: 0 });
+        },
+        saveShares: () => {
+          const d = S.pDraft;
+          if (d.some((p) => !String(p.name).trim())) {
+            S.pErr = "Every partner needs a name.";
+            return;
+          }
+          const t = sumBy(d, (p) => Number(p.share) || 0);
+          if (t !== 100) {
+            S.pErr = `Shares add up to ${t}%. They must add up to 100%.`;
+            return;
+          }
+          S.partners = d.map((p) => ({ id: p.id, name: String(p.name).trim(), share: Number(p.share) }));
+          S.pDraft = null;
+          S.pErr = "";
+          S.configLog.push({ date: dShort(S.date), time: now(), text: "Profit shares: " + S.partners.map((p) => `${p.name} ${p.share}%`).join(", ") });
+          toast("Profit shares saved");
+        },
+        addDraw: (v) => {
+          const a = Math.round(Number(S.drawForm.amount));
+          if (!a || a < 1) {
+            S.drawErr = "Enter the amount drawn.";
+            return;
+          }
+          S.drawings.push({ date: S.date, partner: v, amount: a, note: S.drawForm.note.trim() || "Profit drawing" });
+          S.drawForm = { amount: "", note: "" };
+          S.drawErr = "";
+          toast(rs(a) + " drawing recorded");
+        },
+        tourOpen: () => {
+          S.tourOpen = true;
+          goTour(S.tour);
+        },
+        tourClose: () => {
+          S.tourOpen = false;
+          focusId = null;
+        },
+        tourNext: () => {
+          if (S.tour === TOUR.length - 1) {
+            S.tourOpen = false;
+            focusId = null;
+            S.tour = 0;
+            return;
+          }
+          goTour(S.tour + 1);
+        },
+        tourPrev: () => {
+          goTour(Math.max(0, S.tour - 1));
+        },
+        tourAct: () => {
+          const a = TOUR[S.tour].act;
+          if (a === "custDemo") {
+            S.cart = [];
+            applyCustomer(S.customers[0]);
+            S.cat = "Hair";
+            A.add("hc");
+          }
+          if (a === "allDemo") {
+            if (S.cart.length < 2) {
+              S.cat = "Hair";
+              A.add("hc");
+              A.add("bd");
+            }
+            S.cart.forEach((i) => (i.staff = "arshad"));
+          }
+          if (a === "dealDemo") {
+            S.cat = "Deals";
+            A.addDeal("vip");
+          }
+          if (a === "countDemo") {
+            const c = calc();
+            if (!S.close.locked) {
+              S.close.payouts = {};
+              S.staff.forEach(
+                (s) =>
+                  (S.close.payouts[s.id] =
+                    s.type === 3 ? c.earn[s.id].total : 0),
+              );
+              S.close.pins = {};
+              S.staff.forEach((s) => {
+                if (S.close.payouts[s.id]) S.close.pins[s.id] = "1234";
+              });
+              S.close.cash = String(Math.max(0, calc().expected - 100));
+              S.close.step = 5;
+              S.close.err = "";
+            }
+          }
+        },
+      };
+
+      document.addEventListener("click", (e) => {
+        const el = e.target.closest("[data-a]");
+        if (!el) return;
+        if (el.dataset.self && e.target !== el) return;
+        A[el.dataset.a](el.dataset.v);
+        render();
+      });
+      document.addEventListener("input", (e) => {
+        const el = e.target,
+          k = el.dataset.in;
+        if (!k) return;
+        const v = el.type === "checkbox" ? el.checked : el.value;
+        if (k === "q") {
+          S.q = v;
+          const pos = el.selectionStart;
+          render();
+          const n = $("sq");
+          if (n) {
+            n.focus();
+            n.setSelectionRange(pos, pos);
+          }
+          return;
+        }
+        if (k === "custQuery") {
+          S.custQuery = v;
+          S.custErr = "";
+          if (v.replace(/\D/g, "").length === 11) {
+            A.findCust();
+            render();
+          }
+          return;
+        }
+        if (k === "cartStaff") {
+          S.cart[Number(el.dataset.i)].staff = v;
+          S.billErr = "";
+          render();
+          return;
+        }
+        // ---- v2 inputs ----
+        if (k === "allStaff") {
+          if (v) S.cart.forEach((i) => (i.staff = v));
+          S.billErr = "";
+          render();
+          return;
+        }
+        if (k === "quick") {
+          S.quick[el.dataset.v] = v;
+          return;
+        }
+        if (k.startsWith("edit.")) {
+          const fld = k.slice(5);
+          S.edit.d[fld] = v;
+          S.edit.err = "";
+          if (fld === "type" || fld === "cat") renderLayer();
+          return;
+        }
+        if (k === "editItem") {
+          const it = S.edit.d.items;
+          const i = it.indexOf(el.dataset.v);
+          if (v && i < 0) it.push(el.dataset.v);
+          if (!v && i >= 0) it.splice(i, 1);
+          renderLayer();
+          return;
+        }
+        if (k === "fixedAmt") {
+          S.monthExp.fixed.find((x) => x.id === el.dataset.v).amount = Number(v) || 0;
+          return;
+        }
+        if (k.startsWith("fixedForm.")) {
+          S.fixedForm[k.slice(10)] = v;
+          S.mexpErr = "";
+          return;
+        }
+        if (k.startsWith("otherForm.")) {
+          S.otherForm[k.slice(10)] = v;
+          S.otherErr = "";
+          return;
+        }
+        if (k === "voidReason") {
+          S.voidReason = v;
+          return;
+        }
+        if (k === "capForm.fund") {
+          S.capForm.funds[el.dataset.v] = v;
+          return;
+        }
+        if (k.startsWith("capForm.")) {
+          S.capForm[k.slice(8)] = v;
+          S.capErr = "";
+          return;
+        }
+        if (k.startsWith("repay.")) {
+          const r = S.repay[el.dataset.v] || (S.repay[el.dataset.v] = { partner: "", amount: "", note: "", err: "" });
+          r[k.slice(6)] = v;
+          r.err = "";
+          return;
+        }
+        if (k === "pName" || k === "pShare") {
+          S.pDraft[Number(el.dataset.v)][k === "pName" ? "name" : "share"] = v;
+          S.pErr = "";
+          return;
+        }
+        if (k.startsWith("drawForm.")) {
+          S.drawForm[k.slice(9)] = v;
+          S.drawErr = "";
+          return;
+        }
+        if (k === "payCash" || k === "payOnline") {
+          S.pay[k === "payCash" ? "cash" : "online"] = v;
+          const pl = $("payLeft");
+          if (pl)
+            pl.textContent = payLeft(S.cart.reduce((a, i) => a + i.amount, 0));
+          return;
+        }
+        if (k === "fType") {
+          S.fType = v;
+          S.formErr = "";
+          render();
+          return;
+        }
+        if (k.startsWith("form.")) {
+          S.form[k.slice(5)] = v;
+          S.formErr = "";
+          if (k === "form.staff") render();
+          return;
+        }
+        if (k.startsWith("bonus.")) {
+          S.bonus[k.slice(6)] = v;
+          S.bonusErr = "";
+          return;
+        }
+        if (k === "present") {
+          S.close.present[el.dataset.v] = v;
+          S.close.payouts = null;
+          return;
+        }
+        if (k === "payout") {
+          S.close.payouts[el.dataset.v] = v;
+          return;
+        }
+        if (k === "pin") {
+          S.close.pins[el.dataset.v] = v;
+          return;
+        }
+        if (k === "cashCount") {
+          S.close.cash = v;
+          S.close.err = "";
+          return;
+        }
+        if (k === "reason") {
+          S.close.reason = v;
+          return;
+        }
+        if (k === "cancelReason") {
+          S.cancelReason = v;
+          return;
+        }
+      });
+      // v2: totals that depend on typed numbers refresh when the field is left.
+      document.addEventListener("change", (e) => {
+        const k = e.target.dataset.in;
+        if (k === "fixedAmt" || k === "pShare") render();
+      });
+      document.addEventListener("keydown", (e) => {
+        const k = e.target.dataset && e.target.dataset.in;
+        if (e.key === "Enter" && e.target.id === "cq") {
+          A.findCust();
+          render();
+        }
+        if (e.key === "Enter" && k === "cashCount") {
+          A.countDone();
+          render();
+          return;
+        }
+        if (e.key === "Enter" && k === "quick") {
+          e.preventDefault();
+          quickAdd(e.target.dataset.v);
+          return;
+        }
+        if (e.key === "Enter" && (k === "fixedAmt" || k === "pShare")) render();
+        if (e.key === "Escape" && (S.receipt || S.edit || S.stmt)) {
+          S.receipt = null;
+          S.edit = null;
+          S.stmt = null;
+          render();
+        }
+      });
+
+      goTour(0);
+      render();
+    </script>
+  </body>
+</html>
