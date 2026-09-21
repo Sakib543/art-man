@@ -19,6 +19,12 @@ export function formatTime(iso: string): string {
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+/** "2026-09-21" -> "21 Sep" */
+export function formatDayMonth(isoDate: string): string {
+  const [, m, d] = isoDate.split("-").map(Number);
+  return `${d} ${MONTHS[m - 1]}`;
+}
+
 /** "2026-09-21" -> "21 Sep 2026" */
 export function formatDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-").map(Number);

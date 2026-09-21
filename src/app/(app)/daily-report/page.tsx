@@ -6,7 +6,7 @@ import { StatCard } from "@/components/stat-card";
 import { DaySelect } from "@/features/daily-report/components/day-select";
 import { ReportTable } from "@/features/daily-report/components/report-table";
 import { getDailyReport } from "@/features/daily-report/queries";
-import { CANCELLATION_ALERT_AT } from "@/features/daily-report/summary";
+import { CANCELLATION_ALERT_AT } from "@/lib/alerts";
 import { requireUser } from "@/lib/auth/session";
 import { rs } from "@/lib/format";
 

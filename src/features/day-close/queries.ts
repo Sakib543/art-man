@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { billCancellations, bills, daySnapshots } from "@/db/schema";
 import { workByStaff } from "@/lib/accounting";
-import { loadDay, loadKhataBalances } from "./load";
+import { loadDay, loadKhataBalances } from "@/db/queries/day-data";
 import type { DayCloseData } from "./types";
 
 /**

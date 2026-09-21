@@ -8,7 +8,7 @@ import { cashDifference, expectedCashBreakdown, summarizeDay, type DayCloseSumma
 import type { SessionUser } from "@/lib/auth/session";
 import { nextDate } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
-import { loadDay, type LoadedDay } from "./load";
+import { loadDay, type LoadedDay } from "@/db/queries/day-data";
 import type { CloseInput, ReviewInput } from "./schemas";
 import { computeDayCode, type DayFigures } from "./security";
 import type { CloseReview } from "./types";

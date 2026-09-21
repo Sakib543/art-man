@@ -25,6 +25,3 @@ export function summarizeBills(bills: DayBill[]): ReportSummary {
   }
   return { total: cash + online, cash, online, paidBills, cancelledBills };
 }
-
-/** Three or more cancellations in a day should be looked at (see the spec, section 11). */
-export const CANCELLATION_ALERT_AT = 3;
