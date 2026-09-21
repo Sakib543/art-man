@@ -1,0 +1,33 @@
+/** "Rs 1,200". Negative amounts (reversals) read "-Rs 500". */
+export function rs(amount: number): string {
+  const text = `Rs ${Math.abs(amount).toLocaleString("en-US")}`;
+  return amount < 0 ? `-${text}` : text;
+}
+
+/** Plain number with thousands separators, for table columns. */
+export const num = (amount: number): string => amount.toLocaleString("en-US");
+
+/** "14:30" in Karachi time. The zone is fixed so server and browser always agree. */
+export function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Karachi",
+  });
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** "2026-09-21" -> "21 Sep 2026" */
+export function formatDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+}
+
+/** "2026-09-21" -> "Monday, 21 September 2026" style long form. */
+export function formatDateLong(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const weekday = DAYS[new Date(y, m - 1, d).getDay()];
+  return `${weekday}, ${formatDate(isoDate)}`;
+}

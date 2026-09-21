@@ -12,7 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx --env-file=.env.local scripts/seed-users.ts"
+    "db:seed": "tsx --env-file=.env.local scripts/seed-users.ts",
+    "db:seed:sample": "tsx --env-file=.env.local scripts/seed-sample.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
