@@ -28,6 +28,11 @@ export interface OwnerAccountInput {
   cashTaken: Rupees;
   /** Business costs the owner paid from his own bank, credited back to him. */
   paidFromOwnPocket: Rupees;
+  /**
+   * Capital paid back to partners this month. It is business cash that has
+   * left, so less is held by the business, but it is not an expense.
+   */
+  capitalRepaid?: Rupees;
 }
 
 export interface OwnerAccount {
@@ -39,7 +44,11 @@ export interface OwnerAccount {
 export function ownerAccount(i: OwnerAccountInput): OwnerAccount {
   const reachedOwner = i.onlineReceived + i.cashTaken;
   const netReachedOwner = reachedOwner - i.paidFromOwnPocket;
-  return { reachedOwner, netReachedOwner, heldByBusiness: i.netProfit - netReachedOwner };
+  return {
+    reachedOwner,
+    netReachedOwner,
+    heldByBusiness: i.netProfit - netReachedOwner - (i.capitalRepaid ?? 0),
+  };
 }
 
 /** Each partner's share of the net profit. Shares must add up to 100%. */

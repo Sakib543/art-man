@@ -7,6 +7,7 @@ export * from "./deal";
 export * from "./folders";
 export * from "./khata";
 export * from "./month";
+export * from "./month-report";
 export * from "./pricing";
 export * from "./staff-pay";
 export type * from "./types";

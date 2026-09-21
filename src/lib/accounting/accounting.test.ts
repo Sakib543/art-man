@@ -6,10 +6,12 @@ import {
   cashDifference,
   commissionOn,
   commissionReversal,
+  contributionsMatch,
   countedTotal,
   dayEarning,
   dayProfit,
   expectedCash,
+  funderPosition,
   khataBalance,
   netProfit,
   ownerAccount,
@@ -190,6 +192,19 @@ describe("monthly accounts (spec 7)", () => {
         { id: "b", sharePct: 40 },
       ]),
     ).toThrow();
+  });
+});
+
+describe("funders and contributions", () => {
+  it("what a partner is still owed", () => {
+    expect(funderPosition(300000, [50000, 25000])).toEqual({ contributed: 300000, repaid: 75000, remaining: 225000 });
+  });
+
+  it("contributions must add up to the total cost", () => {
+    expect(contributionsMatch(300000, [200000, 100000])).toEqual({ ok: true, difference: 0 });
+    expect(contributionsMatch(300000, [200000, 50000])).toEqual({ ok: false, difference: 50000 });
+    expect(contributionsMatch(300000, [200000, 150000]).difference).toBe(-50000);
+    expect(contributionsMatch(0, []).ok).toBe(false);
   });
 });
 

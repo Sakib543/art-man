@@ -29,6 +29,20 @@
       "when": 1789977203682,
       "tag": "0003_uneven_korath",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789980544283,
+      "tag": "0004_slow_miek",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789980545041,
+      "tag": "0005_capital_append_only",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { nextDate, todayInKarachi } from "./business-date";
+import { formatMonth, monthOf, monthStart, nextDate, nextMonth, todayInKarachi } from "./business-date";
+
+describe("months", () => {
+  it("identifies a month from a date", () => {
+    expect(monthOf("2026-09-21")).toBe("2026-09");
+    expect(monthStart("2026-09")).toBe("2026-09-01");
+  });
+
+  it("finds the next month, across a year end", () => {
+    expect(nextMonth("2026-09")).toBe("2026-10");
+    expect(nextMonth("2026-12")).toBe("2027-01");
+  });
+
+  it("names a month", () => {
+    expect(formatMonth("2026-09")).toBe("September 2026");
+  });
+});
 
 describe("nextDate", () => {
   it("moves to the next day", () => {
