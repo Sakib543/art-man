@@ -20,7 +20,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P0.1 | Show the real login error | ✅ | done 2026-09-22 |
 | P0.2 | Reopen a closed day (Owner) | ✅ | done 2026-09-22 |
 | P0.3 | Cancel a bill/entry in a closed day (Owner) | ✅ | done 2026-09-22 |
-| **P0.4** | **Stale session cookie locks a user out** | 🟡 | Sakib543, 2026-09-22 |
+| P0.4 | Stale session cookie locks a user out | ✅ | done 2026-09-22 |
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ✅ | done 2026-09-22 |
 | P1.2 | Users screen — create admins | ⬜ | — |
@@ -41,11 +41,10 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 
 ## P0 — Before the client trial
 
-Without these, the 20-day trial is likely to get stuck. **P0.4 is open and is the most urgent
-item in this file.**
+Without these, the 20-day trial is likely to get stuck.
 
-### 🟡 P0.4 — A stale session cookie locks a user out completely
-**Owner:** Sakib543, 2026-09-22 · **Found:** 2026-09-22, on the live site
+### ✅ P0.4 — A stale session cookie locks a user out completely
+**Done:** 2026-09-22 · **Found:** 2026-09-22, on the live site
 
 `src/proxy.ts` decides only whether a session cookie **exists**, never whether it is valid — which
 is deliberate and documented. But combined with `requireUser()` it forms a loop:
@@ -72,14 +71,38 @@ server-side while the browser keeps its cookie triggers it:
 - Rotating `BETTER_AUTH_SECRET`, or re-seeding the database, invalidates **everyone's** cookie at
   once.
 
-**Suggested fix — not yet agreed, do not build without asking.** Take the "already signed in?"
-decision away from the proxy, which cannot make it correctly, and give it to the login page, which
-can: drop the `/login` → `/billing` redirect from `src/proxy.ts`, and have the login page call
-`getCurrentUser()` and redirect only when there is a **real** session. That costs one query on
-`/login` and breaks the loop. Clearing the dead cookie on the way out would be better still, but a
-Server Component cannot set cookies — so it belongs in the proxy or a route handler.
+**The fix was one line of behaviour.** `src/proxy.ts` no longer sends anyone away from `/login`;
+it only guards the other routes. Nothing else changed.
 
-**Size:** small · **Value:** very high — this locks real users out of a live system
+**The login page needed no change at all.** It already read
+`if (await getCurrentUser()) redirect("/billing")` — a *real* session check, against the database.
+The proxy had simply been intercepting first, so that line had never actually run. The decision now
+sits with the only code that can make it correctly.
+
+**Verified both ways, in a browser and with `curl`, against the dev server:**
+
+| | a real session | a dead cookie |
+|---|---|---|
+| `/login` | **307 → `/billing`** | **200** (was 307 → `/billing` → loop) |
+| `/billing` | 200 | 307 → `/login`, which then renders |
+| following redirects from `/login` | settles after 1 | settles after 0 |
+
+The signed-in path was tested with a **real signed-in session**, not a hand-made cookie: a
+throwaway `p04test` account was created the way `seed-users.ts` does, signed in through
+`/api/auth/sign-in/username` to get a genuine signed cookie, and deleted afterwards. That mattered
+— the login page's redirect had never executed before this change, so "it was already there" was
+not evidence that it worked.
+
+**`src/proxy.test.ts` — 5 tests, and they were proved to catch the bug**: the old proxy was put
+back temporarily and exactly the two that should fail did, including one that walks the proxy's own
+redirects and fails if a path repeats. **197 tests pass** (was 192), lint clean, build passes.
+
+**Not done, and worth knowing:** the dead cookie is still sent by the browser until something
+overwrites it. It is now harmless — every page simply treats it as signed out — and a successful
+sign-in replaces it. Clearing it properly needs a route handler or the proxy, because a Server
+Component cannot set cookies.
+
+**Size:** small · **Value:** very high — this locked real users out of a live system
 
 ---
 

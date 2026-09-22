@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9 and P4.10 done)
+Last updated: 2026-09-22 (P0 complete incl. P0.4; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9 and P4.10 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (192 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (197 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -92,13 +92,14 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — 23 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **192 passed** (25 files) |
+| `pnpm test` | **197 passed** (26 files) |
 | Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0014` |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
 | Developer bill edit | exercised end to end on an open day and twice on a closed day (P1.6) |
 | Customer's last visit | looked up in a browser as the Owner, before and after a bill and its cancellation (P3.8) |
 | Staff khata | opened in a browser for two staff members after the rewrite; balances and ledgers identical to before (P4.10) |
+| Login is reachable with a dead cookie | fixed and tested both ways, with a real signed-in session and with a stale one (P0.4) |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
@@ -275,6 +276,8 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A closed-day correction never rewrites counted cash | the drawer was counted by hand; only expected cash moves, and the difference shows the correction |
 | **`canAccess` is the whole role hierarchy** | `src/lib/auth/roles.ts`. `developer` passes every check; everyone else is matched exactly. `requireRole` goes through it, so all 26 `requireRole("owner")` sites accepted the developer untouched |
 | Three checks stay strict `=== "owner"` on purpose | the owner's PIN (`account/service.ts`), the owner-only part of Settings, and the manager-only hint on Day close. The developer has no PIN, and the client asked that Settings show nothing about the role |
+| **The proxy never redirects away from `/login`** | it cannot tell a live cookie from a dead one, and doing so locked people out (P0.4, trap 8.1b). The login page decides, with `getCurrentUser()` |
+| The login page's own "already signed in" redirect had **never run** before P0.4 | the proxy always intercepted first. It works — verified with a real session — but it was dead code until then, which is why it was tested rather than assumed |
 | **Maintenance mode is checked in `requireUser()`** | not in a layout — layouts do not re-run on client navigation. Being in `requireUser` covers every page **and every Server Action**, and it works because all 12 `actions.ts` files call `requireUser`/`requireRole` **outside** their `try` block, so the `redirect()` is not swallowed by `failure(error)` |
 | `app_settings` is a key/value table with **one** key today | `maintenance` ("on"/"off"). No row means off, so an empty table is normal. No append-only trigger — it is config |
 | `readMaintenance()` is `cache()`d | one query per request even though `requireUser` asks on every page. The developer short-circuits before the query runs |
@@ -340,6 +343,25 @@ Rules:
 - `git pull --rebase` immediately before running `pnpm db:generate`.
 - Push the migration as soon as it is generated — do not sit on it.
 - **Never edit an already-committed migration file.** Always add a new one.
+
+### 8.1b A cookie is not a session — and the proxy can only see the cookie
+
+Cost a real lockout on the live site, found 2026-09-22 (P0.4, fixed).
+
+`src/proxy.ts` runs on the edge and deliberately does **not** touch the database: `getSessionCookie`
+tells it only that a cookie exists. It used to treat that as "signed in" and redirect `/login` to
+`/billing`. When the cookie was dead, `requireUser()` redirected straight back, and the two bounced
+for ever — `ERR_TOO_MANY_REDIRECTS`, with the login page unreachable, so the person could not sign
+in to recover.
+
+**A cookie outliving its session is ordinary, not exotic.** Resetting a password deletes every
+session that user has (`account/service.ts`, `developer/service.ts`), and re-seeding the database or
+rotating `BETTER_AUTH_SECRET` invalidates everyone's at once.
+
+The rule that follows: **the proxy may keep people out of pages, but must never push anyone away
+from `/login`.** Anything shaped like "you look signed in, go elsewhere" belongs where the session
+can actually be checked. `src/proxy.test.ts` guards it, including a test that walks the proxy's own
+redirects and fails if a path repeats.
 
 ### 8.2 The login form used to hide every real error — FIXED 2026-09-22 (P0.1)
 
