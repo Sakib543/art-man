@@ -28,12 +28,35 @@ Standing instructions. They override default habits.
 
 ---
 
-## 2. Two developers share `main`
+## 2. Two developers, two repositories
 
-**This is the most important operational fact about the project.**
+**This is the most important operational fact about the project, and it was recorded wrongly
+until 2026-09-22.** This file used to say both developers share one repository. They do not.
+
+| | |
+|---|---|
+| This working copy | **`Sakib543/art-man`** — a **fork**, created 2026-09-21 |
+| Upstream (the other developer's) | **`msdevs6600/art-man`** |
+| What Vercel deployed from | **the upstream**, not this fork |
+
+That is why nothing pushed from here ever went live, and why GitHub shows no deployment has ever
+been created on this repository. Measured 2026-09-22: this fork was **12 commits ahead and 0 behind**
+the upstream — every one of them a day's work that the client never saw.
+
+**Being 0 behind matters:** this fork contains everything the upstream has, plus more. So pointing
+the deployment at it is a strict superset and cannot lose work.
+
+**Decision, 2026-09-22:** the Vercel project is to be repointed at **this fork**, so that pushing
+here deploys. The two repositories stay separate for now — merging them was considered and
+deliberately deferred.
+
+**A rule that conflicts with this setup:** `CLAUDE.md` says never to open a pull request. That rule
+assumes push access to the repository that deploys. On a fork it strands the work instead, which is
+exactly what happened. It has been left as-is because the deployment is moving to this fork, but if
+that changes, the rule has to change with it.
 
 - One developer works **during the day**, the other **at night**.
-- Both work directly on `main` and pull each other's work daily.
+- Both work on `main`, in their own repository.
 - There is no CI yet (backlog P4.7) and no PR review, so nothing catches a bad push except the
   next person.
 
