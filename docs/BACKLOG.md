@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5 and P5.2 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2 and P1.1 done)
 
 ---
 
@@ -21,10 +21,11 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5 and P5.2 done)
 | P0.2 | Reopen a closed day (Owner) | ✅ | done 2026-09-22 |
 | P0.3 | Cancel a bill/entry in a closed day (Owner) | ✅ | done 2026-09-22 |
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
-| P1.1 | Developer role (super admin) | 🟡 | Sakib543, 2026-09-22 |
+| P1.1 | Developer role (super admin) | ✅ | done 2026-09-22 |
 | P1.2 | Users screen — create admins | ⬜ | — |
 | P1.4 | Owner edits a bill on the open day | ✅ | done 2026-09-22 |
 | P1.5 | Owner's edit leaves one line, not three | ✅ | done 2026-09-22 |
+| P1.6 | Developer edits a financial entry | ⬜ | — |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
@@ -223,43 +224,74 @@ and Day Close step 3 no longer has a Staff PIN column. Confirmed in the database
 
 ---
 
-### 🟡 P1.1 — Fourth role: `developer` (super admin)
-**Owner:** Sakib543, 2026-09-22
+### ✅ P1.1 — Fourth role: `developer` (super admin)
+**Done:** 2026-09-22
 
 **Client decision (2026-09-22):** a role above Owner that can do everything — reset passwords,
 edit anything, and take the site down in one click.
 
-| Capability | |
+**Client decision (2026-09-22, during this task):** *the developer must not show up in Settings;
+they just sign in with a username and a password, and nothing else about them is on display.* So
+there is no developer section on the Settings screen, and the Owner and the Manager see no sign
+that the role exists. The developer's own tools live in a sidebar section only they can see.
+
+That reverses one line of the original plan — *"the account is not hidden"* — as far as the
+**screens** go. It does not touch the part that matters: the account is an ordinary row in
+`user`, it appears on the developer's own Passwords screen, and **every action it takes is still
+written to `audit_log`**. Nothing is hidden from the record, only from the other two screens.
+
+**What was built:**
+
+- `src/lib/auth/roles.ts` — `developer` added to `ROLES`, and `canAccess` now lets the developer
+  through any check the owner or the manager would pass. `atLeastOwner(role)` is the plain-English
+  form used where a page previously compared to `"owner"` by hand. 7 tests.
+- `requireRole` goes through `canAccess`, so all 26 `requireRole("owner")` call sites accepted the
+  developer without being touched. The 9 hand-written comparisons were changed one at a time —
+  **three were deliberately left strict**: the owner's PIN form, the owner-only part of Settings,
+  and the manager-only hint on Day close. The developer has no PIN, so inheriting those would have
+  produced a form that could never work.
+- `pnpm db:seed:developer` (`scripts/seed-developer.ts`) creates the account. It is separate from
+  `pnpm db:seed` on purpose: the owner and manager belong to the salon, this account belongs to
+  whoever maintains the system. Password from `SEED_DEVELOPER_PASSWORD` or generated and printed
+  once. No PIN.
+- **Audit log screen** (`/developer/audit-log`) — every row, newest first, searchable by who, what
+  or which record, 50 per page. `before` / `after` open as JSON.
+- **Passwords screen** (`/developer/passwords`) — set a new password for any account (they are
+  signed out everywhere) and a new 4-digit PIN for the Owner. The developer cannot change their
+  own password here, because it would sign them out mid-click; Settings already does that
+  properly. Both resets are audited.
+- **Maintenance mode** (`/developer/maintenance`) — one button. While it is on, the Owner and the
+  Manager get `/maintenance` ("The system is closed") instead of the app, and the developer keeps
+  full use of it, which is how they switch it back on. The switch lives in the new `app_settings`
+  table (migration `0011`) and the check sits inside `requireUser()`, so it covers every page
+  **and every Server Action** — a layout would not, because layouts do not re-run on client
+  navigation.
+- Shared bits moved up so the new feature did not import from another one:
+  `form-feedback.tsx` and `use-form-action.ts` are now in `src/components/`. `ARCHITECTURE.md`
+  rule 5 still has **0 violations**.
+- `formatDateTime` added to `src/lib/format.ts` (Karachi time, "21 Sep 2026, 14:30"), with 3 tests.
+
+**Verified** in the browser as all three roles, not just in tests:
+
+| Check | Result |
 |---|---|
-| See everything — including the audit log | ✅ |
-| Reset any password or PIN (including the Owner's) | ✅ |
-| Create, edit, deactivate users and change roles | ✅ |
-| Maintenance mode — take the site down in one click | ✅ |
-| Edit config — services, prices, staff, partners | ✅ |
-| Edit or delete financial entries | ✅ approved, with the constraints below |
+| Developer signs in with username + password | yes, no PIN anywhere |
+| Developer's sidebar | the whole app **plus** Audit log, Passwords, Maintenance |
+| Owner's and Manager's sidebar | unchanged — no Developer section, no hint of it |
+| Developer's Settings screen | "Change your password" only — nothing developer-specific |
+| Manager opens `/developer/audit-log` by URL | bounced to Billing |
+| Manager opens `/overview` | still bounced to Billing (no regression) |
+| Developer on Billing | sees Edit and Cancel, like the Owner |
+| Audit log | 17 existing entries, searchable, `before`/`after` readable |
+| Reset the Manager's password | worked; signed in with the new one |
+| Close the site | Manager saw "The system is closed"; developer kept working |
+| Open the site again | Manager back to normal |
 
-**Two things the client was told:**
+173 tests pass (was 163), lint clean, build passes — 22 routes now.
 
-1. **Passwords cannot be viewed, only reset.** Passwords and PINs are stored as scrypt hashes
-   (`src/lib/pin.ts`, Better Auth). Even at the database level only the hash is visible. This is a
-   technical fact, not a policy choice.
-
-2. **Editing financial entries weakens the core guarantee.** Spec §11: *"No edit / no delete of
-   financial entries — not even the Owner."* It is enforced by 13 database triggers
-   (`drizzle/0001_append_only.sql`). The client was told this weakens the audit log and the
-   security-code chain, and approved it anyway.
-
-**How to build it so the damage stays bounded:**
-
-- **Do not drop the triggers.** Ordinary app code, and any bug, must still be unable to change a
-  financial row.
-- Give the developer path a deliberate escape hatch — for example, have the trigger check a
-  session-level setting such as `app.allow_financial_edit`, opened only inside that one
-  transaction and never left on.
-- **Every edit writes `before` and `after` to `audit_log`.** A row may change, but never silently.
-- Recompute that day's security code and keep the previous one, so the difference stays visible.
-- **The account is not hidden.** It appears in the Users screen and every action is audited. This
-  also protects the developer: if the books are ever questioned, an open record is the defence.
+**Not in this task.** The last capability — **editing or deleting a financial entry** — is split
+out into **P1.6**, so the append-only escape hatch gets a task of its own. Everything else in the
+client's list is done here, except creating and deactivating users, which is P1.2.
 
 **Size:** large
 
@@ -426,6 +458,38 @@ wants both.
 
 ---
 
+### ⬜ P1.6 — Developer edits a financial entry
+**Owner:** —
+
+Split out of P1.1 on 2026-09-22, so the escape hatch through the append-only triggers gets its own
+task instead of riding along with the role work. The role itself is built and the developer
+already has the run of the app; what is missing is the one capability that changes a row that the
+database currently refuses to let anyone change.
+
+**Client decision (2026-09-22):** approved, after being told plainly that it weakens spec §11
+(*"No edit / no delete of financial entries — not even the Owner"*) and the security-code chain.
+
+**Build it so the damage stays bounded** — these constraints are the point of the task, not
+decoration:
+
+- **Do not drop the 13 triggers** in `drizzle/0001_append_only.sql`. Ordinary app code, and any
+  bug in it, must still be unable to change a financial row.
+- Give the developer path a deliberate escape hatch instead: have `forbid_change()` check a
+  session-level setting such as `app.allow_financial_edit`, set with `set_config(..., true)` so it
+  is local to that one transaction and can never be left on.
+- **Every edit writes `before` and `after` to `audit_log`.** A row may change, never silently.
+- Recompute that day's security code and keep the previous one — `day_snapshot_history` already
+  does exactly this for a reopen, so follow it rather than inventing a second way.
+- The edit must be reachable only from the developer's own screens.
+
+**Watch out for:** `day_snapshots` was already narrowed in `0009` (delete allowed, update still
+forbidden) and `capital_repayments`, `drawings` and the rest each got their own trigger later —
+check every trigger, not just the ones in `0001`.
+
+**Size:** large · **Depends on:** P1.1 (done)
+
+---
+
 ## P2 — Offline
 
 **Client decision (2026-09-22):** *"Like a proper offline app — if there is no internet for 6–8
@@ -531,7 +595,7 @@ offline path for day close.
 | ⬜ P4.4 | **Delete dead code:** `src/components/coming-soon.tsx`, `src/features/.gitkeep`, `docs/~$iend_Setup_Guide.docx` (a Word lock file), `@neon/env` (unused dependency), `neon.ts` (empty config) |
 | ⬜ P4.5 | Move `shadcn` from `dependencies` to `devDependencies` — it is a CLI and bloats the production install |
 | ⬜ P4.6 | Add `error.tsx` / `loading.tsx` — a database error currently shows Next's default error page |
-| ⬜ P4.7 | Add CI (`.github/workflows`) so build + 133 tests + lint run on every push. **More valuable now that two people share `main`** |
+| ⬜ P4.7 | Add CI (`.github/workflows`) so build + 173 tests + lint run on every push. **More valuable now that two people share `main`** |
 | ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
 
 ---
@@ -552,10 +616,10 @@ offline path for day close.
 |---|---|
 | Manager's limit | ✅ View only, cannot edit — only the Owner. **Already works this way** (P1.3) |
 | Offline | ✅ Real offline needed — 6–8 hours without internet, then automatic sync (P2.2) |
-| Developer role | ✅ Everything — reset passwords, edit anything, one-click site shutdown (P1.1) |
+| Developer role | ✅ Built 2026-09-22 (P1.1) — reset passwords, one-click site shutdown, sees the audit log. Hidden from the Settings screen at the client's request: they sign in with a username and password, and nothing else shows the role exists |
 | Staff (karigar) PIN | ✅ Remove from the whole project (P1.0). **The Owner PIN stays** |
 | Confirmation for staff payments | ✅ No replacement wanted |
-| Developer editing financial entries | ✅ Approved — but audited, and not hidden (P1.1) |
+| Developer editing financial entries | ✅ Approved — but audited. Split out of P1.1 into **P1.6**, still to build |
 | Owner editing a bill | ✅ Open day only (P1.4). A closed day's bill can only be cancelled, not edited |
 | An edited bill's marker | ✅ Yes — the Daily report's single line carries an "edited" badge **with a link to the previous version** (P1.5) |
 

@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5 and P5.2 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2 and P1.1 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (163 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (173 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -72,7 +72,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 
 | File | What it is |
 |---|---|
-| `docs/BACKLOG.md` | **The work queue.** 25 items, P0–P5, with client decisions recorded |
+| `docs/BACKLOG.md` | **The work queue.** 26 items, P0–P5, with client decisions recorded |
 | `docs/Art_Salon_Dev_Spec.md` | Business rules. The contract. 325 lines |
 | `docs/PROJECT_GUIDE.md` | Full walkthrough, written in Roman Urdu for the user |
 | `docs/ARCHITECTURE.md` | Folder rules — **currently out of date**, see backlog P4.2 |
@@ -90,15 +90,17 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Check | Result |
 |---|---|
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
-| `pnpm build` | pass — 17 routes, exit 0, **succeeds with no env vars set** |
+| `pnpm build` | pass — 22 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **163 passed** (21 files) |
-| Database | Neon, PostgreSQL 18.6, **28 tables**, all seeds loaded, migrations through `0010` |
+| `pnpm test` | **173 passed** (23 files) |
+| Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0011` |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
+| Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
-staff & rates, settings). Phase 4 (offline, backup) has not been started.
+staff & rates, settings), plus the developer role with its audit log, password and maintenance
+screens. Phase 4 (offline, backup) has not been started.
 
 **Not deployed.** A Vercel project exists and is connected to this repo, so every push to `main`
 builds there — but it has no live database and nobody here can open its settings, because it is in
@@ -118,6 +120,7 @@ pnpm db:migrate
 pnpm db:seed          # owner + manager accounts, prints passwords ONCE
 pnpm db:seed:sample   # services, deals, staff, customers, opens the first business day
 pnpm db:seed:accounts # partners + fixed expense lines
+pnpm db:seed:developer # the developer account, prints its password ONCE
 ```
 
 `.env.local` exists and points at a **Neon dev database** (not a local Postgres, despite earlier
@@ -133,9 +136,16 @@ Rs 2,600. P1.5 then corrected #3 twice (→ #11, #13) and cancelled #9 outright,
 **Rs 1,900** with four `bill.edit` rows in `audit_log`. Every khata balance is 0. Reopen or reseed
 freely; none of it is real data.
 
-Local logins: `owner` and `manager`. Passwords were printed once during seeding and the user noted
-them down. `seed-users.ts` **skips accounts that already exist**, so re-running it will not print
-new ones — reset through the Settings screen instead.
+P1.1 added nothing financial. It left a `developer` account, a `password.reset` row and one
+`maintenance.on` / `maintenance.off` pair in `audit_log`, and an `app_settings` row reading `off`.
+
+Local logins: `owner`, `manager` and `developer`. Passwords were printed once during seeding and
+the user noted them down. `seed-users.ts` and `seed-developer.ts` both **skip accounts that
+already exist**, so re-running them will not print new ones. To recover one: sign in as the
+developer and use `/developer/passwords`, or as the owner and use Settings for the manager.
+
+**The manager's dev password was changed on 2026-09-22** while verifying P1.1's reset screen — ask
+the user for the new one, or reset it again.
 
 ---
 
@@ -148,10 +158,11 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **Manager's limit** | View-only on past daily reports; cannot edit. Only the Owner can. **Already works this way** — no change needed. |
 | **Staff (karigar) PIN** | **Removed from the whole project** (P1.0, done 2026-09-22). No replacement confirmation wanted. |
 | **Owner PIN** | **Kept.** They were two different columns: `staff.pin_hash` (dropped), `user.pin_hash` (still there). |
-| **Developer role** | A 4th role above Owner: sees everything, resets any password/PIN, manages users, maintenance mode, edits config. |
-| **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. Constraints below. |
+| **Developer role** | A 4th role above Owner: sees everything, resets any password/PIN, manages users, maintenance mode, edits config. **Built 2026-09-22 (P1.1)**, except user management (P1.2) and editing financial rows (P1.6). |
+| **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. Constraints below. **Not built yet — it is backlog P1.6.** |
 | **Offline** | Real offline required — 6–8 hours with no internet, then sync on reconnect. |
-| **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: anything, any time (P1.1). |
+| **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: everything the Owner can (P1.1); editing a row the database forbids is still P1.6. |
+| **Is the developer visible?** | **No, not on the screens** (2026-09-22). No developer section in Settings; the Owner and Manager see no sign the role exists. They sign in with a username and a password, nothing more. The account is still an ordinary `user` row and **every action it takes is audited** — hidden from the screens, never from the record. |
 | **Marking an edited bill** | **Yes.** The Daily report's single line carries an "Edited" badge **with a link to the previous version** (P1.5, done). |
 | **An edited bill's number** | The receipt number **need not stay the same**. That choice let P1.5 be built without weakening the append-only guarantee. |
 
@@ -165,8 +176,10 @@ The client was told the risk and approved it. Build it so the damage is bounded:
   setting such as `app.allow_financial_edit`, opened only inside that transaction).
 - **Every edit writes `before` and `after` to `audit_log`.** A row may change, never silently.
 - Recompute that day's security code and keep the previous one, so the difference is visible.
-- **The account is not hidden.** It appears in the Users screen and every action is audited. That
-  openness is also what protects the developer if the books are ever questioned.
+- **Every action is audited**, and the account is an ordinary row in `user` — nothing about it is
+  hidden from the record. That openness is also what protects the developer if the books are ever
+  questioned. The client did ask (2026-09-22) that it not be *shown on the screens*, which is a
+  different thing: see the row above.
 
 Passwords and PINs are scrypt hashes and **cannot be read back by anyone** — the developer can
 reset them, not view them. Technical fact, not a policy choice.
@@ -215,6 +228,14 @@ Measured, not guessed. Do not spend time re-deriving these.
 | `DATABASE_URL_UNPOOLED` is read by **migrations only** | `drizzle.config.ts`. The seed scripts go through `src/db`, which reads `DATABASE_URL` — `.env.example` used to claim otherwise and was fixed in P5.2 |
 | `pnpm db:seed:sample` is **test data** | Haircut Rs 800, invented customers. Never run it on the live branch |
 | A closed-day correction never rewrites counted cash | the drawer was counted by hand; only expected cash moves, and the difference shows the correction |
+| **`canAccess` is the whole role hierarchy** | `src/lib/auth/roles.ts`. `developer` passes every check; everyone else is matched exactly. `requireRole` goes through it, so all 26 `requireRole("owner")` sites accepted the developer untouched |
+| Three checks stay strict `=== "owner"` on purpose | the owner's PIN (`account/service.ts`), the owner-only part of Settings, and the manager-only hint on Day close. The developer has no PIN, and the client asked that Settings show nothing about the role |
+| **Maintenance mode is checked in `requireUser()`** | not in a layout — layouts do not re-run on client navigation. Being in `requireUser` covers every page **and every Server Action**, and it works because all 12 `actions.ts` files call `requireUser`/`requireRole` **outside** their `try` block, so the `redirect()` is not swallowed by `failure(error)` |
+| `app_settings` is a key/value table with **one** key today | `maintenance` ("on"/"off"). No row means off, so an empty table is normal. No append-only trigger — it is config |
+| `readMaintenance()` is `cache()`d | one query per request even though `requireUser` asks on every page. The developer short-circuits before the query runs |
+| The developer has **no PIN** | `seed-developer.ts` does not set one, and `resetPin` refuses any account whose role is not `owner` |
+| `pnpm db:seed:developer` is separate from `pnpm db:seed` | the owner and manager belong to the salon; this account belongs to whoever maintains the system |
+| `form-feedback.tsx` and `use-form-action.ts` live in `src/components/` | moved up out of `features/account` in P1.1 so the developer feature could use them without breaking `ARCHITECTURE.md` rule 5 |
 
 ---
 
@@ -229,6 +250,19 @@ clearing `business_days.closed_at` would let the next close write them **again**
 staff member's pay in the khata and in expected cash. `reopenDay()` reverses each of them with a new
 row first. `resettleDay()` does the same for a cancellation inside a closed day. Anything else
 that changes a settled day must go through one of those two.
+
+### 8.0b `pnpm build` then `pnpm dev` gives 404 on every page
+
+Ran into this on 2026-09-22. `next build` and `next dev` (Turbopack) share the `.next` directory,
+and a dev server started on top of a production build serves **404 for every route** — `/login`
+included — with no error in the log. It looks exactly like broken routing, and it is not.
+
+```bash
+rm -rf .next        # then start the dev server again
+```
+
+Since the working agreement says to run `pnpm build` after every change, this will happen again.
+If a route 404s in dev and the same route is listed in the build output, clear `.next` first.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -333,6 +367,8 @@ Questions 2 and 3 are not needed until offline work starts.
 - **Each developer has their own database** (confirmed 2026-09-22). So a migration or a seed run by
   one does not disturb the other's data. The shared-file migration conflict in section 8.1 still
   applies — that is about `drizzle/meta/_journal.json` in git, not about the databases.
+- **Should the developer role be visible anywhere?** No (2026-09-22). No Settings tab, no hint of
+  it for the Owner or the Manager. Recorded in section 6.
 
 ---
 
@@ -357,7 +393,9 @@ STAGE 2 — go live
         · migrate + seed on live · test the live URL
 
 STAGE 3 — during the client's 20-day trial
-  P1.1  Developer role        P1.2  Users screen        P4  Cleanup + CI
+  P1.1  Developer role                                  DONE 2026-09-22
+  P1.6  Developer edits a financial entry (split out of P1.1)
+  P1.2  Users screen        P4  Cleanup + CI
 
 STAGE 4 — after the trial
   P2.2  Offline PWA + sync (2–3 weeks)
@@ -373,7 +411,9 @@ Offline comes after the trial because the trial's purpose is to prove the **acco
 The paper bill book (P2.1) covers outages until then.
 
 **Good items to run in parallel** (they touch different areas): P4.2 · P4.4 · P4.7.
-**Do not parallelise:** P0.2 with P1.0 (both `day-close`), or P1.1 with P1.2 (P1.2 depends on P1.1).
+**Do not parallelise:** P0.2 with P1.0 (both `day-close`). P1.2 and P1.6 both build on P1.1, which
+is done, so either can start — but not both at once: they touch the same `features/developer`
+folder, and P1.6 needs a migration (section 8.1).
 
 ---
 
