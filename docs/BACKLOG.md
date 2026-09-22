@@ -540,8 +540,8 @@ offline path for day close.
 
 | | Item |
 |---|---|
-| 🟡 P5.1 | **Go live on Vercel** — env vars, then migrate + seed on the Neon `live` branch. The build itself already passes (verified) |
-| ⬜ P5.2 | **Fix `docs/DEPLOY_VERCEL.md`** — its "First deploy" steps never mention `db:migrate` or `db:seed`, yet step 4 says "sign in as owner". This is very likely why the live site never worked |
+| 🟡 P5.1 | **Go live on Vercel** — env vars, then migrate + seed on the Neon `live` branch. The build itself already passes (verified). **Blocked on access, not on code:** the Vercel project exists and is connected to this same repo, but it lives in the **other developer's** Vercel account (answered 2026-09-22). Nobody here can open Settings to set the environment variables. First step is to be added to that project, or to have it transferred |
+| ⬜ P5.2 | **Fix `docs/DEPLOY_VERCEL.md`** — two known faults: (a) its "First deploy" steps never mention `db:migrate` or `db:seed`, yet step 4 says "sign in as owner", which is very likely why the live site never worked; (b) step 5 still says to enter "staff with PINs", but the staff PIN was removed from the whole project in P1.0. The guide also needs to say that a migration must be applied to the live branch **before** the code that needs it is pushed — see the note under P5.1 |
 | ⬜ P5.3 | **Move to a VPS** — after the client signs off. Postgres on the same VPS; carry the trial data over with `pg_dump` |
 
 ---
@@ -561,7 +561,9 @@ offline path for day close.
 
 ## Still to ask
 
-1. **Does a Vercel project already exist, or does it need creating from scratch?** Blocks P5.1.
+1. **Which Vercel account owns the project?** It exists, and it is connected to this same repo —
+   but it sits in the other developer's Vercel account. Somebody has to be given access before
+   P5.1 can move. (The "does it exist" half was answered 2026-09-22.)
 2. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
    the day offline, or must they wait? Needed for P2.2 — the security code needs the full day's
    data in order.

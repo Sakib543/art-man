@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4 and P1.5 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4 and P1.5 done; Vercel ownership answered)
 
 ---
 
@@ -47,6 +47,7 @@ Standing instructions. They override default habits.
 | 4 | **Never work two items that touch the same feature at the same time.** | e.g. P0.2 and P1.0 both touch `day-close`. Check the other person's claimed items first. |
 | 5 | **Migrations: only one person at a time.** See the trap in section 8.1. | Two generated migrations collide and can corrupt migration state. |
 | 6 | **Run `pnpm install` after pulling** if `pnpm-lock.yaml` changed. | Otherwise you run against stale dependencies. |
+| 7 | **A push to `main` goes straight to Vercel.** The project is connected to this repo but lives in the **other developer's** Vercel account, so neither of you sees the other's deploy. | Confirmed 2026-09-22. Nothing is live yet, so this is harmless today — but the moment the live database exists, **apply a migration to the live branch before pushing the code that needs it**, or the deployed site breaks between the two. |
 
 ### Before you report a task finished
 
@@ -99,7 +100,10 @@ Feature completeness: spec Phases 1–3 are essentially built (billing, workshee
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
 staff & rates, settings). Phase 4 (offline, backup) has not been started.
 
-**Not deployed.** Vercel is not live. That is the main blocker — backlog P5.
+**Not deployed.** A Vercel project exists and is connected to this repo, so every push to `main`
+builds there — but it has no live database and nobody here can open its settings, because it is in
+the other developer's Vercel account (confirmed 2026-09-22). That access is the main blocker —
+backlog P5.1.
 
 ---
 
@@ -280,6 +284,12 @@ Found and reverted on 2026-09-22 before it was committed, so nothing reached Git
 in `.env.local` (git-ignored) only. If `git status` ever shows `.env.example` as modified, check it
 before doing anything else.
 
+### 8.8a `docs/DEPLOY_VERCEL.md` also still mentions staff PINs
+
+Step 5 tells you to enter "staff with PINs". The staff PIN was removed from the whole project in
+P1.0 — only the Owner has one. Found 2026-09-22 while answering the Vercel question; it is part of
+P5.2's scope.
+
 ### 8.8 `docs/DEPLOY_VERCEL.md` is missing steps
 
 Its "First deploy" section never says to run `db:migrate` or `db:seed` against the live branch, yet
@@ -292,10 +302,13 @@ step 4 says "sign in as owner". Very likely why the Vercel deployment never work
 **Owed by the user:**
 - [x] **Rotate the Neon database password** — done on 2026-09-22.
 - [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
+- [ ] **Get access to the Vercel project** — it is in the other developer's account. Ask them to
+  invite you to it, or to transfer it. **P5.1 cannot start without this**; the environment
+  variables can only be set from inside that project. Also ask them for the site's URL.
 
 **Questions blocking work:**
-1. **Does a Vercel project already exist, or does it need creating?** Blocks P5.1. Asked twice, not
-   yet answered.
+1. **Who can let us into the Vercel project?** It exists and is connected to this repo, but it is
+   in the other developer's account (answered 2026-09-22). Blocks P5.1 until access is granted.
 2. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
    the day offline, or must they wait? Needed for P2.2 — the security code needs the full day's
    data in order.
@@ -306,6 +319,8 @@ step 4 says "sign in as owner". Very likely why the Vercel deployment never work
 Questions 2 and 3 are not needed until offline work starts.
 
 **Answered:**
+- **Does a Vercel project already exist?** Yes (2026-09-22) — connected to this same repo, but
+  owned by the other developer's Vercel account. See the action above and section 2 rule 7.
 - **Must an edited bill keep its receipt number?** No (2026-09-22). That answer chose option B for
   P1.5: fold the rows in the view only, leave the append-only guarantee alone.
 - **Should the Daily report mark a bill as edited?** Yes — badge plus a link to the previous
