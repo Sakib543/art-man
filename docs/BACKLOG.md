@@ -30,10 +30,16 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
-| P3.1–P3.5, P3.7 | Remaining spec features | ⬜ | — |
+| P3.1 | Give a bonus | ⬜ | Sakib, 2026-09-23 |
+| P3.2 | Customers screen — edit, and set special rates | ⬜ | Sakib, 2026-09-23 |
+| P3.3, P3.4, P3.5 | Staff receipt · month adjustment · real alert | ⬜ | — |
+| P3.7 | Backup and restore | ⬜ | Sakib, 2026-09-23 |
+| P3.9 | Audit failed logins (spec §11) | ⬜ | Sakib, 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
-| P4.1–P4.5, P4.8 | Cleanup | ⬜ | — |
+| P4.1, P4.3 | Feature shape · merge features/auth | ⬜ | — |
+| P4.2 | Rewrite docs/ARCHITECTURE.md | ⬜ | Sakib, 2026-09-23 |
+| P4.4, P4.5, P4.8 | Dead code · shadcn to devDeps · seed env flag | ⬜ | Sakib, 2026-09-23 |
 | P4.6 | error.tsx / loading.tsx | ✅ | done 2026-09-22 |
 | P4.7 | CI on every push | ✅ | done 2026-09-22 |
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
@@ -777,6 +783,7 @@ offline path for day close.
 | ✅ P3.6 | **Receipt printing / thermal printer** — done 2026-09-22. See below | small |
 | ⬜ P3.7 | **Proper backup and restore** | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
+| ⬜ P3.9 | **Audit failed logins** — spec §11 requires the audit log to hold failed attempts. A wrong PIN and a wrong password change are recorded; a wrong *login* is not recorded at all | small |
 
 ### ✅ P3.6 — Receipt printing
 **Done:** 2026-09-22
