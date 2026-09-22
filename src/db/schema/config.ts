@@ -8,6 +8,7 @@ import {
   primaryKey,
   smallint,
   text,
+  timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -101,4 +102,23 @@ export const partners = pgTable("partners", {
   sharePct: numeric("share_pct", { precision: 5, scale: 2, mode: "number" }).notNull(),
   active: boolean("active").notNull().default(true),
   createdAt: createdAt(),
+});
+
+/**
+ * Switches the developer can flip, one row per switch. Like the other config
+ * tables it is editable and has no append-only trigger: only the current value
+ * matters, and every change is written to `audit_log` anyway.
+ *
+ * Today it holds exactly one key, `maintenance` ("on" / "off"). A missing row
+ * means off, so the table being empty is the normal state.
+ */
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+  /** Username of whoever last changed it. Kept here so the screen can show it without a join. */
+  updatedBy: text("updated_by"),
 });
