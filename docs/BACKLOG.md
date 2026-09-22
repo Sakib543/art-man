@@ -20,7 +20,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P0.1 | Show the real login error | ✅ | done 2026-09-22 |
 | P0.2 | Reopen a closed day (Owner) | ✅ | done 2026-09-22 |
 | P0.3 | Cancel a bill/entry in a closed day (Owner) | ✅ | done 2026-09-22 |
-| **P0.4** | **Stale session cookie locks a user out** | ⬜ | **open — most urgent** |
+| **P0.4** | **Stale session cookie locks a user out** | 🟡 | Sakib543, 2026-09-22 |
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ✅ | done 2026-09-22 |
 | P1.2 | Users screen — create admins | ⬜ | — |
@@ -44,8 +44,8 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 Without these, the 20-day trial is likely to get stuck. **P0.4 is open and is the most urgent
 item in this file.**
 
-### ⬜ P0.4 — A stale session cookie locks a user out completely
-**Owner:** — · **Found:** 2026-09-22, on the live site
+### 🟡 P0.4 — A stale session cookie locks a user out completely
+**Owner:** Sakib543, 2026-09-22 · **Found:** 2026-09-22, on the live site
 
 `src/proxy.ts` decides only whether a session cookie **exists**, never whether it is valid — which
 is deliberate and documented. But combined with `requireUser()` it forms a loop:
