@@ -15,7 +15,8 @@
     "db:seed": "tsx --env-file=.env.local scripts/seed-users.ts",
     "db:seed:sample": "tsx --env-file=.env.local scripts/seed-sample.ts",
     "db:seed:accounts": "tsx --env-file=.env.local scripts/seed-accounts.ts",
-    "db:seed:developer": "tsx --env-file=.env.local scripts/seed-developer.ts"
+    "db:seed:developer": "tsx --env-file=.env.local scripts/seed-developer.ts",
+    "db:check": "tsx --env-file=.env.local scripts/check-db.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
