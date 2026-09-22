@@ -19,6 +19,8 @@ export interface DayBill {
   total: Rupees;
   cash: Rupees;
   online: Rupees;
+  /** The paper bill book's number, when this bill was written by hand first (spec 5.5). */
+  bookNo: string | null;
   status: "active" | "cancelled" | "reversal";
   cancelReason: string | null;
   /** On a reversal bill: the number of the bill it cancels. */
@@ -36,6 +38,7 @@ export async function getDayBills(businessDate: string): Promise<DayBill[]> {
       cash: bills.cash,
       online: bills.online,
       reversesBillId: bills.reversesBillId,
+      bookNo: bills.bookNo,
       customerName: customers.name,
       cancelReason: billCancellations.reason,
     })
@@ -69,6 +72,7 @@ export async function getDayBills(businessDate: string): Promise<DayBill[]> {
     total: row.cash + row.online,
     cash: row.cash,
     online: row.online,
+    bookNo: row.bookNo,
     status: row.reversesBillId ? "reversal" : row.cancelReason ? "cancelled" : "active",
     cancelReason: row.cancelReason,
     reversesBillNo: row.reversesBillId ? (billNoById.get(row.reversesBillId) ?? null) : null,

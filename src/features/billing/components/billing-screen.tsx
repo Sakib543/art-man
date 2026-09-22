@@ -3,6 +3,8 @@
 import { AlertCircle, Receipt as ReceiptIcon } from "lucide-react";
 import { useMemo, useReducer, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { checkPayment, paymentAmounts, priceCart, type PayMode, type PricedLine } from "@/lib/accounting";
 import { rs } from "@/lib/format";
 import { createBillAction } from "../actions";
@@ -25,6 +27,7 @@ export function BillingScreen({ data }: { data: BillingData }) {
   const [payMode, setPayMode] = useState<PayMode>("cash");
   const [typedCash, setTypedCash] = useState("");
   const [typedOnline, setTypedOnline] = useState("");
+  const [bookNo, setBookNo] = useState("");
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -84,6 +87,7 @@ export function BillingScreen({ data }: { data: BillingData }) {
               : null,
         cash: amounts.cash,
         online: amounts.online,
+        bookNo,
       });
 
       if (!result.ok) return setError(result.error);
@@ -95,6 +99,7 @@ export function BillingScreen({ data }: { data: BillingData }) {
       setPayMode("cash");
       setTypedCash("");
       setTypedOnline("");
+      setBookNo("");
     });
   }
 
@@ -115,6 +120,22 @@ export function BillingScreen({ data }: { data: BillingData }) {
           <div className="flex items-center justify-between border-b px-[18px] py-3.5">
             <h2 className="text-[15px] font-semibold">New bill</h2>
             <span className="text-muted-foreground tabular-nums">#{data.nextBillNo}</span>
+          </div>
+
+          {/* Filled in only when the bill was written on the paper book first (spec 5.5). */}
+          <div className="flex items-center gap-2.5 border-b px-[18px] py-2.5">
+            <Label htmlFor="book-no" className="shrink-0 text-[12.5px] font-normal text-muted-foreground">
+              Bill book no.
+            </Label>
+            <Input
+              id="book-no"
+              value={bookNo}
+              onChange={(event) => setBookNo(event.target.value)}
+              maxLength={20}
+              autoComplete="off"
+              placeholder="Only for a paper bill"
+              className="h-8 w-44 text-[13px]"
+            />
           </div>
 
           <div className="border-b px-[18px] py-4">

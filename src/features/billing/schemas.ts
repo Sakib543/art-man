@@ -2,6 +2,18 @@ import { z } from "zod";
 
 const rupees = z.number().int().min(0).max(10_000_000);
 
+/**
+ * The number written on the paper bill book, used when power or internet was
+ * down and the bill was written by hand first (spec 5.5). Blank means the bill
+ * was rung up here, so it is stored as null rather than an empty string.
+ */
+const bookNo = z
+  .string()
+  .trim()
+  .max(20, "Bill book number can be at most 20 characters")
+  .nullish()
+  .transform((value) => value || null);
+
 export const createBillSchema = z.object({
   lines: z
     .array(
@@ -22,6 +34,7 @@ export const createBillSchema = z.object({
     .nullable(),
   cash: rupees,
   online: rupees,
+  bookNo,
 });
 
 export const cancelBillSchema = z.object({

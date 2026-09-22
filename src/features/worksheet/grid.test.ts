@@ -15,6 +15,7 @@ const bill = (billNo: number, over: Partial<DayBill>, lines: DayBill["lines"]): 
   total: lines.reduce((s, l) => s + l.amount, 0),
   cash: 0,
   online: 0,
+  bookNo: null,
   status: "active",
   cancelReason: null,
   reversesBillNo: null,

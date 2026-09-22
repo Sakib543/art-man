@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete, P1.0 done)
+Last updated: 2026-09-22 (P0 complete, P1.0 and P2.1 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (139 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (144 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -91,7 +91,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — 17 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **139 passed** (18 files) |
+| `pnpm test` | **144 passed** (19 files) |
 | Database | Neon, PostgreSQL 18.6, **28 tables**, all seeds loaded |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 
@@ -122,8 +122,9 @@ discussion). Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty — 
 
 **State of the dev database as this session ended:** 22 Sep 2026 is closed, carrying one cancelled
 bill (#1) and its reversal (#2), a reversed commission for Arshad, and three rows in
-`day_snapshot_history` — all of it left over from verifying P0.2 and P0.3. Every khata balance is
-0. Reopen or reseed freely; none of it is real data.
+`day_snapshot_history` — left over from verifying P0.2 and P0.3. **23 Sep 2026 is open** with two
+bills from verifying P2.1: #3 (Rs 800, book number `B-2/45`) and #4 (Rs 300, no book number). Every
+khata balance is 0. Reopen or reseed freely; none of it is real data.
 
 Local logins: `owner` and `manager`. Passwords were printed once during seeding and the user noted
 them down. `seed-users.ts` **skips accounts that already exist**, so re-running it will not print
@@ -178,7 +179,7 @@ Measured, not guessed. Do not spend time re-deriving these.
 | **One counter device only** | spec §10.5 — so offline sync has no multi-writer conflict |
 | Backend is Server Actions, not REST | 10 `actions.ts` files, exactly 1 API route (`/api/auth`) |
 | Not locked to Neon | driver is standard `pg`; "Neon" appears in `src/` only in one comment |
-| `bills.book_no` exists but is **never read or written** | dead field — backlog P2.1 will use it |
+| `bills.book_no` is **live since P2.1** | written by billing, shown in both bill lists. It has existed since migration `0000`, so wiring it up needed no migration |
 | Pages run 5–11 DB queries each | matters for the VPS move: keep server and database in the same region |
 | **Only the Owner has a PIN** | `user.pin_hash`. `staff.pin_hash` was dropped in `0008_busy_lockjaw.sql` (P1.0) |
 | `cash_entries.pin_confirmed` now means Owner-confirmed only | set for `owner_took` / `owner_added`, never for staff rows |
@@ -190,6 +191,7 @@ Measured, not guessed. Do not spend time re-deriving these.
 | Only the **latest** business day can be reopened | a later day's opening cash is this day's count, and its security code is built on this one's |
 | Settling a day lives in `src/db/day-settlement.ts` | `summarize`, `postEarnings`, `resettleDay`, the month/owner guards. Shared by day-close, billing and daily-report without crossing features |
 | `cancelBill` lives in `src/db/bill-cancel.ts` | Billing and Daily report both call it |
+| A blank book number is stored as `null`, never `""` | the billing screen always sends the input's value, so `createBillSchema` maps empty to null — otherwise "no paper bill" and "blank slip" would look the same |
 | A closed-day correction never rewrites counted cash | the drawer was counted by hand; only expected cash moves, and the difference shows the correction |
 
 ---
@@ -308,8 +310,8 @@ STAGE 1 — before the client trial
   2. P1.0  Remove the staff PIN (keep the Owner PIN)     DONE 2026-09-22
   3. P0.2  Reopen a closed day (Owner)                   DONE 2026-09-22
   4. P0.3  Cancel a bill/entry in a closed day (Owner)   DONE 2026-09-22
-  5. P2.1  Paper bill-book number field                  small    <- next
-  6. P1.4  Owner edits a bill on the open day            medium
+  5. P2.1  Paper bill-book number field                  DONE 2026-09-22
+  6. P1.4  Owner edits a bill on the open day            medium   <- next
   7. P1.5  That edit leaves one line, not three          medium
 
 STAGE 2 — go live
@@ -332,7 +334,7 @@ Offline comes after the trial because the trial's purpose is to prove the **acco
 (spec Phase 1: run in parallel with the paper register, 7 straight days with a difference of 0).
 The paper bill book (P2.1) covers outages until then.
 
-**Good items to run in parallel** (they touch different areas): P0.1 · P2.1 · P4.2 · P4.4 · P4.7.
+**Good items to run in parallel** (they touch different areas): P4.2 · P4.4 · P4.7.
 **Do not parallelise:** P0.2 with P1.0 (both `day-close`), or P1.1 with P1.2 (P1.2 depends on P1.1).
 
 ---

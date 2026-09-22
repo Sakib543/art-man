@@ -10,6 +10,7 @@ const bill = (status: DayBill["status"], cash: number, online = 0): DayBill => (
   total: cash + online,
   cash,
   online,
+  bookNo: null,
   status,
   cancelReason: null,
   reversesBillNo: null,

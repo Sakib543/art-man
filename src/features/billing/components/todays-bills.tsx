@@ -67,7 +67,10 @@ export function TodaysBills({ bills }: { bills: DayBill[] }) {
               {bills.map((bill) => (
                 <tr key={bill.id} className={cn("border-b last:border-b-0", bill.status !== "active" && "text-muted-foreground")}>
                   <td className="px-3.5 py-2.5 tabular-nums">{formatTime(bill.createdAt)}</td>
-                  <td className="px-3.5 py-2.5 tabular-nums">#{bill.billNo}</td>
+                  <td className="px-3.5 py-2.5 tabular-nums">
+                    #{bill.billNo}
+                    {bill.bookNo ? <span className="block text-[12.5px] text-muted-foreground">Book {bill.bookNo}</span> : null}
+                  </td>
                   <td className="px-3.5 py-2.5">{bill.customerName ?? "Walk-in"}</td>
                   <td className="px-3.5 py-2.5">{bill.lines.map((line) => line.name).join(", ")}</td>
                   <td className="px-3.5 py-2.5 text-right tabular-nums">{rs(bill.cash)}</td>

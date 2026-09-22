@@ -21,7 +21,7 @@ export function ReportTable({ bills, canCancel }: { bills: DayBill[]; canCancel:
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-[#fafbfc]">
-              <th className={cn(th, "w-24")}>Bill</th>
+              <th className={cn(th, "w-32")}>Bill</th>
               <th className={th}>Customer</th>
               <th className={th}>Services and staff</th>
               <th className={th}>Payment</th>
@@ -34,6 +34,9 @@ export function ReportTable({ bills, canCancel }: { bills: DayBill[]; canCancel:
               <tr key={bill.id} className="border-b last:border-b-0">
                 <td className={td}>
                   <p className="font-medium tabular-nums">#{bill.billNo}</p>
+                  {bill.bookNo ? (
+                    <p className="text-[12.5px] text-muted-foreground">Book {bill.bookNo}</p>
+                  ) : null}
                   <p className="text-[12.5px] text-muted-foreground">{formatTime(bill.createdAt)}</p>
                 </td>
                 <td className={td}>{bill.customerName ?? "Walk-in"}</td>

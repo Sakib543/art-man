@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0 complete, P1.0 done)
+Last updated: 2026-09-22 (P0 complete, P1.0 and P2.1 done)
 
 ---
 
@@ -26,7 +26,7 @@ Last updated: 2026-09-22 (P0 complete, P1.0 done)
 | P1.4 | Owner edits a bill on the open day | ⬜ | — |
 | P1.5 | Owner's edit leaves one line, not three | ⬜ | — |
 | P1.3 | Manager's limit | ✅ | no change needed |
-| P2.1 | Paper bill-book number | 🟡 | Sakib543, 2026-09-22 |
+| P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
 | P3.1–P3.7 | Remaining spec features | ⬜ | — |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
@@ -363,17 +363,43 @@ hours the app must keep working, and when the connection returns the database up
 So **P2.2 is approved.** P2.1 still gets built first: it is a cheap stopgap until P2.2 ships, and
 it stays useful whenever the power is out.
 
-### 🟡 P2.1 — Cheap fallback: the paper bill book (spec §5.5)
-**Owner:** Sakib543, 2026-09-22
+### ✅ P2.1 — Cheap fallback: the paper bill book (spec §5.5)
+**Done:** 2026-09-22
 
 When power or internet fails, the counter uses a numbered paper bill book; those bills are entered
-before that day's Day Close.
+before that day's Day Close, carrying the number written on the paper slip.
 
-The `bills` table **already has a `book_no` column** (`src/db/schema/billing.ts:23`) but nothing in
-the app ever writes or reads it — it is a dead field today.
+`bills.book_no` had existed since migration `0000` but nothing ever wrote or read it. It is now
+live, so **no migration was needed** — the column was already in every database.
 
-**What to do:** a "bill book number" field on the billing screen, shown in the daily report.
-Alongside: recommend a UPS and a 4G backup device.
+**What was built:**
+
+- `schemas.ts` — `bookNo` on `createBillSchema`: trimmed, at most 20 characters, and **empty
+  becomes `null`**. The screen always sends the input's value, so an ordinary bill arrives as `""`;
+  storing that as an empty string would have made "no book number" indistinguishable from a blank
+  one written down.
+- `service.ts` — saves it on the bill and records it in the `bill.create` audit entry.
+- `billing-screen.tsx` — a compact "Bill book no." row under the bill number, always visible and
+  optional. No toggle: the counter is working through a stack of paper slips after an outage and
+  should not have to turn a mode on for each one.
+- `day-bills.ts` — `bookNo` on `DayBill`, so both bill lists can show it.
+- The daily report and Today's bills print `Book <number>` under the bill number. The Bill column
+  widened to `w-32` so a number like `B-2/45` stays on one line.
+- `schemas.test.ts` — 5 tests covering blank, whitespace, trimming, a hand-labelled number, and
+  the length limit.
+
+**Deliberately left alone:** a cancellation's reversal bill does not copy the book number. The
+reversal is generated here, not written on paper, and it already says which bill it cancels.
+
+**Verified in the browser** against the dev database, not only in tests. On the open day
+(23 Sep 2026): bill #3 saved with `  B-2/45  ` typed in — the server log shows the raw
+`{"bookNo":"  B-2/45  "}` arriving and the report reads `Book B-2/45`, so the trim works end to
+end. Bill #4 saved with the field left blank (`{"bookNo":""}`) shows **no** book line at all.
+Day totals unchanged at Rs 1,100.
+
+144 tests pass (was 139), lint clean, build passes.
+
+**Still worth doing, outside the code:** recommend a UPS and a 4G backup device.
 
 **Size:** small · **Value:** high
 

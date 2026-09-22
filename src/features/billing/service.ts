@@ -115,6 +115,7 @@ export async function createBill(user: SessionUser, input: CreateBillInput): Pro
         customerId,
         cash: input.cash,
         online: input.online,
+        bookNo: input.bookNo,
         createdBy: user.username || user.name,
       })
       .returning();
@@ -134,7 +135,7 @@ export async function createBill(user: SessionUser, input: CreateBillInput): Pro
       actor: user.username || user.name,
       action: "bill.create",
       target: `bill #${bill.billNo}`,
-      after: { total: priced.total, cash: input.cash, online: input.online },
+      after: { total: priced.total, cash: input.cash, online: input.online, bookNo: input.bookNo },
     });
 
     return {
