@@ -34,7 +34,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P3.2 | Customers screen — edit, and set special rates | ⬜ | Sakib, 2026-09-23 |
 | P3.3, P3.4, P3.5 | Staff receipt · month adjustment · real alert | ⬜ | — |
 | P3.7 | Backup and restore | ⬜ | Sakib, 2026-09-23 |
-| P3.9 | Audit failed logins (spec §11) | ⬜ | Sakib, 2026-09-23 |
+| P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1, P4.3 | Feature shape · merge features/auth | ⬜ | — |
@@ -783,7 +783,7 @@ offline path for day close.
 | ✅ P3.6 | **Receipt printing / thermal printer** — done 2026-09-22. See below | small |
 | ⬜ P3.7 | **Proper backup and restore** | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
-| ⬜ P3.9 | **Audit failed logins** — spec §11 requires the audit log to hold failed attempts. A wrong PIN and a wrong password change are recorded; a wrong *login* is not recorded at all | small |
+| ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
 
 ### ✅ P3.6 — Receipt printing
 **Done:** 2026-09-22
@@ -898,6 +898,46 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 `bill_lines.bill_id`**. Worth a small migration; it is not in this backlog yet.
 
 **Size:** small · **Value:** high (asked for directly by the client)
+
+### ✅ P3.9 — Audit failed logins
+**Done:** 2026-09-23
+
+Spec §11: the audit log holds *"who / when / what for every important action,
+**including failed attempts**"*. A wrong PIN (`pin.wrong`) and a wrong current
+password (`password.wrong`) were recorded. A wrong **login** was recorded
+nowhere — somebody guessing at the owner's password left no trace at all.
+
+**What was built:**
+
+- `src/lib/auth/login-audit.ts` — the pure decision: which sign-in attempt
+  becomes which row. 7 tests.
+- An `after` hook in `src/lib/auth/server.ts` writes it. Successes go in as
+  well (`login.ok`), because a failure count means little without the
+  successes around it, and "who signed in and when" is the other half of the
+  question the log is asked after a disputed entry.
+- A log that cannot be written never stops a sign-in: the insert is wrapped and
+  the error goes to the logger.
+
+**Why an `after` hook can see a failure:** when an endpoint throws an
+`APIError`, the dispatcher catches it, puts it in `ctx.context.returned` and
+*then* runs the after hooks — read in `better-auth/dist/api/dispatch.mjs`, not
+assumed. So a refused sign-in is an ordinary return value there.
+
+**Verified against the running app**, not only in tests. A throwaway account was
+created, four attempts were made over HTTP, and the rows were read back:
+
+| Attempt | HTTP | Row |
+|---|---|---|
+| wrong password | 401 | `login.failed` · `INVALID_USERNAME_OR_PASSWORD` |
+| username that does not exist | 422 | `login.failed` · `INVALID_USERNAME` |
+| correct password | 200 | `login.ok` · success |
+| correct password, account closed | 403 | `login.failed` · `ACCOUNT_CLOSED` |
+
+The throwaway account was deleted afterwards (`pnpm db:check` reads 3 accounts
+again). Its four `audit_log` rows stay — that table is append-only and cannot
+be cleaned, which is the point of it.
+
+**Size:** small · **Value:** high (a spec requirement that was simply missing)
 
 ---
 

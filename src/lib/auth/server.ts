@@ -2,10 +2,12 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
+import { writeAudit } from "../../db/audit";
 import * as schema from "../../db/schema";
+import { loginAuditEntry } from "./login-audit";
 
 /**
  * True while the account may sign in. Queried here rather than imported from
@@ -65,6 +67,36 @@ export const auth = betterAuth({
         },
       },
     },
+  },
+  hooks: {
+    /**
+     * Every sign-in attempt, successful or not, goes in the audit log — spec
+     * section 11 requires the failed ones (backlog P3.9).
+     *
+     * Why an `after` hook can see a failure at all: when an endpoint throws an
+     * `APIError`, the dispatcher catches it, puts it in `ctx.context.returned`
+     * and *then* runs the after hooks (read in
+     * `better-auth/dist/api/dispatch.mjs`). A refused sign-in is therefore an
+     * ordinary return value here, not an exception.
+     */
+    after: createAuthMiddleware(async (ctx) => {
+      const returned = ctx.context.returned;
+      const body = ctx.body as { username?: unknown; email?: unknown } | undefined;
+      const entry = loginAuditEntry({
+        path: ctx.path,
+        username: body?.username ?? body?.email,
+        failureCode: isAPIError(returned) ? (returned.body?.code ?? String(returned.status)) : null,
+      });
+      if (!entry) return;
+
+      try {
+        await writeAudit(db, entry);
+      } catch (error) {
+        // A log that cannot be written must not stop somebody signing in — the
+        // counter still has to ring up bills.
+        ctx.context.logger.error("Could not record the sign-in attempt", error);
+      }
+    }),
   },
   plugins: [username(), nextCookies()],
 });
