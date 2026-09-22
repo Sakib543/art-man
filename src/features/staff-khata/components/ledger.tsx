@@ -2,21 +2,36 @@ import { Badge } from "@/components/ui/badge";
 import { rs, formatDate, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { KhataStaff, LedgerRow } from "../queries";
+import { GiveBonus } from "./give-bonus";
 
 const th = "px-3.5 py-2 text-left text-[12.5px] font-medium text-muted-foreground";
 const td = "px-3.5 py-2.5";
 
 /** One staff member's running account: earnings add, payments and advances subtract. */
-export function Ledger({ member, rows, monthClosed }: { member: KhataStaff; rows: LedgerRow[]; monthClosed: boolean }) {
+export function Ledger({
+  member,
+  rows,
+  monthClosed,
+  canGiveBonus,
+}: {
+  member: KhataStaff;
+  rows: LedgerRow[];
+  monthClosed: boolean;
+  /** Only the Owner gives bonuses (spec §10.10), so only the Owner sees the button. */
+  canGiveBonus: boolean;
+}) {
   return (
     <div className="rounded-[14px] border bg-card">
-      <div className="flex items-center justify-between gap-2.5 border-b px-[18px] py-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 border-b px-[18px] py-3.5">
         <h2 className="text-[15px] font-semibold">{member.name}</h2>
-        {monthClosed ? (
-          <Badge className="bg-success-soft text-success">Final, month closed</Badge>
-        ) : (
-          <Badge className="bg-warning-soft text-warning">Provisional until month close</Badge>
-        )}
+        <div className="flex items-center gap-2.5">
+          {monthClosed ? (
+            <Badge className="bg-success-soft text-success">Final, month closed</Badge>
+          ) : (
+            <Badge className="bg-warning-soft text-warning">Provisional until month close</Badge>
+          )}
+          {canGiveBonus && !monthClosed ? <GiveBonus staffId={member.id} staffName={member.name} /> : null}
+        </div>
       </div>
 
       <div className="overflow-x-auto">

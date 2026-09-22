@@ -50,6 +50,13 @@ export interface MonthReportInput {
   monthlyExpenses: MonthlyExpenseEntry[];
   /** Monthly salaries of staff on pay types 1 and 2. */
   salaries: Rupees;
+  /**
+   * Bonuses given this month (backlog P3.1). They are not in the days'
+   * snapshots: a bonus is a khata line, given on the Owner's word rather than
+   * worked out from the day's bills, so it has to be counted here or it would
+   * never reach the profit at all.
+   */
+  bonuses: Rupees;
   /** Cash the Owner took from the drawer during the month, net of cancellations. */
   ownerTookCash: Rupees;
   /** Daily expenses the Owner paid from his own account. */
@@ -67,6 +74,7 @@ export interface MonthReport {
   others: Rupees;
   salaries: Rupees;
   staffEarned: Rupees;
+  bonuses: Rupees;
   staffPaid: Rupees;
   /** Sum of the days' own profits, before monthly expenses and salaries. */
   dayProfitTotal: Rupees;
@@ -88,7 +96,7 @@ export function buildMonthReport(input: MonthReportInput): MonthReport {
     totalSales: sales,
     dailyExpenses,
     monthlyExpenses: expenses.total,
-    staffEarnings: staffEarned + input.salaries,
+    staffEarnings: staffEarned + input.salaries + input.bonuses,
   });
 
   return {
@@ -101,6 +109,7 @@ export function buildMonthReport(input: MonthReportInput): MonthReport {
     others: expenses.others,
     salaries: input.salaries,
     staffEarned,
+    bonuses: input.bonuses,
     staffPaid: sum(input.days.map((d) => d.staffPaid)),
     dayProfitTotal: sum(input.days.map((d) => d.dayProfit)),
     netProfit: profit,

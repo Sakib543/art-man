@@ -30,7 +30,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
-| P3.1 | Give a bonus | ⬜ | Sakib, 2026-09-23 |
+| P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ⬜ | Sakib, 2026-09-23 |
 | P3.3, P3.4, P3.5 | Staff receipt · month adjustment · real alert | ⬜ | — |
 | P3.7 | Backup and restore | ⬜ | Sakib, 2026-09-23 |
@@ -775,7 +775,7 @@ offline path for day close.
 
 | | Item | Size |
 |---|---|---|
-| ⬜ P3.1 | **Give a bonus** — `khata_kind` already has `bonus` and the accounting handles it, but nothing can create one. Dead path | small |
+| ✅ P3.1 | **Give a bonus** — done 2026-09-23. See below | small |
 | ⬜ P3.2 | **Customer special-rates screen** — read during billing, but there is no way to set them. They only arrive via seed | medium |
 | ⬜ P3.3 | **Staff monthly receipt** (spec §6.4) — print + WhatsApp | medium |
 | ⬜ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — today it is only blocked | medium |
@@ -898,6 +898,54 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 `bill_lines.bill_id`**. Worth a small migration; it is not in this backlog yet.
 
 **Size:** small · **Value:** high (asked for directly by the client)
+
+### ✅ P3.1 — Give a bonus
+**Done:** 2026-09-23
+
+`khata_kind` has had `bonus` since migration `0000` and the ledger sorts it, but
+nothing in the app could create one. Spec §10.10: **only the Owner** gives
+bonuses.
+
+**What was built:**
+
+- A **Give bonus** button on the Staff khata screen, in the selected person's
+  ledger header. It is rendered only for the Owner (`atLeastOwner`), and the
+  Server Action is `requireRole("owner")` besides — the screen hiding a button
+  is not a permission check.
+- `rules.ts` — pure: a bonus is refused for an inactive member and in a closed
+  month. 6 tests.
+- `service.ts` — one `khata_entries` row of kind `bonus` and one `audit_log`
+  row (`khata.bonus`), in one transaction.
+
+**No cash and no migration.** A bonus is money the salon now owes; handing it
+over is an ordinary staff payment in the day's folders, exactly as with
+commission. That separation is what lets a bonus be given on a day that is
+already closed: it touches neither the drawer, nor that day's closing figures,
+nor its security code.
+
+**The part that was nearly missed: the profit.** A bonus is a khata line, so it
+is *not* in any day snapshot — and the monthly report was built from snapshots
+alone. Left there, a bonus would never have reached net profit at all. So
+`buildMonthReport` now takes `bonuses`, counts them with the other staff
+earnings, and `getMonthlyReport` sums the month's `bonus` rows. The P&L shows
+its own line, and the footnote under Closed days spells the subtraction out.
+
+**Verified in the browser** against the dev database, signed in as an Owner:
+Arshad's khata went from Rs 30 to **Rs 530** with the line *"Bonus: Eid bonus
++500"* dated 24 Sep, and the monthly report moved from -Rs 79,890 to
+**-Rs 80,390** with *"Bonuses given (Owner) -500"*. Signed in as a Manager, the
+same screen renders the ledger and **no Give bonus button**.
+
+Throwaway Owner and Manager accounts were used and deleted afterwards. The
+bonus khata row stays — it is append-only, and it is dev data.
+
+**Still open, deliberately:** the daily report does not show bonuses, because a
+bonus is not a day-close figure. It appears in the khata and in the month.
+
+**Size:** small · **Value:** medium (a dead path in the schema, and a client
+decision from the Q&A)
+
+---
 
 ### ✅ P3.9 — Audit failed logins
 **Done:** 2026-09-23

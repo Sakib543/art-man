@@ -1,8 +1,8 @@
-import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lt, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { getMonthChoices, type MonthChoice } from "@/db/queries/months";
-import { capitalRepayments, cashEntries, daySnapshots, monthCloses, monthlyExpenses, staff } from "@/db/schema";
+import { capitalRepayments, cashEntries, daySnapshots, khataEntries, monthCloses, monthlyExpenses, staff } from "@/db/schema";
 import { buildMonthReport, type MonthDay, type MonthReport } from "@/lib/accounting";
 import { formatMonth, monthOf, monthStart, nextMonth } from "@/lib/business-date";
 
@@ -37,13 +37,20 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
   const start = monthStart(month);
   const end = monthStart(nextMonth(month));
 
-  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest] = await Promise.all([
+  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest, [bonusRow]] = await Promise.all([
     db.select().from(daySnapshots).where(and(gte(daySnapshots.businessDate, start), lt(daySnapshots.businessDate, end))).orderBy(asc(daySnapshots.businessDate)),
     db.select().from(monthlyExpenses).where(eq(monthlyExpenses.month, start)),
     db.select({ amount: capitalRepayments.amount }).from(capitalRepayments).where(and(gte(capitalRepayments.paidOn, start), lt(capitalRepayments.paidOn, end))),
     db.select({ salary: staff.salary, payType: staff.payType, active: staff.active }).from(staff),
     db.select().from(monthCloses).where(eq(monthCloses.month, start)).limit(1),
     getLatestBusinessDay(),
+    // Bonuses are khata lines, not day-snapshot figures, so they have to be
+    // asked for separately or they would never reach the profit (backlog P3.1).
+    // `sum()` of an integer column comes back as a string -- hence mapWith.
+    db
+      .select({ total: sum(khataEntries.amount).mapWith(Number) })
+      .from(khataEntries)
+      .where(and(eq(khataEntries.kind, "bonus"), gte(khataEntries.businessDate, start), lt(khataEntries.businessDate, end))),
   ]);
 
   // Owner cash and owner-paid expenses come from the entries of the closed days only,
@@ -79,6 +86,7 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
     days,
     monthlyExpenses: expenseRows.map((e) => ({ kind: e.kind, amount: e.amount, paidFrom: e.paidFrom })),
     salaries,
+    bonuses: bonusRow?.total ?? 0,
     ownerTookCash,
     dailyExpensesPaidByOwner,
     capitalRepaid: repayments.reduce((sum, r) => sum + r.amount, 0),

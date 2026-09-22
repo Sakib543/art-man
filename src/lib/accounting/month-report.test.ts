@@ -36,6 +36,7 @@ describe("buildMonthReport", () => {
     days,
     monthlyExpenses: [{ kind: "fixed", amount: 10000, paidFrom: "drawer" }] as MonthlyExpenseEntry[],
     salaries: 6000,
+    bonuses: 0,
     ownerTookCash: 12000,
     dailyExpensesPaidByOwner: 0,
     capitalRepaid: 0,
@@ -49,6 +50,26 @@ describe("buildMonthReport", () => {
   it("net profit = sales - daily expenses - monthly expenses - staff earnings - salaries", () => {
     // 50000 - 3000 - 10000 - (8000 + 6000)
     expect(buildMonthReport(base).netProfit).toBe(23000);
+  });
+
+  it("a bonus is a staff cost, so it comes off the profit (P3.1)", () => {
+    // Same month, plus a Rs 2,000 bonus: 23000 - 2000.
+    const r = buildMonthReport({ ...base, bonuses: 2000 });
+    expect(r.bonuses).toBe(2000);
+    expect(r.netProfit).toBe(21000);
+  });
+
+  it("a bonus is not folded into what day close earned", () => {
+    // Day close works out commission and wage from the bills; a bonus is the
+    // Owner's own decision and is counted separately, so the two never overlap.
+    const r = buildMonthReport({ ...base, bonuses: 2000 });
+    expect(r.staffEarned).toBe(8000);
+  });
+
+  it("a bonus leaves the owner's own account alone, beyond the profit it reduces", () => {
+    const r = buildMonthReport({ ...base, bonuses: 2000 });
+    expect(r.owner.reachedOwner).toBe(22000);
+    expect(r.owner.heldByBusiness).toBe(21000 - 22000);
   });
 
   it("the days' own profits are shown before monthly costs", () => {
@@ -82,7 +103,7 @@ describe("buildMonthReport", () => {
   });
 
   it("an empty month has no profit and nothing held", () => {
-    const r = buildMonthReport({ ...base, days: [], monthlyExpenses: [], salaries: 0, ownerTookCash: 0 });
+    const r = buildMonthReport({ ...base, days: [], monthlyExpenses: [], salaries: 0, bonuses: 0, ownerTookCash: 0 });
     expect(r).toMatchObject({ closedDays: 0, sales: 0, netProfit: 0 });
     expect(r.owner.heldByBusiness).toBe(0);
   });

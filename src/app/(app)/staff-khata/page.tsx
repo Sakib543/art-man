@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { Ledger } from "@/features/staff-khata/components/ledger";
 import { StaffList } from "@/features/staff-khata/components/staff-list";
 import { getKhataData } from "@/features/staff-khata/queries";
+import { atLeastOwner } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
 
 export const metadata = { title: "Staff khata | Art Men's Salon" };
@@ -10,7 +11,7 @@ export const metadata = { title: "Staff khata | Art Men's Salon" };
 const SUBTITLE = "Earnings are added, payments and advances are subtracted";
 
 export default async function StaffKhataPage({ searchParams }: { searchParams: Promise<{ staff?: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { staff } = await searchParams;
   const data = await getKhataData(staff);
 
@@ -34,7 +35,12 @@ export default async function StaffKhataPage({ searchParams }: { searchParams: P
 
       <div className="grid items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
         <StaffList staff={data.staff} selectedId={data.selected.id} />
-        <Ledger member={data.selected} rows={data.ledger} monthClosed={data.monthClosed} />
+        <Ledger
+          member={data.selected}
+          rows={data.ledger}
+          monthClosed={data.monthClosed}
+          canGiveBonus={atLeastOwner(user.role)}
+        />
       </div>
     </>
   );

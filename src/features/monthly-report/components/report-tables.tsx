@@ -27,8 +27,10 @@ export function ProfitAndLoss({ report }: { report: MonthReport }) {
           <Row label="Daily expenses (from day close)" value={minus(report.dailyExpenses)} />
           <Row label="Fixed monthly expenses (rent, electricity, bills, supplies)" value={minus(report.fixed)} />
           <Row label="Other expenses (with reason)" value={minus(report.others)} />
-          <Row label="Staff earnings from day close (commission, wage, bonus)" value={minus(report.staffEarned)} />
+          <Row label="Staff earnings from day close (commission, daily wage)" value={minus(report.staffEarned)} />
           <Row label="Monthly salaries (staff on a salary)" value={minus(report.salaries)} />
+          {/* A month closed before P3.1 has no `bonuses` in its frozen report. */}
+          <Row label="Bonuses given (Owner)" value={minus(report.bonuses ?? 0)} />
           <Row label="Net profit" value={rs(report.netProfit)} total />
         </tbody>
       </table>
@@ -122,7 +124,8 @@ export function ClosedDaysTable({ days, report, openDay }: { days: ClosedDayRow[
       </div>
       <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
         Sum of day profits {rs(report.dayProfitTotal)} − fixed {num(report.fixed)} − others {num(report.others)} − salaries{" "}
-        {num(report.salaries)} = net profit {rs(report.netProfit)}.
+        {num(report.salaries)}
+        {report.bonuses ? ` − bonuses ${num(report.bonuses)}` : ""} = net profit {rs(report.netProfit)}.
         {openDay ? ` Today (${formatDayMonth(openDay)}) is added when the day is closed.` : ""}
       </p>
     </div>
