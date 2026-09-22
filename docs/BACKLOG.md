@@ -541,7 +541,7 @@ offline path for day close.
 | | Item |
 |---|---|
 | 🟡 P5.1 | **Go live on Vercel** — env vars, then migrate + seed on the Neon `live` branch. The build itself already passes (verified). **Blocked on access, not on code:** the Vercel project exists and is connected to this same repo, but it lives in the **other developer's** Vercel account (answered 2026-09-22). Nobody here can open Settings to set the environment variables. First step is to be added to that project, or to have it transferred |
-| ⬜ P5.2 | **Fix `docs/DEPLOY_VERCEL.md`** — two known faults: (a) its "First deploy" steps never mention `db:migrate` or `db:seed`, yet step 4 says "sign in as owner", which is very likely why the live site never worked; (b) step 5 still says to enter "staff with PINs", but the staff PIN was removed from the whole project in P1.0. The guide also needs to say that a migration must be applied to the live branch **before** the code that needs it is pushed — see the note under P5.1 |
+| 🟡 P5.2 (Sakib543, 2026-09-22) | **Fix `docs/DEPLOY_VERCEL.md`** — two known faults: (a) its "First deploy" steps never mention `db:migrate` or `db:seed`, yet step 4 says "sign in as owner", which is very likely why the live site never worked; (b) step 5 still says to enter "staff with PINs", but the staff PIN was removed from the whole project in P1.0. The guide also needs to say that a migration must be applied to the live branch **before** the code that needs it is pushed — see the note under P5.1 |
 | ⬜ P5.3 | **Move to a VPS** — after the client signs off. Postgres on the same VPS; carry the trial data over with `pg_dump` |
 
 ---
