@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Private files for going live (never commit)
 first-login.txt
+
+# Database backups (pnpm db:backup). The salon's whole book of accounts -- never commit one.
+/backups

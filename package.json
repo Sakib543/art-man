@@ -16,7 +16,8 @@
     "db:seed:sample": "tsx scripts/seed-sample.ts",
     "db:seed:accounts": "tsx scripts/seed-accounts.ts",
     "db:seed:developer": "tsx scripts/seed-developer.ts",
-    "db:check": "tsx scripts/check-db.ts"
+    "db:check": "tsx scripts/check-db.ts",
+    "db:backup": "tsx scripts/backup.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

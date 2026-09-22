@@ -33,7 +33,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
 | P3.3, P3.4, P3.5 | Staff receipt · month adjustment · real alert | ⬜ | — |
-| P3.7 | Backup and restore | ⬜ | Sakib, 2026-09-23 |
+| P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore has never been run |
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
@@ -781,7 +781,7 @@ offline path for day close.
 | ⬜ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — today it is only blocked | medium |
 | ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
 | ✅ P3.6 | **Receipt printing / thermal printer** — done 2026-09-22. See below | small |
-| ⬜ P3.7 | **Proper backup and restore** | medium |
+| 🟡 P3.7 | **Backup and restore** — the backup is built and checked (2026-09-23). **No restore has ever been run.** See below | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
 
@@ -898,6 +898,46 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 `bill_lines.bill_id`**. Worth a small migration; it is not in this backlog yet.
 
 **Size:** small · **Value:** high (asked for directly by the client)
+
+### 🟡 P3.7 — Backup and restore
+**Backup done:** 2026-09-23 · **Restore: not yet verified**
+
+There was **no backup of any kind** — no script, no schedule, nothing to restore
+from, on a system whose whole job is to be the salon's book of accounts. Spec
+phase 4 asks for backup/restore, with the success test *"restore from backup
+verified"*.
+
+**What was built:**
+
+- `pnpm db:backup` → `backups/art-man-<timestamp>.dump`, one file in `pg_dump`'s
+  custom format. `backups/` is git-ignored: the file holds every bill, every
+  customer's phone number and the password hashes.
+- It finds `pg_dump` on `PATH` or in `C:\Program Files\PostgreSQL\{18,17,16}in`,
+  and `PG_DUMP` overrides both. It prefers `DATABASE_URL_UNPOOLED` and says so
+  when it has to fall back to the pooled string.
+- `docs/BACKUP.md` — how to take one, how to read one without restoring it, how
+  to restore, and when to take one by hand until this is automated.
+
+**Measured, not assumed.** The first backup is 75 KB and holds **31 tables with
+data**, including `drizzle.__drizzle_migrations`, so a restored database knows
+which migrations it has. `pg_restore --list` reads it: **14 triggers**, the 3
+trigger functions, 4 enums, 61 constraints. The data matches the database it
+came from — **19 bills**, **31 khata lines**. `pg_dump` 18.4 worked against
+Neon's PostgreSQL 18.6, and even through the **pooled** connection.
+
+**What is NOT done, and it is the half the spec actually asks for:** nobody has
+restored it. There is no second database to restore into — `.env.local` is the
+live one, and a local PostgreSQL is running here but its password is not known.
+**Do one restore into a throwaway Neon branch before the trial starts.** Until
+then the backup is untested, and `docs/BACKUP.md` says so in those words.
+
+**Not automated either.** Somebody has to run `pnpm db:backup`. A schedule needs
+somewhere to put the files that is not this laptop — worth settling together
+with the Vercel/VPS question.
+
+**Size:** medium · **Value:** high
+
+---
 
 ### ✅ P3.2 — Customers screen: details and special rates
 **Done:** 2026-09-23
