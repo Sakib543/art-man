@@ -2,12 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { Field } from "@/components/field";
+import { FormFeedback } from "@/components/form-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useFormAction } from "@/components/use-form-action";
 import { checkNewPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth/password-rules";
 import { changePasswordAction } from "../actions";
-import { FormFeedback } from "./form-feedback";
-import { useFormAction } from "./use-form-action";
 
 export function ChangePasswordForm() {
   const [current, setCurrent] = useState("");

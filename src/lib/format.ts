@@ -16,6 +16,19 @@ export function formatTime(iso: string): string {
   });
 }
 
+/**
+ * "21 Sep 2026, 14:30" in Karachi time. Use it for a stored timestamp — an
+ * audit row, the moment a switch was flipped — where the date matters as much
+ * as the time. Built from `formatDate` and `formatTime` so the wording matches
+ * the rest of the app.
+ */
+export function formatDateTime(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  // "en-CA" gives YYYY-MM-DD, which is what formatDate expects.
+  const isoDate = date.toLocaleDateString("en-CA", { timeZone: "Asia/Karachi" });
+  return `${formatDate(isoDate)}, ${formatTime(date.toISOString())}`;
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
