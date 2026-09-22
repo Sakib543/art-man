@@ -23,7 +23,7 @@ Last updated: 2026-09-22 (P0 complete, P1.0 and P2.1 done)
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ⬜ | — |
 | P1.2 | Users screen — create admins | ⬜ | — |
-| P1.4 | Owner edits a bill on the open day | ⬜ | — |
+| P1.4 | Owner edits a bill on the open day | 🟡 | Sakib543, 2026-09-22 |
 | P1.5 | Owner's edit leaves one line, not three | ⬜ | — |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
@@ -293,8 +293,8 @@ reports; no one can edit a financial entry.
 
 ---
 
-### ⬜ P1.4 — Owner edits a bill on the open day
-**Owner:** —
+### 🟡 P1.4 — Owner edits a bill on the open day
+**Owner:** Sakib543, 2026-09-22
 
 **Client decision (2026-09-22):** the Owner can edit a bill **of the day that is still open**. A
 bill in a day that is already closed cannot be edited — only cancelled (P0.3). The developer can
