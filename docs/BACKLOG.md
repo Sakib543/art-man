@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1.6 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10 and P3.6 done)
 
 ---
 
@@ -31,7 +31,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
 | P3.1–P3.5, P3.7 | Remaining spec features | ⬜ | — |
-| P3.6 | Receipt printing | 🟡 | Sakib 2026-09-22 |
+| P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
@@ -706,15 +706,55 @@ offline path for day close.
 | ⬜ P3.3 | **Staff monthly receipt** (spec §6.4) — print + WhatsApp | medium |
 | ⬜ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — today it is only blocked | medium |
 | ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
-| 🟡 P3.6 | **Receipt printing / thermal printer** — in progress, see below | medium |
+| ✅ P3.6 | **Receipt printing / thermal printer** — done 2026-09-22. See below | small |
 | ⬜ P3.7 | **Proper backup and restore** | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 
-### 🟡 P3.6 — Receipt printing
-**Owner:** Sakib, 2026-09-22
+### ✅ P3.6 — Receipt printing
+**Done:** 2026-09-22
 
-Spec §5.1: *"Every bill prints a receipt."* The receipt itself is already drawn on screen in
-`src/features/billing/components/receipt-dialog.tsx` — what is missing is a way to put it on paper.
+Spec §5.1: *"Every bill prints a receipt."* The slip was already drawn on screen and the dialog
+said *"Receipt printing is not connected yet."* **This was a small item, not the medium the table
+claimed** — the markup existed; only a way to put it on paper did not.
+
+**What was built:**
+
+- A **Print** button on the receipt dialog. It is plain `window.print()`, and the rules in
+  `globals.css` hide everything except the element marked `data-print-receipt` — so the browser
+  prints the same markup the counter just looked at, rather than a second copy built for paper
+  that could drift out of step.
+- **Reprint from Today's bills.** Printing only at the moment of sale is not enough: the printer
+  may be out of paper, the print dialog may be cancelled, or the customer may ask for the slip
+  after the next bill has been started. Every active bill now has a Print button.
+  **It needs no query** — `DayBill` already carries every field a receipt shows.
+- `receipt-of-bill.ts` — the pure mapping from a saved bill back to a receipt, with 5 tests.
+- The dialog heading adapts: *"Bill #12 saved"* with the green tick at the sale, *"Receipt for
+  bill #12"* on a reprint, so a reprint never claims a sale just happened.
+- The slip is marked `data-print-receipt` **only while its dialog is open**. A dialog takes about
+  a second to animate out, and a second receipt opened in that window would otherwise have put two
+  slips on one sheet.
+
+**Paper size:** the slip prints 72 mm wide with a 4 mm page margin — it fits an 80 mm thermal roll
+and comes out as a slip in the corner of A4. No thermal printer was available to test on.
+
+**Two traps this cost time on**, both now in `docs/HANDOFF.md` section 8:
+Lightning CSS silently drops `translate` when `transform` sits in the same rule, and `next dev`
+serves a stale Tailwind bundle when only a `.tsx` file changes.
+
+**Verified in the browser** against the dev database, not only in tests: bill #18 and #17
+reprinted with the right lines, staff names and totals; the print rules measured against the live
+DOM hide 8 of the 9 top-level branches and spare exactly the one holding the slip; with no receipt
+on screen they hide nothing, so printing any other page is unaffected; and
+`.print:translate-none` was confirmed to come after Tailwind's own centring class in the
+compiled stylesheet, which is what makes it win.
+
+**Not verified, and worth doing once:** nobody has put this on actual paper. Press Print and check
+the slip against a real printer before the trial.
+
+**Still open, deliberately:** a reversal or cancelled bill has no Print button, and the daily
+report does not print. Neither is a receipt for a customer.
+
+**202 tests pass** (was 197), lint clean, build passes.
 
 ---
 

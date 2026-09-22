@@ -53,7 +53,12 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
 
       {/* A new key resets the cart when a different bill is opened for correction. */}
       <BillingScreen key={editing?.id ?? "new"} data={data} editing={editing} />
-      <TodaysBills bills={bills} canEdit={atLeastOwner(user.role)} editingId={editing?.id ?? null} />
+      <TodaysBills
+        bills={bills}
+        businessDate={data.businessDate}
+        canEdit={atLeastOwner(user.role)}
+        editingId={editing?.id ?? null}
+      />
     </>
   );
 }

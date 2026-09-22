@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete incl. P0.4; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9 and P4.10 done)
+Last updated: 2026-09-22 (P0 complete incl. P0.4; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10 and P3.6 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (197 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (202 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -137,7 +137,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — 23 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **197 passed** (26 files) |
+| `pnpm test` | **202 passed** (27 files) |
 | Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0014` |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
@@ -145,6 +145,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Customer's last visit | looked up in a browser as the Owner, before and after a bill and its cancellation (P3.8) |
 | Staff khata | opened in a browser for two staff members after the rewrite; balances and ledgers identical to before (P4.10) |
 | Login is reachable with a dead cookie | fixed and tested both ways, with a real signed-in session and with a stale one (P0.4) |
+| Receipt printing | a bill was rung up and two older bills reprinted in a browser; the print rules were measured against the live DOM (P3.6). **Never put on actual paper** — no printer was available |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
@@ -234,6 +235,10 @@ bill #15 for Ashfaq Bhai (Haircut Rs 1,500 by Sherry, Hair wash Rs 300 by Arshad
 with its reversal #16. So Ashfaq Bhai's lookup currently reads "No visits yet" — that is the
 feature working, not a fault. Kamran (`03217654321`) has never had a bill. To see the last-visit
 strip filled in, ring up one bill against either number.
+
+**P3.6 then added three more bills to 24 Sep** — #17 and #18 by hand while testing, and **#19**
+(Walk-in, Hair wash Rs 300, Sherry) rung up to exercise the save-then-print path. All three are
+active. None of it is real data.
 
 Local logins: `owner`, `manager` and `developer`. Passwords were printed once during seeding and
 the user noted them down. `seed-users.ts` and `seed-developer.ts` both **skip accounts that
@@ -354,6 +359,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A rolled-back transaction does **not** trip the append-only triggers | they are `BEFORE UPDATE OR DELETE`. So inserting throwaway rows, measuring, and rolling back is a safe way to test against a realistic table size |
 | `bill_lines` has **no order column** | both the developer's edit screen and the last-visit strip order by `name`, so the two lists look alike |
 | `get_page_text` reads `<main>` only | a Base UI dialog renders in a portal outside it, so a confirmation dialog looks absent when it is open. Use `read_page` or query `[role="dialog"]` instead |
+| **`DayBill` already carries everything a receipt shows** | bill number, time, customer, lines with staff names, cash, online and total. So reprinting a bill (P3.6) needed **no new query** — Today's bills reprints from the list it has already loaded |
+| A Base UI dialog is a **direct child of `<body>`** | measured with one open: 9 body children, 8 of them the page. That is what lets the print rules keep the slip and hide everything else, with `body:has([data-print-receipt]) > *:not(:has(...))` |
+| A dialog takes about **a second to unmount** after closing | it goes, but not at once. P3.6 marks the slip only while the dialog is `open`, so a second receipt opened in that window cannot put two slips on one sheet |
+| `bill_lines` does not store a line's **note** | "Special rate" / "Deal share" are worked out while pricing a cart, never saved. A reprint cannot rebuild them — the receipt does not print them, so both paths still print alike |
+| **The receipt prints from the same markup it shows** | `window.print()` plus rules in `globals.css`, not a second copy built for paper. A separate print template is exactly the thing that drifts out of step with the screen |
 
 ---
 
@@ -381,6 +391,48 @@ rm -rf .next        # then start the dev server again
 
 Since the working agreement says to run `pnpm build` after every change, this will happen again.
 If a route 404s in dev and the same route is listed in the build output, clear `.next` first.
+
+### 8.0c `next dev` serves a stale Tailwind bundle when only a `.tsx` changes
+
+Cost most of an hour on P3.6. New utility classes were added to a component — `print:static`,
+`print:translate-none` — and Tailwind generated **none of them**. The classes were on the element,
+the file is scanned, and the page had been reloaded. The compiled stylesheet simply had not been
+rebuilt: editing `globals.css` rebuilds it, editing a `.tsx` did not.
+
+It is nasty because the symptom is a CSS rule that "does not apply", so you go looking in the
+cascade rather than at the build. **Check that the class exists in the served CSS before debugging
+why it lost:**
+
+```js
+// in the browser console, against the dev server
+const href = document.querySelector("link[rel=stylesheet]").href;
+(await (await fetch(href)).text()).includes("print\\:translate-none");
+```
+
+If it is false, touch `src/app/globals.css` and reload. `pnpm build` is not affected — a
+production build scans everything.
+
+### 8.0d Lightning CSS drops `translate` when `transform` is in the same rule
+
+Also P3.6, and the reason the fix moved out of `globals.css` and onto the element.
+
+Tailwind 4 centres a dialog with the **standalone `translate` property** (`-translate-x-1/2`), not
+with `transform`. To undo that for printing, the obvious rule is:
+
+```css
+[data-slot="dialog-content"] { transform: none !important; translate: none !important; }
+```
+
+Lightning CSS folds those two into **one** `transform: translate3d(0,0,0) !important` and the
+`translate` declaration never reaches the browser — so the dialog stays shifted by -50%/-50% and
+the slip prints half off the sheet. Verified by reading the
+compiled rule back out of `document.styleSheets`; dropping `transform: none` from the rule makes
+`translate: none` survive.
+
+The fix that does not depend on any of this: put the override on the element as a Tailwind
+utility (`print:translate-none`). Utility against utility is ordered by Tailwind — measured, the
+print variant lands at byte 65,219 of the stylesheet against 26,662 for the centring class — so it
+cannot be folded away or lose the cascade.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -545,6 +597,7 @@ STAGE 3 — during the client's 20-day trial
   P1.1  Developer role                                  DONE 2026-09-22
   P1.6  Developer edits a financial entry               DONE 2026-09-22
   P3.8  Customer's last visit on the billing screen     DONE 2026-09-22
+  P3.6  Receipt printing                                DONE 2026-09-22
   P4.9  Index the financial tables                      DONE 2026-09-22
   P4.10 Staff khata stops reading the whole table       DONE 2026-09-22
   P1.2  Users screen        P4  Cleanup + CI

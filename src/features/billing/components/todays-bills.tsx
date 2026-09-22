@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Printer } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -11,22 +11,32 @@ import { formatTime, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { DayBill } from "@/db/queries/day-bills";
 import { cancelBillAction } from "../actions";
+import { receiptOfBill } from "../receipt-of-bill";
+import type { Receipt } from "../types";
+import { ReceiptDialog } from "./receipt-dialog";
 
 interface TodaysBillsProps {
   bills: DayBill[];
+  /** The open day. A bill carries the time it was rung up, not the day it belongs to. */
+  businessDate: string;
   /** Only the Owner may correct a bill, and only on the day that is still open (P1.4). */
   canEdit?: boolean;
   /** The bill already open for correction on the screen above. */
   editingId?: string | null;
 }
 
-export function TodaysBills({ bills, canEdit = false, editingId = null }: TodaysBillsProps) {
+export function TodaysBills({ bills, businessDate, canEdit = false, editingId = null }: TodaysBillsProps) {
   // `target` is kept after closing so the dialog does not go blank while it animates out.
   const [target, setTarget] = useState<DayBill | null>(null);
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  // Reprinting a slip the customer asked for again, or that the printer ate
+  // the first time (backlog P3.6). Kept after closing for the same reason
+  // `target` is: the dialog must not go blank while it animates out.
+  const [reprint, setReprint] = useState<Receipt | null>(null);
+  const [reprintOpen, setReprintOpen] = useState(false);
 
   function openFor(bill: DayBill) {
     setTarget(bill);
@@ -106,9 +116,23 @@ export function TodaysBills({ bills, canEdit = false, editingId = null }: Todays
                       )
                     ) : null}
                     {bill.status === "active" ? (
-                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => openFor(bill)}>
-                        Cancel
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Print the receipt for bill #${bill.billNo}`}
+                          onClick={() => {
+                            setReprint(receiptOfBill(bill, businessDate));
+                            setReprintOpen(true);
+                          }}
+                        >
+                          <Printer aria-hidden />
+                          Print
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => openFor(bill)}>
+                          Cancel
+                        </Button>
+                      </>
                     ) : null}
                   </td>
                 </tr>
@@ -117,6 +141,14 @@ export function TodaysBills({ bills, canEdit = false, editingId = null }: Todays
           </table>
         </div>
       )}
+
+      <ReceiptDialog
+        receipt={reprint}
+        open={reprintOpen}
+        onClose={() => setReprintOpen(false)}
+        closeLabel="Done"
+        justSaved={false}
+      />
 
       <Dialog open={open} onOpenChange={(next) => !next && close()}>
         <DialogContent className="max-w-sm">

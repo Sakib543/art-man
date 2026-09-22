@@ -150,3 +150,58 @@
     @apply font-sans;
   }
 }
+/*
+ * Printing a receipt (backlog P3.6).
+ *
+ * The slip is drawn inside a dialog, and Base UI portals that dialog to the
+ * end of <body> — so it sits outside <main> and the usual "hide the page
+ * shell" rule never reaches it. Instead: hide every top-level branch of the
+ * document that does not contain the slip, then undo the dialog's own centring
+ * so the slip starts at the top of the sheet.
+ *
+ * Every rule is scoped to `body:has([data-print-receipt])`. Without that guard
+ * the first one would match all of <body>'s children whenever no receipt is on
+ * screen, and printing any other page would come out blank.
+ */
+@media print {
+  body:has([data-print-receipt]) > *:not(:has([data-print-receipt])) {
+    display: none !important;
+  }
+
+  body:has([data-print-receipt]) [data-slot="dialog-overlay"] {
+    display: none !important;
+  }
+
+  /*
+   * Flattening the dialog itself is done with `print:` utilities on the
+   * element (see receipt-dialog.tsx), not from here. Tailwind 4 centres the
+   * dialog with the standalone `translate` property, and undoing that from a
+   * plain stylesheet is unreliable: Lightning CSS folds `translate` into
+   * `transform` when both appear in one rule, and silently drops it.
+   * Utility against utility is ordered by Tailwind, so it cannot be dropped.
+   */
+
+  /* The heading, the buttons and the close cross are not part of the slip. */
+  body:has([data-print-receipt]) [data-slot="dialog-content"] > *:not([data-print-receipt]) {
+    display: none !important;
+  }
+
+  /* Muted greys are hard to read on a thermal slip. */
+  [data-print-receipt] * {
+    color: #000 !important;
+  }
+
+  [data-print-receipt] {
+    /* Fits an 80mm thermal roll, and prints as a slip in the corner of A4. */
+    width: 72mm;
+    margin: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+}
+
+@page {
+  margin: 4mm;
+}
