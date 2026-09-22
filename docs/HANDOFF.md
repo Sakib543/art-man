@@ -105,18 +105,33 @@ close, daily report, staff khata, overview, monthly report, monthly expenses, ca
 staff & rates, settings), plus the developer role with its audit log, password, maintenance and
 bill-edit screens. Phase 4 (offline, backup) has not been started.
 
-**Deployed, but not working.** A Vercel project exists and is connected to this repo, so every push
-to `main` builds there — and a deployment did complete on 2026-09-22. **That does not mean the site
-runs.** It still has no live database, and access to the project was asked about again after that
-deployment and is **still not granted**: it remains in the other developer's Vercel account.
+**Deployed and the database is connected.** The site is live at **https://art-man-drab.vercel.app**.
 
-So the live site has no tables and no accounts. Expect it to fail at the first query, and a correct
-password to be rejected — see trap 8.8. The build passes with no environment variables at all, which
-is why a green deployment says nothing about whether the site works.
+An earlier version of this section said the live site had no tables and no accounts. **That was
+wrong**, and it was written without checking. Measured from a browser on 2026-09-22:
 
-Migrations **cannot** be run against live from here: there is no live connection string on this
-machine (`.env.local` points at the dev branch and `DATABASE_URL_UNPOOLED` is empty), and no way to
-create one without access to the project. Access is the whole blocker — backlog P5.1.
+| Probe | Result | What it proves |
+|---|---|---|
+| `GET /login` | 200, page renders, every asset 200 | the deployment serves |
+| `POST /api/auth/sign-in/username` with a username that does not exist | **401 `INVALID_USERNAME_OR_PASSWORD`**, ~500 ms warm | Better Auth **queried the `user` table and it answered**. A missing or unreachable `DATABASE_URL` gives a 500, not a 401 |
+| the same request being answered at all, rather than refused | no origin error | `BETTER_AUTH_URL` matches this domain, or the request would have failed Better Auth's origin check |
+
+So `DATABASE_URL` and `BETTER_AUTH_SECRET` are set, and **migrations have been run against live** —
+at least `0000`, which creates `user`. Someone did the work described in `DEPLOY_VERCEL.md`.
+
+**Still unknown, and worth finding out before trusting it:**
+
+- **Was `pnpm db:seed` run?** If not there is no `owner` or `manager` account, and every correct
+  password is rejected — trap 8.8. Cheapest test: sign in as `owner`. **Do not probe this from a
+  script** — repeated failures count against that account.
+- **Which migration is live on?** Anywhere from `0000` to `0012`. `0013` and `0014` were written on
+  2026-09-22 and certainly are not applied.
+
+**Migrations still cannot be run against live from this machine**: there is no live connection
+string here (`.env.local` points at the dev branch, `DATABASE_URL_UNPOOLED` is empty), and no way to
+get one without access to the Vercel project — which, re-confirmed on 2026-09-22 **after** the
+deployment completed, is still in the other developer's account. Access remains the blocker for
+P5.1, but it is now the only thing missing, not the whole deployment.
 
 ---
 
@@ -390,12 +405,14 @@ and the seed were actually run against the live branch** before suspecting the c
 **Owed by the user:**
 - [x] **Rotate the Neon database password** — done on 2026-09-22.
 - [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
-- [ ] **Get access to the Vercel project** — still in the other developer's account, **re-confirmed
-  2026-09-22 after a deployment had already completed**. A finished deployment changed nothing:
-  the build needs no environment variables, so it went green with no database behind it. Ask them
-  to invite you or transfer the project, and ask for three things: the **Production URL**, whether
-  a Neon **`live` branch** exists, and whether `db:migrate` was **ever** run against it.
-  **P5.1 cannot start without this**, and neither can running any migration on live.
+- [ ] **Get access to the Vercel project** — still in the other developer's account, re-confirmed
+  2026-09-22. The URL is now known (`https://art-man-drab.vercel.app`) and the live database is
+  connected, so what is missing is narrower than it was: the **environment variables cannot be
+  read or changed**, and the **live connection string** is needed to apply `0013` and `0014`.
+  **Vercel's free Hobby plan has no collaborators**, so being "added" is not possible on it — the
+  realistic route is **Transfer Project** (Project Settings → General), or a paid Team. Ask them
+  for the live Neon **direct connection string** as well; that alone unblocks migrations even
+  before the project moves.
 
 **Questions blocking work:**
 0. **A bill edited in a closed month leaves that month's frozen report wrong.** `month_closes`
