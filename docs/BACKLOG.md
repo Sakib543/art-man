@@ -20,6 +20,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P0.1 | Show the real login error | ✅ | done 2026-09-22 |
 | P0.2 | Reopen a closed day (Owner) | ✅ | done 2026-09-22 |
 | P0.3 | Cancel a bill/entry in a closed day (Owner) | ✅ | done 2026-09-22 |
+| **P0.4** | **Stale session cookie locks a user out** | ⬜ | **open — most urgent** |
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ✅ | done 2026-09-22 |
 | P1.2 | Users screen — create admins | ⬜ | — |
@@ -40,7 +41,47 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 
 ## P0 — Before the client trial
 
-Without these three, the 20-day trial is likely to get stuck.
+Without these, the 20-day trial is likely to get stuck. **P0.4 is open and is the most urgent
+item in this file.**
+
+### ⬜ P0.4 — A stale session cookie locks a user out completely
+**Owner:** — · **Found:** 2026-09-22, on the live site
+
+`src/proxy.ts` decides only whether a session cookie **exists**, never whether it is valid — which
+is deliberate and documented. But combined with `requireUser()` it forms a loop:
+
+| Request | Result |
+|---|---|
+| `/login` with an invalid-but-present cookie | proxy sees a cookie → **307 to `/billing`** |
+| `/billing` with the same cookie | proxy passes it → `requireUser()` finds no real session → **307 to `/login`** |
+
+Measured against **https://art-man-drab.vercel.app** with `curl`: eight redirects and still going.
+A browser shows `ERR_TOO_MANY_REDIRECTS`. **The user cannot reach the login page at all**, so they
+cannot sign in to fix it. The only escape is clearing cookies, which a salon manager will not know
+how to do — they will simply report that "the system is broken".
+
+**This is reachable from the normal UI, not only from a test.** Anything that deletes a session
+server-side while the browser keeps its cookie triggers it:
+
+- **The Owner resets the Manager's password** (`features/account/service.ts:77`) — deletes *every*
+  manager session. The counter tablet is then locked out of the login page, so the manager cannot
+  use the new password. The feature meant to rescue a forgotten password causes a worse lockout.
+- **The developer resets anyone's password** (`features/developer/service.ts:44`) — same.
+- **Changing your own password** (`features/account/service.ts:51`) — deletes your other sessions,
+  so a second device is locked out.
+- Rotating `BETTER_AUTH_SECRET`, or re-seeding the database, invalidates **everyone's** cookie at
+  once.
+
+**Suggested fix — not yet agreed, do not build without asking.** Take the "already signed in?"
+decision away from the proxy, which cannot make it correctly, and give it to the login page, which
+can: drop the `/login` → `/billing` redirect from `src/proxy.ts`, and have the login page call
+`getCurrentUser()` and redirect only when there is a **real** session. That costs one query on
+`/login` and breaks the loop. Clearing the dead cookie on the way out would be better still, but a
+Server Component cannot set cookies — so it belongs in the proxy or a route handler.
+
+**Size:** small · **Value:** very high — this locks real users out of a live system
+
+---
 
 ### ✅ P0.1 — Show the real login error
 **Done:** 2026-09-22
