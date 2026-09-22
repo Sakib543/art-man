@@ -33,7 +33,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
-| P4.10 | Staff khata reads the whole ledger table | 🟡 | Sakib543, 2026-09-22 |
+| P4.10 | Staff khata reads the whole ledger table | ✅ | done 2026-09-22 |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
 
 ---
@@ -726,7 +726,7 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 | ⬜ P4.7 | Add CI (`.github/workflows`) so build + 192 tests + lint run on every push. **More valuable now that two people share `main`** |
 | ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
 | ✅ P4.9 | **Index the financial tables** — done 2026-09-22, migration `0013`. See below |
-| 🟡 P4.10 | **Staff khata reads the whole `khata_entries` table** on every page load and does the work in memory. Found during P4.9. See below |
+| ✅ P4.10 | **Staff khata reads the whole `khata_entries` table** — done 2026-09-22, migration `0014`. See below |
 
 ### ✅ P4.9 — Index the financial tables
 **Done:** 2026-09-22 · migration `0013_index_financial_tables`
@@ -764,8 +764,9 @@ add once there is real data to lock.
   the primary key doing the lookup. An index on this side would never be read.
 - `monthly_expenses.month`, `partner_drawings.month`, `capital_repayments.paid_on` — these tables
   gain a handful of rows a month. A sequential scan will still be faster than an index for years.
-- `khata_entries.staff_id` — the Staff khata screen reads the **whole** table (`queries.ts:46`) and
-  groups in memory. No index helps that; splitting the query is separate work.
+- `khata_entries.staff_id` — the Staff khata screen read the **whole** table and grouped in memory,
+  so no index could have helped. **Superseded by P4.10**, which gave it a query that filters on
+  `staff_id`; migration `0014` then indexed it.
 
 **No behaviour changes.** Adding an index cannot alter a result, only the time it takes. That is
 also why **this migration is safe to push before it reaches live**: the code does not need it. It
@@ -795,16 +796,15 @@ place; the table was left at its original 27 rows.
 instant on an empty database and this one is not live yet — but if these ever have to be rebuilt on
 a running salon, use `CREATE INDEX CONCURRENTLY` by hand instead.
 
-**Found while doing this, not fixed:** the Staff khata screen reads the entire `khata_entries`
-table (`src/features/staff-khata/queries.ts:46`) and groups in memory. No index can help that. It
-is fine at today's size and wants its own backlog item eventually.
+**Found while doing this:** the Staff khata screen read the entire `khata_entries` table and
+grouped in memory. Not fixed here — it became **P4.10**, done the same day.
 
 192 tests pass, lint clean, build passes.
 
 **Size:** small · **Value:** medium (high once there is real data)
 
-### 🟡 P4.10 — Staff khata reads the whole ledger table
-**Owner:** Sakib543, 2026-09-22
+### ✅ P4.10 — Staff khata reads the whole ledger table
+**Done:** 2026-09-22 · migration `0014_index_khata_by_staff`
 
 Found while doing P4.9, which is why no index was put on `khata_entries.staff_id`: there was no
 query that could have used one.
@@ -824,18 +824,48 @@ opens while what is displayed stays the same size.
 It also waits three times in a row: the two selects, then `getLatestBusinessDay()`, then
 `isMonthClosed()`, each depending on nothing but the last.
 
-**Planned:**
+**What was built:**
 
-- Sum the balances in SQL, grouped by `staff_id`.
-- Load only the selected member's ledger. Which member that is depends on the staff list (an
-  unknown `?staff=` falls back to the first), so it is a second round trip — but paired with
-  `isMonthClosed()` it is **two waits instead of three**, on far less data.
-- Keep `KIND_ORDER` and the running balance in JavaScript. The rule that money in comes before
-  money out within a day belongs with the domain logic, and the set is now one person's lines.
-- Then measure whether `khata_entries.staff_id` earns an index. **Decide it on the plan, not on
-  taste** — P4.9 showed the planner ignores an index until the table has statistics.
+- The balances are a `sum(amount) … group by staff_id` — one row per staff member, about five.
+- The ledger is `where staff_id = ?`. Which member that is depends on the staff list, because an
+  unknown `?staff=` falls back to the first, so it is a second round trip — but it is paired with
+  `isMonthClosed()`, and `getLatestBusinessDay()` moved up into the first batch. **Two waits
+  instead of three**, on a fraction of the rows.
+- `KIND_ORDER` and the running balance stayed in JavaScript, now behind a named `inLedgerOrder`
+  comparator. The rule — money in before money out within a day — is domain logic, and it now
+  sorts one person's lines rather than the table.
 
-**No behaviour change intended.** The same rows, in the same order, with the same balances.
+**`sum()` returns a string.** Postgres sums an integer column as `bigint`, and `pg` hands that back
+as text, so a balance would have arrived as `"30"`. Confirmed against the database, then fixed with
+`.mapWith(Number)`. The kind of thing that reads fine and renders fine and is still wrong.
+
+**Proved identical, not assumed.** A script ran the old logic and the new one side by side against
+the dev database and compared every balance and every ledger row id, in order:
+
+```
+Arshad   balance old=30 new=30   ledger  7 rows  MATCH
+Hamid    balance old=0  new=0    ledger  0 rows  MATCH
+Sherry   balance old=-10 new=-10 ledger 23 rows  MATCH
+```
+
+Then `getKhataData()` itself was run through `tsx`: every balance came back `typeof=number`. Then
+the screen was opened in a browser for both Arshad and Sherry — 7 and 23 rows, running balances
+ending at the balances shown in the list, earnings before adjustments before payments within each
+day. Hamid, who has no khata rows at all, correctly reads 0 rather than being missing.
+
+**The index was decided on the query plan.** Against **10,000 generated rows** (inserted,
+`ANALYZE`d, rolled back):
+
+| Query | Plan |
+|---|---|
+| one person's ledger, no index | Seq Scan |
+| one person's ledger, with `(staff_id)` | **Bitmap Index Scan** — earns its place |
+| the balances `group by`, with `(staff_id)` | Seq Scan |
+| the balances `group by`, with `(staff_id, amount)` | **still Seq Scan** |
+
+So the migration adds `(staff_id)` only. The wider index was rejected by measurement: the balances
+query has to read every row whatever happens, and with a handful of distinct staff a hash aggregate
+over a sequential scan beat an index-only scan even when one was offered.
 
 **Size:** small · **Value:** medium
 

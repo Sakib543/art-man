@@ -51,8 +51,14 @@ export const khataEntries = pgTable(
     reversesEntryId: uuid("reverses_entry_id").references((): AnyPgColumn => khataEntries.id),
     createdAt: createdAt(),
   },
-  // Closing a day and re-settling one both read that day's lines. `staff_id`
-  // gets no index: the Staff khata screen reads the whole table and groups in
-  // memory, so an index would never be used (P4.9).
-  (t) => [index("khata_entries_business_date_idx").on(t.businessDate)],
+  (t) => [
+    // Closing a day and re-settling one both read that day's lines (P4.9).
+    index("khata_entries_business_date_idx").on(t.businessDate),
+    // One person's ledger on the Staff khata screen (P4.10). Measured against
+    // 10,000 generated rows: this gets a bitmap index scan. `amount` is
+    // deliberately NOT included -- the balances query is a `group by` that has
+    // to read every row anyway, and Postgres chose a sequential scan over an
+    // index-only scan even when offered (staff_id, amount).
+    index("khata_entries_staff_id_idx").on(t.staffId),
+  ],
 );
