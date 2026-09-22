@@ -37,7 +37,8 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
-| P4.1, P4.3 | Feature shape · merge features/auth | ⬜ | — |
+| P4.1 | One shape for every feature, checked by a test | ⬜ | Sakib, 2026-09-23 |
+| P4.3 | Merge features/auth into features/account | ⬜ | Sakib, 2026-09-23 |
 | P4.2 | Rewrite docs/ARCHITECTURE.md | ✅ | done 2026-09-23 |
 | P4.4, P4.5, P4.8 | Dead code · shadcn to devDeps · seed env flag | ✅ | done 2026-09-23 |
 | P4.6 | error.tsx / loading.tsx | ✅ | done 2026-09-22 |
