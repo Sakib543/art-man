@@ -3,6 +3,7 @@ import {
   CalendarCheck,
   ChartColumn,
   ChartPie,
+  Contact,
   FilePen,
   FileText,
   Grid3x3,
@@ -61,6 +62,9 @@ export const NAV: NavSection[] = [
       { href: "/capital", label: "Capital / Outstanding", icon: Landmark },
       { href: "/partners", label: "Partners", icon: ChartPie },
       { href: "/staff-rates", label: "Staff & rates", icon: SlidersHorizontal },
+      // Customer details and their special rates (P3.2). Owner-only, because a
+      // special rate is a price and prices are the Owner's (spec §10.4).
+      { href: "/customers", label: "Customers", icon: Contact },
       // Logins, not staff: the karigars never sign in. Owner and developer
       // only, and the developer role is filtered out of what the Owner sees.
       { href: "/users", label: "Users", icon: UsersRound },

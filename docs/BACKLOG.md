@@ -31,7 +31,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
-| P3.2 | Customers screen — edit, and set special rates | ⬜ | Sakib, 2026-09-23 |
+| P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
 | P3.3, P3.4, P3.5 | Staff receipt · month adjustment · real alert | ⬜ | — |
 | P3.7 | Backup and restore | ⬜ | Sakib, 2026-09-23 |
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
@@ -776,7 +776,7 @@ offline path for day close.
 | | Item | Size |
 |---|---|---|
 | ✅ P3.1 | **Give a bonus** — done 2026-09-23. See below | small |
-| ⬜ P3.2 | **Customer special-rates screen** — read during billing, but there is no way to set them. They only arrive via seed | medium |
+| ✅ P3.2 | **Customers screen** — details and special rates. Done 2026-09-23. See below | medium |
 | ⬜ P3.3 | **Staff monthly receipt** (spec §6.4) — print + WhatsApp | medium |
 | ⬜ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — today it is only blocked | medium |
 | ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
@@ -898,6 +898,58 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 `bill_lines.bill_id`**. Worth a small migration; it is not in this backlog yet.
 
 **Size:** small · **Value:** high (asked for directly by the client)
+
+### ✅ P3.2 — Customers screen: details and special rates
+**Done:** 2026-09-23
+
+Two gaps closed by one screen, because both are about a customer and neither had
+anywhere to live:
+
+- **Special rates.** Billing has always read `customer_special_rates` and priced
+  against it, but nothing could write one — they arrived through
+  `pnpm db:seed:sample` and no other way. Spec §10.4: a rate is the Owner's
+  decision, never the counter's discretion.
+- **Name and phone.** Spec §11 says a customer's name and phone are the only
+  things that may be edited, *with a record*. There was no way to fix either,
+  so a name typed wrong at the counter stayed wrong for good.
+
+**What was built** — `/customers`, Owner-only (`requireRole("owner")`, and the
+nav entry sits in the Owner section):
+
+- A searchable list (name or phone, 50 at a time) beside one customer's card.
+- **Edit details** — name and phone, nothing else. A phone number that belongs
+  to somebody else is refused by name: *"03001234567 already belongs to another
+  customer."* The audit row carries `before` and `after`.
+- **A rate per service**: every active service, its list price, and what this
+  customer pays. Set, change, or remove back to the list price. The write is an
+  upsert on the `(customer, service)` primary key, so setting a rate twice
+  corrects it instead of failing.
+- A customer is never deleted — bills point at them.
+
+**Verified in the browser** as an Owner, against the dev database:
+
+1. Kamran had no special rate. Set **Haircut Rs 650** against a list price of
+   Rs 800.
+2. On the Billing screen, looked Kamran up by phone: the **Special rate** badge
+   appeared, and adding Haircut priced the line at **Rs 650**, not Rs 800. That
+   is the whole point of the feature and it was measured, not assumed.
+3. Renamed him to "Kamran Bhai" and back; tried to give him Ashfaq's phone
+   number and was refused with the message above.
+4. Removed the rate: the row went back to "List price" and Rs 650 disappeared.
+
+The four `audit_log` rows read back with both sides:
+`customer.rate-set` (`null` → 650), two `customer.edit` (name → name), and
+`customer.rate-remove` (650 → list price). The database ended where it started:
+one special rate, Kamran's name restored. The throwaway Owner account was
+deleted.
+
+**A question for the client, not a defect:** the screen is Owner-only. A Manager
+cannot fix a customer's name at the counter, which follows spec §10.4 on prices
+but is stricter than §11 needs to be for a name. Ask before loosening it.
+
+**Size:** medium · **Value:** high (a dead read path, and a spec requirement)
+
+---
 
 ### ✅ P3.1 — Give a bonus
 **Done:** 2026-09-23
