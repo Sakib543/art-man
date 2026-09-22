@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2 and P1.1 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1.6 done)
 
 ---
 
@@ -25,7 +25,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2 and P1.1 don
 | P1.2 | Users screen — create admins | ⬜ | — |
 | P1.4 | Owner edits a bill on the open day | ✅ | done 2026-09-22 |
 | P1.5 | Owner's edit leaves one line, not three | ✅ | done 2026-09-22 |
-| P1.6 | Developer edits a financial entry | 🟡 | Sakib543, 2026-09-22 |
+| P1.6 | Developer edits a financial entry | ✅ | done 2026-09-22 |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
@@ -290,7 +290,7 @@ written to `audit_log`**. Nothing is hidden from the record, only from the other
 173 tests pass (was 163), lint clean, build passes — 22 routes now.
 
 **Not in this task.** The last capability — **editing or deleting a financial entry** — is split
-out into **P1.6**, so the append-only escape hatch gets a task of its own. Everything else in the
+out into **P1.6** (done later the same day), so the append-only escape hatch got a task of its own. Everything else in the
 client's list is done here, except creating and deactivating users, which is P1.2.
 
 **Size:** large
@@ -458,35 +458,93 @@ wants both.
 
 ---
 
-### 🟡 P1.6 — Developer edits a financial entry
-**Owner:** Sakib543, 2026-09-22
+### ✅ P1.6 — Developer edits a financial entry
+**Done:** 2026-09-22
 
-Split out of P1.1 on 2026-09-22, so the escape hatch through the append-only triggers gets its own
-task instead of riding along with the role work. The role itself is built and the developer
-already has the run of the app; what is missing is the one capability that changes a row that the
-database currently refuses to let anyone change.
+Split out of P1.1 so the escape hatch through the append-only triggers got a task of its own.
 
 **Client decision (2026-09-22):** approved, after being told plainly that it weakens spec §11
 (*"No edit / no delete of financial entries — not even the Owner"*) and the security-code chain.
 
-**Build it so the damage stays bounded** — these constraints are the point of the task, not
-decoration:
+**Scope decided with the user (2026-09-22):** **a bill and its lines, and nothing else.** No cash
+entries, no khata, no monthly expenses, and **no delete** — a row may change, it may not vanish.
+A bill is what the client actually argues about, and one narrow path could be built and tested
+properly in one go.
 
-- **Do not drop the 13 triggers** in `drizzle/0001_append_only.sql`. Ordinary app code, and any
-  bug in it, must still be unable to change a financial row.
-- Give the developer path a deliberate escape hatch instead: have `forbid_change()` check a
-  session-level setting such as `app.allow_financial_edit`, set with `set_config(..., true)` so it
-  is local to that one transaction and can never be left on.
-- **Every edit writes `before` and `after` to `audit_log`.** A row may change, never silently.
-- Recompute that day's security code and keep the previous one — `day_snapshot_history` already
-  does exactly this for a reopen, so follow it rather than inventing a second way.
-- The edit must be reachable only from the developer's own screens.
+**How the hatch works** — migration `0012_developer_edit_hatch`:
 
-**Watch out for:** `day_snapshots` was already narrowed in `0009` (delete allowed, update still
-forbidden) and `capital_repayments`, `drawings` and the rest each got their own trigger later —
-check every trigger, not just the ones in `0001`.
+```sql
+select set_config('app.allow_financial_edit', 'on', true);
+```
 
-**Size:** large · **Depends on:** P1.1 (done)
+`forbid_change()` now lets a row through when that setting is on. The third argument is what makes
+it safe: `is_local`, so PostgreSQL resets the setting when the transaction commits or rolls back.
+It cannot survive on a pooled connection and reach the next request, and nothing has to remember
+to close it.
+
+**What the hatch deliberately does NOT open:**
+
+| Table | Why |
+|---|---|
+| `audit_log` | If the hatch could open it, the developer could erase the evidence of having used it, and the whole guarantee would be worth nothing |
+| `day_snapshot_history` | Same reason: it is the record of every superseded closing record |
+| `day_snapshots` (UPDATE) | Keeps `forbid_update()` from `0009`. Nothing needs it — `resettleDay()` archives the old row and inserts a new one |
+
+Those two tables now run `forbid_change_always()`, which no setting opens.
+
+**What was built:**
+
+- `src/db/financial-edit.ts` — `allowFinancialEdit(tx)` and `denyFinancialEdit(tx)`. **The only
+  place in the app that may set that config.** The hatch is shut again as soon as the two
+  statements that need it have run, so settling the day and writing the audit entry happen with it
+  closed.
+- `src/features/developer/bill-edit-rules.ts` — pure, so the form and the server apply the same
+  rules: the same line ids as the bill has (no adding, no removing), whole non-negative rupees, a
+  total above zero, and cash + online equal to the lines. 11 tests.
+- `findBillForEdit()` refuses three cases up front rather than on save: a bill that does not exist,
+  a **reversal** bill, and a **cancelled** bill. The last two are each half of a mirrored pair, and
+  changing one side in place would leave the day wrong in a way nothing else checks.
+- `editBillRow()` — one transaction: open the hatch, update the bill and its lines, shut the
+  hatch, settle the day again if it is closed, write `before` and `after` to `audit_log`.
+- `/developer/bills` — find a bill by number and edit it. Badges for "Day closed" and "Month
+  closed", and a warning for each: a closed day will be settled again and its security code will
+  change; a closed month's report was frozen and is **not** recalculated.
+
+**Verified** against the dev database, not only in tests. First at the SQL level:
+
+| Check | Result |
+|---|---|
+| `update bills`, hatch shut | refused — *financial records are append-only* |
+| `update bills` / `bill_lines`, hatch open | allowed |
+| `update` or `delete audit_log`, hatch open | **refused** |
+| `update day_snapshot_history`, hatch open | **refused** |
+| `update day_snapshots`, hatch open | **refused** |
+| Same connection after the transaction commits | setting reads empty, update refused again — no leak |
+
+Then through the app, as the developer:
+
+| Check | Result |
+|---|---|
+| Bill #13 on an **open** day | price 800→900, staff Arshad→Sherry, cash 1,100→1,200. Row changed in place; `before`/`after` both in `audit_log`; no snapshot to settle |
+| Payment that no longer matches | refused, in the browser and on the server: *"Cash and online are Rs 200 more than the bill's Rs 1000."* |
+| Closed the day | security code `4875-8460-E6FC`, sale Rs 2,000 |
+| Bill #13 on the **closed** day | 900→700. Sale Rs 1,800, expected cash 6,030→5,830, **counted cash untouched**, new code `17F1-B378-808C`, old one archived with the reason and the actor |
+| A second edit on the same closed day | 700→800 split 700 cash / 400 online. Code `D283-D3BF-87EB`, **both** earlier codes kept in history in order |
+| Khata after two edits | commission reversed and reposted each time, no double counting: Sherry 970 earned → 950 → 960 against Rs 970 paid, so her balance reads −10, which is exactly right |
+| Reversal bill (#14) | refused — *edit the bill it reverses* |
+| Cancelled bill (#11) | refused — *edit the bill that replaced it* |
+| A number that does not exist | refused |
+| Manager opens `/developer/bills` | bounced to Billing |
+
+184 tests pass (was 173), lint clean, build passes.
+
+**Deliberately not handled:** a **closed month**. Its report and the partners' shares were frozen
+in `month_closes.report` when the month closed and are not recalculated, so after an edit they no
+longer match the bills. The screen says so in red and the audit entry records `monthClosed: true`.
+Recalculating them would rewrite a record the partners have already been paid against, which is a
+bigger decision than this task — raise it with the client if it ever comes up.
+
+**Size:** large · **Depended on:** P1.1 (done)
 
 ---
 
@@ -595,7 +653,7 @@ offline path for day close.
 | ⬜ P4.4 | **Delete dead code:** `src/components/coming-soon.tsx`, `src/features/.gitkeep`, `docs/~$iend_Setup_Guide.docx` (a Word lock file), `@neon/env` (unused dependency), `neon.ts` (empty config) |
 | ⬜ P4.5 | Move `shadcn` from `dependencies` to `devDependencies` — it is a CLI and bloats the production install |
 | ⬜ P4.6 | Add `error.tsx` / `loading.tsx` — a database error currently shows Next's default error page |
-| ⬜ P4.7 | Add CI (`.github/workflows`) so build + 173 tests + lint run on every push. **More valuable now that two people share `main`** |
+| ⬜ P4.7 | Add CI (`.github/workflows`) so build + 184 tests + lint run on every push. **More valuable now that two people share `main`** |
 | ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
 
 ---
@@ -619,7 +677,7 @@ offline path for day close.
 | Developer role | ✅ Built 2026-09-22 (P1.1) — reset passwords, one-click site shutdown, sees the audit log. Hidden from the Settings screen at the client's request: they sign in with a username and password, and nothing else shows the role exists |
 | Staff (karigar) PIN | ✅ Remove from the whole project (P1.0). **The Owner PIN stays** |
 | Confirmation for staff payments | ✅ No replacement wanted |
-| Developer editing financial entries | ✅ Approved — but audited. Split out of P1.1 into **P1.6**, still to build |
+| Developer editing financial entries | ✅ Built 2026-09-22 (P1.6) — a bill and its lines only, never deleted, always audited. The triggers stay on: the hatch is one transaction-local setting, and it cannot open `audit_log` |
 | Owner editing a bill | ✅ Open day only (P1.4). A closed day's bill can only be cancelled, not edited |
 | An edited bill's marker | ✅ Yes — the Daily report's single line carries an "edited" badge **with a link to the previous version** (P1.5) |
 

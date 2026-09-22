@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2 and P1.1 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1.6 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (173 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (184 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -90,17 +90,18 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Check | Result |
 |---|---|
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
-| `pnpm build` | pass — 22 routes, exit 0, **succeeds with no env vars set** |
+| `pnpm build` | pass — 23 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **173 passed** (23 files) |
-| Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0011` |
+| `pnpm test` | **184 passed** (24 files) |
+| Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0012` |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
+| Developer bill edit | exercised end to end on an open day and twice on a closed day (P1.6) |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
-staff & rates, settings), plus the developer role with its audit log, password and maintenance
-screens. Phase 4 (offline, backup) has not been started.
+staff & rates, settings), plus the developer role with its audit log, password, maintenance and
+bill-edit screens. Phase 4 (offline, backup) has not been started.
 
 **Not deployed.** A Vercel project exists and is connected to this repo, so every push to `main`
 builds there — but it has no live database and nobody here can open its settings, because it is in
@@ -139,6 +140,15 @@ freely; none of it is real data.
 P1.1 added nothing financial. It left a `developer` account, a `password.reset` row and one
 `maintenance.on` / `maintenance.off` pair in `audit_log`, and an `app_settings` row reading `off`.
 
+**P1.6 then changed the dev data, so the paragraph above is out of date for 23 Sep.** That day was
+**closed** while verifying, and bill #13 was edited three times in place — it now reads Rs 800
+Haircut (Sherry) + Rs 300 Hair wash (Arshad), paid Rs 700 cash and Rs 400 online. The day's sale
+is Rs 1,900, expected cash Rs 5,530 against a hand count of Rs 5,000, and the security code is
+`D283-D3BF-87EB` with `4875-8460-E6FC` and `17F1-B378-808C` before it in `day_snapshot_history`.
+Khata balances are no longer 0: Arshad +30 (earned, not paid), Sherry −10 (paid Rs 10 more than
+she ended up earning, which is the correct result of the edits). Three `bill.developer-edit` rows
+are in `audit_log`. None of it is real data — reopen or reseed freely.
+
 Local logins: `owner`, `manager` and `developer`. Passwords were printed once during seeding and
 the user noted them down. `seed-users.ts` and `seed-developer.ts` both **skip accounts that
 already exist**, so re-running them will not print new ones. To recover one: sign in as the
@@ -159,9 +169,9 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **Staff (karigar) PIN** | **Removed from the whole project** (P1.0, done 2026-09-22). No replacement confirmation wanted. |
 | **Owner PIN** | **Kept.** They were two different columns: `staff.pin_hash` (dropped), `user.pin_hash` (still there). |
 | **Developer role** | A 4th role above Owner: sees everything, resets any password/PIN, manages users, maintenance mode, edits config. **Built 2026-09-22 (P1.1)**, except user management (P1.2) and editing financial rows (P1.6). |
-| **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. Constraints below. **Not built yet — it is backlog P1.6.** |
+| **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. **Built 2026-09-22 (P1.6)**: a bill and its lines only, never deleted, always audited. Constraints below, all of them kept. |
 | **Offline** | Real offline required — 6–8 hours with no internet, then sync on reconnect. |
-| **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: everything the Owner can (P1.1); editing a row the database forbids is still P1.6. |
+| **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: everything the Owner can (P1.1), plus changing a bill **in place** on any day, closed month included (P1.6). |
 | **Is the developer visible?** | **No, not on the screens** (2026-09-22). No developer section in Settings; the Owner and Manager see no sign the role exists. They sign in with a username and a password, nothing more. The account is still an ordinary `user` row and **every action it takes is audited** — hidden from the screens, never from the record. |
 | **Marking an edited bill** | **Yes.** The Daily report's single line carries an "Edited" badge **with a link to the previous version** (P1.5, done). |
 | **An edited bill's number** | The receipt number **need not stay the same**. That choice let P1.5 be built without weakening the append-only guarantee. |
@@ -236,6 +246,13 @@ Measured, not guessed. Do not spend time re-deriving these.
 | The developer has **no PIN** | `seed-developer.ts` does not set one, and `resetPin` refuses any account whose role is not `owner` |
 | `pnpm db:seed:developer` is separate from `pnpm db:seed` | the owner and manager belong to the salon; this account belongs to whoever maintains the system |
 | `form-feedback.tsx` and `use-form-action.ts` live in `src/components/` | moved up out of `features/account` in P1.1 so the developer feature could use them without breaking `ARCHITECTURE.md` rule 5 |
+| **The append-only triggers now have an escape hatch** | `set_config('app.allow_financial_edit', 'on', true)` — migration `0012`. `is_local = true` is the whole safety story: the setting dies with the transaction, so it cannot leak onto a pooled connection. Verified against the database, including that the same connection is refused again after the commit |
+| **`src/db/financial-edit.ts` is the only place that may set it** | if a second one appears, the guarantee stops being checkable by reading one file. `denyFinancialEdit` shuts it again as soon as the rows are written, so settling the day and writing the audit entry run with it closed |
+| `audit_log` and `day_snapshot_history` run `forbid_change_always()` | no setting opens them. Without this the developer could erase the evidence of using the hatch |
+| **14 triggers, across four migrations** | `0001` (10, one later replaced), `0005` (2), `0007` (1), `0009` (day_snapshot_history, plus `day_snapshots` moved to `forbid_update`). Never assume `0001` is the whole list |
+| A reversal bill and a cancelled bill cannot be edited in place | each is half of a mirrored pair; changing one side alone leaves the day wrong and nothing downstream checks it |
+| A bill edit keeps the bill's own lines | no adding, no removing. Adding is a different bill; removing would delete a financial row, which P1.6 deliberately does not do |
+| **A closed month is not recalculated after an edit** | `month_closes.report` and `shares` were frozen at close. The screen warns in red and the audit entry records `monthClosed`. Recalculating would rewrite a record the partners were paid against — a client decision, not a code one |
 
 ---
 
@@ -346,6 +363,11 @@ and the seed were actually run against the live branch** before suspecting the c
   variables can only be set from inside that project. Also ask them for the site's URL.
 
 **Questions blocking work:**
+0. **A bill edited in a closed month leaves that month's frozen report wrong.** `month_closes`
+   keeps the report and the partners' shares as they were at close, and P1.6 does not recalculate
+   them — the partners may already have been paid against those figures. Ask the client what they
+   want: leave the frozen record alone (today's behaviour, with a red warning on screen), or
+   recalculate it. Not urgent: no month has been closed yet.
 1. **Who can let us into the Vercel project?** It exists and is connected to this repo, but it is
    in the other developer's account (answered 2026-09-22). Blocks P5.1 until access is granted.
 2. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
@@ -369,6 +391,8 @@ Questions 2 and 3 are not needed until offline work starts.
   applies — that is about `drizzle/meta/_journal.json` in git, not about the databases.
 - **Should the developer role be visible anywhere?** No (2026-09-22). No Settings tab, no hint of
   it for the Owner or the Manager. Recorded in section 6.
+- **What may the developer edit in place?** A bill and its lines, and nothing else; never a delete
+  (2026-09-22). Cash entries, khata and monthly expenses were deliberately left out.
 
 ---
 
@@ -394,7 +418,7 @@ STAGE 2 — go live
 
 STAGE 3 — during the client's 20-day trial
   P1.1  Developer role                                  DONE 2026-09-22
-  P1.6  Developer edits a financial entry (split out of P1.1)
+  P1.6  Developer edits a financial entry               DONE 2026-09-22
   P1.2  Users screen        P4  Cleanup + CI
 
 STAGE 4 — after the trial
@@ -411,9 +435,8 @@ Offline comes after the trial because the trial's purpose is to prove the **acco
 The paper bill book (P2.1) covers outages until then.
 
 **Good items to run in parallel** (they touch different areas): P4.2 · P4.4 · P4.7.
-**Do not parallelise:** P0.2 with P1.0 (both `day-close`). P1.2 and P1.6 both build on P1.1, which
-is done, so either can start — but not both at once: they touch the same `features/developer`
-folder, and P1.6 needs a migration (section 8.1).
+**Do not parallelise:** P0.2 with P1.0 (both `day-close`). P1.2 is the next item in `features/developer`;
+nothing else should be started in that folder at the same time.
 
 ---
 
