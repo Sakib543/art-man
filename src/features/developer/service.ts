@@ -1,12 +1,17 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
-import { user as userTable } from "@/db/schema";
+import { resettleDay } from "@/db/day-settlement";
+import { allowFinancialEdit, denyFinancialEdit } from "@/db/financial-edit";
+import { billLines, bills as billsTable, user as userTable } from "@/db/schema";
 import { checkNewPassword } from "@/lib/auth/password-rules";
 import { auth } from "@/lib/auth/server";
 import type { SessionUser } from "@/lib/auth/session";
 import { UserError } from "@/lib/errors";
 import { hashPin } from "@/lib/pin";
+import { checkBillEdit } from "./bill-edit-rules";
+import { findBillForEdit, listStaffForEdit } from "./queries";
+import type { EditBillRowInput } from "./schemas";
 
 const actorOf = (user: SessionUser) => user.username || user.name;
 
@@ -67,6 +72,88 @@ export async function resetPin(dev: SessionUser, userId: string, newPin: string)
       action: "owner.pin-reset",
       target: target.username ?? target.id,
       after: { by: "developer" },
+    });
+  });
+}
+
+/**
+ * Change a bill in place — the one thing the database otherwise forbids
+ * outright (backlog P1.6). Everything about it is deliberately narrow:
+ *
+ * - it edits the lines the bill already has, and never adds or removes one;
+ * - it refuses a reversal bill and a cancelled bill, because each is half of a
+ *   mirrored pair and changing one side alone would leave the day wrong;
+ * - the lines must still add up to what was paid;
+ * - the hatch through the append-only triggers is opened inside this one
+ *   transaction and dies with it;
+ * - `before` and `after` go to `audit_log`, which the hatch cannot touch;
+ * - a closed day is settled again, so its figures follow the edit and its
+ *   security code changes — the old one is kept in `day_snapshot_history`.
+ *
+ * What it does NOT put right: a closed month's report was frozen when the
+ * month closed and is not recomputed. The screen says so, and the audit entry
+ * records that the month was closed.
+ */
+export async function editBillRow(dev: SessionUser, input: EditBillRowInput): Promise<void> {
+  const { bill, block } = await findBillForEdit(input.billNo);
+  if (block === "not-found") throw new UserError(`There is no bill #${input.billNo}.`);
+  if (block === "reversal") throw new UserError("This is a reversal bill. Edit the bill it reverses.");
+  if (block === "cancelled") throw new UserError("This bill is cancelled. Edit the bill that replaced it.");
+  if (!bill) throw new UserError(`There is no bill #${input.billNo}.`);
+
+  const problem = checkBillEdit(input, bill.lines.map((line) => line.id));
+  if (problem) throw new UserError(problem);
+
+  const known = new Set((await listStaffForEdit()).map((member) => member.id));
+  if (input.lines.some((line) => !known.has(line.staffId))) throw new UserError("One of the chosen staff members does not exist.");
+
+  const actor = actorOf(dev);
+  const before = {
+    cash: bill.cash,
+    online: bill.online,
+    bookNo: bill.bookNo,
+    lines: bill.lines,
+  };
+  const after = {
+    cash: input.cash,
+    online: input.online,
+    bookNo: input.bookNo,
+    lines: input.lines,
+  };
+
+  await db.transaction(async (tx) => {
+    await allowFinancialEdit(tx);
+
+    await tx
+      .update(billsTable)
+      .set({ cash: input.cash, online: input.online, bookNo: input.bookNo })
+      .where(eq(billsTable.id, bill.id));
+
+    for (const line of input.lines) {
+      await tx
+        .update(billLines)
+        .set({ name: line.name.trim(), amount: line.amount, staffId: line.staffId })
+        .where(eq(billLines.id, line.id));
+    }
+
+    // Shut the hatch again here, not at the end of the transaction. Nothing
+    // below this line is supposed to change a financial row, so nothing below
+    // it is allowed to.
+    await denyFinancialEdit(tx);
+
+    // A closed day already wrote its commissions and its closing record from
+    // the old figures. Settling again reverses those and writes a new snapshot
+    // with a new security code, keeping the old one in day_snapshot_history.
+    if (bill.dayClosed) {
+      await resettleDay(tx, bill.businessDate, actor, `bill #${bill.billNo} edited by the developer`);
+    }
+
+    await writeAudit(tx, {
+      actor,
+      action: "bill.developer-edit",
+      target: `bill #${bill.billNo}`,
+      before,
+      after: { ...after, reason: input.reason, businessDate: bill.businessDate, monthClosed: bill.monthClosed },
     });
   });
 }

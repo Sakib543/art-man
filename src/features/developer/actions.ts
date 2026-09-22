@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { setMaintenance } from "@/db/app-settings";
 import { failure, type ActionResult } from "@/lib/action-result";
 import { requireRole } from "@/lib/auth/session";
-import { maintenanceSchema, resetPasswordSchema, resetPinSchema } from "./schemas";
-import { resetPassword, resetPin } from "./service";
+import { editBillRowSchema, maintenanceSchema, resetPasswordSchema, resetPinSchema } from "./schemas";
+import { editBillRow, resetPassword, resetPin } from "./service";
 
 const firstIssue = (error: { issues: { message: string }[] }, fallback: string) =>
   error.issues[0]?.message ?? fallback;
@@ -46,6 +46,20 @@ export async function setMaintenanceAction(input: unknown): Promise<ActionResult
   try {
     await setMaintenance(dev.username || dev.name, parsed.data.on);
     revalidatePath("/developer/maintenance");
+    return { ok: true, data: null };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function editBillRowAction(input: unknown): Promise<ActionResult<null>> {
+  const dev = await requireRole("developer");
+  const parsed = editBillRowSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error, "Invalid bill") };
+
+  try {
+    await editBillRow(dev, parsed.data);
+    revalidatePath("/developer/bills");
     return { ok: true, data: null };
   } catch (error) {
     return failure(error);
