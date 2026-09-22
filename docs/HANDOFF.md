@@ -162,10 +162,9 @@ bill-edit screens. Phase 4 (offline, backup) has not been started.
 All of that day's work — P3.8, P4.9, P4.10 and the P0.4 lockout fix — **is live**, confirmed by
 behaviour on the live site, not by the build going green.
 
-**Migrations `0013`, `0014` and `0015` are not applied to the live database, and `0015` now
-matters.** `0013` and `0014` add indexes only and nothing needs them. **`0015` is different**: it
-adds `user.active`, and the code reads it on **every** session lookup, so deploying P1.2 against a
-database without that column takes the whole site down, not one screen. See section 9.
+**Every migration through `0015` IS applied to the live database** — because `.env.local` points at
+the live database. That was discovered on 2026-09-22 and it changes how this whole section should be
+read: **read section 9a first.**
 
 An earlier version of this section said the live site had no tables and no accounts. **That was
 wrong**, and it was written without checking. Measured from a browser on 2026-09-22:
@@ -179,19 +178,16 @@ wrong**, and it was written without checking. Measured from a browser on 2026-09
 So `DATABASE_URL` and `BETTER_AUTH_SECRET` are set, and **migrations have been run against live** —
 at least `0000`, which creates `user`. Someone did the work described in `DEPLOY_VERCEL.md`.
 
-**Still unknown, and worth finding out before trusting it:**
+**Both of those questions are now answered, by section 9a.** `pnpm db:seed` was run — the database
+holds three accounts (`owner`, `manager`, `developer`), which `pnpm db:check` counts. And live is on
+`0015`, the latest.
 
-- **Was `pnpm db:seed` run?** If not there is no `owner` or `manager` account, and every correct
-  password is rejected — trap 8.8. Cheapest test: sign in as `owner`. **Do not probe this from a
-  script** — repeated failures count against that account.
-- **Which migration is live on?** Anywhere from `0000` to `0012`. `0013` and `0014` were written on
-  2026-09-22 and certainly are not applied.
+**Migrations can be run against live from this machine** — in fact they cannot be run against
+anything else. `pnpm db:migrate` with no environment variable set goes straight to production. That
+is convenient and dangerous in equal measure; see 9a.
 
-**Migrations still cannot be run against live from this machine**: there is no live connection
-string here (`.env.local` points at the dev branch, `DATABASE_URL_UNPOOLED` is empty), and no way to
-get one without access to the Vercel project — which, re-confirmed on 2026-09-22 **after** the
-deployment completed, is still in the other developer's account. Access remains the blocker for
-P5.1, but it is now the only thing missing, not the whole deployment.
+Vercel access is still missing and still blocks P5.1: the environment variables cannot be read or
+changed from here. It is no longer what blocks migrations.
 
 ---
 
@@ -209,9 +205,13 @@ pnpm db:seed:accounts # partners + fixed expense lines
 pnpm db:seed:developer # the developer account, prints its password ONCE
 ```
 
-`.env.local` exists and points at a **Neon dev database** (not a local Postgres, despite earlier
-discussion). Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty — optional),
-`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
+`.env.local` points at **the live Neon database** — the same one the deployed site uses. It is not a
+dev database, whatever its name suggests; see section 9a, and treat every command on this page as
+running against production. Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty —
+optional), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
+
+**So `pnpm db:seed:sample` writes sample bills into the salon's books.** It is safe today only
+because the books are still nothing but sample data.
 
 **State of the dev database as this session ended:** 22 Sep 2026 is closed, carrying one cancelled
 bill (#1) and its reversal (#2), a reversed commission for Arshad, and three rows in
@@ -564,37 +564,49 @@ and the seed were actually run against the live branch** before suspecting the c
 
 ## 9. Open actions and questions
 
+### 9a. `.env.local` IS the live database. There is no separate dev database.
+
+**Measured on 2026-09-22, after two sessions of assuming the opposite.** Read this before touching
+anything.
+
+How it was proved, because a belief this consequential should not rest on inference: a throwaway
+account was created in the database `.env.local` points at, the **live site** at
+`https://art-man-drab.vercel.app` was asked to sign in with it, and it returned **200**. The account
+was deleted in the same run. A live site can only accept an account that exists in its own database.
+
+Supporting facts, all checked the same day:
+
+- the Neon account holds **one project, `art-man-dev`, with one branch, `production`** — Neon names
+  the default branch that, it does not mean live;
+- `pnpm db:check` against `.env.local` reports **16 migrations, `user.active` present, 3 accounts**,
+  and the live site's sign-in agrees.
+
+**What this overturns.** This file previously said the live database was unreachable from here, that
+its migration state was unknown ("anywhere from `0000` to `0012`"), and that each developer had
+their own database. For *this* developer that last one is wrong: the Vercel project's
+`DATABASE_URL` points at this very Neon project.
+
+**What follows, and it is not comfortable:**
+
+- **Migrations are already applied to live.** `0013`, `0014` and `0015` went on when they were run
+  here. Nothing is owed.
+- **Every verification run today wrote to the live database.** Bills #17, #18 and #19 on 24 Sep, and
+  the throwaway accounts for P3.6, P4.6 and P1.2, were all created on live. The accounts were
+  deleted; the bills cannot be, because bills are append-only. They are harmless *today* only
+  because the whole database is still sample data and the salon is not using it yet.
+- **`pnpm db:seed:sample` would now pollute the live books.** Never run it again from here.
+- **"Reopen or reseed freely, none of it is real data" — the advice elsewhere in this file — stops
+  being true the day the trial starts.** From that day, this machine is pointed at production and
+  must be treated that way.
+
+**The thing to actually fix:** get a separate database for development, so verifying a feature stops
+meaning writing to the salon's books. A second Neon branch costs nothing and takes a minute:
+branch `production`, put the new branch's string in `.env.local`, and leave Vercel pointing at
+`production`. Do it before the trial starts, not after.
+
 **Owed by the user:**
-- [ ] **Apply migration `0015` to the live database — URGENT.** This is the first migration the
-  code cannot run without: `user.active` is read on **every session lookup**, so without the column
-  the live site fails on every page, not just on `/users`.
-
-  P1.2 was held back at first for exactly this reason, then **pushed on 2026-09-22 at the user's
-  instruction**, after the risk was put to them. So the fix is owed now, not before some later
-  deploy. Run it from a terminal on a developer's own machine, in the repo root — nothing on Vercel
-  applies migrations:
-
-  ```powershell
-  $env:DATABASE_URL_UNPOOLED="<live direct string>"; pnpm db:migrate; Remove-Item Env:\DATABASE_URL_UNPOOLED
-  ```
-
-  Use `DATABASE_URL_UNPOOLED`, not `DATABASE_URL`. `drizzle.config.ts` reads the unpooled one and
-  only falls back to `DATABASE_URL` when it is **empty** — which it is in this `.env.local` today,
-  but on a machine where it is set, passing `DATABASE_URL` alone would quietly migrate that
-  developer's own database instead of live. Full instructions, including the bash form and the
-  warning about leaving the variable set in a PowerShell session, are in `docs/DEPLOY_VERCEL.md`.
-
-  That applies `0013`, `0014` and `0015` together; the first two are indexes and harmless.
-
-  **It cannot be run from this machine, and that is now settled rather than assumed.** Checked in
-  the Neon dashboard on 2026-09-22: this account holds **exactly one project, `art-man-dev`, with
-  exactly one branch, `production`** — and that branch is the one `.env.local` already points at
-  (endpoint `ep-rapid-butterfly-b5booy5t`, confirmed with `pnpm db:check`). Neon calls the default
-  branch "production"; the name means nothing here.
-
-  So the live database is **not in this account at all**. It is in the other developer's Neon, and
-  the only ways to reach it are the Vercel project's `DATABASE_URL` or that developer handing over
-  the direct string. Whoever holds it runs the command above.
+- [x] **Apply `0013`, `0014` and `0015` to the live database** — already done, by accident, and the
+  reason is the single most important thing on this page. See 9a.
 - [x] **Rotate the Neon database password** — done on 2026-09-22.
 - [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
 - [ ] **Get access to the Vercel project** — still in the other developer's account, re-confirmed
@@ -637,9 +649,11 @@ Questions 2 and 3 are not needed until offline work starts.
   P1.5: fold the rows in the view only, leave the append-only guarantee alone.
 - **Should the Daily report mark a bill as edited?** Yes — badge plus a link to the previous
   version (2026-09-22). Recorded in section 6.
-- **Each developer has their own database** (confirmed 2026-09-22). So a migration or a seed run by
-  one does not disturb the other's data. The shared-file migration conflict in section 8.1 still
-  applies — that is about `drizzle/meta/_journal.json` in git, not about the databases.
+- ~~**Each developer has their own database** (confirmed 2026-09-22).~~ **Wrong, corrected the same
+  day.** The other developer may well have their own; *this* working copy does not — `.env.local`
+  is the live database the deployed site uses. Proved, not inferred: see section 9a. The
+  shared-file migration conflict in section 8.1 still applies either way — that one is about
+  `drizzle/meta/_journal.json` in git, not about the databases.
 - **Should the developer role be visible anywhere?** No (2026-09-22). No Settings tab, no hint of
   it for the Owner or the Manager. Recorded in section 6.
 - **What may the developer edit in place?** A bill and its lines, and nothing else; never a delete
