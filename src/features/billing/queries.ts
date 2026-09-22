@@ -1,4 +1,4 @@
-import { and, count, eq, isNull, max, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
@@ -15,6 +15,7 @@ import {
 } from "@/db/schema";
 import { priceCart, PricingError } from "@/lib/accounting";
 import { draftLinesOf } from "./bill-draft";
+import { lastVisitOf } from "./last-visit";
 import type { BillDraft, BillingData, CustomerInfo } from "./types";
 
 /** Everything the billing screen needs, or null when no business day is open. */
@@ -57,22 +58,54 @@ async function findCustomerById(id: string): Promise<CustomerInfo | null> {
   return customer ? customerInfo(customer) : null;
 }
 
-/** Visit count and special rates for one customer. */
+/**
+ * A bill that really happened: not a reversal, and not cancelled. Both halves
+ * matter. A reversal is the mirror of the bill it undoes, and a cancelled bill
+ * is work the customer did not pay for — counting either would tell the counter
+ * that someone visited when they did not.
+ *
+ * Written as a condition rather than a filter so the visit count and the last
+ * visit cannot drift apart: they are the same rule applied to the same join.
+ */
+const realVisit = (customerId: string) =>
+  and(eq(bills.customerId, customerId), isNull(bills.reversesBillId), isNull(billCancellations.billId));
+
+/** Visit count, the last visit with its services, and special rates for one customer. */
 async function customerInfo(customer: typeof customers.$inferSelect): Promise<CustomerInfo> {
-  const [[visit], rates] = await Promise.all([
+  const [[visit], [last], rates] = await Promise.all([
     db
-      .select({ visits: count(), last: max(bills.businessDate) })
+      .select({ visits: count() })
       .from(bills)
-      .where(and(eq(bills.customerId, customer.id), isNull(bills.reversesBillId))),
+      .leftJoin(billCancellations, eq(billCancellations.billId, bills.id))
+      .where(realVisit(customer.id)),
+    db
+      .select({ id: bills.id, billNo: bills.billNo, businessDate: bills.businessDate })
+      .from(bills)
+      .leftJoin(billCancellations, eq(billCancellations.billId, bills.id))
+      .where(realVisit(customer.id))
+      // By business date, then bill number: several bills can share one day.
+      .orderBy(desc(bills.businessDate), desc(bills.billNo))
+      .limit(1),
     db.select().from(customerSpecialRates).where(eq(customerSpecialRates.customerId, customer.id)),
   ]);
+
+  // `bill_lines` has no order column, so order by name — the same choice the
+  // developer's edit screen makes, which keeps the two lists looking alike.
+  const lines = last
+    ? await db
+        .select({ name: billLines.name, amount: billLines.amount, staffName: staff.name })
+        .from(billLines)
+        .innerJoin(staff, eq(billLines.staffId, staff.id))
+        .where(eq(billLines.billId, last.id))
+        .orderBy(asc(billLines.name))
+    : [];
 
   return {
     id: customer.id,
     phone: customer.phone,
     name: customer.name,
     visits: visit.visits,
-    lastVisit: visit.last,
+    lastVisit: lastVisitOf(last ?? null, lines),
     specialRates: Object.fromEntries(rates.map((rate) => [rate.serviceId, rate.price])),
   };
 }

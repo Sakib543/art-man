@@ -31,13 +31,35 @@ export interface BillingData {
   staff: StaffOption[];
 }
 
+/** One service on the customer's last bill, with whoever performed it. */
+export interface LastVisitLine {
+  name: string;
+  amount: Rupees;
+  staffName: string;
+}
+
+/**
+ * What the customer had done the last time they came in (backlog P3.8), shown
+ * on the billing screen as soon as their number is looked up. A cancelled bill
+ * is never the last visit.
+ */
+export interface LastVisit {
+  billNo: number;
+  businessDate: string;
+  /** Summed from `lines`, so the figure always matches what is listed. */
+  total: Rupees;
+  lines: LastVisitLine[];
+}
+
 export interface CustomerInfo {
   /** Null when the phone number is new and the customer has not been saved yet. */
   id: string | null;
   phone: string;
   name: string;
+  /** Bills that really happened: cancellations and reversals are not counted. */
   visits: number;
-  lastVisit: string | null;
+  /** Null for a customer whose only bills were cancelled. */
+  lastVisit: LastVisit | null;
   specialRates: Record<string, Rupees>;
 }
 

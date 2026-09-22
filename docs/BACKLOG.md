@@ -30,7 +30,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
 | P3.1–P3.7 | Remaining spec features | ⬜ | — |
-| P3.8 | Customer's last visit on the billing screen | 🟡 | Sakib543, 2026-09-22 |
+| P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
 
@@ -641,10 +641,10 @@ offline path for day close.
 | ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
 | ⬜ P3.6 | **Receipt printing / thermal printer** | medium |
 | ⬜ P3.7 | **Proper backup and restore** | medium |
-| 🟡 P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — the lookup shows a visit *count* and a *date*, but not what the customer had done. See below | small |
+| ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 
-### 🟡 P3.8 — Customer's last visit on the billing screen
-**Owner:** Sakib543, 2026-09-22
+### ✅ P3.8 — Customer's last visit on the billing screen
+**Done:** 2026-09-22
 
 Spec §5.1 says the phone lookup "loads visit history". Only half of it was built: the customer
 strip shows a visit **count** and the **date** of the last one, but never what the customer
@@ -667,14 +667,45 @@ That last answer fixes an existing defect, not just the new screen: `customerInf
 the same query is being rewritten, and because showing a cancelled bill's services as "what they
 had last time" would be plainly wrong.
 
-**Planned shape:**
+**What was built:**
 
-- `types.ts` — replace the flat `lastVisit: string | null` on `CustomerInfo` with a `LastVisit`
-  object: the business date, the bill number, the total, and the lines (name, amount, staff name).
-- `queries.ts` — `customerInfo()` finds the customer's most recent bill that is neither a
-  reversal nor cancelled, and loads its lines with the staff names.
-- `customer-box.tsx` — the found-customer strip grows a short list under the existing line.
-- Tests for the pure part.
+- `types.ts` — the flat `lastVisit: string | null` on `CustomerInfo` became a `LastVisit` object:
+  business date, bill number, total, and the lines (name, amount, staff name).
+- `queries.ts` — `customerInfo()` now runs the visit count and the last-visit lookup through one
+  shared condition, `realVisit()`, so the two can never disagree about what counts. The lines come
+  from a second query joined to `staff` for the names, and are ordered by name, the same choice the
+  developer's edit screen makes.
+- `last-visit.ts` — the pure part: `lastVisitOf()` builds the visit and **sums the total from the
+  lines** rather than reading the bill's `cash + online`, so the figure on screen always matches the
+  list directly above it; `visitLabel()` gives "1 visit" / "3 visits" / "No visits yet".
+- `customer-box.tsx` — the found-customer strip grew a bordered section under the name. It is not
+  a dialog: the counter reads it while the customer is standing there.
+- `last-visit.test.ts` — 8 tests. **192 pass** (was 184), lint clean, build passes.
+
+**No migration.** `bills` and `bill_lines` have held this since `0000`; there was simply no query.
+
+**Verified in the browser**, signed in as the Owner, against the dev database — not only in tests:
+
+1. Looked up `03001234567` (Ashfaq Bhai, no bills): **"No visits yet"** and **"No earlier visit to
+   show."** The Special rate badge still shows, so the rest of the lookup was not disturbed.
+2. Saved bill #15 for him on 24 Sep — Haircut (Sherry) Rs 1,500, Hair wash (Arshad) Rs 300.
+3. Looked him up again: **"1 visit"** — singular — and `Last visit · 24 Sep 2026 · Bill #15
+   Rs 1,800` over the two lines with their staff names. The Rs 1,500 proves the total follows the
+   **special rate actually charged**, not the Rs 800 list price.
+4. Cancelled #15, looked him up once more: back to **"No visits yet"**. Measured in SQL at the same
+   moment: the old condition counted **1**, the new one counts **0**.
+
+**A cancelled bill used to count as a visit.** `customerInfo()` excluded reversal bills but not
+cancelled ones. Fixed here because the same query was being rewritten, and because showing a
+cancelled bill's services as "what they had last time" would have been plainly wrong.
+
+**Deliberately left alone:** only the last visit is shown, not a history. The client was asked and
+chose the compact strip over a three-visit list or a full-history dialog. `bills.book_no` is not
+shown either — the bill number is enough to find the bill.
+
+**Noticed while verifying, not fixed here:** `lookupCustomerAction` took 1–5 seconds against Neon.
+It is now 4 queries instead of 2, and **no financial table has an index on `business_date` or on
+`bill_lines.bill_id`**. Worth a small migration; it is not in this backlog yet.
 
 **Size:** small · **Value:** high (asked for directly by the client)
 
@@ -690,7 +721,7 @@ had last time" would be plainly wrong.
 | ⬜ P4.4 | **Delete dead code:** `src/components/coming-soon.tsx`, `src/features/.gitkeep`, `docs/~$iend_Setup_Guide.docx` (a Word lock file), `@neon/env` (unused dependency), `neon.ts` (empty config) |
 | ⬜ P4.5 | Move `shadcn` from `dependencies` to `devDependencies` — it is a CLI and bloats the production install |
 | ⬜ P4.6 | Add `error.tsx` / `loading.tsx` — a database error currently shows Next's default error page |
-| ⬜ P4.7 | Add CI (`.github/workflows`) so build + 184 tests + lint run on every push. **More valuable now that two people share `main`** |
+| ⬜ P4.7 | Add CI (`.github/workflows`) so build + 192 tests + lint run on every push. **More valuable now that two people share `main`** |
 | ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
 
 ---

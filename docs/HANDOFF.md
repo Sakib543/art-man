@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1.6 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6 and P3.8 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (184 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (192 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -92,11 +92,12 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — 23 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **184 passed** (24 files) |
+| `pnpm test` | **192 passed** (25 files) |
 | Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0012` |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
 | Developer bill edit | exercised end to end on an open day and twice on a closed day (P1.6) |
+| Customer's last visit | looked up in a browser as the Owner, before and after a bill and its cancellation (P3.8) |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
@@ -149,6 +150,12 @@ Khata balances are no longer 0: Arshad +30 (earned, not paid), Sherry −10 (pai
 she ended up earning, which is the correct result of the edits). Three `bill.developer-edit` rows
 are in `audit_log`. None of it is real data — reopen or reseed freely.
 
+**P3.8 then opened 24 Sep 2026**, so 23 Sep is closed and **24 Sep is the open day**. It holds
+bill #15 for Ashfaq Bhai (Haircut Rs 1,500 by Sherry, Hair wash Rs 300 by Arshad), **cancelled**,
+with its reversal #16. So Ashfaq Bhai's lookup currently reads "No visits yet" — that is the
+feature working, not a fault. Kamran (`03217654321`) has never had a bill. To see the last-visit
+strip filled in, ring up one bill against either number.
+
 Local logins: `owner`, `manager` and `developer`. Passwords were printed once during seeding and
 the user noted them down. `seed-users.ts` and `seed-developer.ts` both **skip accounts that
 already exist**, so re-running them will not print new ones. To recover one: sign in as the
@@ -174,6 +181,7 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: everything the Owner can (P1.1), plus changing a bill **in place** on any day, closed month included (P1.6). |
 | **Is the developer visible?** | **No, not on the screens** (2026-09-22). No developer section in Settings; the Owner and Manager see no sign the role exists. They sign in with a username and a password, nothing more. The account is still an ordinary `user` row and **every action it takes is audited** — hidden from the screens, never from the record. |
 | **Marking an edited bill** | **Yes.** The Daily report's single line carries an "Edited" badge **with a link to the previous version** (P1.5, done). |
+| **Customer's last visit** | **Built 2026-09-22 (P3.8).** The phone lookup now shows what the customer had done last time. Asked and answered before building: **the last visit only** (not a list, not a history dialog), **with the staff member's name** beside each service, and **cancelled bills counted nowhere** — neither in the visit count nor as the last visit. |
 | **An edited bill's number** | The receipt number **need not stay the same**. That choice let P1.5 be built without weakening the append-only guarantee. |
 
 ### Constraints on the developer edit feature
@@ -253,6 +261,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A reversal bill and a cancelled bill cannot be edited in place | each is half of a mirrored pair; changing one side alone leaves the day wrong and nothing downstream checks it |
 | A bill edit keeps the bill's own lines | no adding, no removing. Adding is a different bill; removing would delete a financial row, which P1.6 deliberately does not do |
 | **A closed month is not recalculated after an edit** | `month_closes.report` and `shares` were frozen at close. The screen warns in red and the audit entry records `monthClosed`. Recalculating would rewrite a record the partners were paid against — a client decision, not a code one |
+| **A cancelled bill used to count as a customer visit** | `customerInfo()` excluded reversals but not cancellations. Fixed in P3.8; both halves now go through one shared `realVisit()` condition, so the visit count and the last visit cannot disagree |
+| The customer lookup is **4 queries**, and took 1–5 s against Neon | measured in the dev server log during P3.8. Two of them are the last visit and its lines |
+| **No financial table has an index on `business_date`**, and `bill_lines.bill_id` has none either | only 4 indexes exist in `src/db/schema/`: three on the auth tables and `customers.phone`. Postgres does not index a foreign key by itself. Not urgent at salon volumes, but it is the cheapest performance work available |
+| `bill_lines` has **no order column** | both the developer's edit screen and the last-visit strip order by `name`, so the two lists look alike |
+| `get_page_text` reads `<main>` only | a Base UI dialog renders in a portal outside it, so a confirmation dialog looks absent when it is open. Use `read_page` or query `[role="dialog"]` instead |
 
 ---
 
@@ -419,6 +432,7 @@ STAGE 2 — go live
 STAGE 3 — during the client's 20-day trial
   P1.1  Developer role                                  DONE 2026-09-22
   P1.6  Developer edits a financial entry               DONE 2026-09-22
+  P3.8  Customer's last visit on the billing screen     DONE 2026-09-22
   P1.2  Users screen        P4  Cleanup + CI
 
 STAGE 4 — after the trial

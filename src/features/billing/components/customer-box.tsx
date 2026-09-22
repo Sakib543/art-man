@@ -5,8 +5,9 @@ import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatDate } from "@/lib/format";
+import { formatDate, rs } from "@/lib/format";
 import { lookupCustomerAction } from "../actions";
+import { visitLabel } from "../last-visit";
 import type { CustomerInfo } from "../types";
 
 /** The customer on this bill: nobody (walk-in), a saved customer, or a new one. */
@@ -49,17 +50,47 @@ export function CustomerBox({ value, onChange }: CustomerBoxProps) {
     const { info } = value;
     const hasSpecial = Object.keys(info.specialRates).length > 0;
     return (
-      <div className="flex items-center gap-2.5 rounded-[10px] border border-[#efe0c8] bg-brass-soft px-3 py-2.5">
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{info.name}</p>
-          <p className="text-[12.5px] text-brass-strong">
-            {info.visits} visits{info.lastVisit ? `, last on ${formatDate(info.lastVisit)}` : ""}
-          </p>
+      <div className="rounded-[10px] border border-[#efe0c8] bg-brass-soft px-3 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium">{info.name}</p>
+            <p className="text-[12.5px] text-brass-strong">{visitLabel(info.visits)}</p>
+          </div>
+          {hasSpecial ? <Badge className="bg-white text-brass-strong">Special rate</Badge> : null}
+          <Button variant="ghost" size="sm" onClick={clear}>
+            Change
+          </Button>
         </div>
-        {hasSpecial ? <Badge className="bg-white text-brass-strong">Special rate</Badge> : null}
-        <Button variant="ghost" size="sm" onClick={clear}>
-          Change
-        </Button>
+        {/*
+          What the customer had done last time (P3.8). It sits under the name
+          rather than in a dialog because the counter reads it while the
+          customer is still standing there, mid-conversation.
+        */}
+        {info.lastVisit ? (
+          <div className="mt-2.5 border-t border-[#efe0c8] pt-2.5">
+            <p className="flex items-baseline justify-between gap-2 text-[12.5px] text-brass-strong">
+              <span>
+                Last visit · {formatDate(info.lastVisit.businessDate)} · Bill #{info.lastVisit.billNo}
+              </span>
+              <span className="shrink-0 font-medium tabular-nums">{rs(info.lastVisit.total)}</span>
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {info.lastVisit.lines.map((line, index) => (
+                <li key={index} className="flex items-baseline justify-between gap-2 text-[12.5px]">
+                  <span className="min-w-0 truncate">
+                    {line.name}
+                    <span className="text-muted-foreground"> · {line.staffName}</span>
+                  </span>
+                  <span className="shrink-0 tabular-nums">{rs(line.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="mt-2.5 border-t border-[#efe0c8] pt-2.5 text-[12.5px] text-muted-foreground">
+            No earlier visit to show.
+          </p>
+        )}
       </div>
     );
   }
