@@ -33,7 +33,9 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P3.1–P3.5, P3.7 | Remaining spec features | ⬜ | — |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
-| P4.1–P4.8 | Cleanup | ⬜ | — |
+| P4.1–P4.5, P4.8 | Cleanup | ⬜ | — |
+| P4.6 | error.tsx / loading.tsx | 🟡 | Sakib 2026-09-22 |
+| P4.7 | CI on every push | 🟡 | Sakib 2026-09-22 |
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
 | P4.10 | Staff khata reads the whole ledger table | ✅ | done 2026-09-22 |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
@@ -835,8 +837,8 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 | ⬜ P4.3 | Merge `features/auth` into `features/account` — the names are confusing (`features/auth` vs `lib/auth` vs `features/account`) |
 | ⬜ P4.4 | **Delete dead code:** `src/components/coming-soon.tsx`, `src/features/.gitkeep`, `docs/~$iend_Setup_Guide.docx` (a Word lock file), `@neon/env` (unused dependency), `neon.ts` (empty config) |
 | ⬜ P4.5 | Move `shadcn` from `dependencies` to `devDependencies` — it is a CLI and bloats the production install |
-| ⬜ P4.6 | Add `error.tsx` / `loading.tsx` — a database error currently shows Next's default error page |
-| ⬜ P4.7 | Add CI (`.github/workflows`) so build + 192 tests + lint run on every push. **More valuable now that two people share `main`** |
+| 🟡 P4.6 | Add `error.tsx` / `loading.tsx` — a database error currently shows Next's default error page. **Owner: Sakib, 2026-09-22** |
+| 🟡 P4.7 | Add CI (`.github/workflows`) so build + 202 tests + lint run on every push. **More valuable now that two people share `main`** · **Owner: Sakib, 2026-09-22** |
 | ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
 | ✅ P4.9 | **Index the financial tables** — done 2026-09-22, migration `0013`. See below |
 | ✅ P4.10 | **Staff khata reads the whole `khata_entries` table** — done 2026-09-22, migration `0014`. See below |
