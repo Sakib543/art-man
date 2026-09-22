@@ -32,6 +32,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P3.1–P3.7 | Remaining spec features | ⬜ | — |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
+| P4.9 | Index the financial tables | 🟡 | Sakib543, 2026-09-22 |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
 
 ---
@@ -723,6 +724,50 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 | ⬜ P4.6 | Add `error.tsx` / `loading.tsx` — a database error currently shows Next's default error page |
 | ⬜ P4.7 | Add CI (`.github/workflows`) so build + 192 tests + lint run on every push. **More valuable now that two people share `main`** |
 | ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
+| 🟡 P4.9 | **Index the financial tables.** Only 4 indexes exist, three of them on the auth tables. Every query that filters on `business_date` does a sequential scan. See below |
+
+### 🟡 P4.9 — Index the financial tables
+**Owner:** Sakib543, 2026-09-22
+
+Measured, not guessed: `src/db/schema/` defines **4 indexes** — `session_user_id_idx`,
+`account_user_id_idx`, `verification_identifier_idx` and `customers_phone_key`. Three of the four
+belong to Better Auth. **Not one financial table is indexed.** Postgres does not index a foreign
+key by itself, so `bill_lines.bill_id` — joined on nearly every screen — has nothing either.
+
+Noticed while building P3.8: the customer lookup took 1–5 seconds against Neon.
+
+Pages run 5–11 queries each, and the ones that matter all filter the same way: `business_date` for
+a day, `bill_id` for a bill's lines. At today's volumes a sequential scan is still fast, so this is
+not urgent — but it is the cheapest performance work in the backlog, and it gets more expensive to
+add once there is real data to lock.
+
+**Only tables that grow are indexed**, and only where a query actually asks for it:
+
+| Index | Serves |
+|---|---|
+| `bills (business_date, bill_no)` | the day's bills, in receipt order — both the filter and the sort |
+| `bills (customer_id)` | the customer lookup and its last visit (P3.8) |
+| `bill_lines (bill_id)` | the hottest join in the app |
+| `cash_entries (business_date, created_at)` | a day's folder entries, in creation order |
+| `khata_entries (business_date)` | day close and `resettleDay` |
+| `audit_log (created_at)` | the developer's log, newest first, paginated |
+| `audit_log (action, target, created_at)` | the wrong-PIN and wrong-password lockout counters |
+
+**Deliberately not indexed**, each for a reason:
+
+- `month_closes.month`, `day_snapshots.business_date`, `business_days.business_date`,
+  `bill_cancellations.bill_id` — already primary keys. `attendance` has a composite key led by
+  `business_date`. `customers.phone` and `session.token` are already unique.
+- `bill_lines.staff_id`, `cash_entries.staff_id` — only ever joined **to** `staff.id`, which is
+  the primary key doing the lookup. An index on this side would never be read.
+- `monthly_expenses.month`, `partner_drawings.month`, `capital_repayments.paid_on` — these tables
+  gain a handful of rows a month. A sequential scan will still be faster than an index for years.
+- `khata_entries.staff_id` — the Staff khata screen reads the **whole** table (`queries.ts:46`) and
+  groups in memory. No index helps that; splitting the query is separate work.
+
+**No behaviour changes.** Adding an index cannot alter a result, only the time it takes.
+
+**Size:** small · **Value:** medium (high once there is real data)
 
 ---
 
