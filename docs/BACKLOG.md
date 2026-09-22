@@ -24,6 +24,7 @@ Last updated: 2026-09-22 (P0 complete, P1.0 done)
 | P1.1 | Developer role (super admin) | ⬜ | — |
 | P1.2 | Users screen — create admins | ⬜ | — |
 | P1.4 | Owner edits a bill on the open day | ⬜ | — |
+| P1.5 | Owner's edit leaves one line, not three | ⬜ | — |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ⬜ | — |
 | P2.2 | Offline PWA + sync | ⬜ | — |
@@ -322,6 +323,35 @@ mistake stays visible and the totals still add up (spec 11).
 a reason is required.
 
 **Size:** medium
+
+---
+
+### ⬜ P1.5 — Owner's edit leaves one line, not three
+**Owner:** —
+
+**Client asked for this (2026-09-22)**, after seeing what P1.4 would look like. As built, one
+correction shows three lines in the Daily report — the cancelled bill, its reversal, and the
+corrected bill. The client wants the corrected bill to simply **replace** the old one, so the day
+shows a single line.
+
+**What it costs.** This is the first time an ordinary screen would change a financial row in place,
+so it has to be built like the developer's edit (P1.1), not like a cancellation:
+
+- `bills` and `bill_lines` are append-only; the `bill_lines` rows would have to be replaced through
+  the same deliberate escape hatch P1.1 uses, never by ordinary code.
+- **Every version goes to `audit_log` with `before` and `after`**, so the old bill is still
+  recoverable even though the Daily report shows one line. Nothing may be lost, only hidden from
+  the everyday view.
+- Open day only. Once a day is closed its bills are settled and its security code covers them, so
+  editing in place there stays out of the question (that is P0.3's cancel path).
+- The `bill_no` stays the same, which is the point: the customer's receipt number does not change.
+
+**Worth deciding first:** whether the Daily report should offer an "edited" marker with a link to
+the previous version. Without one, a corrected bill is indistinguishable from one that was right
+the first time — which is exactly what spec 11 set out to prevent, and what the audit log would
+then be the only defence against.
+
+**Size:** medium · **Depends on:** P1.4, and the escape-hatch mechanism from P1.1
 
 ---
 
