@@ -9,7 +9,8 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete incl. P0.4; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10, P3.6, P4.6, P4.7 and P1.2 done)
+Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -22,7 +23,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (222 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (238 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -137,10 +138,11 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Check | Result |
 |---|---|
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
-| `pnpm build` | pass — 23 routes, exit 0, **succeeds with no env vars set** |
+| `pnpm build` | pass — **25 routes** (2026-09-23), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **222 passed** (28 files) |
-| Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0015` |
+| `pnpm test` | **238 passed** (30 files), 2026-09-23 |
+| Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through `0015` — unchanged on 2026-09-23, no migration was needed all day |
+| Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
 | Developer bill edit | exercised end to end on an open day and twice on a closed day (P1.6) |
@@ -233,6 +235,18 @@ is Rs 1,900, expected cash Rs 5,530 against a hand count of Rs 5,000, and the se
 Khata balances are no longer 0: Arshad +30 (earned, not paid), Sherry −10 (paid Rs 10 more than
 she ended up earning, which is the correct result of the edits). Three `bill.developer-edit` rows
 are in `audit_log`. None of it is real data — reopen or reseed freely.
+
+**2026-09-23 changed the database a little, and none of it needed a migration.**
+A **bonus of Rs 500** was given to Arshad while verifying P3.1, so his khata
+balance is now **Rs 530** and `khata_entries` holds 31 rows. A special rate was
+set for Kamran, used to price a bill on screen, and then removed again, so
+`customer_special_rates` is back to its one seeded row and Kamran's name is back
+to "Kamran". Four throwaway accounts (`p39check`, `p31owner`, `p31mgr`,
+`p32owner`) were created for browser checks and **all deleted** — `pnpm db:check`
+reads 3 accounts. `audit_log` grew: sign-in rows from P3.9, one `khata.bonus`,
+two `customer.edit`, one `customer.rate-set` and one `customer.rate-remove`.
+Those stay; that table is append-only and cannot be cleaned, which is the point
+of it.
 
 P4.9 and P4.10 added **migrations `0013` and `0014`** (indexes only), both **applied to the dev
 database**. They change no data and no behaviour.
@@ -382,6 +396,15 @@ Measured, not guessed. Do not spend time re-deriving these.
 | **The receipt prints from the same markup it shows** | `window.print()` plus rules in `globals.css`, not a second copy built for paper. A separate print template is exactly the thing that drifts out of step with the screen |
 
 ---
+| **Better Auth's `after` hook sees a failed sign-in** | when an endpoint throws an `APIError`, the dispatcher catches it, writes it to `ctx.context.returned` and *then* runs the after hooks — read in `better-auth/dist/api/dispatch.mjs`. That is what makes P3.9 possible at all; a refused sign-in is an ordinary return value there, not an exception |
+| Each refusal carries its own code | measured 2026-09-23: wrong password → `INVALID_USERNAME_OR_PASSWORD` (401), unknown username → `INVALID_USERNAME` (422), closed account → `ACCOUNT_CLOSED` (403). The audit log stores the code, so the three are told apart |
+| **A bonus is in no day snapshot** | it is a khata line given on the Owner's word, not worked out from bills. `buildMonthReport` takes `bonuses` separately (P3.1) — anything else added to the khata without going through Day Close will have the same problem, and the month report is where to fix it |
+| `customer_special_rates` is an upsert on `(customer_id, service_id)` | that pair is the primary key, so setting a rate twice corrects it rather than failing (P3.2) |
+| `customers` and `customer_special_rates` have **no** append-only trigger | they are config, so editing a name or a rate is an ordinary UPDATE. Only a customer's name and phone may be edited, and both sides go to `audit_log` (spec §11) |
+| **`pg_dump` 18.4 works against Neon 18.6, even through the pooled string** | measured 2026-09-23. The direct string is still preferred and `pnpm db:backup` says so when it has to fall back |
+| A backup carries `drizzle.__drizzle_migrations` | so a restored database knows which migrations it has and `pnpm db:migrate` carries on from the right place |
+| **`scripts/load-env.ts` must be the first import** | `src/db` builds its pool the moment it is evaluated, so the env has to be in place before that import runs. ES modules evaluate in import order, which is what makes the one-line import work |
+| An environment variable still beats `.env.local` after P4.8 | verified by pointing `pnpm db:check` at `127.0.0.1` and watching it refuse there instead of reaching Neon |
 
 ## 8. Traps that have already cost time
 
@@ -470,6 +493,27 @@ When the pane is not being displayed the page produces no frames, and with no fr
 What to trust when the pane is hidden: the DOM, `document.styleSheets`, selector matching,
 `fetch`. What not to trust: anything that depends on the page having rendered. **If a page looks
 stuck, take a screenshot before believing it.**
+
+### 8.0f A hidden pane also stops React committing state — a dialog will not open
+
+The other half of 8.0e, found on 2026-09-23. With the pane not drawing, clicking
+a button that only sets React state (`setOpen(true)`) does **nothing visible and
+nothing in the DOM**: no dialog appears, and querying for `[role="dialog"]`
+returns null. It looks exactly like a broken component. The same click worked
+immediately after a screenshot succeeded.
+
+It also makes a Server Action look like it failed. After `revalidatePath`, the
+screen still shows the old figures — the action had in fact run, which the dev
+server log proves:
+
+```
+POST /customers 200
+  └─ ƒ setRateAction({...}) in 2192ms
+```
+
+**Before doubting the code, check the server log and re-fetch the page**
+(`await (await fetch(url)).text()`), which is served fresh and does not depend on
+the pane rendering. A screenshot, retried once or twice, unfreezes it.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -625,12 +669,33 @@ branch `production`, put the new branch's string in `.env.local`, and leave Verc
   together, and only the holder of that string can move the database. **Nothing else should be
   built on a schema change until this is resolved.**
 
+- [ ] **Run one restore, into a throwaway Neon branch** (P3.7, 2026-09-23). The
+  backup is built and its contents were checked, but nothing has ever been
+  restored from it, so spec phase 4's success test is not met. This needs a
+  second database, which is the same thing section 9a asks for.
+- [ ] **A second Neon branch for development.** Still the single most valuable
+  hour anybody could spend on this project: today's verification wrote a bonus,
+  a special rate and four throwaway accounts into the live database. The
+  accounts and the rate were cleaned up; the khata line and the audit rows
+  cannot be, because those tables are append-only.
+- [ ] **Decide what happens to the sample data before the trial.** The live
+  database holds 19 sample bills, 3 business days, 31 khata lines and Neon's
+  leftover `playing_with_neon` table. Bills cannot be deleted by the app, and
+  `audit_log` cannot be cleaned by anything, so a clean start means a **fresh
+  database**: migrate, `db:seed`, `db:seed:developer`, then enter the real
+  services, staff and partners from the screens. **Never `db:seed:sample`.**
+  The user has said this will be done when the site goes live (2026-09-23).
+
 **Questions blocking work:**
 0. **A bill edited in a closed month leaves that month's frozen report wrong.** `month_closes`
    keeps the report and the partners' shares as they were at close, and P1.6 does not recalculate
    them — the partners may already have been paid against those figures. Ask the client what they
    want: leave the frozen record alone (today's behaviour, with a red warning on screen), or
    recalculate it. Not urgent: no month has been closed yet.
+1. **May the Manager use the Customers screen?** It is Owner-only today (P3.2),
+   because a special rate is a price and spec §10.4 keeps prices away from the
+   counter. But that also stops a Manager fixing a customer's name, which §11
+   does not require. Split the two, or leave it?
 1. **Who can let us into the Vercel project?** It exists and is connected to this repo, but it is
    in the other developer's account (answered 2026-09-22). Blocks P5.1 until access is granted.
 2. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
@@ -691,7 +756,18 @@ STAGE 3 — during the client's 20-day trial
   P1.2  Users screen                                    DONE 2026-09-22
   P4.9  Index the financial tables                      DONE 2026-09-22
   P4.10 Staff khata stops reading the whole table       DONE 2026-09-22
-  P4  Cleanup (P4.1-P4.5, P4.8)
+  P3.9  Audit failed logins                            DONE 2026-09-23
+  P3.1  Give a bonus                                   DONE 2026-09-23
+  P3.2  Customers screen + special rates               DONE 2026-09-23
+  P3.7  Backup (a restore is still unverified)         PART  2026-09-23
+  P4.2 · P4.4 · P4.5 · P4.8  Cleanup                   DONE 2026-09-23
+  P4  Cleanup left: P4.1 (feature shape), P4.3 (merge features/auth)
+
+STAGE 3b — before the trial starts, and none of it is code
+  1. One restore, into a throwaway Neon branch (P3.7's missing half)
+  2. A separate Neon branch for development, so verifying stops writing to live
+  3. A clean database for the trial, and the real services/staff/partners in it
+  4. Vercel access (P5.1)
 
 STAGE 4 — after the trial
   P2.2  Offline PWA + sync (2–3 weeks)
@@ -706,7 +782,10 @@ Offline comes after the trial because the trial's purpose is to prove the **acco
 (spec Phase 1: run in parallel with the paper register, 7 straight days with a difference of 0).
 The paper bill book (P2.1) covers outages until then.
 
-**Good items to run in parallel** (they touch different areas): P4.2 · P4.4 · P4.7.
+**Good items to run in parallel** (they touch different areas): P4.1 · P4.3.
+P3.3 and P3.5 both wait on one answer: what a "real alert" and a "staff receipt"
+are sent *through*. Nothing in the project sends anything yet — the Day close
+WhatsApp summary is still a preview on screen.
 **Do not parallelise:** P0.2 with P1.0 (both `day-close`). P1.2 is the next item in `features/developer`;
 nothing else should be started in that folder at the same time.
 

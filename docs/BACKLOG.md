@@ -912,7 +912,7 @@ verified"*.
 - `pnpm db:backup` → `backups/art-man-<timestamp>.dump`, one file in `pg_dump`'s
   custom format. `backups/` is git-ignored: the file holds every bill, every
   customer's phone number and the password hashes.
-- It finds `pg_dump` on `PATH` or in `C:\Program Files\PostgreSQL\{18,17,16}in`,
+- It finds `pg_dump` on `PATH` or in the standard Windows install folder,
   and `PG_DUMP` overrides both. It prefers `DATABASE_URL_UNPOOLED` and says so
   when it has to fall back to the pooled string.
 - `docs/BACKUP.md` — how to take one, how to read one without restoring it, how
