@@ -30,7 +30,8 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
-| P3.1–P3.7 | Remaining spec features | ⬜ | — |
+| P3.1–P3.5, P3.7 | Remaining spec features | ⬜ | — |
+| P3.6 | Receipt printing | 🟡 | Sakib 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
@@ -705,9 +706,17 @@ offline path for day close.
 | ⬜ P3.3 | **Staff monthly receipt** (spec §6.4) — print + WhatsApp | medium |
 | ⬜ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — today it is only blocked | medium |
 | ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
-| ⬜ P3.6 | **Receipt printing / thermal printer** | medium |
+| 🟡 P3.6 | **Receipt printing / thermal printer** — in progress, see below | medium |
 | ⬜ P3.7 | **Proper backup and restore** | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
+
+### 🟡 P3.6 — Receipt printing
+**Owner:** Sakib, 2026-09-22
+
+Spec §5.1: *"Every bill prints a receipt."* The receipt itself is already drawn on screen in
+`src/features/billing/components/receipt-dialog.tsx` — what is missing is a way to put it on paper.
+
+---
 
 ### ✅ P3.8 — Customer's last visit on the billing screen
 **Done:** 2026-09-22
