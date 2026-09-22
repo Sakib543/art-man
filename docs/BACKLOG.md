@@ -30,6 +30,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
 | P3.1–P3.7 | Remaining spec features | ⬜ | — |
+| P3.8 | Customer's last visit on the billing screen | 🟡 | Sakib543, 2026-09-22 |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
 
@@ -640,6 +641,42 @@ offline path for day close.
 | ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
 | ⬜ P3.6 | **Receipt printing / thermal printer** | medium |
 | ⬜ P3.7 | **Proper backup and restore** | medium |
+| 🟡 P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — the lookup shows a visit *count* and a *date*, but not what the customer had done. See below | small |
+
+### 🟡 P3.8 — Customer's last visit on the billing screen
+**Owner:** Sakib543, 2026-09-22
+
+Spec §5.1 says the phone lookup "loads visit history". Only half of it was built: the customer
+strip shows a visit **count** and the **date** of the last one, but never what the customer
+actually had done. The counter has to open the Daily report of that date and hunt for the bill.
+
+The data is already there — `bills` and `bill_lines` since migration `0000`. **No migration is
+needed**; there is simply no query for it.
+
+**Client decisions (2026-09-22), asked before building:**
+
+| Question | Answer |
+|---|---|
+| How many visits? | **The last one only.** Not a list of three, not a full-history dialog. The billing strip stays compact |
+| Show who did the work? | **Yes** — the staff member's name beside each service. In a salon the customer asks for the same karigar |
+| Cancelled bills? | **Do not count them at all** — neither in the visit count nor as the last visit |
+
+That last answer fixes an existing defect, not just the new screen: `customerInfo()` in
+`src/features/billing/queries.ts` excludes reversal bills (`isNull(bills.reverses_bill_id)`) but
+**not cancelled ones**, so a cancelled bill has always counted as a visit. It is in scope because
+the same query is being rewritten, and because showing a cancelled bill's services as "what they
+had last time" would be plainly wrong.
+
+**Planned shape:**
+
+- `types.ts` — replace the flat `lastVisit: string | null` on `CustomerInfo` with a `LastVisit`
+  object: the business date, the bill number, the total, and the lines (name, amount, staff name).
+- `queries.ts` — `customerInfo()` finds the customer's most recent bill that is neither a
+  reversal nor cancelled, and loads its lines with the staff names.
+- `customer-box.tsx` — the found-customer strip grows a short list under the existing line.
+- Tests for the pure part.
+
+**Size:** small · **Value:** high (asked for directly by the client)
 
 ---
 
