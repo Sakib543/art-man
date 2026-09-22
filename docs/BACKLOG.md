@@ -23,7 +23,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P0.4 | Stale session cookie locks a user out | ✅ | done 2026-09-22 |
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ✅ | done 2026-09-22 |
-| P1.2 | Users screen — create admins | ⬜ | — |
+| P1.2 | Users screen — create admins | 🟡 | Sakib 2026-09-22 |
 | P1.4 | Owner edits a bill on the open day | ✅ | done 2026-09-22 |
 | P1.5 | Owner's edit leaves one line, not three | ✅ | done 2026-09-22 |
 | P1.6 | Developer edits a financial entry | ✅ | done 2026-09-22 |
@@ -367,8 +367,18 @@ client's list is done here, except creating and deactivating users, which is P1.
 
 ---
 
-### ⬜ P1.2 — Create admins from inside the app
-**Owner:** —
+### 🟡 P1.2 — Create admins from inside the app
+**Owner:** Sakib, 2026-09-22
+
+**Decisions taken with the user before starting (2026-09-22):**
+
+- The screen is its own **`/users`** nav item, for the Owner and the developer — not a section
+  inside Settings, which is already long and would not hold a list plus a create form.
+- **Deactivating needs a migration**: `user` has no `active` column. Deleting an account is never
+  an option — `audit_log` ties every action to the actor's username.
+- The Owner may create **Manager and Owner** accounts, matching the client's *"an old admin should
+  be able to create a 3rd admin"*. The developer role is never offered and developer accounts never
+  appear in the list, so the Owner still sees no sign the role exists.
 
 Sign-up is disabled (`disableSignUp: true`) and accounts are only created by `pnpm db:seed`. There
 is no screen for it.
