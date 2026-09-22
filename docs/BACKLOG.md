@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4 and P1.5 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5 and P5.2 done)
 
 ---
 
@@ -30,7 +30,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4 and P1.5 done)
 | P2.2 | Offline PWA + sync | ⬜ | — |
 | P3.1–P3.7 | Remaining spec features | ⬜ | — |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
-| P5.1–P5.3 | Deployment | 🟡 | — |
+| P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
 
 ---
 
@@ -541,7 +541,7 @@ offline path for day close.
 | | Item |
 |---|---|
 | 🟡 P5.1 | **Go live on Vercel** — env vars, then migrate + seed on the Neon `live` branch. The build itself already passes (verified). **Blocked on access, not on code:** the Vercel project exists and is connected to this same repo, but it lives in the **other developer's** Vercel account (answered 2026-09-22). Nobody here can open Settings to set the environment variables. First step is to be added to that project, or to have it transferred |
-| 🟡 P5.2 (Sakib543, 2026-09-22) | **Fix `docs/DEPLOY_VERCEL.md`** — two known faults: (a) its "First deploy" steps never mention `db:migrate` or `db:seed`, yet step 4 says "sign in as owner", which is very likely why the live site never worked; (b) step 5 still says to enter "staff with PINs", but the staff PIN was removed from the whole project in P1.0. The guide also needs to say that a migration must be applied to the live branch **before** the code that needs it is pushed — see the note under P5.1 |
+| ✅ P5.2 | **`docs/DEPLOY_VERCEL.md` rewritten** — done 2026-09-22. It now has the two steps it never had (`db:migrate` and `db:seed` against the live branch, with the commands), in both bash and PowerShell. Fixed as well: the stale "staff with PINs" line (P1.0 removed it), a warning never to run `db:seed:sample` on live, that a push to `main` deploys by itself so a migration must reach live first, that a green build means nothing because the build passes with no env vars at all, and a measured table of which variable is read where. `.env.example` also said `DATABASE_URL_UNPOOLED` was used by the seed scripts — it is not, they read `DATABASE_URL`, and seeding the wrong database is exactly the mistake that comment invites |
 | ⬜ P5.3 | **Move to a VPS** — after the client signs off. Postgres on the same VPS; carry the trial data over with `pg_dump` |
 
 ---
