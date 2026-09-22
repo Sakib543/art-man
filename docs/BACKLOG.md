@@ -33,6 +33,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
+| P4.10 | Staff khata reads the whole ledger table | 🟡 | Sakib543, 2026-09-22 |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
 
 ---
@@ -725,6 +726,7 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 | ⬜ P4.7 | Add CI (`.github/workflows`) so build + 192 tests + lint run on every push. **More valuable now that two people share `main`** |
 | ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
 | ✅ P4.9 | **Index the financial tables** — done 2026-09-22, migration `0013`. See below |
+| 🟡 P4.10 | **Staff khata reads the whole `khata_entries` table** on every page load and does the work in memory. Found during P4.9. See below |
 
 ### ✅ P4.9 — Index the financial tables
 **Done:** 2026-09-22 · migration `0013_index_financial_tables`
@@ -800,6 +802,42 @@ is fine at today's size and wants its own backlog item eventually.
 192 tests pass, lint clean, build passes.
 
 **Size:** small · **Value:** medium (high once there is real data)
+
+### 🟡 P4.10 — Staff khata reads the whole ledger table
+**Owner:** Sakib543, 2026-09-22
+
+Found while doing P4.9, which is why no index was put on `khata_entries.staff_id`: there was no
+query that could have used one.
+
+`getKhataData()` in `src/features/staff-khata/queries.ts` runs
+`db.select().from(khataEntries)` — **no `where` at all** — then in JavaScript sorts every row,
+sums a balance per staff member, and throws away all but one person's lines. The screen needs two
+things and neither of them wants the whole table:
+
+- **one number per staff member** for the left-hand list — that is a `sum ... group by staff_id`,
+  about five rows;
+- **one person's ledger** for the right-hand panel — that is `where staff_id = ?`.
+
+The table gains three to six rows a day and is never pruned, so the work grows every day the salon
+opens while what is displayed stays the same size.
+
+It also waits three times in a row: the two selects, then `getLatestBusinessDay()`, then
+`isMonthClosed()`, each depending on nothing but the last.
+
+**Planned:**
+
+- Sum the balances in SQL, grouped by `staff_id`.
+- Load only the selected member's ledger. Which member that is depends on the staff list (an
+  unknown `?staff=` falls back to the first), so it is a second round trip — but paired with
+  `isMonthClosed()` it is **two waits instead of three**, on far less data.
+- Keep `KIND_ORDER` and the running balance in JavaScript. The rule that money in comes before
+  money out within a day belongs with the domain logic, and the set is now one person's lines.
+- Then measure whether `khata_entries.staff_id` earns an index. **Decide it on the plan, not on
+  taste** — P4.9 showed the planner ignores an index until the table has statistics.
+
+**No behaviour change intended.** The same rows, in the same order, with the same balances.
+
+**Size:** small · **Value:** medium
 
 ---
 
