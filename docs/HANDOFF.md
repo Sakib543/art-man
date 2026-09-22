@@ -565,12 +565,20 @@ and the seed were actually run against the live branch** before suspecting the c
 ## 9. Open actions and questions
 
 **Owed by the user:**
-- [ ] **Apply migration `0015` to the live database before P1.2 is deployed.** This is the first
-  migration the code cannot run without: `user.active` is read on every session lookup, so without
-  the column the live site returns an error on every page, not just on `/users`. The P1.2 commits
-  are **held unpushed** on this machine for that reason — pushing `main` deploys. Either get the
-  live connection string and run `DATABASE_URL=... pnpm db:migrate`, or have whoever holds the
-  Vercel project run it, and then push.
+- [ ] **Apply migration `0015` to the live database — URGENT.** This is the first migration the
+  code cannot run without: `user.active` is read on **every session lookup**, so without the column
+  the live site fails on every page, not just on `/users`.
+
+  P1.2 was held back at first for exactly this reason, then **pushed on 2026-09-22 at the user's
+  instruction**, after the risk was put to them. So the fix is owed now, not before some later
+  deploy:
+
+  ```bash
+  DATABASE_URL="<the live connection string>" pnpm db:migrate
+  ```
+
+  That applies `0013`, `0014` and `0015` together; the first two are indexes and harmless. Either
+  get the live connection string, or have whoever holds the Vercel project run it.
 - [x] **Rotate the Neon database password** — done on 2026-09-22.
 - [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
 - [ ] **Get access to the Vercel project** — still in the other developer's account, re-confirmed
