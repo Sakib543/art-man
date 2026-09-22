@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete, P1.0, P2.1 and P1.4 done)
+Last updated: 2026-09-22 (P0 complete, P1.0, P2.1 and P1.4 done; P1.5 decided, not started)
 
 ---
 
@@ -147,6 +147,7 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. Constraints below. |
 | **Offline** | Real offline required — 6–8 hours with no internet, then sync on reconnect. |
 | **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: anything, any time (P1.1). |
+| **Marking an edited bill** | **Yes.** When P1.5 collapses a correction to one line, that line carries an "edited" badge **with a link to the previous version**. |
 
 ### Constraints on the developer edit feature
 
@@ -288,21 +289,25 @@ step 4 says "sign in as owner". Very likely why the Vercel deployment never work
 **Questions blocking work:**
 1. **Does a Vercel project already exist, or does it need creating?** Blocks P5.1. Asked twice, not
    yet answered.
-2. **Should the Daily report mark a bill as edited?** **Now blocking P1.5.** As P1.4 built it, a
-   correction is already visible: three lines, and the cancelled one reads `Edited: <reason>`.
-   P1.5 collapses those three into one, and that marker goes with them — leaving the audit log as
-   the only record of the change. So: should the single remaining line carry an "edited" badge
-   with a link to the previous version, or not?
-3. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
+2. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
    the day offline, or must they wait? Needed for P2.2 — the security code needs the full day's
    data in order.
-4. **What bill number goes on an offline receipt?** Plan: a temporary number (`T-5`) that becomes
+3. **What bill number goes on an offline receipt?** Plan: a temporary number (`T-5`) that becomes
    real (`#127`) on sync. Acceptable, or must the customer's copy always carry the final number?
    Needed for P2.2.
 
-Questions 3 and 4 are not needed until offline work starts.
+Questions 2 and 3 are not needed until offline work starts.
+
+**New question, blocking P1.5:** the client wants one line with an "edited" badge. There are two
+ways to get there and they differ in risk — see "Two ways to build it" in `docs/BACKLOG.md` P1.5.
+Option B collapses the three rows **in the view only**, leaving the append-only guarantee
+untouched and needing nothing from P1.1; its one cost is that the corrected bill has a new
+`bill_no`, so a customer holding the old slip sees a different number. **Ask whether the receipt
+number must stay the same before choosing.**
 
 **Answered:**
+- **Should the Daily report mark a bill as edited?** Yes — badge plus a link to the previous
+  version (2026-09-22). Recorded in section 6.
 - **Each developer has their own database** (confirmed 2026-09-22). So a migration or a seed run by
   one does not disturb the other's data. The shared-file migration conflict in section 8.1 still
   applies — that is about `drizzle/meta/_journal.json` in git, not about the databases.

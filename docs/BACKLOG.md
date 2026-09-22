@@ -382,17 +382,36 @@ so it has to be built like the developer's edit (P1.1), not like a cancellation:
   editing in place there stays out of the question (that is P0.3's cancel path).
 - The `bill_no` stays the same, which is the point: the customer's receipt number does not change.
 
-**Worth deciding first:** whether the Daily report should offer an "edited" marker with a link to
-the previous version. Without one, a corrected bill is indistinguishable from one that was right
-the first time — which is exactly what spec 11 set out to prevent, and what the audit log would
-then be the only defence against.
+**Client decision (2026-09-22): the single line carries an "edited" badge with a link to the
+previous version.** Asked because without a marker a corrected bill is indistinguishable from one
+that was right the first time — exactly what spec 11 set out to prevent — and the audit log would
+be the only defence against that. So the one line must show it was edited, and the version before
+it must be reachable from the report, not only from `audit_log`.
 
 **Where P1.4 left it.** A correction already carries a marker of sorts: the cancelled bill's
 reason reads `Edited: <what was wrong>`, and the reversal says which bill it cancels. Once the
-three lines collapse into one, that marker disappears with them — which is what the question below
-is about.
+three lines collapse into one, that marker goes with them — which is why the badge was asked for.
 
-**Size:** medium · **Depends on:** P1.4 (done), and the escape-hatch mechanism from P1.1
+### Two ways to build it — decide before starting
+
+**A. Replace the row in place** (what this item assumed). The `bill_lines` of the bill are
+replaced through P1.1's escape hatch, `bill_no` never changes, and the report naturally shows one
+line. It needs the escape hatch first, and it is the first time an ordinary screen changes a
+financial row in place.
+
+**B. Keep append-only, collapse only the view.** Leave P1.4's cancel + reversal + new bill exactly
+as it is, and have the Daily report fold a correction's three rows into the newest one, carrying
+the badge and a link to the version before it. The cancelled bill and its reversal net to zero, so
+every total is unchanged, and **the append-only guarantee is not touched at all** — no escape
+hatch, no migration, no dependency on P1.1.
+
+What B does **not** give is the unchanged receipt number: the corrected bill has a new `bill_no`,
+so a customer holding the old slip sees a different number. Whether that matters is the client's
+call — ask before building. If it does matter, B could still keep it by recording which bill a
+correction supersedes and showing the original's number, at the cost of one column.
+
+**Size:** medium · **Depends on:** P1.4 (done). Option A also depends on the escape hatch from
+P1.1, which is not built; option B depends on nothing further.
 
 ---
 
@@ -527,6 +546,7 @@ offline path for day close.
 | Confirmation for staff payments | ✅ No replacement wanted |
 | Developer editing financial entries | ✅ Approved — but audited, and not hidden (P1.1) |
 | Owner editing a bill | ✅ Open day only (P1.4). A closed day's bill can only be cancelled, not edited |
+| An edited bill's marker | ✅ Yes — the Daily report's single line carries an "edited" badge **with a link to the previous version** (P1.5) |
 
 ## Still to ask
 
