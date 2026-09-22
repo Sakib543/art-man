@@ -120,6 +120,11 @@ pnpm db:seed:accounts # partners + fixed expense lines
 discussion). Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty — optional),
 `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
 
+**State of the dev database as this session ended:** 22 Sep 2026 is closed, carrying one cancelled
+bill (#1) and its reversal (#2), a reversed commission for Arshad, and three rows in
+`day_snapshot_history` — all of it left over from verifying P0.2 and P0.3. Every khata balance is
+0. Reopen or reseed freely; none of it is real data.
+
 Local logins: `owner` and `manager`. Passwords were printed once during seeding and the user noted
 them down. `seed-users.ts` **skips accounts that already exist**, so re-running it will not print
 new ones — reset through the Settings screen instead.
@@ -272,15 +277,19 @@ step 4 says "sign in as owner". Very likely why the Vercel deployment never work
 - [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
 
 **Questions blocking work:**
-1. **Does a Vercel project already exist, or does it need creating?** Blocks P5.1.
-2. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
+1. **Does a Vercel project already exist, or does it need creating?** Blocks P5.1. Asked twice, not
+   yet answered.
+2. **Should the Daily report mark a bill as edited?** Needed before P1.5. Without a marker, a
+   corrected bill looks identical to one that was right first time, and the audit log becomes the
+   only record of the change.
+3. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
    the day offline, or must they wait? Needed for P2.2 — the security code needs the full day's
    data in order.
-3. **What bill number goes on an offline receipt?** Plan: a temporary number (`T-5`) that becomes
+4. **What bill number goes on an offline receipt?** Plan: a temporary number (`T-5`) that becomes
    real (`#127`) on sync. Acceptable, or must the customer's copy always carry the final number?
    Needed for P2.2.
 
-Questions 2 and 3 are not needed until offline work starts.
+Questions 3 and 4 are not needed until offline work starts.
 
 **Answered:**
 - **Each developer has their own database** (confirmed 2026-09-22). So a migration or a seed run by
@@ -300,6 +309,8 @@ STAGE 1 — before the client trial
   3. P0.2  Reopen a closed day (Owner)                   DONE 2026-09-22
   4. P0.3  Cancel a bill/entry in a closed day (Owner)   DONE 2026-09-22
   5. P2.1  Paper bill-book number field                  small    <- next
+  6. P1.4  Owner edits a bill on the open day            medium
+  7. P1.5  That edit leaves one line, not three          medium
 
 STAGE 2 — go live
   P5.2  Fix DEPLOY_VERCEL.md · Neon `live` branch · Vercel env vars
