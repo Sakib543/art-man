@@ -138,6 +138,7 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **Developer role** | A 4th role above Owner: sees everything, resets any password/PIN, manages users, maintenance mode, edits config. |
 | **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. Constraints below. |
 | **Offline** | Real offline required — 6–8 hours with no internet, then sync on reconnect. |
+| **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: anything, any time (P1.1). |
 
 ### Constraints on the developer edit feature
 

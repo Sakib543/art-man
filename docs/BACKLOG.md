@@ -23,6 +23,7 @@ Last updated: 2026-09-22 (P0 complete, P1.0 done)
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ⬜ | — |
 | P1.2 | Users screen — create admins | ⬜ | — |
+| P1.4 | Owner edits a bill on the open day | ⬜ | — |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ⬜ | — |
 | P2.2 | Offline PWA + sync | ⬜ | — |
@@ -291,6 +292,39 @@ reports; no one can edit a financial entry.
 
 ---
 
+### ⬜ P1.4 — Owner edits a bill on the open day
+**Owner:** —
+
+**Client decision (2026-09-22):** the Owner can edit a bill **of the day that is still open**. A
+bill in a day that is already closed cannot be edited — only cancelled (P0.3). The developer can
+edit anything, at any time (P1.1).
+
+Covers the everyday mistakes: the wrong haircut picked, a deal that should have been used, a price
+typed wrong.
+
+**Why the open day is the safe one.** Nothing has been settled yet: no snapshot, no security code,
+and commission is not posted to the khata until the close. So a corrected bill needs no unwinding —
+the close simply reads the bills as they stand.
+
+**How to build it.** Present it as editing; record it the way this system records everything:
+
+| What the Owner sees | What is stored |
+|---|---|
+| The bill opens, filled in as it was | — |
+| They change the service, deal or price | — |
+| Save | the old bill is cancelled, a reversal is added, and the corrected bill is saved — all in one transaction, on the same business day |
+
+The pieces already exist (`cancelBill`, `createBill`); this wires them into one action with the old
+bill pre-filled. Daily report will show three lines for one correction, which is the point: the
+mistake stays visible and the totals still add up (spec 11).
+
+**Guards:** Owner only; the bill must belong to the open day; not already cancelled; not a reversal;
+a reason is required.
+
+**Size:** medium
+
+---
+
 ## P2 — Offline
 
 **Client decision (2026-09-22):** *"Like a proper offline app — if there is no internet for 6–8
@@ -395,6 +429,7 @@ offline path for day close.
 | Staff (karigar) PIN | ✅ Remove from the whole project (P1.0). **The Owner PIN stays** |
 | Confirmation for staff payments | ✅ No replacement wanted |
 | Developer editing financial entries | ✅ Approved — but audited, and not hidden (P1.1) |
+| Owner editing a bill | ✅ Open day only (P1.4). A closed day's bill can only be cancelled, not edited |
 
 ## Still to ask
 
