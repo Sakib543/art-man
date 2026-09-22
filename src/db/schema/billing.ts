@@ -29,6 +29,19 @@ export const bills = pgTable(
     supersedesBillId: uuid("supersedes_bill_id"),
     /** Number from the paper bill book, for bills entered after an outage. */
     bookNo: text("book_no"),
+    /**
+     * Money taken off this bill at the counter (P3.10). It is **not** used to
+     * work out any total: the discount is shared across `bill_lines.amount`
+     * when the cart is priced, because commission follows the amount actually
+     * charged (spec §10.1). This column is what the receipt and the reports
+     * show, and it is what makes a discount visible after the fact.
+     *
+     * A reversal bill carries the negative of it, so a cancelled bill and its
+     * reversal add up to nothing here as they do everywhere else.
+     */
+    discount: rupees("discount").notNull().default(0),
+    /** Why it was given. Required by the form whenever the discount is not 0. */
+    discountReason: text("discount_reason"),
     createdBy: text("created_by").notNull(),
     createdAt: createdAt(),
   },
