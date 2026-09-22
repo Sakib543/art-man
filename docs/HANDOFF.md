@@ -46,9 +46,12 @@ the upstream — every one of them a day's work that the client never saw.
 **Being 0 behind matters:** this fork contains everything the upstream has, plus more. So pointing
 the deployment at it is a strict superset and cannot lose work.
 
-**Decision, 2026-09-22:** the Vercel project is to be repointed at **this fork**, so that pushing
-here deploys. The two repositories stay separate for now — merging them was considered and
+**Done, 2026-09-22:** the Vercel project was repointed at **this fork**, and verified — pushing
+here now deploys. The two repositories stay separate for now; merging them was considered and
 deliberately deferred.
+
+**Consequence the client should know about:** the other developer's pushes no longer deploy. Only
+this fork does.
 
 **A rule that conflicts with this setup:** `CLAUDE.md` says never to open a pull request. That rule
 assumes push access to the repository that deploys. On a fork it strands the work instead, which is
@@ -70,24 +73,26 @@ that changes, the rule has to change with it.
 | 4 | **Never work two items that touch the same feature at the same time.** | e.g. P0.2 and P1.0 both touch `day-close`. Check the other person's claimed items first. |
 | 5 | **Migrations: only one person at a time.** See the trap in section 8.1. | Two generated migrations collide and can corrupt migration state. |
 | 6 | **Run `pnpm install` after pulling** if `pnpm-lock.yaml` changed. | Otherwise you run against stale dependencies. |
-| 7 | **A push to `main` does NOT deploy.** This was believed for a long time and is **wrong** — see below. Pushing publishes nothing; somebody has to deploy by hand from the Vercel project nobody here can open. | Measured 2026-09-22. Until access is sorted, **anything merged to `main` is not live**, however green the repo looks. |
+| 7 | **A push to `main` deploys — since 2026-09-22.** The Vercel project was repointed from the upstream to **this fork** that afternoon, so pushing here now publishes. It did **not** before; see 7b. | Verified 2026-09-22 by pushing and watching the live site change. **Apply a migration to the live branch before pushing the code that needs it.** |
 
-#### 7b. Pushing to `main` publishes nothing (measured 2026-09-22)
+#### 7b. History: for a day, pushing here published nothing
 
-Earlier versions of this file said a push to `main` builds and deploys on Vercel by itself. It does
-not. After pushing commit `b111fca`:
+Until 2026-09-22 the Vercel project was connected to the **upstream** repo, so pushes to this fork
+reached nobody. It went unnoticed because the repo looked healthy. How it was caught, in case a
+deployment is ever in doubt again:
 
-- the live site served the **same behaviour** nine minutes later, polled eighteen times;
-- its Next.js **chunk hashes were unchanged**, so it was still the same build;
-- and `api.github.com/repos/Sakib543/art-man/deployments` returns **an empty list** — nothing has
-  *ever* created a GitHub deployment on this repo, which Vercel's Git integration does on every push.
+- after a push, the live site served the **same behaviour** nine minutes later, polled eighteen times;
+- `api.github.com/repos/Sakib543/art-man/deployments` was **empty** — Vercel's Git integration
+  creates one on every push, so an empty list means it is not watching this repo.
 
-So the live site is not built from pushes to this repository. Whoever owns the Vercel project is
-deploying some other way — by hand, from the CLI, or from their own copy of the repo.
+That second check is the quick one, and it needs no access to Vercel.
 
-**What follows from it:** work that is committed and pushed is **not shipped**. Everything done on
-2026-09-22 — P3.8, P4.9, P4.10 and the P0.4 lockout fix — is on `main` and **not on the live
-site**. Do not tell the client a fix is live because it is pushed.
+**After repointing**, the same endpoint immediately showed
+`env=Production ref=54085d6 by=vercel[bot]`, and the live behaviour changed within twenty seconds.
+
+**One thing that was NOT good evidence:** the Next.js chunk hashes. They barely moved, because the
+fix was in the middleware and never reaches the browser bundle. Judge a deployment by **behaviour**
+and by the deployments endpoint, not by asset fingerprints.
 
 ### Before you report a task finished
 
@@ -146,7 +151,13 @@ close, daily report, staff khata, overview, monthly report, monthly expenses, ca
 staff & rates, settings), plus the developer role with its audit log, password, maintenance and
 bill-edit screens. Phase 4 (offline, backup) has not been started.
 
-**Deployed and the database is connected.** The site is live at **https://art-man-drab.vercel.app**.
+**Live, deploying from this repo, and working.** The site is at
+**https://art-man-drab.vercel.app**, and since 2026-09-22 every push to `main` here deploys to it.
+All of that day's work — P3.8, P4.9, P4.10 and the P0.4 lockout fix — **is live**, confirmed by
+behaviour on the live site, not by the build going green.
+
+**Migrations `0013` and `0014` are still not applied to the live database.** Nothing breaks: both
+add indexes only, and no code needs them. Apply them when the live connection string is to hand.
 
 An earlier version of this section said the live site had no tables and no accounts. **That was
 wrong**, and it was written without checking. Measured from a browser on 2026-09-22:
