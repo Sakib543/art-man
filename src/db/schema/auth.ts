@@ -26,6 +26,14 @@ export const user = pgTable("user", {
    * takes from or adds to the drawer. Not part of Better Auth; set by our own code.
    */
   pinHash: text("pin_hash"),
+  /**
+   * False for someone who has left (backlog P1.2). An account is never
+   * deleted: `audit_log` ties every action to the actor's username and the
+   * record has to keep making sense. Enforced in `requireUser()`, the same
+   * place maintenance mode is, so one check covers every page and every
+   * Server Action.
+   */
+  active: boolean("active").notNull().default(true),
 });
 
 export const session = pgTable(
