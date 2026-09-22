@@ -1,15 +1,19 @@
 "use client";
 
 import { AlertCircle, Receipt as ReceiptIcon } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useReducer, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { checkPayment, paymentAmounts, priceCart, type PayMode, type PricedLine } from "@/lib/accounting";
 import { rs } from "@/lib/format";
-import { createBillAction } from "../actions";
+import { createBillAction, editBillAction } from "../actions";
+import { payModeOf } from "../bill-draft";
 import { cartReducer } from "../cart-state";
-import type { BillingData, Receipt } from "../types";
+import type { BillDraft, BillingData, Receipt } from "../types";
 import { CartLines } from "./cart-lines";
 import { CustomerBox, type CustomerState } from "./customer-box";
 import { PaymentBox } from "./payment-box";
@@ -21,13 +25,22 @@ const NO_RATES: Record<string, number> = {};
 
 const toRupees =(text: string) => Math.max(0, Math.trunc(Number(text) || 0));
 
-export function BillingScreen({ data }: { data: BillingData }) {
-  const [cart, dispatch] = useReducer(cartReducer, []);
-  const [customer, setCustomer] = useState<CustomerState>({ status: "none" });
-  const [payMode, setPayMode] = useState<PayMode>("cash");
-  const [typedCash, setTypedCash] = useState("");
-  const [typedOnline, setTypedOnline] = useState("");
-  const [bookNo, setBookNo] = useState("");
+/** The bill being corrected, when the Owner opened one from Today's bills (P1.4). */
+type Editing = Extract<BillDraft, { ok: true }>;
+
+export function BillingScreen({ data, editing }: { data: BillingData; editing?: Editing | null }) {
+  const router = useRouter();
+  const startMode = editing ? payModeOf(editing.cash, editing.online) : "cash";
+
+  const [cart, dispatch] = useReducer(cartReducer, editing?.lines ?? []);
+  const [customer, setCustomer] = useState<CustomerState>(
+    editing?.customer ? { status: "found", info: editing.customer } : { status: "none" },
+  );
+  const [payMode, setPayMode] = useState<PayMode>(startMode);
+  const [typedCash, setTypedCash] = useState(editing && startMode === "split" ? String(editing.cash) : "");
+  const [typedOnline, setTypedOnline] = useState(editing && startMode === "split" ? String(editing.online) : "");
+  const [bookNo, setBookNo] = useState(editing?.bookNo ?? "");
+  const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -63,6 +76,7 @@ export function BillingScreen({ data }: { data: BillingData }) {
     if (cart.length === 0) return setError("Add a service or deal to start the bill");
     if (cart.some((line) => !line.staffId)) return setError("Choose a staff member for every service");
     if (customer.status === "new" && !customer.name.trim()) return setError("Enter the customer's name");
+    if (editing && reason.trim().length < 3) return setError("Write what was wrong with the bill");
     if (!payment.ok) {
       return setError(
         payment.remaining > 0
@@ -71,25 +85,36 @@ export function BillingScreen({ data }: { data: BillingData }) {
       );
     }
 
-    startTransition(async () => {
-      const result = await createBillAction({
-        lines: cart.map(({ serviceId, staffId, dealId, dealInstanceId }) => ({
-          serviceId,
-          staffId,
-          dealId,
-          dealInstanceId,
-        })),
-        customer:
-          customer.status === "found"
-            ? { phone: customer.info.phone }
-            : customer.status === "new"
-              ? { phone: customer.phone, name: customer.name.trim() }
-              : null,
-        cash: amounts.cash,
-        online: amounts.online,
-        bookNo,
-      });
+    const bill = {
+      lines: cart.map(({ serviceId, staffId, dealId, dealInstanceId }) => ({
+        serviceId,
+        staffId,
+        dealId,
+        dealInstanceId,
+      })),
+      customer:
+        customer.status === "found"
+          ? { phone: customer.info.phone }
+          : customer.status === "new"
+            ? { phone: customer.phone, name: customer.name.trim() }
+            : null,
+      cash: amounts.cash,
+      online: amounts.online,
+      bookNo,
+    };
 
+    startTransition(async () => {
+      if (editing) {
+        const result = await editBillAction({ ...bill, billId: editing.id, reason: reason.trim() });
+        if (!result.ok) return setError(result.error);
+        // The bill just edited is now cancelled, so this screen has nothing
+        // left to show. Go back to a fresh bill; the correction is at the top
+        // of Today's bills.
+        router.push("/billing");
+        return router.refresh();
+      }
+
+      const result = await createBillAction(bill);
       if (!result.ok) return setError(result.error);
 
       setReceipt(result.data);
@@ -118,8 +143,14 @@ export function BillingScreen({ data }: { data: BillingData }) {
 
         <div className="rounded-[14px] border bg-card">
           <div className="flex items-center justify-between border-b px-[18px] py-3.5">
-            <h2 className="text-[15px] font-semibold">New bill</h2>
-            <span className="text-muted-foreground tabular-nums">#{data.nextBillNo}</span>
+            <h2 className="text-[15px] font-semibold">{editing ? `Correcting bill #${editing.billNo}` : "New bill"}</h2>
+            {editing ? (
+              <Link href="/billing" className="text-[12.5px] text-muted-foreground underline underline-offset-2">
+                Leave it as it is
+              </Link>
+            ) : (
+              <span className="text-muted-foreground tabular-nums">#{data.nextBillNo}</span>
+            )}
           </div>
 
           {/* Filled in only when the bill was written on the paper book first (spec 5.5). */}
@@ -172,6 +203,25 @@ export function BillingScreen({ data }: { data: BillingData }) {
               onOnlineChange={setTypedOnline}
             />
 
+            {editing ? (
+              <div className="mt-3.5">
+                <Label htmlFor="edit-reason" className="mb-1.5">
+                  What was wrong?
+                </Label>
+                <Textarea
+                  id="edit-reason"
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  placeholder="Required, e.g. wrong service picked"
+                  rows={2}
+                />
+                <p className="mt-1.5 text-[12.5px] text-muted-foreground">
+                  Bill #{editing.billNo} is cancelled and a reversal is added, then this bill is saved with a new
+                  number. All three stay in the day&apos;s record.
+                </p>
+              </div>
+            ) : null}
+
             {error ? (
               <p role="alert" className="mt-2 flex items-center gap-1.5 text-[12.5px] text-destructive">
                 <AlertCircle className="size-4 shrink-0" aria-hidden />
@@ -181,7 +231,11 @@ export function BillingScreen({ data }: { data: BillingData }) {
 
             <Button className="mt-3.5 h-11 w-full text-[15px]" onClick={submit} disabled={pending}>
               <ReceiptIcon aria-hidden />
-              {pending ? "Saving..." : `Save bill${total ? ` ${rs(total)}` : ""}`}
+              {pending
+                ? "Saving..."
+                : editing
+                  ? `Save correction${total ? ` ${rs(total)}` : ""}`
+                  : `Save bill${total ? ` ${rs(total)}` : ""}`}
             </Button>
           </div>
         </div>

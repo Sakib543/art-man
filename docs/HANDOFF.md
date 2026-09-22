@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete, P1.0 and P2.1 done)
+Last updated: 2026-09-22 (P0 complete, P1.0, P2.1 and P1.4 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (144 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (152 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -91,7 +91,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — 17 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **144 passed** (19 files) |
+| `pnpm test` | **152 passed** (20 files) |
 | Database | Neon, PostgreSQL 18.6, **28 tables**, all seeds loaded |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 
@@ -122,9 +122,11 @@ discussion). Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty — 
 
 **State of the dev database as this session ended:** 22 Sep 2026 is closed, carrying one cancelled
 bill (#1) and its reversal (#2), a reversed commission for Arshad, and three rows in
-`day_snapshot_history` — left over from verifying P0.2 and P0.3. **23 Sep 2026 is open** with two
-bills from verifying P2.1: #3 (Rs 800, book number `B-2/45`) and #4 (Rs 300, no book number). Every
-khata balance is 0. Reopen or reseed freely; none of it is real data.
+`day_snapshot_history` — left over from verifying P0.2 and P0.3. **23 Sep 2026 is open** with
+bills #3 to #9 from verifying P2.1 and P1.4: #3 carries book number `B-2/45`, and two corrections
+left #4 and #7 cancelled with their reversals (#5, #8) and their replacements (#6, #9). Day total
+Rs 2,600. Two `bill.edit` rows are in `audit_log`. Every khata balance is 0. Reopen or reseed
+freely; none of it is real data.
 
 Local logins: `owner` and `manager`. Passwords were printed once during seeding and the user noted
 them down. `seed-users.ts` **skips accounts that already exist**, so re-running it will not print
@@ -192,6 +194,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | Settling a day lives in `src/db/day-settlement.ts` | `summarize`, `postEarnings`, `resettleDay`, the month/owner guards. Shared by day-close, billing and daily-report without crossing features |
 | `cancelBill` lives in `src/db/bill-cancel.ts` | Billing and Daily report both call it |
 | A blank book number is stored as `null`, never `""` | the billing screen always sends the input's value, so `createBillSchema` maps empty to null — otherwise "no paper bill" and "blank slip" would look the same |
+| **`bill_lines` does not record which deal *instance* a line belonged to** | one bill may hold the same deal twice. `draftLinesOf` in `src/features/billing/bill-draft.ts` rebuilds instances: a deal instance always contributes exactly one line per service, so the n-th line of a service belongs to the n-th instance |
+| `bill_cancellations.bill_id` is the **primary key** | a bill cannot be cancelled twice even if two requests race |
+| `cancelBill` and `editBill` share `writeCancellation` | in `src/db/bill-cancel.ts`, so a cancellation can run inside a bigger transaction |
+| Re-opening a bill prices it against **today's** catalog | if a service or deal changed since, `getBillForEdit` refuses and says why, rather than opening with a total of 0 |
+| An edited bill's cancellation reason starts `Edited:` | that is how the daily report tells a correction from a plain cancellation |
 | A closed-day correction never rewrites counted cash | the drawer was counted by hand; only expected cash moves, and the difference shows the correction |
 
 ---
@@ -281,9 +288,11 @@ step 4 says "sign in as owner". Very likely why the Vercel deployment never work
 **Questions blocking work:**
 1. **Does a Vercel project already exist, or does it need creating?** Blocks P5.1. Asked twice, not
    yet answered.
-2. **Should the Daily report mark a bill as edited?** Needed before P1.5. Without a marker, a
-   corrected bill looks identical to one that was right first time, and the audit log becomes the
-   only record of the change.
+2. **Should the Daily report mark a bill as edited?** **Now blocking P1.5.** As P1.4 built it, a
+   correction is already visible: three lines, and the cancelled one reads `Edited: <reason>`.
+   P1.5 collapses those three into one, and that marker goes with them — leaving the audit log as
+   the only record of the change. So: should the single remaining line carry an "edited" badge
+   with a link to the previous version, or not?
 3. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
    the day offline, or must they wait? Needed for P2.2 — the security code needs the full day's
    data in order.
@@ -311,8 +320,9 @@ STAGE 1 — before the client trial
   3. P0.2  Reopen a closed day (Owner)                   DONE 2026-09-22
   4. P0.3  Cancel a bill/entry in a closed day (Owner)   DONE 2026-09-22
   5. P2.1  Paper bill-book number field                  DONE 2026-09-22
-  6. P1.4  Owner edits a bill on the open day            medium   <- next
-  7. P1.5  That edit leaves one line, not three          medium
+  6. P1.4  Owner edits a bill on the open day            DONE 2026-09-22
+  7. P1.5  That edit leaves one line, not three          medium   <- next, but see the
+                                                         question below first
 
 STAGE 2 — go live
   P5.2  Fix DEPLOY_VERCEL.md · Neon `live` branch · Vercel env vars

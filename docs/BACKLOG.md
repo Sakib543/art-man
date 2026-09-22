@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0 complete, P1.0 and P2.1 done)
+Last updated: 2026-09-22 (P0 complete, P1.0, P2.1 and P1.4 done)
 
 ---
 
@@ -23,7 +23,7 @@ Last updated: 2026-09-22 (P0 complete, P1.0 and P2.1 done)
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ⬜ | — |
 | P1.2 | Users screen — create admins | ⬜ | — |
-| P1.4 | Owner edits a bill on the open day | 🟡 | Sakib543, 2026-09-22 |
+| P1.4 | Owner edits a bill on the open day | ✅ | done 2026-09-22 |
 | P1.5 | Owner's edit leaves one line, not three | ⬜ | — |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
@@ -293,34 +293,70 @@ reports; no one can edit a financial entry.
 
 ---
 
-### 🟡 P1.4 — Owner edits a bill on the open day
-**Owner:** Sakib543, 2026-09-22
+### ✅ P1.4 — Owner edits a bill on the open day
+**Done:** 2026-09-22
 
 **Client decision (2026-09-22):** the Owner can edit a bill **of the day that is still open**. A
-bill in a day that is already closed cannot be edited — only cancelled (P0.3). The developer can
-edit anything, at any time (P1.1).
-
-Covers the everyday mistakes: the wrong haircut picked, a deal that should have been used, a price
-typed wrong.
+bill in a day that is already closed cannot be edited — only cancelled (P0.3).
 
 **Why the open day is the safe one.** Nothing has been settled yet: no snapshot, no security code,
 and commission is not posted to the khata until the close. So a corrected bill needs no unwinding —
 the close simply reads the bills as they stand.
 
-**How to build it.** Present it as editing; record it the way this system records everything:
+**What was built.** It is presented as editing and recorded the way this system records everything:
+in one transaction the old bill is cancelled, a reversal undoes its amounts, and the corrected bill
+is saved with a **new** number. The daily report shows three lines for one correction, which is the
+point (spec 11) — that is exactly what P1.5 is asked to change.
 
-| What the Owner sees | What is stored |
+| File | What |
 |---|---|
-| The bill opens, filled in as it was | — |
-| They change the service, deal or price | — |
-| Save | the old bill is cancelled, a reversal is added, and the corrected bill is saved — all in one transaction, on the same business day |
+| `bill-draft.ts` (new, pure) | `draftLinesOf` rebuilds the cart from a saved bill; `payModeOf` picks the payment mode it was taken on |
+| `bill-draft.test.ts` (new) | 8 tests, including the double-deal case below |
+| `bill-cancel.ts` | `writeCancellation` split out of `cancelBill`, so a cancellation can run inside a bigger transaction. `cancelBill` now calls it — same behaviour, one copy of the logic |
+| `service.ts` | split into `priceBill` / `writeBill` / `receiptOf`, shared by `createBill` and the new `editBill` |
+| `queries.ts` | `getBillForEdit` re-opens a bill, with the same guards as the server |
+| `schemas.ts` · `actions.ts` | `editBillSchema` (bill + reason), `editBillAction` behind `requireRole("owner")` |
+| `billing-screen.tsx` | edit mode: pre-filled cart, "Correcting bill #N", a required reason, "Save correction" |
+| `todays-bills.tsx` · `billing/page.tsx` | an **Edit** link per active bill for the Owner, via `?edit=<billId>` |
 
-The pieces already exist (`cancelBill`, `createBill`); this wires them into one action with the old
-bill pre-filled. Daily report will show three lines for one correction, which is the point: the
-mistake stays visible and the totals still add up (spec 11).
+**The part that needed care — deal instances.** `bill_lines` records which deal a line came from
+but **not which instance**, and one bill may hold the same deal twice. Collapsing both into one
+instance would have re-priced a Rs 2,000 bill as Rs 1,000. A deal instance always contributes
+exactly one line per service in the deal (`priceCart` refuses anything else), so the n-th line of a
+given service belongs to the n-th instance. Verified in the browser, not only in a test.
 
-**Guards:** Owner only; the bill must belong to the open day; not already cancelled; not a reversal;
-a reason is required.
+**Guards:** Owner only (in the action *and* in `editBill`, next to the data); the open day only; not
+already cancelled; not a reversal; a reason of at least 3 characters. `getBillForEdit` refuses for
+the same reasons **before** the Owner retypes anything, and says which one.
+
+**Decisions taken while building:**
+
+- The cancellation reason is stored as `Edited: <reason>`, so the daily report tells a correction
+  apart from a plain cancellation.
+- `editBillAction` revalidates `/daily-report` but **not** `/billing`: the screen is still on
+  `?edit=<id>` and that bill is now cancelled, so re-rendering it there would swap the screen out
+  mid-save. It navigates away itself, which fetches the page fresh.
+- No receipt dialog after a correction, for the same reason — the screen leaves edit mode. The
+  corrected bill is at the top of Today's bills.
+- A re-opened bill is priced against **today's** catalog. If a service or deal has changed since,
+  the bill cannot be re-opened and the screen says so rather than opening with a total of 0.
+
+**Verified in the browser** against the dev database, on the open day (23 Sep 2026):
+
+| Check | Result |
+|---|---|
+| Edit link | shown to the Owner on active bills only |
+| Pre-fill | bill #4 opened with Hair wash, Hamid already selected, Rs 300, cash |
+| Reason required | saving with it empty was refused |
+| One correction | #4 → cancelled, #5 → reversal −300, #6 → Haircut Rs 800. Day total 800 + 300 − 300 + 800 = **Rs 1,600**, paid 2, cancelled 1 |
+| Double deal | a bill of the same deal twice re-opened as **two** instances at Rs 2,000, not one at Rs 1,000 |
+| Removing one instance | #7 → cancelled, #8 → reversal −2,000 (4 lines), #9 → Rs 1,000. Day total **Rs 2,600**, paid 3, cancelled 2 |
+| Worksheet | Arshad 1,000 · Hamid 0 · Sherry 1,600 = 2,600, matching the report — commission base right after both corrections |
+| Audit log | two `bill.edit` rows, each with the full `before` and `after` lines, so the old bill is recoverable |
+| Already cancelled | re-opening #4 afterwards says so and offers a new bill |
+| `?edit=not-a-bill` | says the link does not point at a bill; no crash on a non-uuid |
+
+152 tests pass (was 144), lint clean, build passes.
 
 **Size:** medium
 
@@ -351,7 +387,12 @@ the previous version. Without one, a corrected bill is indistinguishable from on
 the first time — which is exactly what spec 11 set out to prevent, and what the audit log would
 then be the only defence against.
 
-**Size:** medium · **Depends on:** P1.4, and the escape-hatch mechanism from P1.1
+**Where P1.4 left it.** A correction already carries a marker of sorts: the cancelled bill's
+reason reads `Edited: <what was wrong>`, and the reversal says which bill it cancels. Once the
+three lines collapse into one, that marker disappears with them — which is what the question below
+is about.
+
+**Size:** medium · **Depends on:** P1.4 (done), and the escape-hatch mechanism from P1.1
 
 ---
 

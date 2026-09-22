@@ -1,4 +1,5 @@
 import type { PayMode, Rupees } from "@/lib/accounting";
+import type { CartLine } from "./cart-state";
 
 /** Plain data passed from the server to the billing screen (safe to serialise). */
 
@@ -39,6 +40,23 @@ export interface CustomerInfo {
   lastVisit: string | null;
   specialRates: Record<string, Rupees>;
 }
+
+/**
+ * A saved bill re-opened for correction (P1.4). `ok: false` carries the reason
+ * the screen shows instead, e.g. the bill is already cancelled.
+ */
+export type BillDraft =
+  | {
+      ok: true;
+      id: string;
+      billNo: number;
+      lines: CartLine[];
+      customer: CustomerInfo | null;
+      cash: Rupees;
+      online: Rupees;
+      bookNo: string | null;
+    }
+  | { ok: false; reason: string };
 
 export interface ReceiptLine {
   name: string;

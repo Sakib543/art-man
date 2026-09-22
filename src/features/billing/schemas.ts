@@ -37,6 +37,15 @@ export const createBillSchema = z.object({
   bookNo,
 });
 
+/**
+ * The Owner correcting a bill of the open day (P1.4). Same shape as a new
+ * bill, plus which bill it replaces and why.
+ */
+export const editBillSchema = createBillSchema.extend({
+  billId: z.uuid(),
+  reason: z.string().trim().min(3, "Write what was wrong with the bill").max(200),
+});
+
 export const cancelBillSchema = z.object({
   billId: z.uuid(),
   reason: z.string().trim().min(3, "Write a reason for cancelling").max(200),
@@ -47,3 +56,4 @@ export const lookupCustomerSchema = z.object({
 });
 
 export type CreateBillInput = z.infer<typeof createBillSchema>;
+export type EditBillInput = z.infer<typeof editBillSchema>;

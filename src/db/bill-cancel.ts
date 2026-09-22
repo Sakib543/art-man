@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
-import { requireOwnerOnOpenMonth, resettleDay } from "@/db/day-settlement";
+import { requireOwnerOnOpenMonth, resettleDay, type Tx } from "@/db/day-settlement";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
 import { billCancellations, billLines, bills } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth/session";
@@ -16,6 +16,52 @@ import { UserError } from "@/lib/errors";
  * that is already closed is the Owner's alone, and closing that day is redone
  * afterwards so its figures and security code match the correction.
  */
+type BillRow = typeof bills.$inferSelect;
+type BillLineRow = typeof billLines.$inferSelect;
+
+/**
+ * Write the two things that cancel a bill: the cancellation row, and a
+ * reversal bill that undoes its amounts. Runs inside the caller's transaction,
+ * so a cancellation that is only part of a bigger correction — the Owner
+ * editing a bill (P1.4) — is saved with the rest of it or not at all.
+ *
+ * Returns the reversal's bill number, for the audit entry.
+ */
+export async function writeCancellation(
+  tx: Tx,
+  bill: BillRow,
+  lines: BillLineRow[],
+  reason: string,
+  actor: string,
+): Promise<number> {
+  // bill_cancellations.bill_id is the primary key, so a second cancellation of
+  // the same bill cannot be written even if two requests race here.
+  await tx.insert(billCancellations).values({ billId: bill.id, reason, cancelledBy: actor });
+
+  const [reversal] = await tx
+    .insert(bills)
+    .values({
+      businessDate: bill.businessDate,
+      customerId: bill.customerId,
+      cash: -bill.cash,
+      online: -bill.online,
+      reversesBillId: bill.id,
+      createdBy: actor,
+    })
+    .returning({ id: bills.id, billNo: bills.billNo });
+
+  await tx.insert(billLines).values(
+    lines.map((line) => ({
+      billId: reversal.id,
+      name: `Reversal of #${bill.billNo}`,
+      amount: -line.amount,
+      staffId: line.staffId,
+    })),
+  );
+
+  return reversal.billNo;
+}
+
 export async function cancelBill(user: SessionUser, billId: string, reason: string): Promise<void> {
   const day = await getOpenBusinessDay();
 
@@ -33,28 +79,7 @@ export async function cancelBill(user: SessionUser, billId: string, reason: stri
   const actor = user.username || user.name;
 
   await db.transaction(async (tx) => {
-    await tx.insert(billCancellations).values({ billId, reason, cancelledBy: actor });
-
-    const [reversal] = await tx
-      .insert(bills)
-      .values({
-        businessDate: bill.businessDate,
-        customerId: bill.customerId,
-        cash: -bill.cash,
-        online: -bill.online,
-        reversesBillId: bill.id,
-        createdBy: actor,
-      })
-      .returning({ id: bills.id, billNo: bills.billNo });
-
-    await tx.insert(billLines).values(
-      lines.map((line) => ({
-        billId: reversal.id,
-        name: `Reversal of #${bill.billNo}`,
-        amount: -line.amount,
-        staffId: line.staffId,
-      })),
-    );
+    const reversalBillNo = await writeCancellation(tx, bill, lines, reason, actor);
 
     if (closedDay) await resettleDay(tx, bill.businessDate, actor, `bill #${bill.billNo} cancelled`);
 
@@ -63,7 +88,7 @@ export async function cancelBill(user: SessionUser, billId: string, reason: stri
       action: closedDay ? "bill.cancel-closed-day" : "bill.cancel",
       target: `bill #${bill.billNo}`,
       before: { cash: bill.cash, online: bill.online, businessDate: bill.businessDate },
-      after: { reason, reversalBillNo: reversal.billNo },
+      after: { reason, reversalBillNo },
     });
   });
 }

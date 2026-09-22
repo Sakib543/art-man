@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { failure, type ActionResult } from "@/lib/action-result";
-import { requireUser } from "@/lib/auth/session";
+import { requireRole, requireUser } from "@/lib/auth/session";
 import { findCustomer } from "./queries";
-import { cancelBillSchema, createBillSchema, lookupCustomerSchema } from "./schemas";
+import { cancelBillSchema, createBillSchema, editBillSchema, lookupCustomerSchema } from "./schemas";
 import { cancelBill } from "@/db/bill-cancel";
-import { createBill } from "./service";
+import { createBill, editBill } from "./service";
 import type { CustomerInfo, Receipt } from "./types";
 
 export async function createBillAction(input: unknown): Promise<ActionResult<Receipt>> {
@@ -17,6 +17,24 @@ export async function createBillAction(input: unknown): Promise<ActionResult<Rec
   try {
     const receipt = await createBill(user, parsed.data);
     revalidatePath("/billing");
+    return { ok: true, data: receipt };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/** Correcting a bill of the day that is still open: the Owner's alone (P1.4). */
+export async function editBillAction(input: unknown): Promise<ActionResult<Receipt>> {
+  const user = await requireRole("owner");
+  const parsed = editBillSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid bill" };
+
+  try {
+    const receipt = await editBill(user, parsed.data);
+    // Not /billing: the screen is still on ?edit=<id> and that bill is now
+    // cancelled, so re-rendering it here would swap the screen out mid-save.
+    // It navigates away itself, which fetches the page fresh.
+    revalidatePath("/daily-report");
     return { ok: true, data: receipt };
   } catch (error) {
     return failure(error);

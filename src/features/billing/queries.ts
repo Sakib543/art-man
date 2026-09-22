@@ -1,8 +1,21 @@
 import { and, count, eq, isNull, max, sql } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/db";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
-import { bills, customerSpecialRates, customers, dealItems, deals, services, staff } from "@/db/schema";
-import type { BillingData, CustomerInfo } from "./types";
+import {
+  billCancellations,
+  billLines,
+  bills,
+  customerSpecialRates,
+  customers,
+  dealItems,
+  deals,
+  services,
+  staff,
+} from "@/db/schema";
+import { priceCart, PricingError } from "@/lib/accounting";
+import { draftLinesOf } from "./bill-draft";
+import type { BillDraft, BillingData, CustomerInfo } from "./types";
 
 /** Everything the billing screen needs, or null when no business day is open. */
 export async function getBillingData(): Promise<BillingData | null> {
@@ -36,8 +49,16 @@ export async function getBillingData(): Promise<BillingData | null> {
 
 export async function findCustomer(phone: string): Promise<CustomerInfo | null> {
   const [customer] = await db.select().from(customers).where(eq(customers.phone, phone)).limit(1);
-  if (!customer) return null;
+  return customer ? customerInfo(customer) : null;
+}
 
+async function findCustomerById(id: string): Promise<CustomerInfo | null> {
+  const [customer] = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
+  return customer ? customerInfo(customer) : null;
+}
+
+/** Visit count and special rates for one customer. */
+async function customerInfo(customer: typeof customers.$inferSelect): Promise<CustomerInfo> {
   const [[visit], rates] = await Promise.all([
     db
       .select({ visits: count(), last: max(bills.businessDate) })
@@ -53,5 +74,62 @@ export async function findCustomer(phone: string): Promise<CustomerInfo | null> 
     visits: visit.visits,
     lastVisit: visit.last,
     specialRates: Object.fromEntries(rates.map((rate) => [rate.serviceId, rate.price])),
+  };
+}
+
+/**
+ * Re-open a saved bill for correction (P1.4). The guards match `editBill`, so
+ * the screen refuses for the same reasons the server would, with the reason in
+ * words rather than an error after the Owner has retyped the bill.
+ */
+export async function getBillForEdit(billId: string, data: BillingData): Promise<BillDraft> {
+  if (!z.uuid().safeParse(billId).success) return { ok: false, reason: "That link does not point at a bill." };
+
+  const [bill] = await db.select().from(bills).where(eq(bills.id, billId)).limit(1);
+  if (!bill) return { ok: false, reason: "That bill no longer exists." };
+  if (bill.reversesBillId) return { ok: false, reason: "A reversal bill cannot be edited." };
+  if (bill.businessDate !== data.businessDate) {
+    return { ok: false, reason: "That bill belongs to a day that is already closed. It can only be cancelled, not edited." };
+  }
+
+  const [cancelled] = await db.select().from(billCancellations).where(eq(billCancellations.billId, bill.id)).limit(1);
+  if (cancelled) return { ok: false, reason: `Bill #${bill.billNo} is already cancelled.` };
+
+  const saved = await db
+    .select({ serviceId: billLines.serviceId, dealId: billLines.dealId, staffId: billLines.staffId })
+    .from(billLines)
+    .where(eq(billLines.billId, bill.id));
+
+  const lines = draftLinesOf(saved);
+  const customer = bill.customerId ? await findCustomerById(bill.customerId) : null;
+
+  // Price it against today's catalog before showing it. If a service or deal
+  // has changed since the bill was rung up, say so now rather than let the
+  // screen open with a total of 0 and no explanation.
+  try {
+    priceCart(lines, {
+      services: Object.fromEntries(data.services.map((s) => [s.id, { id: s.id, name: s.name, price: s.price }])),
+      deals: Object.fromEntries(data.deals.map((d) => [d.id, d])),
+      specialRates: customer?.specialRates ?? {},
+    });
+  } catch (error) {
+    if (error instanceof PricingError) {
+      return {
+        ok: false,
+        reason: `Bill #${bill.billNo} cannot be re-opened: ${error.message}. Cancel it and enter a new bill instead.`,
+      };
+    }
+    throw error;
+  }
+
+  return {
+    ok: true,
+    id: bill.id,
+    billNo: bill.billNo,
+    lines,
+    customer,
+    cash: bill.cash,
+    online: bill.online,
+    bookNo: bill.bookNo,
   };
 }

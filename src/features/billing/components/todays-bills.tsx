@@ -1,9 +1,10 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { formatTime, rs } from "@/lib/format";
@@ -11,7 +12,15 @@ import { cn } from "@/lib/utils";
 import type { DayBill } from "@/db/queries/day-bills";
 import { cancelBillAction } from "../actions";
 
-export function TodaysBills({ bills }: { bills: DayBill[] }) {
+interface TodaysBillsProps {
+  bills: DayBill[];
+  /** Only the Owner may correct a bill, and only on the day that is still open (P1.4). */
+  canEdit?: boolean;
+  /** The bill already open for correction on the screen above. */
+  editingId?: string | null;
+}
+
+export function TodaysBills({ bills, canEdit = false, editingId = null }: TodaysBillsProps) {
   // `target` is kept after closing so the dialog does not go blank while it animates out.
   const [target, setTarget] = useState<DayBill | null>(null);
   const [open, setOpen] = useState(false);
@@ -86,7 +95,16 @@ export function TodaysBills({ bills }: { bills: DayBill[] }) {
                       <Badge className="bg-secondary text-muted-foreground">Reverses #{bill.reversesBillNo}</Badge>
                     ) : null}
                   </td>
-                  <td className="px-3.5 py-2.5 text-right">
+                  <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
+                    {bill.status === "active" && canEdit ? (
+                      editingId === bill.id ? (
+                        <Badge className="bg-secondary text-muted-foreground">Correcting</Badge>
+                      ) : (
+                        <Link href={`/billing?edit=${bill.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                          Edit
+                        </Link>
+                      )
+                    ) : null}
                     {bill.status === "active" ? (
                       <Button variant="ghost" size="sm" className="text-destructive" onClick={() => openFor(bill)}>
                         Cancel
