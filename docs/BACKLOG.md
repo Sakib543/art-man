@@ -24,7 +24,7 @@ Last updated: 2026-09-22 (P0 complete, P1.0, P2.1 and P1.4 done)
 | P1.1 | Developer role (super admin) | ⬜ | — |
 | P1.2 | Users screen — create admins | ⬜ | — |
 | P1.4 | Owner edits a bill on the open day | ✅ | done 2026-09-22 |
-| P1.5 | Owner's edit leaves one line, not three | ⬜ | — |
+| P1.5 | Owner's edit leaves one line, not three | 🟡 | Sakib543, 2026-09-22 |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
@@ -362,8 +362,8 @@ the same reasons **before** the Owner retypes anything, and says which one.
 
 ---
 
-### ⬜ P1.5 — Owner's edit leaves one line, not three
-**Owner:** —
+### 🟡 P1.5 — Owner's edit leaves one line, not three
+**Owner:** Sakib543, 2026-09-22
 
 **Client asked for this (2026-09-22)**, after seeing what P1.4 would look like. As built, one
 correction shows three lines in the Daily report — the cancelled bill, its reversal, and the
@@ -406,9 +406,10 @@ every total is unchanged, and **the append-only guarantee is not touched at all*
 hatch, no migration, no dependency on P1.1.
 
 What B does **not** give is the unchanged receipt number: the corrected bill has a new `bill_no`,
-so a customer holding the old slip sees a different number. Whether that matters is the client's
-call — ask before building. If it does matter, B could still keep it by recording which bill a
-correction supersedes and showing the original's number, at the cost of one column.
+so a customer holding the old slip sees a different number.
+
+**Client decision (2026-09-22): the receipt number does not have to stay the same — build
+option B.** So the append-only guarantee is never touched and P1.1 is not a dependency.
 
 **Size:** medium · **Depends on:** P1.4 (done). Option A also depends on the escape hatch from
 P1.1, which is not built; option B depends on nothing further.
