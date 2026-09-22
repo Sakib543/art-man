@@ -26,7 +26,7 @@ Last updated: 2026-09-22 (P0 complete, P1.0 done)
 | P1.4 | Owner edits a bill on the open day | ⬜ | — |
 | P1.5 | Owner's edit leaves one line, not three | ⬜ | — |
 | P1.3 | Manager's limit | ✅ | no change needed |
-| P2.1 | Paper bill-book number | ⬜ | — |
+| P2.1 | Paper bill-book number | 🟡 | Sakib543, 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
 | P3.1–P3.7 | Remaining spec features | ⬜ | — |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
@@ -363,8 +363,8 @@ hours the app must keep working, and when the connection returns the database up
 So **P2.2 is approved.** P2.1 still gets built first: it is a cheap stopgap until P2.2 ships, and
 it stays useful whenever the power is out.
 
-### ⬜ P2.1 — Cheap fallback: the paper bill book (spec §5.5)
-**Owner:** —
+### 🟡 P2.1 — Cheap fallback: the paper bill book (spec §5.5)
+**Owner:** Sakib543, 2026-09-22
 
 When power or internet fails, the counter uses a numbered paper bill book; those bills are entered
 before that day's Day Close.
