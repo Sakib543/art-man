@@ -33,7 +33,9 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2 | Offline PWA + sync | ⬜ | — |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
-| P3.3, P3.4, P3.5 | Staff receipt · month adjustment · real alert | ⬜ | — |
+| P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
+| P3.4 | Next-month adjustment for a closed month | ⬜ | — |
+| P3.10 | Discount on a bill | ⬜ | Sakib, 2026-09-23 |
 | P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore has never been run |
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
@@ -999,6 +1001,40 @@ somewhere to put the files that is not this laptop — worth settling together
 with the Vercel/VPS question.
 
 **Size:** medium · **Value:** high
+
+---
+
+### ⬜ P3.10 — Discount on a bill *(client asked for it 2026-09-23)*
+**Owner:** Sakib, 2026-09-23
+
+The counter needs to be able to take money off a bill: an **open field on the
+billing screen**, filled in by the **Manager or the Owner** themselves, and the
+discount has to carry through the whole of the accounts.
+
+**This reverses a recorded client decision.** Spec §10.4 and the 2026-09-22 Q&A
+both say *"Manager cannot give discretionary discounts — only Owner-set rates
+apply"*. The client asked for the opposite on 2026-09-23 and was told it
+contradicts the spec. Their answer stands: both roles may give one. The spec
+file is not edited — it is the client's document — but this is the decision the
+code follows, and it is recorded here and in `docs/HANDOFF.md` section 6.
+
+**The two decisions taken before building** (asked, because both change real
+figures):
+
+| Question | Answer |
+|---|---|
+| Commission on which amount? | **On the discounted amount.** Rs 1,000 of work with Rs 200 off earns commission on Rs 800. This is spec §10.1 — *"commission is on the amount actually charged"* — so a discount is shared by the salon and the karigar |
+| What kind of field? | **One open field, whole rupees, on the whole bill.** Not a percentage, not per line. Each line's share is worked out proportionally, the same way a deal price is split |
+
+**What that answer buys.** Because the commission follows the discounted amount,
+the discount is **allocated into the line amounts** at pricing time. Everything
+downstream then needs no change at all and cannot drift: `workByStaff` sums line
+amounts, so commission and the khata follow; `salesTotals` adds cash and online,
+so the day's sale is already net; the month report is built from the day
+snapshots. `bills.discount` is kept beside it for the receipt and the reports,
+never as the source of any total.
+
+**Size:** medium · **Value:** high (asked for directly by the client)
 
 ---
 
