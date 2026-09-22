@@ -7,6 +7,7 @@ import { DaySelect } from "@/features/daily-report/components/day-select";
 import { ReportTable } from "@/features/daily-report/components/report-table";
 import { getDailyReport } from "@/features/daily-report/queries";
 import { CANCELLATION_ALERT_AT } from "@/lib/alerts";
+import { atLeastOwner } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
 import { rs } from "@/lib/format";
 
@@ -73,7 +74,7 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
         </div>
       ) : null}
 
-      <ReportTable bills={bills} canCancel={user.role === "owner" && selected.closed} />
+      <ReportTable bills={bills} canCancel={atLeastOwner(user.role) && selected.closed} />
     </>
   );
 }

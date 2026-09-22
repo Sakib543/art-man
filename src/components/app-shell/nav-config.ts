@@ -5,10 +5,13 @@ import {
   ChartPie,
   FileText,
   Grid3x3,
+  KeyRound,
   Landmark,
   LayoutDashboard,
   Lock,
+  PowerOff,
   Receipt,
+  ScrollText,
   Settings,
   SlidersHorizontal,
   Wallet,
@@ -63,6 +66,23 @@ export const NAV: NavSection[] = [
     roles: ["owner", "manager"],
     items: [{ href: "/settings", label: "Settings", icon: Settings }],
   },
+  /**
+   * Only the developer sees this section. `canAccess` lets the developer into
+   * every other section too, so they get the whole sidebar plus these three.
+   */
+  {
+    title: "Developer",
+    roles: ["developer"],
+    items: [
+      { href: "/developer/audit-log", label: "Audit log", icon: ScrollText },
+      { href: "/developer/passwords", label: "Passwords", icon: KeyRound },
+      { href: "/developer/maintenance", label: "Maintenance", icon: PowerOff },
+    ],
+  },
 ];
 
-export const ROLE_LABEL: Record<Role, string> = { owner: "Owner", manager: "Manager" };
+export const ROLE_LABEL: Record<Role, string> = {
+  developer: "Developer",
+  owner: "Owner",
+  manager: "Manager",
+};

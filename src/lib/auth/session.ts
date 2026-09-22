@@ -1,8 +1,9 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { readMaintenance } from "@/db/app-settings";
 import { auth } from "./server";
-import { isRole, type Role } from "./roles";
+import { canAccess, isRole, type Role } from "./roles";
 
 export interface SessionUser {
   id: string;
@@ -32,16 +33,28 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   };
 });
 
-/** Any signed-in user (owner or manager). Redirects to /login otherwise. */
+/**
+ * Any signed-in user. Redirects to /login otherwise.
+ *
+ * This is also where maintenance mode bites. Every page and every Server
+ * Action goes through here, so one check covers all of them — a layout would
+ * not, because layouts do not re-run on client navigation. The developer is
+ * let through, otherwise they could not switch the site back on.
+ */
 export async function requireUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.role !== "developer" && (await readMaintenance()).on) redirect("/maintenance");
   return user;
 }
 
-/** Only the given roles. A manager opening an owner page is sent back to the counter. */
+/**
+ * Only the given roles. A manager opening an owner page is sent back to the
+ * counter. The developer passes every check except `requireRole("developer")`,
+ * which only they pass — see `canAccess`.
+ */
 export async function requireRole(...allowed: Role[]): Promise<SessionUser> {
   const user = await requireUser();
-  if (!allowed.includes(user.role)) redirect("/billing");
+  if (!canAccess(user.role, allowed)) redirect("/billing");
   return user;
 }

@@ -4,6 +4,7 @@ import { computeDayCode, type DayFigures } from "@/db/day-code";
 import { loadDay, type LoadedDay } from "@/db/queries/day-data";
 import { attendance, daySnapshotHistory, daySnapshots, khataEntries, monthCloses } from "@/db/schema";
 import { summarizeDay, type DayCloseSummary } from "@/lib/accounting";
+import { atLeastOwner } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/session";
 import { formatMonth, monthOf, monthStart } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
@@ -73,7 +74,7 @@ export async function requireOpenMonth(businessDate: string): Promise<void> {
 
 /** Changing anything in a day that is already closed is the Owner's alone (spec 11). */
 export async function requireOwnerOnOpenMonth(user: SessionUser, businessDate: string, what: string): Promise<void> {
-  if (user.role !== "owner") throw new UserError(`This ${what} belongs to a closed day. Only the Owner can cancel it.`);
+  if (!atLeastOwner(user.role)) throw new UserError(`This ${what} belongs to a closed day. Only the Owner can cancel it.`);
   await requireOpenMonth(businessDate);
 }
 

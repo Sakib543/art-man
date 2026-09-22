@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { BillingScreen } from "@/features/billing/components/billing-screen";
 import { TodaysBills } from "@/features/billing/components/todays-bills";
 import { getBillForEdit, getBillingData } from "@/features/billing/queries";
+import { atLeastOwner } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
 
 export const metadata = { title: "Billing | Art Men's Salon" };
@@ -26,7 +27,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
 
   // Correcting a bill is the Owner's alone, so a manager's ?edit= is ignored.
   const { edit } = await searchParams;
-  const draft = edit && user.role === "owner" ? await getBillForEdit(edit, data) : null;
+  const draft = edit && atLeastOwner(user.role) ? await getBillForEdit(edit, data) : null;
   const editing = draft?.ok ? draft : null;
 
   const bills = await getDayBills(data.businessDate);
@@ -52,7 +53,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
 
       {/* A new key resets the cart when a different bill is opened for correction. */}
       <BillingScreen key={editing?.id ?? "new"} data={data} editing={editing} />
-      <TodaysBills bills={bills} canEdit={user.role === "owner"} editingId={editing?.id ?? null} />
+      <TodaysBills bills={bills} canEdit={atLeastOwner(user.role)} editingId={editing?.id ?? null} />
     </>
   );
 }

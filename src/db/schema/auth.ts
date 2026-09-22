@@ -1,7 +1,7 @@
 import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 /**
- * Tables owned by Better Auth (login for the owner and manager only).
+ * Tables owned by Better Auth (login for the developer, owner and manager).
  * Shape follows Better Auth's core schema plus the `username` plugin and our
  * `role` field. Change it through Better Auth's options, not by hand.
  */
@@ -19,7 +19,7 @@ export const user = pgTable("user", {
     .$onUpdate(() => new Date()),
   username: text("username").unique(),
   displayUsername: text("display_username"),
-  /** "owner" or "manager". */
+  /** "developer", "owner" or "manager". See src/lib/auth/roles.ts. */
   role: text("role").notNull().default("manager"),
   /**
    * Hashed 4-digit PIN. Only the owner has one: it confirms cash the owner

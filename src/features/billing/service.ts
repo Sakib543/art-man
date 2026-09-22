@@ -23,6 +23,7 @@ import {
   type PricingCatalog,
   type Rupees,
 } from "@/lib/accounting";
+import { atLeastOwner } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/session";
 import { UserError } from "@/lib/errors";
 import type { CreateBillInput, EditBillInput } from "./schemas";
@@ -233,7 +234,7 @@ export async function createBill(user: SessionUser, input: CreateBillInput): Pro
  * A bill in a day that is already closed cannot be edited, only cancelled.
  */
 export async function editBill(user: SessionUser, input: EditBillInput): Promise<Receipt> {
-  if (user.role !== "owner") throw new UserError("Only the Owner can edit a bill.");
+  if (!atLeastOwner(user.role)) throw new UserError("Only the Owner can edit a bill.");
 
   const day = await getOpenBusinessDay();
   if (!day) throw new UserError("No business day is open, so there is nothing to correct.");

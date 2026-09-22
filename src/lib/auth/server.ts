@@ -8,14 +8,15 @@ import * as schema from "../../db/schema";
 /**
  * Server-side auth. Users sign in with a username and password.
  * Sign-up is disabled: the owner's and manager's accounts are created by
- * `pnpm db:seed`, never through the website.
+ * `pnpm db:seed` and the developer's by `pnpm db:seed:developer`, never
+ * through the website.
  */
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
   emailAndPassword: { enabled: true, disableSignUp: true },
   user: {
     additionalFields: {
-      // "owner" or "manager". `input: false` stops a client from setting its own role.
+      // "developer", "owner" or "manager". `input: false` stops a client from setting its own role.
       role: { type: "string", required: true, input: false, defaultValue: "manager" },
     },
   },
