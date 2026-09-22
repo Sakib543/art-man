@@ -571,14 +571,21 @@ and the seed were actually run against the live branch** before suspecting the c
 
   P1.2 was held back at first for exactly this reason, then **pushed on 2026-09-22 at the user's
   instruction**, after the risk was put to them. So the fix is owed now, not before some later
-  deploy:
+  deploy. Run it from a terminal on a developer's own machine, in the repo root — nothing on Vercel
+  applies migrations:
 
-  ```bash
-  DATABASE_URL="<the live connection string>" pnpm db:migrate
+  ```powershell
+  $env:DATABASE_URL_UNPOOLED="<live direct string>"; pnpm db:migrate; Remove-Item Env:\DATABASE_URL_UNPOOLED
   ```
 
+  Use `DATABASE_URL_UNPOOLED`, not `DATABASE_URL`. `drizzle.config.ts` reads the unpooled one and
+  only falls back to `DATABASE_URL` when it is **empty** — which it is in this `.env.local` today,
+  but on a machine where it is set, passing `DATABASE_URL` alone would quietly migrate that
+  developer's own database instead of live. Full instructions, including the bash form and the
+  warning about leaving the variable set in a PowerShell session, are in `docs/DEPLOY_VERCEL.md`.
+
   That applies `0013`, `0014` and `0015` together; the first two are indexes and harmless. Either
-  get the live connection string, or have whoever holds the Vercel project run it.
+  get the live direct connection string, or have whoever holds the Vercel project run it.
 - [x] **Rotate the Neon database password** — done on 2026-09-22.
 - [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
 - [ ] **Get access to the Vercel project** — still in the other developer's account, re-confirmed
