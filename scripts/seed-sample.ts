@@ -5,6 +5,8 @@
  *
  *   pnpm db:seed:sample
  */
+// Must come first: it puts DATABASE_URL in the environment before src/db reads it.
+import "./load-env";
 import { count } from "drizzle-orm";
 import { db } from "../src/db";
 import {

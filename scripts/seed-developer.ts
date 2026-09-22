@@ -15,6 +15,8 @@
  * The developer has a username and a password and nothing else — no PIN. The
  * PIN belongs to the owner, who confirms cash with it in person.
  */
+// Must come first: it puts DATABASE_URL in the environment before src/db reads it.
+import "./load-env";
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";

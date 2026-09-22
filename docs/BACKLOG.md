@@ -38,8 +38,8 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1, P4.3 | Feature shape · merge features/auth | ⬜ | — |
-| P4.2 | Rewrite docs/ARCHITECTURE.md | ⬜ | Sakib, 2026-09-23 |
-| P4.4, P4.5, P4.8 | Dead code · shadcn to devDeps · seed env flag | ⬜ | Sakib, 2026-09-23 |
+| P4.2 | Rewrite docs/ARCHITECTURE.md | ✅ | done 2026-09-23 |
+| P4.4, P4.5, P4.8 | Dead code · shadcn to devDeps · seed env flag | ✅ | done 2026-09-23 |
 | P4.6 | error.tsx / loading.tsx | ✅ | done 2026-09-22 |
 | P4.7 | CI on every push | ✅ | done 2026-09-22 |
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
@@ -906,13 +906,13 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 | | Item |
 |---|---|
 | ⬜ P4.1 | **Make every feature the same shape.** Only 6 of 14 follow the full pattern. The pure-logic files (`summary.ts`, `grid.ts`, `rules.ts`, `alerts.ts`, `feed.ts`, `security.ts`, `summary-text.ts`, `cart-state.ts`) need one convention |
-| ⬜ P4.2 | **Rewrite `docs/ARCHITECTURE.md`** — it is currently wrong: it says `db/schema.ts` when the reality is a `db/schema/` folder, and never mentions `db/queries/`, `service.ts` or `types.ts` |
+| ✅ P4.2 | **Rewritten 2026-09-23.** Was: — it is currently wrong: it says `db/schema.ts` when the reality is a `db/schema/` folder, and never mentions `db/queries/`, `service.ts` or `types.ts` |
 | ⬜ P4.3 | Merge `features/auth` into `features/account` — the names are confusing (`features/auth` vs `lib/auth` vs `features/account`) |
-| ⬜ P4.4 | **Delete dead code:** `src/components/coming-soon.tsx`, `src/features/.gitkeep`, `docs/~$iend_Setup_Guide.docx` (a Word lock file), `@neon/env` (unused dependency), `neon.ts` (empty config) |
-| ⬜ P4.5 | Move `shadcn` from `dependencies` to `devDependencies` — it is a CLI and bloats the production install |
+| ✅ P4.4 | **Done 2026-09-23.** Deleted: `src/components/coming-soon.tsx`, `src/features/.gitkeep`, `docs/~$iend_Setup_Guide.docx` (a Word lock file), `@neon/env` (unused dependency), `neon.ts` (empty config) |
+| ✅ P4.5 | **Done 2026-09-23.** Moved `shadcn` from `dependencies` to `devDependencies` — it is a CLI and bloats the production install |
 | ✅ P4.6 | **Error and loading screens** — done 2026-09-22. See below |
 | ✅ P4.7 | **CI on every push** — done 2026-09-22. See below |
-| ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
+| ✅ P4.8 | **Done 2026-09-23.** The flag is gone; `scripts/load-env.ts` reads `.env.local` instead, and an environment variable still wins — verified by pointing `db:check` at another host |
 | ✅ P4.9 | **Index the financial tables** — done 2026-09-22, migration `0013`. See below |
 | ✅ P4.10 | **Staff khata reads the whole `khata_entries` table** — done 2026-09-22, migration `0014`. See below |
 

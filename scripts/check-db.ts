@@ -10,6 +10,8 @@
  *
  * Read-only: it selects, it never writes. Safe to point at live.
  */
+// Must come first: it puts DATABASE_URL in the environment before src/db reads it.
+import "./load-env";
 import { Client } from "pg";
 
 const url = process.env.CHECK_DATABASE_URL ?? process.env.DATABASE_URL;

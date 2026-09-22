@@ -9,6 +9,8 @@
  * from SEED_OWNER_PIN or is generated the same way. Change them after the
  * first login.
  */
+// Must come first: it puts DATABASE_URL in the environment before src/db reads it.
+import "./load-env";
 import { randomBytes, randomInt } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
