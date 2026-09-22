@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6 and P3.8 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8 and P4.9 done)
 
 ---
 
@@ -93,7 +93,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm build` | pass — 23 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
 | `pnpm test` | **192 passed** (25 files) |
-| Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0012` |
+| Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0013` |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
 | Developer bill edit | exercised end to end on an open day and twice on a closed day (P1.6) |
@@ -150,7 +150,10 @@ Khata balances are no longer 0: Arshad +30 (earned, not paid), Sherry −10 (pai
 she ended up earning, which is the correct result of the edits). Three `bill.developer-edit` rows
 are in `audit_log`. None of it is real data — reopen or reseed freely.
 
-**P3.8 then opened 24 Sep 2026**, so 23 Sep is closed and **24 Sep is the open day**. It holds
+P4.9 added **migration `0013`** (indexes only) and it **has been applied to the dev database**. It
+changes no data and no behaviour.
+
+**P3.8 opened 24 Sep 2026**, so 23 Sep is closed and **24 Sep is the open day**. It holds
 bill #15 for Ashfaq Bhai (Haircut Rs 1,500 by Sherry, Hair wash Rs 300 by Arshad), **cancelled**,
 with its reversal #16. So Ashfaq Bhai's lookup currently reads "No visits yet" — that is the
 feature working, not a fault. Kamran (`03217654321`) has never had a bill. To see the last-visit
@@ -263,7 +266,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | **A closed month is not recalculated after an edit** | `month_closes.report` and `shares` were frozen at close. The screen warns in red and the audit entry records `monthClosed`. Recalculating would rewrite a record the partners were paid against — a client decision, not a code one |
 | **A cancelled bill used to count as a customer visit** | `customerInfo()` excluded reversals but not cancellations. Fixed in P3.8; both halves now go through one shared `realVisit()` condition, so the visit count and the last visit cannot disagree |
 | The customer lookup is **4 queries**, and took 1–5 s against Neon | measured in the dev server log during P3.8. Two of them are the last visit and its lines |
-| **No financial table has an index on `business_date`**, and `bill_lines.bill_id` has none either | only 4 indexes exist in `src/db/schema/`: three on the auth tables and `customers.phone`. Postgres does not index a foreign key by itself. Not urgent at salon volumes, but it is the cheapest performance work available |
+| **The tables that grow are now indexed** | migration `0013` (P4.9) added 7: `bills(business_date, bill_no)`, `bills(customer_id)`, `bill_lines(bill_id)`, `cash_entries(business_date, created_at)`, `khata_entries(business_date)`, `audit_log(created_at)` and `audit_log(action, target, created_at)`. Before it, 4 indexes existed in the whole schema and 3 were Better Auth's |
+| Tables that gain only a few rows a month are **deliberately unindexed** | `monthly_expenses`, `partner_drawings`, `capital_repayments`. So is `staff_id` on every table: it is only ever joined **to** `staff.id`, which is the primary key doing the lookup |
+| **Postgres does not index a foreign key by itself** | this is why `bill_lines.bill_id` had nothing for 12 migrations. Check it whenever a new table gets a reference |
+| The planner ignores an index until the table has statistics | with 27 rows it filtered instead of using `audit_log(action, target, created_at)`; with 18,000 it chose an Index Only Scan. **Do not judge an index on the dev database's row counts** — generate rows in a transaction, `ANALYZE`, then roll back |
+| A rolled-back transaction does **not** trip the append-only triggers | they are `BEFORE UPDATE OR DELETE`. So inserting throwaway rows, measuring, and rolling back is a safe way to test against a realistic table size |
 | `bill_lines` has **no order column** | both the developer's edit screen and the last-visit strip order by `name`, so the two lists look alike |
 | `get_page_text` reads `<main>` only | a Base UI dialog renders in a portal outside it, so a confirmation dialog looks absent when it is open. Use `read_page` or query `[role="dialog"]` instead |
 
@@ -433,6 +440,7 @@ STAGE 3 — during the client's 20-day trial
   P1.1  Developer role                                  DONE 2026-09-22
   P1.6  Developer edits a financial entry               DONE 2026-09-22
   P3.8  Customer's last visit on the billing screen     DONE 2026-09-22
+  P4.9  Index the financial tables                      DONE 2026-09-22
   P1.2  Users screen        P4  Cleanup + CI
 
 STAGE 4 — after the trial

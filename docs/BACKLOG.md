@@ -32,7 +32,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1 and P1
 | P3.1–P3.7 | Remaining spec features | ⬜ | — |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1–P4.8 | Cleanup | ⬜ | — |
-| P4.9 | Index the financial tables | 🟡 | Sakib543, 2026-09-22 |
+| P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
 
 ---
@@ -724,10 +724,10 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 | ⬜ P4.6 | Add `error.tsx` / `loading.tsx` — a database error currently shows Next's default error page |
 | ⬜ P4.7 | Add CI (`.github/workflows`) so build + 192 tests + lint run on every push. **More valuable now that two people share `main`** |
 | ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
-| 🟡 P4.9 | **Index the financial tables.** Only 4 indexes exist, three of them on the auth tables. Every query that filters on `business_date` does a sequential scan. See below |
+| ✅ P4.9 | **Index the financial tables** — done 2026-09-22, migration `0013`. See below |
 
-### 🟡 P4.9 — Index the financial tables
-**Owner:** Sakib543, 2026-09-22
+### ✅ P4.9 — Index the financial tables
+**Done:** 2026-09-22 · migration `0013_index_financial_tables`
 
 Measured, not guessed: `src/db/schema/` defines **4 indexes** — `session_user_id_idx`,
 `account_user_id_idx`, `verification_identifier_idx` and `customers_phone_key`. Three of the four
@@ -765,7 +765,39 @@ add once there is real data to lock.
 - `khata_entries.staff_id` — the Staff khata screen reads the **whole** table (`queries.ts:46`) and
   groups in memory. No index helps that; splitting the query is separate work.
 
-**No behaviour changes.** Adding an index cannot alter a result, only the time it takes.
+**No behaviour changes.** Adding an index cannot alter a result, only the time it takes. That is
+also why **this migration is safe to push before it reaches live**: the code does not need it. It
+is the opposite of the usual rule in `docs/DEPLOY_VERCEL.md` §0.1 — but live should still get it.
+
+**Verified against the database, not assumed.** All seven were created, then each query from the
+code was planned with `enable_seqscan = off` inside a rolled-back transaction — which proves the
+index *fits the query shape*, the real risk with a composite index in the wrong column order:
+
+| Query | Planner picked |
+|---|---|
+| a day's bills in receipt order | `bills_business_date_bill_no_idx` |
+| the customer lookup | `bills_customer_id_idx` |
+| a bill's lines | `bill_lines_bill_id_idx` |
+| a day's folder entries in order | `cash_entries_business_date_created_at_idx` |
+| a day's khata lines | `khata_entries_business_date_idx` |
+| the audit page, newest first | `audit_log_created_at_idx` (Index Scan **Backward**) |
+
+The wrong-PIN counter was the one that did not, at first: with 27 rows the planner ignored the
+composite index and filtered instead. So it was re-planned against **18,000 generated audit rows**
+(inserted, `ANALYZE`d, then rolled back — `audit_log`'s trigger is `BEFORE UPDATE OR DELETE`, so a
+rollback never trips it). With real statistics it becomes an **Index Only Scan** on
+`audit_log_action_target_created_at_idx`, never touching the table. Both audit indexes earn their
+place; the table was left at its original 27 rows.
+
+**Worth knowing:** a plain `CREATE INDEX` locks the table against writes while it builds. It is
+instant on an empty database and this one is not live yet — but if these ever have to be rebuilt on
+a running salon, use `CREATE INDEX CONCURRENTLY` by hand instead.
+
+**Found while doing this, not fixed:** the Staff khata screen reads the entire `khata_entries`
+table (`src/features/staff-khata/queries.ts:46`) and groups in memory. No index can help that. It
+is fine at today's size and wants its own backlog item eventually.
+
+192 tests pass, lint clean, build passes.
 
 **Size:** small · **Value:** medium (high once there is real data)
 
