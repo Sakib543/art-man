@@ -105,10 +105,18 @@ close, daily report, staff khata, overview, monthly report, monthly expenses, ca
 staff & rates, settings), plus the developer role with its audit log, password, maintenance and
 bill-edit screens. Phase 4 (offline, backup) has not been started.
 
-**Not deployed.** A Vercel project exists and is connected to this repo, so every push to `main`
-builds there — but it has no live database and nobody here can open its settings, because it is in
-the other developer's Vercel account (confirmed 2026-09-22). That access is the main blocker —
-backlog P5.1.
+**Deployed, but not working.** A Vercel project exists and is connected to this repo, so every push
+to `main` builds there — and a deployment did complete on 2026-09-22. **That does not mean the site
+runs.** It still has no live database, and access to the project was asked about again after that
+deployment and is **still not granted**: it remains in the other developer's Vercel account.
+
+So the live site has no tables and no accounts. Expect it to fail at the first query, and a correct
+password to be rejected — see trap 8.8. The build passes with no environment variables at all, which
+is why a green deployment says nothing about whether the site works.
+
+Migrations **cannot** be run against live from here: there is no live connection string on this
+machine (`.env.local` points at the dev branch and `DATABASE_URL_UNPOOLED` is empty), and no way to
+create one without access to the project. Access is the whole blocker — backlog P5.1.
 
 ---
 
@@ -382,9 +390,12 @@ and the seed were actually run against the live branch** before suspecting the c
 **Owed by the user:**
 - [x] **Rotate the Neon database password** — done on 2026-09-22.
 - [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
-- [ ] **Get access to the Vercel project** — it is in the other developer's account. Ask them to
-  invite you to it, or to transfer it. **P5.1 cannot start without this**; the environment
-  variables can only be set from inside that project. Also ask them for the site's URL.
+- [ ] **Get access to the Vercel project** — still in the other developer's account, **re-confirmed
+  2026-09-22 after a deployment had already completed**. A finished deployment changed nothing:
+  the build needs no environment variables, so it went green with no database behind it. Ask them
+  to invite you or transfer the project, and ask for three things: the **Production URL**, whether
+  a Neon **`live` branch** exists, and whether `db:migrate` was **ever** run against it.
+  **P5.1 cannot start without this**, and neither can running any migration on live.
 
 **Questions blocking work:**
 0. **A bill edited in a closed month leaves that month's frozen report wrong.** `month_closes`
