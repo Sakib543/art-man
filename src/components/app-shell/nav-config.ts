@@ -15,6 +15,7 @@ import {
   ScrollText,
   Settings,
   SlidersHorizontal,
+  UsersRound,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -60,6 +61,9 @@ export const NAV: NavSection[] = [
       { href: "/capital", label: "Capital / Outstanding", icon: Landmark },
       { href: "/partners", label: "Partners", icon: ChartPie },
       { href: "/staff-rates", label: "Staff & rates", icon: SlidersHorizontal },
+      // Logins, not staff: the karigars never sign in. Owner and developer
+      // only, and the developer role is filtered out of what the Owner sees.
+      { href: "/users", label: "Users", icon: UsersRound },
     ],
   },
   {

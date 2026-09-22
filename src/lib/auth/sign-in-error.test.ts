@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { signInErrorMessage, WRONG_CREDENTIALS } from "./sign-in-error";
+import { ACCOUNT_CLOSED, WRONG_CREDENTIALS, signInErrorMessage } from "./sign-in-error";
 
 describe("signInErrorMessage", () => {
   it("is vague about a wrong password, so it does not reveal which accounts exist", () => {
@@ -35,4 +35,13 @@ describe("signInErrorMessage", () => {
     expect(signInErrorMessage({ status: 502 })).toContain("502");
     expect(signInErrorMessage({ status: 503 })).toContain("503");
   });
+  it("says plainly that a closed account is closed", () => {
+    // 403 alone would read as a wrong password, which is the fault P0.1 fixed.
+    expect(signInErrorMessage({ status: 403, code: "ACCOUNT_CLOSED" })).toBe(ACCOUNT_CLOSED);
+  });
+
+  it("still keeps a plain 403 vague", () => {
+    expect(signInErrorMessage({ status: 403 })).toBe(WRONG_CREDENTIALS);
+  });
+
 });

@@ -4,8 +4,8 @@ import { writeAudit } from "@/db/audit";
 import { resettleDay } from "@/db/day-settlement";
 import { allowFinancialEdit, denyFinancialEdit } from "@/db/financial-edit";
 import { billLines, bills as billsTable, user as userTable } from "@/db/schema";
+import { setUserPassword } from "@/db/user-account";
 import { checkNewPassword } from "@/lib/auth/password-rules";
-import { auth } from "@/lib/auth/server";
 import type { SessionUser } from "@/lib/auth/session";
 import { UserError } from "@/lib/errors";
 import { hashPin } from "@/lib/pin";
@@ -39,11 +39,7 @@ export async function resetPassword(dev: SessionUser, userId: string, newPasswor
   if (problem) throw new UserError(problem);
 
   const target = await loadTarget(userId);
-  const ctx = await auth.$context;
-  await ctx.internalAdapter.updatePassword(target.id, await ctx.password.hash(newPassword));
-  for (const session of await ctx.internalAdapter.listSessions(target.id)) {
-    await ctx.internalAdapter.deleteSession(session.token);
-  }
+  await setUserPassword(target.id, newPassword);
 
   await writeAudit(db, {
     actor: actorOf(dev),

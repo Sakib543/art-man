@@ -23,7 +23,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P0.4 | Stale session cookie locks a user out | ✅ | done 2026-09-22 |
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ✅ | done 2026-09-22 |
-| P1.2 | Users screen — create admins | 🟡 | Sakib 2026-09-22 |
+| P1.2 | Users screen — create admins | ✅ | done 2026-09-22 |
 | P1.4 | Owner edits a bill on the open day | ✅ | done 2026-09-22 |
 | P1.5 | Owner's edit leaves one line, not three | ✅ | done 2026-09-22 |
 | P1.6 | Developer edits a financial entry | ✅ | done 2026-09-22 |
@@ -367,10 +367,10 @@ client's list is done here, except creating and deactivating users, which is P1.
 
 ---
 
-### 🟡 P1.2 — Create admins from inside the app
-**Owner:** Sakib, 2026-09-22
+### ✅ P1.2 — Create admins from inside the app
+**Done:** 2026-09-22 · migration `0015_spooky_lilandra`
 
-**Decisions taken with the user before starting (2026-09-22):**
+**Decisions taken with the user before starting:**
 
 - The screen is its own **`/users`** nav item, for the Owner and the developer — not a section
   inside Settings, which is already long and would not hold a list plus a create form.
@@ -383,11 +383,67 @@ client's list is done here, except creating and deactivating users, which is P1.
 Sign-up is disabled (`disableSignUp: true`) and accounts are only created by `pnpm db:seed`. There
 is no screen for it.
 
-**What to do:** a "Users" screen — create a user, assign a role, reset a password, deactivate.
-Public sign-up stays off.
+**What was built** — `/users`, in `src/features/users/`:
 
-**Who can use it:** developer and owner (client: *"an old admin should be able to create a 3rd
-admin"*).
+- **Create a login.** Username, name, role and a first password, typed by whoever creates the
+  account and read out to the new person. Public sign-up stays off: this goes through the same
+  internal adapter `pnpm db:seed` uses, so the only way to get an account is for someone who
+  already has one to make it.
+- **Reset a password**, which signs that person out everywhere.
+- **Close an account, and re-open it.** Never a delete — `audit_log` ties every action to the
+  actor's username, and a record whose actor has vanished stops making sense.
+- `rules.ts` — who may do what to whom, pure and with **18 tests**. The screen asks it before
+  drawing a button and the Server Action asks it again, so a button is never shown for something
+  the server would refuse, and hiding a button is never what makes an action safe.
+
+**The guards, and why each one exists:**
+
+| Refused | Because |
+|---|---|
+| Your own account: closing it | you would be signed out with no way back |
+| Your own password, here | Settings asks for the current one and keeps you signed in; this would sign you out mid-click |
+| An Owner reaching a developer account | the client asked that the role stay invisible. Filtered **in SQL**, so it never reaches their browser at all |
+| Closing the last open Owner | nobody would be left who could open it again. The developer could, but the salon does not know that account exists |
+
+**Closing is enforced in three places**, which is deliberate: the sessions are deleted at once,
+`getCurrentUser()` treats a surviving cookie as signed out, and a `session.create.before` hook
+refuses the sign-in outright. The hook is what lets the login screen **say** something —
+`validateUserInfo` does not run for a username and password, so it is the documented place.
+
+**The login screen needed a new message.** A closed account returns 403, and
+`sign-in-error.ts` mapped 403 to *"Wrong username or password."* — sending the person hunting for
+a typo that is not there, the exact fault P0.1 fixed. The refusal now carries
+`code: "ACCOUNT_CLOSED"` and reads *"This account has been closed. Ask the Owner to open it
+again."*
+
+**Two things were fixed on the way:**
+
+- `resetManagerPassword` in Settings picked **whichever Manager row came back first**. Harmless
+  while there was exactly one; wrong the moment this item made several possible. It now refuses
+  when there is more than one open Manager and points at this screen.
+- The "set a password and sign them out" dance existed twice. It is now
+  `src/db/user-account.ts`, shared by this screen, the developer's password screen and Settings.
+
+**Verified in a browser**, as the Owner, against the dev database: the developer account is absent
+from the list and the word never appears on the page; the role menu offers only Owner and Manager;
+a Manager was created and signed in with it; the Manager sees no Users link and is redirected away
+from `/users`; the account was closed (sign-in then **403 "This account has been closed."**, and
+the login form showed that sentence), re-opened, and signed in again; the password was reset
+**three times in a row** and only the newest one ever worked. Every action is in `audit_log` with
+actor, target and before/after — and no password is.
+
+**One thing that looked like a bug and was not:** a reset appeared to do nothing. The test session
+had been swapped to the Manager account, so the action hit `requireRole("owner")` and redirected.
+The guard working, not a fault.
+
+**Not built, deliberately:** changing an existing account's role. Demoting the only Owner is its
+own question, and nobody asked for it.
+
+**Not verified:** the last-open-Owner refusal, in a browser. Only a developer can reach that state
+(an Owner is stopped by the "not your own account" rule first), and the developer password is not
+known here. It is unit-tested.
+
+**222 tests pass** (was 202), lint clean, build passes.
 
 **Size:** medium · **Depends on:** P1.1
 

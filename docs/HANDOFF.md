@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete incl. P0.4; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10, P3.6, P4.6 and P4.7 done)
+Last updated: 2026-09-22 (P0 complete incl. P0.4; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10, P3.6, P4.6, P4.7 and P1.2 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (202 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (222 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -139,8 +139,8 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — 23 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **202 passed** (27 files) |
-| Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0014` |
+| `pnpm test` | **222 passed** (28 files) |
+| Database | Neon, PostgreSQL 18.6, **29 tables**, all seeds loaded, migrations through `0015` |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
 | Developer bill edit | exercised end to end on an open day and twice on a closed day (P1.6) |
@@ -150,6 +150,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Receipt printing | a bill was rung up and two older bills reprinted in a browser; the print rules were measured against the live DOM (P3.6). **Never put on actual paper** — no printer was available |
 | Error and loading screens | both boundaries were made to fire in a browser, and the 404 and skeleton checked against a production build (P4.6). `global-error.tsx` has never been triggered |
 | CI | the first run went **green in 56 seconds** on GitHub, commit `0f74808` (P4.7) |
+| Users screen | an account was created, signed in with, closed, refused at the login screen, re-opened and had its password reset three times, all in a browser as the Owner (P1.2) |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
@@ -161,8 +162,10 @@ bill-edit screens. Phase 4 (offline, backup) has not been started.
 All of that day's work — P3.8, P4.9, P4.10 and the P0.4 lockout fix — **is live**, confirmed by
 behaviour on the live site, not by the build going green.
 
-**Migrations `0013` and `0014` are still not applied to the live database.** Nothing breaks: both
-add indexes only, and no code needs them. Apply them when the live connection string is to hand.
+**Migrations `0013`, `0014` and `0015` are not applied to the live database, and `0015` now
+matters.** `0013` and `0014` add indexes only and nothing needs them. **`0015` is different**: it
+adds `user.active`, and the code reads it on **every** session lookup, so deploying P1.2 against a
+database without that column takes the whole site down, not one screen. See section 9.
 
 An earlier version of this section said the live site had no tables and no accounts. **That was
 wrong**, and it was written without checking. Measured from a browser on 2026-09-22:
@@ -361,6 +364,10 @@ Measured, not guessed. Do not spend time re-deriving these.
 | **Postgres does not index a foreign key by itself** | this is why `bill_lines.bill_id` had nothing for 12 migrations. Check it whenever a new table gets a reference |
 | The planner ignores an index until the table has statistics | with 27 rows it filtered instead of using `audit_log(action, target, created_at)`; with 18,000 it chose an Index Only Scan. **Do not judge an index on the dev database's row counts** — generate rows in a transaction, `ANALYZE`, then roll back |
 | A rolled-back transaction does **not** trip the append-only triggers | they are `BEFORE UPDATE OR DELETE`. So inserting throwaway rows, measuring, and rolling back is a safe way to test against a realistic table size |
+| **`user.active` is read on every request** | it is declared in Better Auth's `additionalFields`, so it rides along on the session and `getCurrentUser()` needs no second query. The price is that the column must exist wherever the code runs — see the live-database warning in section 4 |
+| `validateUserInfo` does **not** run for a username and password | Better Auth only re-validates provider-returning sign-ins. To refuse a sign-in for a stored reason, the documented place is `databaseHooks.session.create.before`, which is where the closed-account check lives |
+| An `APIError` from that hook reaches the browser with its `code` | measured: `{"code":"ACCOUNT_CLOSED","message":"This account has been closed."}` with status 403. That is what lets `sign-in-error.ts` tell it apart from a wrong password, which is also 403 |
+| A `redirect()` from `requireRole` inside a Server Action **navigates**, it does not return an error | so a form calling an action it is not allowed to call shows no message — the page simply moves. Mistaken for a broken feature once during P1.2 |
 | `bill_lines` has **no order column** | both the developer's edit screen and the last-visit strip order by `name`, so the two lists look alike |
 | **The error boundary prop is `retry`, not `reset`** | Next 16. `retry()` re-fetches and re-renders, `reset()` only re-renders. Stable since 16.3.0, and this project is on 16.3.5. The old name would silently be `undefined` |
 | `error.tsx` does **not** wrap the `layout.tsx` beside it | it wraps `page.tsx`, `loading.tsx`, `not-found.tsx` and **nested** layouts. `requireUser()` runs in `(app)/layout.tsx` and touches the database, so that failure is caught one level up by `src/app/error.tsx` — which is why both files exist |
@@ -558,6 +565,12 @@ and the seed were actually run against the live branch** before suspecting the c
 ## 9. Open actions and questions
 
 **Owed by the user:**
+- [ ] **Apply migration `0015` to the live database before P1.2 is deployed.** This is the first
+  migration the code cannot run without: `user.active` is read on every session lookup, so without
+  the column the live site returns an error on every page, not just on `/users`. The P1.2 commits
+  are **held unpushed** on this machine for that reason — pushing `main` deploys. Either get the
+  live connection string and run `DATABASE_URL=... pnpm db:migrate`, or have whoever holds the
+  Vercel project run it, and then push.
 - [x] **Rotate the Neon database password** — done on 2026-09-22.
 - [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
 - [ ] **Get access to the Vercel project** — still in the other developer's account, re-confirmed
@@ -630,9 +643,10 @@ STAGE 3 — during the client's 20-day trial
   P3.6  Receipt printing                                DONE 2026-09-22
   P4.6  Error and loading screens                       DONE 2026-09-22
   P4.7  CI on every push                                DONE 2026-09-22
+  P1.2  Users screen                                    DONE 2026-09-22
   P4.9  Index the financial tables                      DONE 2026-09-22
   P4.10 Staff khata stops reading the whole table       DONE 2026-09-22
-  P1.2  Users screen        P4  Cleanup (P4.1-P4.5, P4.8)
+  P4  Cleanup (P4.1-P4.5, P4.8)
 
 STAGE 4 — after the trial
   P2.2  Offline PWA + sync (2–3 weeks)

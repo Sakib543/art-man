@@ -13,6 +13,16 @@
 /** Deliberately vague: it must not reveal which usernames exist. */
 export const WRONG_CREDENTIALS = "Wrong username or password.";
 
+/**
+ * A closed account (backlog P1.2). The password was right — saying "wrong
+ * username or password" would send the person off hunting for a typing
+ * mistake that is not there, which is the exact fault P0.1 fixed.
+ *
+ * It reveals that the account exists, and that is the point: whoever is
+ * holding it already had it.
+ */
+export const ACCOUNT_CLOSED = "This account has been closed. Ask the Owner to open it again.";
+
 export interface SignInFailure {
   /** HTTP status. 0 or missing when the request never reached the server. */
   status?: number;
@@ -31,6 +41,7 @@ const CREDENTIAL_CODES = new Set([
 ]);
 
 export function signInErrorMessage(failure: SignInFailure | null | undefined): string {
+  if (failure?.code === "ACCOUNT_CLOSED") return ACCOUNT_CLOSED;
   if (failure?.code && CREDENTIAL_CODES.has(failure.code)) return WRONG_CREDENTIALS;
 
   // A missing status means the request never got a reply, same as 0.

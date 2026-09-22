@@ -25,6 +25,13 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const role = (user as { role?: unknown }).role;
   if (!isRole(role)) return null;
 
+  // A closed account is signed out, full stop (backlog P1.2). Returning null
+  // rather than redirecting is what keeps /login reachable: the login page
+  // asks this same function, sees nobody, and renders the form. Sending a
+  // closed-but-cookied person away from /login is exactly the loop that
+  // locked people out in P0.4.
+  if ((user as { active?: unknown }).active === false) return null;
+
   return {
     id: user.id,
     name: user.name,
