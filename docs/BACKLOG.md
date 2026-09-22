@@ -9,7 +9,8 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10, P3.6, P4.6 and P4.7 done)
+Last updated: 2026-09-23 (P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
 
@@ -37,8 +38,8 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
-| P4.1 | One shape for every feature, checked by a test | ⬜ | Sakib, 2026-09-23 |
-| P4.3 | Merge features/auth into features/account | ⬜ | Sakib, 2026-09-23 |
+| P4.1 | One shape for every feature, checked by a test | ✅ | done 2026-09-23 |
+| P4.3 | Merge features/auth into features/account | ✅ | done 2026-09-23 |
 | P4.2 | Rewrite docs/ARCHITECTURE.md | ✅ | done 2026-09-23 |
 | P4.4, P4.5, P4.8 | Dead code · shadcn to devDeps · seed env flag | ✅ | done 2026-09-23 |
 | P4.6 | error.tsx / loading.tsx | ✅ | done 2026-09-22 |
@@ -900,6 +901,67 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 
 **Size:** small · **Value:** high (asked for directly by the client)
 
+### ✅ P4.1 — One shape for every feature, and a test that keeps it
+**Done:** 2026-09-23
+
+The item asked for "one convention" for the pure-logic files. Writing another
+convention into `docs/ARCHITECTURE.md` was not worth doing: **the convention was
+already in that file and the code drifted from it anyway**, because a document
+cannot fail a build.
+
+**What was built:** `src/features/conventions.test.ts` reads the feature folders
+and checks the rules:
+
+| Rule | What fails |
+|---|---|
+| Five names mean something | `actions.ts`, `service.ts`, `queries.ts`, `schemas.ts`, `types.ts`. Everything else in a feature is pure logic |
+| A feature holds nothing else | no `.tsx` directly in the folder, no subfolder except `components/` |
+| `actions.ts` is an entry point | starts with `"use server"` and calls `requireUser`/`requireRole` |
+| Pure files stay pure | no `"use client"`/`"use server"`, and no **value** import of `@/db`, `react` or `next`. `import type` is fine — a type vanishes at build |
+| Pure logic is tested | a test in the same folder imports it |
+| No cross-feature imports | `ARCHITECTURE.md` rule 5, which had only ever been measured by hand |
+
+**It deliberately does not** demand all five files in every feature.
+`overview` has no writes and `month-close` has no schemas; empty files to satisfy
+a rule would be worse than the rule. That is written into the test's own comment
+so the next person does not "fix" it.
+
+**The test was broken on purpose to prove it works** — a test that has never
+failed is decoration:
+
+| Mutation | Result |
+|---|---|
+| `import { db } from "@/db"` added to `month-close/rules.ts` | ✗ *month-close/rules.ts imports @/db at runtime* |
+| `overview/alerts.ts` importing `@/features/staff-khata/rules` | ✗ *no feature imports another feature* |
+| a new pure file with no test | ✗ *overview/untested.ts is pure logic with no test importing it* |
+
+All three were reverted. The tree passes as it stands: **70 checks**, and the
+test count went from 238 to **308**.
+
+`docs/ARCHITECTURE.md` now states rules 9 and 10 and says which rules the test
+enforces.
+
+**Size:** small · **Value:** medium (it stops the drift rather than describing it)
+
+---
+
+### ✅ P4.3 — `features/auth` merged into `features/account`
+**Done:** 2026-09-23
+
+Three folders were called some form of "auth": `features/auth`, `lib/auth` and
+`features/account`. The first held **one file** — the login form.
+
+`login-form.tsx` moved to `features/account/components/`, the login page's import
+followed it, and `features/auth` is gone. `lib/auth` keeps its name, because it
+really is about who is signed in; `features/account` is the screens.
+
+Verified by running the app: `/login` renders the form, the username and password
+fields and the Sign in button, after clearing `.next` (trap 8.0b).
+
+**Size:** small · **Value:** medium (one less thing to mistake for another)
+
+---
+
 ### 🟡 P3.7 — Backup and restore
 **Backup done:** 2026-09-23 · **Restore: not yet verified**
 
@@ -1086,9 +1148,9 @@ be cleaned, which is the point of it.
 
 | | Item |
 |---|---|
-| ⬜ P4.1 | **Make every feature the same shape.** Only 6 of 14 follow the full pattern. The pure-logic files (`summary.ts`, `grid.ts`, `rules.ts`, `alerts.ts`, `feed.ts`, `security.ts`, `summary-text.ts`, `cart-state.ts`) need one convention |
+| ✅ P4.1 | **One shape for every feature** — done 2026-09-23, and the convention is now a test. See below |
 | ✅ P4.2 | **Rewritten 2026-09-23.** Was: — it is currently wrong: it says `db/schema.ts` when the reality is a `db/schema/` folder, and never mentions `db/queries/`, `service.ts` or `types.ts` |
-| ⬜ P4.3 | Merge `features/auth` into `features/account` — the names are confusing (`features/auth` vs `lib/auth` vs `features/account`) |
+| ✅ P4.3 | **Merged `features/auth` into `features/account`** — done 2026-09-23. See below |
 | ✅ P4.4 | **Done 2026-09-23.** Deleted: `src/components/coming-soon.tsx`, `src/features/.gitkeep`, `docs/~$iend_Setup_Guide.docx` (a Word lock file), `@neon/env` (unused dependency), `neon.ts` (empty config) |
 | ✅ P4.5 | **Done 2026-09-23.** Moved `shadcn` from `dependencies` to `devDependencies` — it is a CLI and bloats the production install |
 | ✅ P4.6 | **Error and loading screens** — done 2026-09-22. See below |

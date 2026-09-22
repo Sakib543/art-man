@@ -9,8 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
-P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2 done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -23,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (238 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (308 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -140,7 +139,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — **25 routes** (2026-09-23), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **238 passed** (30 files), 2026-09-23 |
+| `pnpm test` | **308 passed** (31 files), 2026-09-23 — 70 of them are the feature-shape checks (P4.1) |
 | Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through `0015` — unchanged on 2026-09-23, no migration was needed all day |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
@@ -405,6 +404,10 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A backup carries `drizzle.__drizzle_migrations` | so a restored database knows which migrations it has and `pnpm db:migrate` carries on from the right place |
 | **`scripts/load-env.ts` must be the first import** | `src/db` builds its pool the moment it is evaluated, so the env has to be in place before that import runs. ES modules evaluate in import order, which is what makes the one-line import work |
 | An environment variable still beats `.env.local` after P4.8 | verified by pointing `pnpm db:check` at `127.0.0.1` and watching it refuse there instead of reaching Neon |
+| **The feature conventions are a test now, not a document** | `src/features/conventions.test.ts` (P4.1). It checks the five role-file names, that nothing else sits in a feature folder, that `actions.ts` starts with `"use server"` and checks a role, that pure files import no `@/db`/`react`/`next` **value**, that every pure file has a test importing it, and that no feature imports another. Each check was confirmed to fail when broken |
+| `import type` does not make a file impure | all five "impure-looking" pure files only import `DayBill` as a type, which is erased at build. The test parses the import clause rather than matching the module name |
+| **`features/auth` no longer exists** | its one file, the login form, is `features/account/components/login-form.tsx` (P4.3). `lib/auth` is about who is signed in; `features/account` is the screens |
+| `module` is a reserved name in this ESLint config | `@next/next/no-assign-module-variable` fails the build on `const module = ...`, even inside a test. Cost a minute in P4.1 |
 
 ## 8. Traps that have already cost time
 
@@ -761,7 +764,9 @@ STAGE 3 — during the client's 20-day trial
   P3.2  Customers screen + special rates               DONE 2026-09-23
   P3.7  Backup (a restore is still unverified)         PART  2026-09-23
   P4.2 · P4.4 · P4.5 · P4.8  Cleanup                   DONE 2026-09-23
-  P4  Cleanup left: P4.1 (feature shape), P4.3 (merge features/auth)
+  P4.1  One shape per feature, checked by a test      DONE 2026-09-23
+  P4.3  features/auth merged into features/account    DONE 2026-09-23
+  P4 is now complete.
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)
@@ -782,7 +787,8 @@ Offline comes after the trial because the trial's purpose is to prove the **acco
 (spec Phase 1: run in parallel with the paper register, 7 straight days with a difference of 0).
 The paper bill book (P2.1) covers outages until then.
 
-**Good items to run in parallel** (they touch different areas): P4.1 · P4.3.
+**P4 is finished.** What is left is P2.2 (offline), P3.3/P3.4/P3.5, and the
+non-code items in STAGE 3b.
 P3.3 and P3.5 both wait on one answer: what a "real alert" and a "staff receipt"
 are sent *through*. Nothing in the project sends anything yet — the Day close
 WhatsApp summary is still a preview on screen.

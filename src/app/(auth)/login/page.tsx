@@ -1,7 +1,7 @@
 import { Scissors } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { LoginForm } from "@/features/auth/components/login-form";
+import { LoginForm } from "@/features/account/components/login-form";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export const metadata = { title: "Sign in | Art Men's Salon" };

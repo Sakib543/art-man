@@ -30,7 +30,11 @@ src/
     types.ts            Plain data the server hands a Client Component.
     <pure>.ts           Feature logic with no React and no database
                         (cart-state, corrections, rules, grid, alerts...),
-                        which is what makes it testable. Tests sit beside it.
+                        which is what makes it testable. Any file that is not
+                        one of the five above is this, it is named after what it
+                        decides, and a test beside it imports it.
+    conventions.test.ts (in src/features/) reads these folders and fails the
+                        build when the rules below are broken.
 
   components/         Shared app pieces: page-header, stat-card, field,
                       form-dialog, form-feedback, use-form-action, app-shell.
@@ -40,7 +44,12 @@ src/
     accounting/       Pure money logic: pricing, commission, deal split,
                       khata, day close, month report, partners, capital.
                       No React, no database. Covered by tests.
-    auth/             roles.ts (the whole hierarchy), session.ts
+    auth/             Everything about *who is signed in*. The login form is
+                      not here: it is a screen, so it lives in
+                      features/account/components (P4.3 merged the old
+                      features/auth away — three folders called some form of
+                      "auth" was two too many).
+                      roles.ts (the whole hierarchy), session.ts
                       (getCurrentUser / requireUser / requireRole),
                       server.ts (Better Auth), client.ts, password-rules.ts.
     business-date.ts  Karachi dates. Servers run in UTC — never slice() a date
@@ -86,6 +95,17 @@ drizzle/              Generated migrations. Never edited by hand.
    not only in `proxy.ts`, which can only see a cookie.
 8. **`requireUser`/`requireRole` go outside the `try`.** They `redirect()`, and
    a `catch` would swallow it.
+9. **A feature holds only** the five role files, pure logic, tests and
+   `components/`. No `.tsx` sits directly in the folder, and no other
+   subfolder exists.
+10. **A feature need not have all five role files.** `overview` has no writes
+    and `month-close` has no schemas; empty files to satisfy a rule would be
+    worse than the rule.
+
+Rules 3, 5, 7, 9 and the "a test beside it" part of the tree above are checked
+by `src/features/conventions.test.ts` — they were written down here from the
+start and drifted anyway, because a document cannot fail a build. Each of those
+checks was confirmed to fail when the rule is broken, not only to pass today.
 
 ## Reference
 
