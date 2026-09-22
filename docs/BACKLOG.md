@@ -21,7 +21,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5 and P5.2 done)
 | P0.2 | Reopen a closed day (Owner) | ✅ | done 2026-09-22 |
 | P0.3 | Cancel a bill/entry in a closed day (Owner) | ✅ | done 2026-09-22 |
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
-| P1.1 | Developer role (super admin) | ⬜ | — |
+| P1.1 | Developer role (super admin) | 🟡 | Sakib543, 2026-09-22 |
 | P1.2 | Users screen — create admins | ⬜ | — |
 | P1.4 | Owner edits a bill on the open day | ✅ | done 2026-09-22 |
 | P1.5 | Owner's edit leaves one line, not three | ✅ | done 2026-09-22 |
@@ -223,8 +223,8 @@ and Day Close step 3 no longer has a Staff PIN column. Confirmed in the database
 
 ---
 
-### ⬜ P1.1 — Fourth role: `developer` (super admin)
-**Owner:** —
+### 🟡 P1.1 — Fourth role: `developer` (super admin)
+**Owner:** Sakib543, 2026-09-22
 
 **Client decision (2026-09-22):** a role above Owner that can do everything — reset passwords,
 edit anything, and take the site down in one click.
