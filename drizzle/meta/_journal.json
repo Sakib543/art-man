@@ -71,6 +71,13 @@
       "when": 1790034371948,
       "tag": "0009_fast_green_goblin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790045361173,
+      "tag": "0010_demonic_reaper",
+      "breakpoints": true
     }
   ]
 }

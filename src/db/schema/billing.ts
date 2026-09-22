@@ -19,6 +19,12 @@ export const bills = pgTable("bills", {
   online: rupees("online").notNull().default(0),
   /** Set on a reversal bill: the bill it cancels out. */
   reversesBillId: uuid("reverses_bill_id"),
+  /**
+   * Set on the corrected bill of an Owner's edit (P1.4): the bill it replaces.
+   * The Daily report folds the pair, and the reversal between them, into this
+   * one row (P1.5). Nothing is deleted; only the everyday view is shorter.
+   */
+  supersedesBillId: uuid("supersedes_bill_id"),
   /** Number from the paper bill book, for bills entered after an outage. */
   bookNo: text("book_no"),
   createdBy: text("created_by").notNull(),

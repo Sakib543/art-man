@@ -1,0 +1,1 @@
+ALTER TABLE "bills" ADD COLUMN "supersedes_bill_id" uuid;
