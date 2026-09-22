@@ -25,7 +25,7 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2 and P1.1 don
 | P1.2 | Users screen — create admins | ⬜ | — |
 | P1.4 | Owner edits a bill on the open day | ✅ | done 2026-09-22 |
 | P1.5 | Owner's edit leaves one line, not three | ✅ | done 2026-09-22 |
-| P1.6 | Developer edits a financial entry | ⬜ | — |
+| P1.6 | Developer edits a financial entry | 🟡 | Sakib543, 2026-09-22 |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
@@ -458,8 +458,8 @@ wants both.
 
 ---
 
-### ⬜ P1.6 — Developer edits a financial entry
-**Owner:** —
+### 🟡 P1.6 — Developer edits a financial entry
+**Owner:** Sakib543, 2026-09-22
 
 Split out of P1.1 on 2026-09-22, so the escape hatch through the append-only triggers gets its own
 task instead of riding along with the role work. The role itself is built and the developer
