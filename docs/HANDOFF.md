@@ -584,18 +584,34 @@ and the seed were actually run against the live branch** before suspecting the c
   developer's own database instead of live. Full instructions, including the bash form and the
   warning about leaving the variable set in a PowerShell session, are in `docs/DEPLOY_VERCEL.md`.
 
-  That applies `0013`, `0014` and `0015` together; the first two are indexes and harmless. Either
-  get the live direct connection string, or have whoever holds the Vercel project run it.
+  That applies `0013`, `0014` and `0015` together; the first two are indexes and harmless.
+
+  **It cannot be run from this machine, and that is now settled rather than assumed.** Checked in
+  the Neon dashboard on 2026-09-22: this account holds **exactly one project, `art-man-dev`, with
+  exactly one branch, `production`** — and that branch is the one `.env.local` already points at
+  (endpoint `ep-rapid-butterfly-b5booy5t`, confirmed with `pnpm db:check`). Neon calls the default
+  branch "production"; the name means nothing here.
+
+  So the live database is **not in this account at all**. It is in the other developer's Neon, and
+  the only ways to reach it are the Vercel project's `DATABASE_URL` or that developer handing over
+  the direct string. Whoever holds it runs the command above.
 - [x] **Rotate the Neon database password** — done on 2026-09-22.
 - [x] **New connection string in `.env.local`** — done on 2026-09-22. The database works again.
 - [ ] **Get access to the Vercel project** — still in the other developer's account, re-confirmed
   2026-09-22. The URL is now known (`https://art-man-drab.vercel.app`) and the live database is
   connected, so what is missing is narrower than it was: the **environment variables cannot be
-  read or changed**, and the **live connection string** is needed to apply `0013` and `0014`.
+  read or changed**, and the **live connection string** is needed to apply `0013`, `0014` and now
+  `0015`.
   **Vercel's free Hobby plan has no collaborators**, so being "added" is not possible on it — the
   realistic route is **Transfer Project** (Project Settings → General), or a paid Team. Ask them
   for the live Neon **direct connection string** as well; that alone unblocks migrations even
   before the project moves.
+
+  **This is no longer only about convenience.** Until P1.2 was built, every unapplied migration was
+  an index and nothing needed it, so the access problem cost nothing. `0015` changed that: the code
+  reads `user.active` on every request, so from now on the deploy and the database have to move
+  together, and only the holder of that string can move the database. **Nothing else should be
+  built on a schema change until this is resolved.**
 
 **Questions blocking work:**
 0. **A bill edited in a closed month leaves that month's frozen report wrong.** `month_closes`
