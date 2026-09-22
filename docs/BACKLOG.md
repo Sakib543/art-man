@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10 and P3.6 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10, P3.6, P4.6 and P4.7 done)
 
 ---
 
@@ -34,8 +34,8 @@ Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6,
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
 | P4.1–P4.5, P4.8 | Cleanup | ⬜ | — |
-| P4.6 | error.tsx / loading.tsx | 🟡 | Sakib 2026-09-22 |
-| P4.7 | CI on every push | 🟡 | Sakib 2026-09-22 |
+| P4.6 | error.tsx / loading.tsx | ✅ | done 2026-09-22 |
+| P4.7 | CI on every push | ✅ | done 2026-09-22 |
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
 | P4.10 | Staff khata reads the whole ledger table | ✅ | done 2026-09-22 |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
@@ -837,8 +837,8 @@ It is now 4 queries instead of 2, and **no financial table has an index on `busi
 | ⬜ P4.3 | Merge `features/auth` into `features/account` — the names are confusing (`features/auth` vs `lib/auth` vs `features/account`) |
 | ⬜ P4.4 | **Delete dead code:** `src/components/coming-soon.tsx`, `src/features/.gitkeep`, `docs/~$iend_Setup_Guide.docx` (a Word lock file), `@neon/env` (unused dependency), `neon.ts` (empty config) |
 | ⬜ P4.5 | Move `shadcn` from `dependencies` to `devDependencies` — it is a CLI and bloats the production install |
-| 🟡 P4.6 | Add `error.tsx` / `loading.tsx` — a database error currently shows Next's default error page. **Owner: Sakib, 2026-09-22** |
-| 🟡 P4.7 | Add CI (`.github/workflows`) so build + 202 tests + lint run on every push. **More valuable now that two people share `main`** · **Owner: Sakib, 2026-09-22** |
+| ✅ P4.6 | **Error and loading screens** — done 2026-09-22. See below |
+| ✅ P4.7 | **CI on every push** — done 2026-09-22. See below |
 | ⬜ P4.8 | Remove the hardcoded `--env-file=.env.local` from the seed scripts in `package.json` — it makes seeding a live database awkward |
 | ✅ P4.9 | **Index the financial tables** — done 2026-09-22, migration `0013`. See below |
 | ✅ P4.10 | **Staff khata reads the whole `khata_entries` table** — done 2026-09-22, migration `0014`. See below |
@@ -983,6 +983,74 @@ query has to read every row whatever happens, and with a handful of distinct sta
 over a sequential scan beat an index-only scan even when one was offered.
 
 **Size:** small · **Value:** medium
+
+---
+
+### ✅ P4.6 — Error and loading screens
+**Done:** 2026-09-22
+
+A database error showed Next's own black-and-white error page, and a slow screen
+showed the previous one with no sign anything was happening. Neither belongs in front of a salon
+manager.
+
+| File | Catches |
+|---|---|
+| `src/app/error.tsx` | everything below the root layout — including `(app)/layout.tsx`, where `requireUser()` touches the database, and the login page. Stands alone: when the shell is what failed there is no sidebar to show |
+| `src/app/(app)/error.tsx` | a signed-in screen. Sits inside the shell, so the sidebar stays and the counter can go elsewhere instead of being stranded |
+| `src/app/global-error.tsx` | the root layout itself. Next loads no global styles here, so every style is inline on purpose |
+| `src/app/(app)/loading.tsx` | a skeleton for all fourteen signed-in screens |
+| `src/app/not-found.tsx` | a mistyped address |
+| `src/components/error-card.tsx` | the wording, shared by the two error pages |
+
+**The wording follows P0.1:** a system fault must never read as something the person did, and
+support must be left with something to go on. The screen names the database, says nothing entered
+has been lost, points at the paper bill book, and shows the digest. The whole error object goes to
+the browser console.
+
+**In Next 16 the error boundary prop is `retry`, not `reset`.** `retry()` re-fetches and
+re-renders; `reset()` only re-renders. Had the old name been used the prop would simply have been
+undefined and the button would have thrown.
+
+**Verified in a browser**, by making a page throw and then the layout throw: the page error keeps
+the sidebar, the layout error does not, and **the digest on screen matched the one in the server
+log**. Pressing Try again after the fault was removed brought the real screen back, which is what
+proves `retry` is wired. The 404 and the loading skeleton were checked against a **production
+build** as well.
+
+**Not exercised:** `global-error.tsx`. Triggering it needs the root layout to fail.
+
+**Size:** small
+
+---
+
+### ✅ P4.7 — CI on every push
+**Done:** 2026-09-22 · `.github/workflows/ci.yml`
+
+Two developers work directly on `main`, in separate repositories, with no PR review — nothing
+caught a bad push except the next person to pull.
+
+Lint, then test, then build, on every push to `main` and every pull request. That is the reverse
+of the local order in the working agreement, deliberately: the slowest step goes last so a broken
+push fails in seconds rather than minutes.
+
+- **No secrets, no environment variables.** The build needs none (measured, and the reason a green
+  build proves nothing about the deployment) and the tests never touch a database.
+- pnpm comes from `packageManager` in `package.json` via `pnpm/action-setup`, so the pinned
+  version lives in one place.
+- Node is pinned to **22** — the LTS the deployment runs, not whatever is on a laptop.
+
+**Verified:** `pnpm install --frozen-lockfile` was run locally first, since it is the step most
+likely to fail only in CI; the YAML was parsed rather than eyeballed; and after pushing, the first
+run was watched to completion through `api.github.com/repos/Sakib543/art-man/actions/runs` —
+**green in 56 seconds** on commit `0f74808`.
+
+**Worth knowing:** GitHub disables Actions on a forked repository by default, and this working copy
+is a fork. Here they were already on. If a run never appears, that is the first thing to check.
+
+**Still worth adding:** a branch protection rule, so a red run actually blocks. Not possible today
+— nobody merges through PRs, and the rule set that would enforce it needs repository admin.
+
+**Size:** small
 
 ---
 

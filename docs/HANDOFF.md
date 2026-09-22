@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete incl. P0.4; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10 and P3.6 done)
+Last updated: 2026-09-22 (P0 complete incl. P0.4; P1.0, P2.1, P1.4, P1.5, P5.2, P1.1, P1.6, P3.8, P4.9, P4.10, P3.6, P4.6 and P4.7 done)
 
 ---
 
@@ -60,8 +60,10 @@ that changes, the rule has to change with it.
 
 - One developer works **during the day**, the other **at night**.
 - Both work on `main`, in their own repository.
-- There is no CI yet (backlog P4.7) and no PR review, so nothing catches a bad push except the
-  next person.
+- **CI runs on every push since 2026-09-22** (P4.7): lint, test and build, in
+  `.github/workflows/ci.yml`. It reports; it does not block, because nothing merges through a PR.
+  So a red run still reaches `main` — and reaches the live site, since a push here deploys.
+- There is still no PR review.
 
 ### Rules that follow from that
 
@@ -146,6 +148,8 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Staff khata | opened in a browser for two staff members after the rewrite; balances and ledgers identical to before (P4.10) |
 | Login is reachable with a dead cookie | fixed and tested both ways, with a real signed-in session and with a stale one (P0.4) |
 | Receipt printing | a bill was rung up and two older bills reprinted in a browser; the print rules were measured against the live DOM (P3.6). **Never put on actual paper** — no printer was available |
+| Error and loading screens | both boundaries were made to fire in a browser, and the 404 and skeleton checked against a production build (P4.6). `global-error.tsx` has never been triggered |
+| CI | the first run went **green in 56 seconds** on GitHub, commit `0f74808` (P4.7) |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
@@ -358,6 +362,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | The planner ignores an index until the table has statistics | with 27 rows it filtered instead of using `audit_log(action, target, created_at)`; with 18,000 it chose an Index Only Scan. **Do not judge an index on the dev database's row counts** — generate rows in a transaction, `ANALYZE`, then roll back |
 | A rolled-back transaction does **not** trip the append-only triggers | they are `BEFORE UPDATE OR DELETE`. So inserting throwaway rows, measuring, and rolling back is a safe way to test against a realistic table size |
 | `bill_lines` has **no order column** | both the developer's edit screen and the last-visit strip order by `name`, so the two lists look alike |
+| **The error boundary prop is `retry`, not `reset`** | Next 16. `retry()` re-fetches and re-renders, `reset()` only re-renders. Stable since 16.3.0, and this project is on 16.3.5. The old name would silently be `undefined` |
+| `error.tsx` does **not** wrap the `layout.tsx` beside it | it wraps `page.tsx`, `loading.tsx`, `not-found.tsx` and **nested** layouts. `requireUser()` runs in `(app)/layout.tsx` and touches the database, so that failure is caught one level up by `src/app/error.tsx` — which is why both files exist |
+| A `redirect()` is **not** swallowed by an error boundary | `getDerivedStateFromError` re-throws anything `isNextRouterError` matches (read in `next/dist/client/components/error-boundary.js`). So adding `error.tsx` could not break the auth redirects |
+| `global-error.tsx` gets **no global styles** | it replaces the root layout, so Tailwind and the theme are gone. Its styles are inline, and changing the app's look will not change that screen |
+| CI needs **no secrets** | the build passes with no environment variables and the tests never open a database |
 | `get_page_text` reads `<main>` only | a Base UI dialog renders in a portal outside it, so a confirmation dialog looks absent when it is open. Use `read_page` or query `[role="dialog"]` instead |
 | **`DayBill` already carries everything a receipt shows** | bill number, time, customer, lines with staff names, cash, online and total. So reprinting a bill (P3.6) needed **no new query** — Today's bills reprints from the list it has already loaded |
 | A Base UI dialog is a **direct child of `<body>`** | measured with one open: 9 body children, 8 of them the page. That is what lets the print rules keep the slip and hide everything else, with `body:has([data-print-receipt]) > *:not(:has(...))` |
@@ -433,6 +442,27 @@ The fix that does not depend on any of this: put the override on the element as 
 utility (`print:translate-none`). Utility against utility is ordered by Tailwind — measured, the
 print variant lands at byte 65,219 of the stylesheet against 26,662 for the centring class — so it
 cannot be folded away or lose the cascade.
+
+### 8.0e A hidden Browser pane freezes the page, and the text tools do not say so
+
+**This wasted well over an hour across two tasks. Read it before debugging anything in the
+Browser pane.**
+
+When the pane is not being displayed the page produces no frames, and with no frames:
+
+- **a Suspense boundary never reveals its content.** After P4.6 added `loading.tsx`, `/overview`
+  sat on the loading skeleton for thirty seconds in dev *and* in a production build. The content
+  had arrived — it was sitting in `<div hidden id="S:0">` with the boundary still marked
+  `<!--$~-->`. It looked exactly like a bug in the new file. **Taking a screenshot rendered a
+  frame and the page completed instantly.**
+- **CSS animations stay at frame zero**, so `getComputedStyle` reports mid-animation values that
+  never advance, and measurements contradict each other. This is what made the P3.6 `translate`
+  investigation (8.0d) so confusing.
+- `requestAnimationFrame` never fires, so any script awaiting it times out.
+
+What to trust when the pane is hidden: the DOM, `document.styleSheets`, selector matching,
+`fetch`. What not to trust: anything that depends on the page having rendered. **If a page looks
+stuck, take a screenshot before believing it.**
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -598,9 +628,11 @@ STAGE 3 — during the client's 20-day trial
   P1.6  Developer edits a financial entry               DONE 2026-09-22
   P3.8  Customer's last visit on the billing screen     DONE 2026-09-22
   P3.6  Receipt printing                                DONE 2026-09-22
+  P4.6  Error and loading screens                       DONE 2026-09-22
+  P4.7  CI on every push                                DONE 2026-09-22
   P4.9  Index the financial tables                      DONE 2026-09-22
   P4.10 Staff khata stops reading the whole table       DONE 2026-09-22
-  P1.2  Users screen        P4  Cleanup + CI
+  P1.2  Users screen        P4  Cleanup (P4.1-P4.5, P4.8)
 
 STAGE 4 — after the trial
   P2.2  Offline PWA + sync (2–3 weeks)
