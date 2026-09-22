@@ -129,8 +129,19 @@ async function priceBill(input: CreateBillInput): Promise<PricedBill> {
   };
 }
 
-/** Insert the bill and its lines. Runs inside the caller's transaction. */
-async function writeBill(tx: Tx, businessDate: string, actor: string, input: CreateBillInput, priced: PricedBill) {
+/**
+ * Insert the bill and its lines. Runs inside the caller's transaction.
+ * `supersedesBillId` is set only on the corrected bill of an edit (P1.4), so
+ * the Daily report can fold the correction into one row (P1.5).
+ */
+async function writeBill(
+  tx: Tx,
+  businessDate: string,
+  actor: string,
+  input: CreateBillInput,
+  priced: PricedBill,
+  supersedesBillId: string | null = null,
+) {
   let customerId = priced.customerId;
   if (!customerId && priced.newCustomer) {
     const [created] = await tx.insert(customers).values(priced.newCustomer).returning({ id: customers.id });
@@ -145,6 +156,7 @@ async function writeBill(tx: Tx, businessDate: string, actor: string, input: Cre
       cash: input.cash,
       online: input.online,
       bookNo: input.bookNo,
+      supersedesBillId,
       createdBy: actor,
     })
     .returning();
@@ -246,7 +258,7 @@ export async function editBill(user: SessionUser, input: EditBillInput): Promise
 
   return db.transaction(async (tx) => {
     const reversalBillNo = await writeCancellation(tx, original, originalLines, `Edited: ${input.reason}`, actor);
-    const bill = await writeBill(tx, day.businessDate, actor, input, priced);
+    const bill = await writeBill(tx, day.businessDate, actor, input, priced, original.id);
 
     // Both versions go to the audit log, so the bill as it was stays readable
     // even though the row itself was never touched.

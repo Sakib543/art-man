@@ -2,7 +2,9 @@ import { Badge } from "@/components/ui/badge";
 import type { DayBill } from "@/db/queries/day-bills";
 import { formatTime, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { ReportBill } from "../corrections";
 import { CancelClosedBill } from "./cancel-closed-bill";
+import { PreviousVersions } from "./previous-versions";
 
 const th = "px-3.5 py-2 text-left text-[12.5px] font-medium text-muted-foreground";
 const td = "px-3.5 py-2.5 align-top";
@@ -13,8 +15,12 @@ function StatusBadge({ bill }: { bill: DayBill }) {
   return <Badge className="bg-success-soft text-success">Paid</Badge>;
 }
 
-/** Every bill of the day, cancelled ones and reversals included, so the mistake stays visible. */
-export function ReportTable({ bills, canCancel }: { bills: DayBill[]; canCancel: boolean }) {
+/**
+ * One row per bill. A cancelled bill and its reversal stay visible, so the
+ * mistake does (spec 11); a bill the Owner *corrected* is one row carrying an
+ * "Edited" badge, with every earlier version a click away (P1.5).
+ */
+export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCancel: boolean }) {
   return (
     <div className="rounded-[14px] border bg-card">
       <div className="overflow-x-auto">
@@ -52,6 +58,11 @@ export function ReportTable({ bills, canCancel }: { bills: DayBill[]; canCancel:
                   {bill.status === "reversal" && bill.reversesBillNo ? (
                     <p className="mt-1 text-[12.5px] text-muted-foreground">Cancels bill #{bill.reversesBillNo}</p>
                   ) : null}
+                  {bill.previous.length > 0 ? (
+                    <div className="mt-1 -ml-2">
+                      <PreviousVersions billNo={bill.billNo} previous={bill.previous} />
+                    </div>
+                  ) : null}
                 </td>
                 <td className={cn(td, "text-[13px] text-muted-foreground tabular-nums")}>
                   {bill.cash !== 0 ? <p>Cash {num(bill.cash)}</p> : null}
@@ -61,6 +72,9 @@ export function ReportTable({ bills, canCancel }: { bills: DayBill[]; canCancel:
                   {num(bill.total)}
                 </td>
                 <td className={cn(td, "text-right")}>
+                  {bill.previous.length > 0 ? (
+                    <Badge className="mr-1 bg-warning-soft text-warning">Edited</Badge>
+                  ) : null}
                   <StatusBadge bill={bill} />
                   {canCancel && bill.status === "active" ? (
                     <div className="mt-1.5">
@@ -81,7 +95,8 @@ export function ReportTable({ bills, canCancel }: { bills: DayBill[]; canCancel:
         </table>
       </div>
       <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
-        Totals include every line, cancelled bills and reversals too. The mistake stays visible and the total stays correct.
+        Totals include every line, cancelled bills and reversals too. A corrected bill shows as one line marked
+        Edited; its earlier versions are still in the record and the totals already account for them.
       </p>
     </div>
   );

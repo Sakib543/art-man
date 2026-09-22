@@ -1,7 +1,8 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { getDayBills, type DayBill } from "@/db/queries/day-bills";
+import { getDayBills } from "@/db/queries/day-bills";
 import { businessDays, daySnapshots } from "@/db/schema";
+import { foldCorrections, type ReportBill } from "./corrections";
 import { summarizeBills, type ReportSummary } from "./summary";
 
 export interface ReportDay {
@@ -20,7 +21,8 @@ export interface DailyReport {
   /** Every business day, newest first, for the day picker. */
   days: ReportDay[];
   selected: ReportDay;
-  bills: DayBill[];
+  /** One row per bill: a correction's three rows are folded into the newest (P1.5). */
+  bills: ReportBill[];
   summary: ReportSummary;
   /** Only for a closed day. */
   closing: ClosingFigures | null;
@@ -34,7 +36,7 @@ export async function getDailyReport(requestedDate?: string): Promise<DailyRepor
   const days = dayRows.map((day) => ({ businessDate: day.businessDate, closed: day.closedAt !== null }));
   const selected = days.find((day) => day.businessDate === requestedDate) ?? days[0];
 
-  const bills = await getDayBills(selected.businessDate);
+  const bills = foldCorrections(await getDayBills(selected.businessDate));
 
   let closing: ClosingFigures | null = null;
   if (selected.closed) {

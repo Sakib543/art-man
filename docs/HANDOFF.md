@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0 complete, P1.0, P2.1 and P1.4 done; P1.5 decided, not started)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4 and P1.5 done)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (152 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (163 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -91,8 +91,8 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — 17 routes, exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **152 passed** (20 files) |
-| Database | Neon, PostgreSQL 18.6, **28 tables**, all seeds loaded |
+| `pnpm test` | **163 passed** (21 files) |
+| Database | Neon, PostgreSQL 18.6, **28 tables**, all seeds loaded, migrations through `0010` |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
@@ -125,7 +125,8 @@ bill (#1) and its reversal (#2), a reversed commission for Arshad, and three row
 `day_snapshot_history` — left over from verifying P0.2 and P0.3. **23 Sep 2026 is open** with
 bills #3 to #9 from verifying P2.1 and P1.4: #3 carries book number `B-2/45`, and two corrections
 left #4 and #7 cancelled with their reversals (#5, #8) and their replacements (#6, #9). Day total
-Rs 2,600. Two `bill.edit` rows are in `audit_log`. Every khata balance is 0. Reopen or reseed
+Rs 2,600. P1.5 then corrected #3 twice (→ #11, #13) and cancelled #9 outright, leaving the day at
+**Rs 1,900** with four `bill.edit` rows in `audit_log`. Every khata balance is 0. Reopen or reseed
 freely; none of it is real data.
 
 Local logins: `owner` and `manager`. Passwords were printed once during seeding and the user noted
@@ -147,7 +148,8 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. Constraints below. |
 | **Offline** | Real offline required — 6–8 hours with no internet, then sync on reconnect. |
 | **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: anything, any time (P1.1). |
-| **Marking an edited bill** | **Yes.** When P1.5 collapses a correction to one line, that line carries an "edited" badge **with a link to the previous version**. |
+| **Marking an edited bill** | **Yes.** The Daily report's single line carries an "Edited" badge **with a link to the previous version** (P1.5, done). |
+| **An edited bill's number** | The receipt number **need not stay the same**. That choice let P1.5 be built without weakening the append-only guarantee. |
 
 ### Constraints on the developer edit feature
 
@@ -200,6 +202,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | `cancelBill` and `editBill` share `writeCancellation` | in `src/db/bill-cancel.ts`, so a cancellation can run inside a bigger transaction |
 | Re-opening a bill prices it against **today's** catalog | if a service or deal changed since, `getBillForEdit` refuses and says why, rather than opening with a total of 0 |
 | An edited bill's cancellation reason starts `Edited:` | that is how the daily report tells a correction from a plain cancellation |
+| **The Daily report folds a correction into one row; the database keeps all three** | `foldCorrections` in `src/features/daily-report/corrections.ts`. Safe because a cancelled bill and its reversal add up to zero, so no total moves |
+| `bills.supersedes_bill_id` links a correction to what it replaced | added in `0010`, an `ADD COLUMN` only — no trigger was touched |
+| A corrected bill counts as **edited**, not cancelled | otherwise the "too many cancellations" alert would fire whenever the Owner fixed a typo |
+| Corrections made before migration `0010` are **not** folded | their `supersedes_bill_id` is null. Two of them are in the dev database |
+| Today's bills (Billing screen) does **not** fold | deliberate: it is the counter's working list. Only the Daily report folds |
 | A closed-day correction never rewrites counted cash | the drawer was counted by hand; only expected cash moves, and the difference shows the correction |
 
 ---
@@ -298,14 +305,9 @@ step 4 says "sign in as owner". Very likely why the Vercel deployment never work
 
 Questions 2 and 3 are not needed until offline work starts.
 
-**New question, blocking P1.5:** the client wants one line with an "edited" badge. There are two
-ways to get there and they differ in risk — see "Two ways to build it" in `docs/BACKLOG.md` P1.5.
-Option B collapses the three rows **in the view only**, leaving the append-only guarantee
-untouched and needing nothing from P1.1; its one cost is that the corrected bill has a new
-`bill_no`, so a customer holding the old slip sees a different number. **Ask whether the receipt
-number must stay the same before choosing.**
-
 **Answered:**
+- **Must an edited bill keep its receipt number?** No (2026-09-22). That answer chose option B for
+  P1.5: fold the rows in the view only, leave the append-only guarantee alone.
 - **Should the Daily report mark a bill as edited?** Yes — badge plus a link to the previous
   version (2026-09-22). Recorded in section 6.
 - **Each developer has their own database** (confirmed 2026-09-22). So a migration or a seed run by
@@ -326,8 +328,9 @@ STAGE 1 — before the client trial
   4. P0.3  Cancel a bill/entry in a closed day (Owner)   DONE 2026-09-22
   5. P2.1  Paper bill-book number field                  DONE 2026-09-22
   6. P1.4  Owner edits a bill on the open day            DONE 2026-09-22
-  7. P1.5  That edit leaves one line, not three          medium   <- next, but see the
-                                                         question below first
+  7. P1.5  That edit leaves one line, not three          DONE 2026-09-22
+
+STAGE 1 is complete. Next is STAGE 2 — go live (P5.2), which needs question 1 answered.
 
 STAGE 2 — go live
   P5.2  Fix DEPLOY_VERCEL.md · Neon `live` branch · Vercel env vars

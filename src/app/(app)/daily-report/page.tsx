@@ -1,4 +1,4 @@
-import { AlertTriangle, Banknote, CircleCheck, QrCode, Receipt, TrendingUp, Undo2, Wallet } from "lucide-react";
+import { AlertTriangle, Banknote, CircleCheck, Pencil, QrCode, Receipt, TrendingUp, Undo2, Wallet } from "lucide-react";
 import { BusinessDayPill } from "@/components/business-day-pill";
 import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
@@ -46,12 +46,18 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
         </div>
       ) : null}
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatCard icon={TrendingUp} label="Total sales" value={rs(summary.total)} />
         <StatCard icon={Banknote} label="Cash" value={rs(summary.cash)} />
         <StatCard icon={QrCode} label="Online" value={rs(summary.online)} />
         <StatCard icon={Receipt} label="Paid bills" value={String(summary.paidBills)} />
         <StatCard icon={Undo2} label="Cancelled" value={String(summary.cancelledBills)} />
+        <StatCard
+          icon={Pencil}
+          label="Edited"
+          value={String(summary.editedBills)}
+          hint="Corrected bills, shown as one line each"
+        />
       </div>
 
       {closing ? (

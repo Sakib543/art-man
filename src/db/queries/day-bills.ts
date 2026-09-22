@@ -23,8 +23,12 @@ export interface DayBill {
   bookNo: string | null;
   status: "active" | "cancelled" | "reversal";
   cancelReason: string | null;
+  /** On a reversal bill: the bill it cancels. */
+  reversesBillId: string | null;
   /** On a reversal bill: the number of the bill it cancels. */
   reversesBillNo: number | null;
+  /** On the corrected bill of an Owner's edit: the bill it replaces (P1.4). */
+  supersedesBillId: string | null;
   lines: DayBillLine[];
 }
 
@@ -38,6 +42,7 @@ export async function getDayBills(businessDate: string): Promise<DayBill[]> {
       cash: bills.cash,
       online: bills.online,
       reversesBillId: bills.reversesBillId,
+      supersedesBillId: bills.supersedesBillId,
       bookNo: bills.bookNo,
       customerName: customers.name,
       cancelReason: billCancellations.reason,
@@ -75,7 +80,9 @@ export async function getDayBills(businessDate: string): Promise<DayBill[]> {
     bookNo: row.bookNo,
     status: row.reversesBillId ? "reversal" : row.cancelReason ? "cancelled" : "active",
     cancelReason: row.cancelReason,
+    reversesBillId: row.reversesBillId,
     reversesBillNo: row.reversesBillId ? (billNoById.get(row.reversesBillId) ?? null) : null,
+    supersedesBillId: row.supersedesBillId,
     lines: lineRows
       .filter((line) => line.billId === row.id)
       .map(({ name, amount, staffId, staffName }) => ({ name, amount, staffId, staffName })),

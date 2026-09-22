@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0 complete, P1.0, P2.1 and P1.4 done)
+Last updated: 2026-09-22 (P0 complete; P1.0, P2.1, P1.4 and P1.5 done)
 
 ---
 
@@ -24,7 +24,7 @@ Last updated: 2026-09-22 (P0 complete, P1.0, P2.1 and P1.4 done)
 | P1.1 | Developer role (super admin) | ⬜ | — |
 | P1.2 | Users screen — create admins | ⬜ | — |
 | P1.4 | Owner edits a bill on the open day | ✅ | done 2026-09-22 |
-| P1.5 | Owner's edit leaves one line, not three | 🟡 | Sakib543, 2026-09-22 |
+| P1.5 | Owner's edit leaves one line, not three | ✅ | done 2026-09-22 |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync | ⬜ | — |
@@ -362,57 +362,67 @@ the same reasons **before** the Owner retypes anything, and says which one.
 
 ---
 
-### 🟡 P1.5 — Owner's edit leaves one line, not three
-**Owner:** Sakib543, 2026-09-22
+### ✅ P1.5 — Owner's edit leaves one line, not three
+**Done:** 2026-09-22
 
-**Client asked for this (2026-09-22)**, after seeing what P1.4 would look like. As built, one
-correction shows three lines in the Daily report — the cancelled bill, its reversal, and the
-corrected bill. The client wants the corrected bill to simply **replace** the old one, so the day
-shows a single line.
+**Client asked for this (2026-09-22)**, after seeing what P1.4 would look like: one correction
+showed three lines in the Daily report — the cancelled bill, its reversal, and the corrected bill.
+They wanted the day to read as one line per bill.
 
-**What it costs.** This is the first time an ordinary screen would change a financial row in place,
-so it has to be built like the developer's edit (P1.1), not like a cancellation:
+**Client decisions that shaped it:**
 
-- `bills` and `bill_lines` are append-only; the `bill_lines` rows would have to be replaced through
-  the same deliberate escape hatch P1.1 uses, never by ordinary code.
-- **Every version goes to `audit_log` with `before` and `after`**, so the old bill is still
-  recoverable even though the Daily report shows one line. Nothing may be lost, only hidden from
-  the everyday view.
-- Open day only. Once a day is closed its bills are settled and its security code covers them, so
-  editing in place there stays out of the question (that is P0.3's cancel path).
-- The `bill_no` stays the same, which is the point: the customer's receipt number does not change.
+- The single line **carries an "Edited" badge with a link to the previous version**. Without a
+  marker a corrected bill would look identical to one that was right the first time — exactly what
+  spec 11 exists to prevent.
+- **The receipt number does not have to stay the same.** That is what made the cheap build possible.
 
-**Client decision (2026-09-22): the single line carries an "edited" badge with a link to the
-previous version.** Asked because without a marker a corrected bill is indistinguishable from one
-that was right the first time — exactly what spec 11 set out to prevent — and the audit log would
-be the only defence against that. So the one line must show it was edited, and the version before
-it must be reachable from the report, not only from `audit_log`.
+**Built as option B: the view folds, the data does not.** P1.4's cancel + reversal + new bill is
+untouched in the database. The Daily report folds those three rows into the newest one. So:
 
-**Where P1.4 left it.** A correction already carries a marker of sorts: the cancelled bill's
-reason reads `Edited: <what was wrong>`, and the reversal says which bill it cancels. Once the
-three lines collapse into one, that marker goes with them — which is why the badge was asked for.
+- **The append-only guarantee was never weakened.** No escape hatch, no trigger change, no
+  dependency on P1.1. The only schema change is one nullable column.
+- **No total moves.** A cancelled bill and its reversal add up to zero, so the visible rows sum to
+  exactly what every row summed to before. There is a test that asserts precisely this.
 
-### Two ways to build it — decide before starting
+| File | What |
+|---|---|
+| `0010_demonic_reaper.sql` | `ALTER TABLE bills ADD COLUMN supersedes_bill_id uuid` — that is the whole migration |
+| `service.ts` | `editBill` sets it on the corrected bill |
+| `day-bills.ts` | `supersedesBillId` and `reversesBillId` on `DayBill` |
+| `corrections.ts` (new, pure) | `foldCorrections` folds a correction's rows into the newest and hands it the earlier versions; `editReason` strips the `Edited:` prefix |
+| `corrections.test.ts` (new) | 11 tests |
+| `summary.ts` | new `editedBills` count |
+| `previous-versions.tsx` (new) | the dialog behind the link: every earlier version with its lines, total and the reason it changed |
+| `report-table.tsx` · `daily-report/page.tsx` | the badge, the link, and an **Edited** stat card |
 
-**A. Replace the row in place** (what this item assumed). The `bill_lines` of the bill are
-replaced through P1.1's escape hatch, `bill_no` never changes, and the report naturally shows one
-line. It needs the escape hatch first, and it is the first time an ordinary screen changes a
-financial row in place.
+**A plain cancellation is still two lines.** Nothing replaced it, so nothing is folded — the mistake
+stays visible, as spec 11 requires. A corrected bill is counted as **edited, not cancelled**, so the
+"3 bills were cancelled" alert no longer fires because the Owner fixed some typing.
 
-**B. Keep append-only, collapse only the view.** Leave P1.4's cancel + reversal + new bill exactly
-as it is, and have the Daily report fold a correction's three rows into the newest one, carrying
-the badge and a link to the version before it. The cancelled bill and its reversal net to zero, so
-every total is unchanged, and **the append-only guarantee is not touched at all** — no escape
-hatch, no migration, no dependency on P1.1.
+**Verified in the browser** against the dev database, on the open day (23 Sep 2026):
 
-What B does **not** give is the unchanged receipt number: the corrected bill has a new `bill_no`,
-so a customer holding the old slip sees a different number.
+| Check | Result |
+|---|---|
+| One correction | bill #3 corrected → report showed **one** row, `#11 · Edited · Paid`. Total sales stayed Rs 2,600 |
+| The link | "See previous version" opened #3 with its line, total and *"Changed because: Arshad did this haircut, not Sherry"* |
+| Corrected twice | #11 corrected again → **five** rows folded into `#13`, reading "See 2 previous versions"; Edited count stayed 1 |
+| Totals | Rs 2,900 after adding a Rs 300 service — the fold moved nothing |
+| Plain cancellation | #9 cancelled normally → still **two** lines, no Edited badge, counted as cancelled, alert fired |
+| Book number | carried through the correction onto the new bill |
 
-**Client decision (2026-09-22): the receipt number does not have to stay the same — build
-option B.** So the append-only guarantee is never touched and P1.1 is not a dependency.
+163 tests pass (was 152), lint clean, build passes.
 
-**Size:** medium · **Depends on:** P1.4 (done). Option A also depends on the escape hatch from
-P1.1, which is not built; option B depends on nothing further.
+**Known and expected:** corrections made **before** this migration are not folded — their
+`supersedes_bill_id` is null because nothing recorded it at the time. Two such corrections are in
+the dev database and still show as three lines each. The client's database has no corrections yet,
+so nothing there is affected.
+
+**Left as it was on purpose:** Today's bills on the Billing screen still lists every row. It is the
+counter's working list, and the Owner has just made the correction there and should see exactly
+what it did. Only the Daily report — the record the client reads — folds. Say so if the client
+wants both.
+
+**Size:** medium · **Depended on:** P1.4 (done). Option A's dependency on P1.1 did not apply.
 
 ---
 

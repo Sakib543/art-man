@@ -11,6 +11,8 @@ const bill = (status: DayBill["status"], cash: number, online = 0): DayBill => (
   cash,
   online,
   bookNo: null,
+  reversesBillId: null,
+  supersedesBillId: null,
   status,
   cancelReason: null,
   reversesBillNo: null,
@@ -29,6 +31,6 @@ describe("summarizeBills", () => {
   });
 
   it("an empty day is all zeros", () => {
-    expect(summarizeBills([])).toEqual({ total: 0, cash: 0, online: 0, paidBills: 0, cancelledBills: 0 });
+    expect(summarizeBills([])).toEqual({ total: 0, cash: 0, online: 0, paidBills: 0, cancelledBills: 0, editedBills: 0 });
   });
 });

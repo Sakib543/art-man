@@ -12,6 +12,8 @@ const bill = (billNo: number, at: string, over: Partial<DayBill>): DayBill => ({
   cash: 800,
   online: 0,
   bookNo: null,
+  reversesBillId: null,
+  supersedesBillId: null,
   status: "active",
   cancelReason: null,
   reversesBillNo: null,
