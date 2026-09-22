@@ -5,7 +5,8 @@ import { failure, type ActionResult } from "@/lib/action-result";
 import { requireUser } from "@/lib/auth/session";
 import { findCustomer } from "./queries";
 import { cancelBillSchema, createBillSchema, lookupCustomerSchema } from "./schemas";
-import { cancelBill, createBill } from "./service";
+import { cancelBill } from "@/db/bill-cancel";
+import { createBill } from "./service";
 import type { CustomerInfo, Receipt } from "./types";
 
 export async function createBillAction(input: unknown): Promise<ActionResult<Receipt>> {

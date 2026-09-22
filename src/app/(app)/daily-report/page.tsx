@@ -15,7 +15,7 @@ export const metadata = { title: "Daily report | Art Men's Salon" };
 const SUBTITLE = "All bills for a business day, including cancelled ones";
 
 export default async function DailyReportPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { date } = await searchParams;
   const report = await getDailyReport(date);
 
@@ -67,7 +67,7 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
         </div>
       ) : null}
 
-      <ReportTable bills={bills} />
+      <ReportTable bills={bills} canCancel={user.role === "owner" && selected.closed} />
     </>
   );
 }

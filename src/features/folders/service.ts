@@ -6,6 +6,7 @@ import { confirmPin } from "@/db/pin-guard";
 import { cashEntries, khataEntries, staff, user } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth/session";
 import { UserError } from "@/lib/errors";
+import { requireOwnerOnOpenMonth, resettleDay } from "@/db/day-settlement";
 import type { EntryInput } from "./schemas";
 
 const actorOf = (u: SessionUser) => u.username || u.name;
@@ -73,20 +74,21 @@ export async function addEntry(current: SessionUser, input: EntryInput): Promise
 }
 
 /**
- * Cancel an entry from the open day. Nothing is edited or deleted: a
- * cancellation row with the negative amount is added, so both stay visible.
+ * Cancel an entry. Nothing is edited or deleted: a cancellation row with the
+ * negative amount is added, so both stay visible. An entry in a day that is
+ * already closed is the Owner's alone, and that day is settled again afterwards
+ * so its figures and security code match the correction.
  */
 export async function voidEntry(current: SessionUser, entryId: string, reason: string): Promise<void> {
   const day = await getOpenBusinessDay();
-  if (!day) throw new UserError("No business day is open");
   const actor = actorOf(current);
 
   const [entry] = await db.select().from(cashEntries).where(eq(cashEntries.id, entryId)).limit(1);
   if (!entry) throw new UserError("Entry not found");
   if (entry.voidsEntryId) throw new UserError("A cancellation cannot be cancelled");
-  if (entry.businessDate !== day.businessDate) {
-    throw new UserError("This entry belongs to a closed day. Only the Owner can cancel it.");
-  }
+
+  const closedDay = entry.businessDate !== day?.businessDate;
+  if (closedDay) await requireOwnerOnOpenMonth(current, entry.businessDate, "entry");
 
   const [already] = await db
     .select({ id: cashEntries.id })
@@ -122,9 +124,11 @@ export async function voidEntry(current: SessionUser, entryId: string, reason: s
       });
     }
 
+    if (closedDay) await resettleDay(tx, entry.businessDate, actor, `${entry.kind} cancelled`);
+
     await writeAudit(tx, {
       actor,
-      action: "folder.cancel",
+      action: closedDay ? "folder.cancel-closed-day" : "folder.cancel",
       target: entry.description ?? entry.kind,
       before: { kind: entry.kind, amount: entry.amount },
       after: { reason },

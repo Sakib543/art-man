@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
 import {
-  billCancellations,
   billLines,
   bills,
   customerSpecialRates,
@@ -153,61 +152,5 @@ export async function createBill(user: SessionUser, input: CreateBillInput): Pro
       cash: input.cash,
       online: input.online,
     };
-  });
-}
-
-/**
- * Cancel a bill from the open day. The bill itself is never changed: a
- * cancellation row and a reversal bill (negative amounts) are added, so the
- * mistake stays visible and the day's totals still add up.
- */
-export async function cancelBill(user: SessionUser, billId: string, reason: string): Promise<void> {
-  const day = await getOpenBusinessDay();
-  if (!day) throw new UserError("No business day is open");
-
-  const [bill] = await db.select().from(bills).where(eq(bills.id, billId)).limit(1);
-  if (!bill) throw new UserError("Bill not found");
-  if (bill.reversesBillId) throw new UserError("A reversal bill cannot be cancelled");
-  if (bill.businessDate !== day.businessDate) {
-    throw new UserError("This bill belongs to a closed day. Only the Owner can cancel it.");
-  }
-
-  const [existing] = await db.select().from(billCancellations).where(eq(billCancellations.billId, billId)).limit(1);
-  if (existing) throw new UserError("This bill is already cancelled");
-
-  const lines = await db.select().from(billLines).where(eq(billLines.billId, billId));
-  const actor = user.username || user.name;
-
-  await db.transaction(async (tx) => {
-    await tx.insert(billCancellations).values({ billId, reason, cancelledBy: actor });
-
-    const [reversal] = await tx
-      .insert(bills)
-      .values({
-        businessDate: bill.businessDate,
-        customerId: bill.customerId,
-        cash: -bill.cash,
-        online: -bill.online,
-        reversesBillId: bill.id,
-        createdBy: actor,
-      })
-      .returning({ id: bills.id, billNo: bills.billNo });
-
-    await tx.insert(billLines).values(
-      lines.map((line) => ({
-        billId: reversal.id,
-        name: `Reversal of #${bill.billNo}`,
-        amount: -line.amount,
-        staffId: line.staffId,
-      })),
-    );
-
-    await writeAudit(tx, {
-      actor,
-      action: "bill.cancel",
-      target: `bill #${bill.billNo}`,
-      before: { cash: bill.cash, online: bill.online },
-      after: { reason, reversalBillNo: reversal.billNo },
-    });
   });
 }

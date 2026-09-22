@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-22 (P0.1, P1.0, P0.2 done)
+Last updated: 2026-09-22 (P0 complete, P1.0 done)
 
 ---
 
@@ -19,7 +19,7 @@ Last updated: 2026-09-22 (P0.1, P1.0, P0.2 done)
 |---|---|---|---|
 | P0.1 | Show the real login error | ✅ | done 2026-09-22 |
 | P0.2 | Reopen a closed day (Owner) | ✅ | done 2026-09-22 |
-| P0.3 | Cancel a bill/entry in a closed day (Owner) | ⬜ | — |
+| P0.3 | Cancel a bill/entry in a closed day (Owner) | ✅ | done 2026-09-22 |
 | P1.0 | Remove the staff PIN | ✅ | done 2026-09-22 |
 | P1.1 | Developer role (super admin) | ⬜ | — |
 | P1.2 | Users screen — create admins | ⬜ | — |
@@ -115,22 +115,53 @@ expected Rs 4,200, Sherry paid Rs 800), reopened it with a reason, then closed i
 
 ---
 
-### ⬜ P0.3 — Cancel a bill or entry in a closed day (Owner only)
-**Owner:** —
-`src/features/billing/service.ts:169` · `src/features/folders/service.ts:92`
+### ✅ P0.3 — Cancel a bill or entry in a closed day (Owner only)
+**Done:** 2026-09-22
 
-If a mistake is found the next morning, nothing can be done today.
+The code used to say *"Only the Owner can cancel it"* while refusing everyone. Spec 11 gives the
+Owner this right until the month is closed.
 
-The code itself says *"Only the Owner can cancel it"* — but that path was never built. Spec §11
-gives the Owner this right until the month is closed.
+**The catch, again.** Cancelling a bill in a closed day changes that day's sale, its expected cash,
+and the commission its work earned — all of which the close had already written down. So the
+cancellation alone is not enough: the day has to be settled again.
 
-The client confirmed this on 2026-09-22: *"Manager can only view, cannot edit — only the Owner
-can."* That "only the Owner can" half is exactly this item.
+`resettleDay()` (`src/db/day-settlement.ts`) does that inside the same transaction as the
+cancellation: it reverses the earnings the close posted, posts the corrected ones, archives the
+closing record into `day_snapshot_history`, and writes a fresh snapshot with a new security code.
+Staff payments are left alone — that cash really was handed over. **Counted cash is left alone
+too**: the drawer was counted by hand, so only what was *expected* of it moves, and the difference
+is what shows the correction.
 
-**What to do:** let the Owner cancel a bill or cash entry belonging to a closed day; reverse the
-staff commission in the khata automatically; refuse once the month is closed.
+**Guards:** Owner only, month must be open, the bill must not already be cancelled, a reason of at
+least 3 characters. A reversal bill still cannot be cancelled.
 
-**Size:** medium
+**Where it lives.** `cancelBill` moved to `src/db/bill-cancel.ts` and the shared settling to
+`src/db/day-settlement.ts` (with `security.ts` → `src/db/day-code.ts`), so Billing and Daily report
+can both use them without importing across features. `ARCHITECTURE.md` rule 5 still has **0
+violations**.
+
+**UI:** the Daily report table grows a Cancel button per active bill, shown only to the Owner and
+only on a day that is closed. Today's bills are still cancelled from Billing as before.
+
+**Verified** end to end: reopened the day, billed Rs 800 to Arshad, closed (sale 800, expected
+5,000, counted 5,000, difference 0, staff earned 880, code `CE61-1D17-E8BF`), then cancelled the
+bill from the Daily report:
+
+| Check | Result |
+|---|---|
+| Reversal bill | #2 for −800 added; #1 marked cancelled |
+| Sale and cash | 800 → 0 |
+| Expected cash | 5,000 → 4,200 |
+| Counted cash | 5,000, unchanged — the hand count is not rewritten |
+| Difference | 0 → **+800**, which is exactly the cancelled cash showing up as extra |
+| Arshad's commission | reversed with an `adjustment` row; balance back to 0 |
+| Staff earned | 880 → 800 |
+| Old closing record | archived with its code and "Corrected: bill #1 cancelled" |
+| New security code | `6982-BCC5-9483` |
+| Audit log | `bill.cancel-closed-day` |
+| Manager | no button, and the action refuses |
+
+139 tests pass, lint clean, build passes.
 
 ---
 

@@ -2,22 +2,15 @@ import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay, getOpenBusinessDay } from "@/db/queries/business-day";
-import {
-  attendance,
-  businessDays,
-  cashEntries,
-  daySnapshotHistory,
-  daySnapshots,
-  khataEntries,
-  monthCloses,
-} from "@/db/schema";
-import { cashDifference, expectedCashBreakdown, summarizeDay, type DayCloseSummary } from "@/lib/accounting";
+import { attendance, businessDays, cashEntries, daySnapshotHistory, daySnapshots, khataEntries } from "@/db/schema";
+import { cashDifference, expectedCashBreakdown } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
-import { formatMonth, monthOf, monthStart, nextDate } from "@/lib/business-date";
+import { nextDate } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
-import { loadDay, type LoadedDay } from "@/db/queries/day-data";
+import { loadDay } from "@/db/queries/day-data";
+import { postEarnings, requireOpenMonth, summarize } from "@/db/day-settlement";
 import type { CloseInput, ReviewInput } from "./schemas";
-import { computeDayCode, type DayFigures } from "./security";
+import { computeDayCode, type DayFigures } from "@/db/day-code";
 import type { CloseReview } from "./types";
 
 const actorOf = (user: SessionUser) => user.username || user.name;
@@ -26,29 +19,6 @@ async function requireOpenDay() {
   const day = await getOpenBusinessDay();
   if (!day) throw new UserError("There is no open business day to close.");
   return day;
-}
-
-/** Work out the day from the database plus what the manager entered on the screen. */
-function summarize(
-  loaded: LoadedDay,
-  openingCash: number,
-  attendanceMap: Record<string, boolean>,
-  payouts: Record<string, number>,
-): DayCloseSummary {
-  const known = new Set(loaded.staff.map((member) => member.id));
-  if (Object.keys(payouts).some((id) => !known.has(id))) throw new UserError("A payment is for someone who is not on today's list");
-
-  return summarizeDay({
-    openingCash,
-    bills: loaded.bills,
-    entries: loaded.entries,
-    staff: loaded.staff.map((member) => ({
-      id: member.id,
-      pay: member.pay,
-      present: attendanceMap[member.id] ?? true,
-    })),
-    payouts,
-  });
 }
 
 /** After the cash is counted: expected cash and the difference. */
@@ -102,27 +72,7 @@ export async function closeDay(user: SessionUser, input: CloseInput): Promise<{ 
     );
 
     // 2. What each staff member earned today goes into their khata.
-    for (const member of loaded.staff) {
-      const earned = summary.earnings[member.id];
-      if (earned.commission > 0) {
-        await tx.insert(khataEntries).values({
-          staffId: member.id,
-          businessDate: day.businessDate,
-          kind: "earning",
-          label: `Commission (on work of ${earned.work})`,
-          amount: earned.commission,
-        });
-      }
-      if (earned.wage > 0) {
-        await tx.insert(khataEntries).values({
-          staffId: member.id,
-          businessDate: day.businessDate,
-          kind: "earning",
-          label: "Daily wage",
-          amount: earned.wage,
-        });
-      }
-    }
+    await postEarnings(tx, day.businessDate, loaded, summary);
 
     // 3. Payments handed over now.
     for (const member of loaded.staff) {
@@ -232,9 +182,7 @@ export async function reopenDay(user: SessionUser, reason: string): Promise<void
   if (!latest) throw new UserError("No business day has been opened yet.");
   if (!latest.closedAt) throw new UserError("This day is already open.");
 
-  const month = monthOf(latest.businessDate);
-  const [closedMonth] = await db.select().from(monthCloses).where(eq(monthCloses.month, monthStart(month))).limit(1);
-  if (closedMonth) throw new UserError(`${formatMonth(month)} is closed. A closed month can only be corrected in the next month.`);
+  await requireOpenMonth(latest.businessDate);
 
   const date = latest.businessDate;
   const actor = actorOf(user);

@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-22 (P0.1, P1.0, P0.2 done)
+Last updated: 2026-09-22 (P0 complete, P1.0 done)
 
 ---
 
@@ -182,6 +182,9 @@ Measured, not guessed. Do not spend time re-deriving these.
 | Every superseded closing record lives in `day_snapshot_history` | fully append-only, keeps the old security code, reason and actor |
 | `khata_entries.reverses_entry_id` marks a reversed line | added in `0009`; lets a second reopen skip lines already reversed |
 | Only the **latest** business day can be reopened | a later day's opening cash is this day's count, and its security code is built on this one's |
+| Settling a day lives in `src/db/day-settlement.ts` | `summarize`, `postEarnings`, `resettleDay`, the month/owner guards. Shared by day-close, billing and daily-report without crossing features |
+| `cancelBill` lives in `src/db/bill-cancel.ts` | Billing and Daily report both call it |
+| A closed-day correction never rewrites counted cash | the drawer was counted by hand; only expected cash moves, and the difference shows the correction |
 
 ---
 
@@ -194,7 +197,8 @@ Measured, not guessed. Do not spend time re-deriving these.
 A close writes khata earnings, khata payments and staff-payment cash rows — all append-only. Simply
 clearing `business_days.closed_at` would let the next close write them **again**, doubling every
 staff member's pay in the khata and in expected cash. `reopenDay()` reverses each of them with a new
-row first. Anything else that "undoes" a close must do the same. P0.3 will face exactly this.
+row first. `resettleDay()` does the same for a cancellation inside a closed day. Anything else
+that changes a settled day must go through one of those two.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -293,8 +297,8 @@ STAGE 1 — before the client trial
   1. P0.1  Show the real login error                     DONE 2026-09-22
   2. P1.0  Remove the staff PIN (keep the Owner PIN)     DONE 2026-09-22
   3. P0.2  Reopen a closed day (Owner)                   DONE 2026-09-22
-  4. P0.3  Cancel a bill/entry in a closed day (Owner)   medium   <- next
-  5. P2.1  Paper bill-book number field                  small
+  4. P0.3  Cancel a bill/entry in a closed day (Owner)   DONE 2026-09-22
+  5. P2.1  Paper bill-book number field                  small    <- next
 
 STAGE 2 — go live
   P5.2  Fix DEPLOY_VERCEL.md · Neon `live` branch · Vercel env vars
