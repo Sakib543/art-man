@@ -137,6 +137,14 @@ export function BillEditForm({ bill, staff }: Props) {
         </Field>
       </div>
 
+      {bill.discount > 0 ? (
+        <p className="text-[12.5px] text-muted-foreground">
+          This bill was given a discount of {rs(bill.discount)}
+          {bill.discountReason ? ` — "${bill.discountReason}"` : ""}. The line amounts above are already net of it, so
+          they are what to change; the discount itself stays as the record of what was given on the day.
+        </p>
+      ) : null}
+
       <p className={paid === total ? "text-[12.5px] text-muted-foreground" : "text-[12.5px] text-destructive"}>
         Paid {rs(paid)} against a total of {rs(total)}
         {paid === total ? "." : ` — these must match before the bill can be saved.`}

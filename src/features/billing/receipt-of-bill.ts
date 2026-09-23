@@ -20,6 +20,11 @@ export function receiptOfBill(bill: DayBill, businessDate: string): Receipt {
     // and is never stored on the line, so it cannot be rebuilt from a saved
     // bill. The receipt does not print it, so the two paths still print alike.
     lines: bill.lines.map(({ name, amount, staffName }) => ({ name, amount, staffName, note: null })),
+    // The lines are stored net of any discount, so the subtotal has to be put
+    // back together from the two (P3.10). On a bill with no discount this is
+    // the total, and the slip prints exactly as it did before.
+    subtotal: bill.total + bill.discount,
+    discount: bill.discount,
     // What the customer paid, not the sum of the lines: that is the figure the
     // bill was settled on, and a receipt must agree with the drawer.
     total: bill.total,

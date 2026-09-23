@@ -44,3 +44,36 @@ describe("createBillSchema bookNo", () => {
     expect(result.error?.issues[0]?.message).toContain("at most 20");
   });
 });
+
+/** Money off the bill (backlog P3.10). */
+describe("createBillSchema discount", () => {
+  const withDiscount = (over: Record<string, unknown>) => ({ ...bill(), ...over });
+
+  it("is 0 when the field was never touched", () => {
+    expect(createBillSchema.parse(bill()).discount).toBe(0);
+  });
+
+  it("keeps the reason beside the amount", () => {
+    const parsed = createBillSchema.parse(withDiscount({ discount: 200, discountReason: "Regular customer" }));
+    expect(parsed).toMatchObject({ discount: 200, discountReason: "Regular customer" });
+  });
+
+  it("refuses a discount with no reason", () => {
+    const result = createBillSchema.safeParse(withDiscount({ discount: 200 }));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toContain("why");
+  });
+
+  it("refuses a reason too short to mean anything", () => {
+    expect(createBillSchema.safeParse(withDiscount({ discount: 200, discountReason: "ok" })).success).toBe(false);
+  });
+
+  it("does not ask for a reason when nothing was taken off", () => {
+    expect(createBillSchema.safeParse(withDiscount({ discount: 0, discountReason: "" })).success).toBe(true);
+  });
+
+  it("refuses a negative or fractional amount before it ever reaches pricing", () => {
+    expect(createBillSchema.safeParse(withDiscount({ discount: -100, discountReason: "no" })).success).toBe(false);
+    expect(createBillSchema.safeParse(withDiscount({ discount: 10.5, discountReason: "half a rupee" })).success).toBe(false);
+  });
+});

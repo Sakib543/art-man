@@ -164,5 +164,10 @@ export async function getBillForEdit(billId: string, data: BillingData): Promise
     cash: bill.cash,
     online: bill.online,
     bookNo: bill.bookNo,
+    // The discount comes back with the draft (P3.10) so a correction keeps it
+    // unless the Owner changes it. Without this, re-opening a discounted bill
+    // would quietly put the price back up.
+    discount: bill.discount,
+    discountReason: bill.discountReason,
   };
 }

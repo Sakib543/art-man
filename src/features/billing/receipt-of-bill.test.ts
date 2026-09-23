@@ -11,6 +11,8 @@ const bill = (over: Partial<DayBill> = {}): DayBill => ({
   cash: 700,
   online: 400,
   bookNo: null,
+  discount: 0,
+  discountReason: null,
   status: "active",
   cancelReason: null,
   reversesBillId: null,
@@ -34,10 +36,22 @@ describe("receiptOfBill", () => {
         { name: "Haircut", amount: 800, staffName: "Sherry", note: null },
         { name: "Hair wash", amount: 300, staffName: "Arshad", note: null },
       ],
+      subtotal: 1100,
+      discount: 0,
       total: 1100,
       cash: 700,
       online: 400,
     });
+  });
+
+  it("puts a discounted bill's subtotal back together (P3.10)", () => {
+    // The lines are stored net of the discount, so the slip has to add the two
+    // back up to show what the services came to before it.
+    const receipt = receiptOfBill(bill({ total: 900, cash: 900, online: 0, discount: 200 }), "2026-09-24");
+
+    expect(receipt.subtotal).toBe(1100);
+    expect(receipt.discount).toBe(200);
+    expect(receipt.total).toBe(900);
   });
 
   it("keeps the lines in the order the list shows them", () => {

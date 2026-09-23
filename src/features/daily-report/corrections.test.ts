@@ -10,6 +10,8 @@ const bill = (over: Partial<DayBill> & { id: string; billNo: number }): DayBill 
   cash: 0,
   online: 0,
   bookNo: null,
+  discount: 0,
+  discountReason: null,
   status: "active",
   cancelReason: null,
   reversesBillId: null,

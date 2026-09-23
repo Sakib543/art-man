@@ -16,6 +16,8 @@ const bill = (billNo: number, over: Partial<DayBill>, lines: DayBill["lines"]): 
   cash: 0,
   online: 0,
   bookNo: null,
+  discount: 0,
+  discountReason: null,
   reversesBillId: null,
   supersedesBillId: null,
   status: "active",

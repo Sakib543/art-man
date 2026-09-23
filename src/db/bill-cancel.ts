@@ -45,6 +45,11 @@ export async function writeCancellation(
       customerId: bill.customerId,
       cash: -bill.cash,
       online: -bill.online,
+      // The negative of the discount as well (P3.10), so a cancelled bill and
+      // its reversal add up to nothing in that column too. No total is built
+      // from it, but a report that sums the day's discounts would otherwise
+      // keep counting one that was cancelled.
+      discount: -bill.discount,
       reversesBillId: bill.id,
       createdBy: actor,
     })

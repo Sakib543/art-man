@@ -35,7 +35,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
 | P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
 | P3.4 | Next-month adjustment for a closed month | ⬜ | — |
-| P3.10 | Discount on a bill | ⬜ | Sakib, 2026-09-23 |
+| P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
 | P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore has never been run |
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
@@ -1004,8 +1004,8 @@ with the Vercel/VPS question.
 
 ---
 
-### ⬜ P3.10 — Discount on a bill *(client asked for it 2026-09-23)*
-**Owner:** Sakib, 2026-09-23
+### ✅ P3.10 — Discount on a bill *(client asked for it 2026-09-23)*
+**Done:** 2026-09-23
 
 The counter needs to be able to take money off a bill: an **open field on the
 billing screen**, filled in by the **Manager or the Owner** themselves, and the
@@ -1033,6 +1033,53 @@ amounts, so commission and the khata follow; `salesTotals` adds cash and online,
 so the day's sale is already net; the month report is built from the day
 snapshots. `bills.discount` is kept beside it for the receipt and the reports,
 never as the source of any total.
+
+**What was built:**
+
+| Where | What |
+|---|---|
+| Billing screen | **Discount (Rs)** field under Items, with Subtotal / Total above and below it. A reason box appears as soon as the amount is not 0 |
+| `priceCart` | takes the discount and splits it across the lines with `allocate` — the same largest-remainder split a deal price gets, so the parts add up to exactly the discount and no line can go below 0 |
+| `bills.discount` · `discount_reason` | migration `0016`, two `ADD COLUMN`s. Kept for the record, never used as the source of a total |
+| Receipt | *"Includes a discount of Rs 300 (1,100 before)"* under the total. The listed prices are already net, so the slip says it in words rather than printing a subtraction the lines would contradict |
+| Daily report | a **Discount given** card, shown only on a day that had one |
+| Reversal bill | carries the negative discount, so a cancelled bill nets out in that column too |
+| Owner's edit (P1.4) | the draft carries the discount back, so re-opening a discounted bill does not quietly put the price up |
+| Developer's edit (P1.6) | shows what the discount was and says the line amounts already carry it |
+| Audit | `bill.create` records the discount and its reason |
+
+**A reason is required.** The spec did not want discretionary discounts at all;
+since the client does, the reason is the control that replaces the rule, and it
+is the same standard a cancellation is already held to.
+
+**Verified in the browser, signed in as a Manager** — the role the spec would
+have refused:
+
+1. Haircut Rs 800 + Hair wash Rs 300 = **Rs 1,100**, discount **Rs 300**.
+2. The lines on screen became **582** and **218** — the split, live, before
+   saving. Subtotal Rs 1,100, Total Rs 800.
+3. Saving with no reason was refused: *"Say why the discount is being given"*.
+4. Saved as **bill #20**. In the database: `discount=300`,
+   `reason="Regular customer"`, lines 582 + 218 = **800**, which is what was
+   paid. The audit row carries both.
+5. The receipt, and the **reprint** from Today's bills, both read *"Includes a
+   discount of Rs 300 (1,100 before)"*.
+6. The daily report shows **Discount given Rs 300**.
+7. **Day close reads Sherry's work as Rs 1,100**, not Rs 1,400 — 300 (an earlier
+   bill) + 800 (this one). That single figure is the client's decision working:
+   commission is on what was actually charged.
+8. A discount of Rs 5,000 on a Rs 800 bill is refused on screen —
+   *"A discount must be less than the bill total of Rs 800"* — and the rest of
+   the bill keeps working while it is being fixed.
+
+The throwaway Manager account was deleted. Bill #20 stays: bills are
+append-only, and it is dev data.
+
+**Deliberately not done:** the discount is not a percentage, is not per line,
+and the developer's edit screen cannot change it. Each is a decision, not an
+oversight.
+
+**328 tests pass** (was 308), lint clean, build passes.
 
 **Size:** medium · **Value:** high (asked for directly by the client)
 

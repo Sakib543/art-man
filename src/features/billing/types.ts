@@ -77,6 +77,9 @@ export type BillDraft =
       cash: Rupees;
       online: Rupees;
       bookNo: string | null;
+      /** Carried into the correction, so re-opening a discounted bill keeps it (P3.10). */
+      discount: Rupees;
+      discountReason: string | null;
     }
   | { ok: false; reason: string };
 
@@ -93,6 +96,13 @@ export interface Receipt {
   businessDate: string;
   customerName: string | null;
   lines: ReceiptLine[];
+  /**
+   * What the lines add up to **before** the discount (P3.10). The lines
+   * themselves are already net of it, so on a bill with no discount this is the
+   * same as `total` and the slip shows one figure, as it always did.
+   */
+  subtotal: Rupees;
+  discount: Rupees;
   total: Rupees;
   cash: Rupees;
   online: Rupees;

@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (308 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (328 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -139,8 +139,8 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — **25 routes** (2026-09-23), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **308 passed** (31 files), 2026-09-23 — 70 of them are the feature-shape checks (P4.1) |
-| Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through `0015` — unchanged on 2026-09-23, no migration was needed all day |
+| `pnpm test` | **328 passed** (31 files), 2026-09-23 |
+| Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0016`** (P3.10 added the discount columns on 2026-09-23) |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
@@ -235,7 +235,11 @@ Khata balances are no longer 0: Arshad +30 (earned, not paid), Sherry −10 (pai
 she ended up earning, which is the correct result of the edits). Three `bill.developer-edit` rows
 are in `audit_log`. None of it is real data — reopen or reseed freely.
 
-**2026-09-23 changed the database a little, and none of it needed a migration.**
+**Bill #20 is the first discounted bill** — Rs 1,100 of work with Rs 300 off,
+saved while verifying P3.10, with lines of 582 and 218. It is on the open day
+(24 Sep) and it is dev data like the rest.
+
+**2026-09-23 changed the database a little; only the discount needed a migration.**
 A **bonus of Rs 500** was given to Arshad while verifying P3.1, so his khata
 balance is now **Rs 530** and `khata_entries` holds 31 rows. A special rate was
 set for Kamran, used to price a bill on screen, and then removed again, so
@@ -277,6 +281,8 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | Topic | Decision |
 |---|---|
 | **Manager's limit** | View-only on past daily reports; cannot edit. Only the Owner can. **Already works this way** — no change needed. |
+| **Discount at the counter** | **Reversed on 2026-09-23.** Spec §10.4 and the 2026-09-22 Q&A both say the Manager may not give discretionary discounts. The client asked for an open discount field usable by **the Manager or the Owner**, was told it contradicts the spec, and kept the request. Built as P3.10. Two decisions taken with it: **commission is charged on the discounted amount** (spec §10.1 — the karigar shares the discount), and the field is **whole rupees on the whole bill**, not a percentage and not per line. A reason is required, which is the control that replaces the rule. |
+| **Staff receipt and the cancellation alert** | **Dropped for now (2026-09-23)** — the client dropped the SMS/WhatsApp side. P3.3 and P3.5 stay in the backlog, unscheduled. |
 | **Staff (karigar) PIN** | **Removed from the whole project** (P1.0, done 2026-09-22). No replacement confirmation wanted. |
 | **Owner PIN** | **Kept.** They were two different columns: `staff.pin_hash` (dropped), `user.pin_hash` (still there). |
 | **Developer role** | A 4th role above Owner: sees everything, resets any password/PIN, manages users, maintenance mode, edits config. **Built 2026-09-22 (P1.1)**, except user management (P1.2) and editing financial rows (P1.6). |
@@ -408,6 +414,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | `import type` does not make a file impure | all five "impure-looking" pure files only import `DayBill` as a type, which is erased at build. The test parses the import clause rather than matching the module name |
 | **`features/auth` no longer exists** | its one file, the login form, is `features/account/components/login-form.tsx` (P4.3). `lib/auth` is about who is signed in; `features/account` is the screens |
 | `module` is a reserved name in this ESLint config | `@next/next/no-assign-module-variable` fails the build on `const module = ...`, even inside a test. Cost a minute in P4.1 |
+| **A discount is shared into the line amounts, not kept aside** | P3.10. `priceCart` splits it with `allocate`, so commission (`workByStaff`), the khata, the day's sale (`salesTotals` adds cash and online) and the month report all follow it without one of them knowing discounts exist. `bills.discount` is the record, never the source of a total |
+| Measured on the day it was built | a Rs 1,100 bill with Rs 300 off stored lines of **582 and 218**, and Day close read that staff member's work as **Rs 1,100 rather than Rs 1,400** |
+| A discount can never take a line below zero | each share is at most its own line, because the discount is refused unless it is **less than** the subtotal. A bill cannot be given away, which also keeps `checkPayment`'s "total must be more than 0" true |
+| A reversal bill carries `-discount` | so a cancelled bill nets out in that column as it does in cash and online. Nothing sums it today except the daily report, which is exactly why it had to be right |
+| **The receipt does not print a subtraction** | the listed prices are already net of the discount, so a "subtotal − discount = total" block would contradict the lines above it. The slip says *"Includes a discount of Rs 300 (1,100 before)"* instead |
 
 ## 8. Traps that have already cost time
 
@@ -767,6 +778,7 @@ STAGE 3 — during the client's 20-day trial
   P4.1  One shape per feature, checked by a test      DONE 2026-09-23
   P4.3  features/auth merged into features/account    DONE 2026-09-23
   P4 is now complete.
+  P3.10 Discount on a bill (client request)           DONE 2026-09-23
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)

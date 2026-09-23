@@ -21,6 +21,13 @@ export interface DayBill {
   online: Rupees;
   /** The paper bill book's number, when this bill was written by hand first (spec 5.5). */
   bookNo: string | null;
+  /**
+   * Money taken off at the counter (P3.10). The lines are already net of it, so
+   * `total` is unaffected — this is what a reprinted receipt and the daily
+   * report show, and it is negative on a reversal bill.
+   */
+  discount: Rupees;
+  discountReason: string | null;
   status: "active" | "cancelled" | "reversal";
   cancelReason: string | null;
   /** On a reversal bill: the bill it cancels. */
@@ -44,6 +51,8 @@ export async function getDayBills(businessDate: string): Promise<DayBill[]> {
       reversesBillId: bills.reversesBillId,
       supersedesBillId: bills.supersedesBillId,
       bookNo: bills.bookNo,
+      discount: bills.discount,
+      discountReason: bills.discountReason,
       customerName: customers.name,
       cancelReason: billCancellations.reason,
     })
@@ -78,6 +87,8 @@ export async function getDayBills(businessDate: string): Promise<DayBill[]> {
     cash: row.cash,
     online: row.online,
     bookNo: row.bookNo,
+    discount: row.discount,
+    discountReason: row.discountReason,
     status: row.reversesBillId ? "reversal" : row.cancelReason ? "cancelled" : "active",
     cancelReason: row.cancelReason,
     reversesBillId: row.reversesBillId,

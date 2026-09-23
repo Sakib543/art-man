@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { checkPayment, paymentAmounts, priceCart, type PayMode, type PricedLine } from "@/lib/accounting";
+import { checkPayment, paymentAmounts, priceCart, PricingError, type PayMode, type PricedLine } from "@/lib/accounting";
 import { rs } from "@/lib/format";
 import { createBillAction, editBillAction } from "../actions";
 import { payModeOf } from "../bill-draft";
@@ -40,6 +40,10 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
   const [typedCash, setTypedCash] = useState(editing && startMode === "split" ? String(editing.cash) : "");
   const [typedOnline, setTypedOnline] = useState(editing && startMode === "split" ? String(editing.online) : "");
   const [bookNo, setBookNo] = useState(editing?.bookNo ?? "");
+  // Money off the bill (P3.10). Kept as typed text like the payment boxes, so a
+  // half-typed number never becomes NaN on the way to the total.
+  const [discountText, setDiscountText] = useState(editing?.discount ? String(editing.discount) : "");
+  const [discountReason, setDiscountReason] = useState(editing?.discountReason ?? "");
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -58,15 +62,41 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
   );
   const dealsById = catalog.deals;
 
-  // Same pricing function the server uses, so the total shown is the total saved.
-  const { priced, total } = useMemo(() => {
+  const discount = toRupees(discountText);
+
+  /**
+   * Same pricing function the server uses, so the total shown is the total
+   * saved — including how the discount is split across the lines.
+   *
+   * A discount bigger than the bill is priced twice on purpose: the cart is
+   * priced without it so the screen keeps showing real figures, and the
+   * message from the failed attempt is shown beside the field. Blanking the
+   * whole bill because one number is too big would be a worse screen.
+   */
+  const { priced, subtotal, total, discountProblem } = useMemo(() => {
+    let gross;
     try {
-      const result = priceCart(cart, catalog);
-      return { priced: result.lines, total: result.total };
+      gross = priceCart(cart, catalog);
     } catch {
-      return { priced: [] as PricedLine[], total: 0 };
+      return { priced: [] as PricedLine[], subtotal: 0, total: 0, discountProblem: "" };
     }
-  }, [cart, catalog]);
+
+    if (discount === 0) {
+      return { priced: gross.lines, subtotal: gross.subtotal, total: gross.total, discountProblem: "" };
+    }
+
+    try {
+      const net = priceCart(cart, catalog, discount);
+      return { priced: net.lines, subtotal: net.subtotal, total: net.total, discountProblem: "" };
+    } catch (error) {
+      return {
+        priced: gross.lines,
+        subtotal: gross.subtotal,
+        total: gross.total,
+        discountProblem: error instanceof PricingError ? error.message : "That discount cannot be applied",
+      };
+    }
+  }, [cart, catalog, discount]);
 
   const amounts = paymentAmounts(payMode, total, { cash: toRupees(typedCash), online: toRupees(typedOnline) });
   const payment = checkPayment(total, amounts.cash, amounts.online);
@@ -77,6 +107,8 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
     if (cart.some((line) => !line.staffId)) return setError("Choose a staff member for every service");
     if (customer.status === "new" && !customer.name.trim()) return setError("Enter the customer's name");
     if (editing && reason.trim().length < 3) return setError("Write what was wrong with the bill");
+    if (discountProblem) return setError(discountProblem);
+    if (discount > 0 && discountReason.trim().length < 3) return setError("Say why the discount is being given");
     if (!payment.ok) {
       return setError(
         payment.remaining > 0
@@ -101,6 +133,8 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
       cash: amounts.cash,
       online: amounts.online,
       bookNo,
+      discount,
+      discountReason: discount > 0 ? discountReason.trim() : null,
     };
 
     startTransition(async () => {
@@ -125,6 +159,8 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
       setTypedCash("");
       setTypedOnline("");
       setBookNo("");
+      setDiscountText("");
+      setDiscountReason("");
     });
   }
 
@@ -188,6 +224,49 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
               <span>Items</span>
               <span className="tabular-nums">{cart.length}</span>
             </div>
+            {discount > 0 && !discountProblem ? (
+              <div className="flex justify-between py-1 text-muted-foreground">
+                <span>Subtotal</span>
+                <span className="tabular-nums">{rs(subtotal)}</span>
+              </div>
+            ) : null}
+
+            {/* Money off the bill (P3.10). The Manager may give one as well as
+                the Owner — the client's decision of 2026-09-23. */}
+            <div className="flex items-center justify-between gap-2.5 py-1">
+              <Label htmlFor="discount" className="font-normal text-muted-foreground">
+                Discount (Rs)
+              </Label>
+              <Input
+                id="discount"
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                value={discountText}
+                onChange={(event) => setDiscountText(event.target.value)}
+                placeholder="0"
+                className="h-8 w-28 text-right tabular-nums"
+              />
+            </div>
+
+            {discountProblem ? (
+              <p role="alert" className="py-1 text-[12.5px] text-destructive">
+                {discountProblem}
+              </p>
+            ) : null}
+
+            {discount > 0 ? (
+              <Input
+                aria-label="Why the discount is being given"
+                value={discountReason}
+                onChange={(event) => setDiscountReason(event.target.value)}
+                maxLength={120}
+                placeholder="Why? e.g. regular customer"
+                className="mt-1 h-8 text-[13px]"
+              />
+            ) : null}
+
             <div className="mt-1.5 flex justify-between border-t pt-2.5 text-xl font-semibold">
               <span>Total</span>
               <span className="tabular-nums">{rs(total)}</span>

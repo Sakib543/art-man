@@ -36,6 +36,9 @@ const actorOf = (user: SessionUser) => user.username || user.name;
 /** Everything settled before the transaction opens: prices, the customer, staff names. */
 interface PricedBill {
   lines: PricedLine[];
+  /** Before the discount. The lines below are already net of it (P3.10). */
+  subtotal: Rupees;
+  discount: Rupees;
   total: Rupees;
   /** An existing customer, or null for a walk-in or one still to be created. */
   customerId: string | null;
@@ -105,7 +108,7 @@ async function priceBill(input: CreateBillInput): Promise<PricedBill> {
 
   let priced;
   try {
-    priced = priceCart(input.lines, catalog);
+    priced = priceCart(input.lines, catalog, input.discount);
   } catch (error) {
     if (error instanceof PricingError) throw new UserError(error.message);
     throw error;
@@ -122,6 +125,8 @@ async function priceBill(input: CreateBillInput): Promise<PricedBill> {
 
   return {
     lines: priced.lines,
+    subtotal: priced.subtotal,
+    discount: priced.discount,
     total: priced.total,
     customerId,
     newCustomer,
@@ -157,6 +162,10 @@ async function writeBill(
       cash: input.cash,
       online: input.online,
       bookNo: input.bookNo,
+      // Kept for the receipt and the reports only: the line amounts are
+      // already net of it, and every total is built from those (P3.10).
+      discount: priced.discount,
+      discountReason: priced.discount > 0 ? input.discountReason : null,
       supersedesBillId,
       createdBy: actor,
     })
@@ -188,6 +197,8 @@ function receiptOf(bill: typeof bills.$inferSelect, priced: PricedBill, input: C
       staffName: priced.staffName.get(line.staffId!) ?? "",
       note: line.note ? NOTE_TEXT[line.note] : null,
     })),
+    subtotal: priced.subtotal,
+    discount: priced.discount,
     total: priced.total,
     cash: input.cash,
     online: input.online,
@@ -213,7 +224,15 @@ export async function createBill(user: SessionUser, input: CreateBillInput): Pro
       actor,
       action: "bill.create",
       target: `bill #${bill.billNo}`,
-      after: { total: priced.total, cash: input.cash, online: input.online, bookNo: input.bookNo },
+      after: {
+        total: priced.total,
+        cash: input.cash,
+        online: input.online,
+        bookNo: input.bookNo,
+        // A discount is the counter's own decision, so it is written down with
+        // its reason even though the line amounts already carry it.
+        ...(priced.discount > 0 ? { discount: priced.discount, discountReason: input.discountReason } : {}),
+      },
     });
 
     return receiptOf(bill, priced, input);

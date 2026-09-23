@@ -121,6 +121,14 @@ export interface EditableBill {
   online: number;
   bookNo: string | null;
   createdBy: string;
+  /**
+   * What was taken off this bill at the counter (P3.10). It is shown, never
+   * edited here: the line amounts below are already net of it, so they are
+   * what the developer changes, and `bills.discount` stays as the record of
+   * what was given on the day.
+   */
+  discount: number;
+  discountReason: string | null;
   lines: EditableBillLine[];
   /** The day's close has already been written, so an edit must settle it again. */
   dayClosed: boolean;
@@ -171,6 +179,8 @@ export async function findBillForEdit(billNo: number): Promise<BillLookup> {
       online: bill.online,
       bookNo: bill.bookNo,
       createdBy: bill.createdBy,
+      discount: bill.discount,
+      discountReason: bill.discountReason,
       lines: lines.map((line) => ({ id: line.id, name: line.name, amount: line.amount, staffId: line.staffId })),
       dayClosed: Boolean(day?.closedAt),
       monthClosed: Boolean(monthClose),

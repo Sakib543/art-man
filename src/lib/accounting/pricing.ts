@@ -1,3 +1,4 @@
+import { allocate } from "./allocate";
 import { splitDealPrice } from "./deal";
 import type { Rupees } from "./types";
 
@@ -46,10 +47,29 @@ export interface PricingCatalog {
 
 export class PricingError extends Error {}
 
+export interface PricedCart {
+  lines: PricedLine[];
+  /** What the services come to before any discount. */
+  subtotal: Rupees;
+  /** Money taken off at the counter (backlog P3.10). 0 on most bills. */
+  discount: Rupees;
+  /** What the customer pays, and what cash + online must add up to. */
+  total: Rupees;
+}
+
+/**
+ * @param discount whole rupees off the whole bill. It is **shared across the
+ * lines** rather than kept aside, because commission is charged on the amount
+ * actually charged (spec §10.1) and every downstream figure — the karigar's
+ * commission, the khata, the day's sale, the month's profit — is built from
+ * line amounts. Splitting it here is what makes all of them follow without a
+ * single one of them knowing that discounts exist.
+ */
 export function priceCart(
   lines: CartLineInput[],
   catalog: PricingCatalog,
-): { lines: PricedLine[]; total: Rupees } {
+  discount: Rupees = 0,
+): PricedCart {
   // A deal's price is split across its services, once per deal instance.
   const dealShares = new Map<string, Record<string, Rupees>>();
   const dealGroups = new Map<string, CartLineInput[]>();
@@ -97,7 +117,22 @@ export function priceCart(
       : { ...line, name: service.name, amount: special, note: "special-rate" };
   });
 
-  return { lines: priced, total: priced.reduce((sum, line) => sum + line.amount, 0) };
+  const subtotal = priced.reduce((sum, line) => sum + line.amount, 0);
+  if (discount === 0) return { lines: priced, subtotal, discount: 0, total: subtotal };
+
+  if (!Number.isInteger(discount) || discount < 0) throw new PricingError("A discount is whole rupees, and never negative");
+  // A bill of nothing cannot be discounted, and a bill cannot be given away:
+  // every other screen assumes a bill was paid for, and `checkPayment` refuses
+  // a total of 0 anyway. Saying so here gives the counter the real reason.
+  if (discount >= subtotal) throw new PricingError(`A discount must be less than the bill total of Rs ${subtotal}`);
+
+  // Largest-remainder, the same split a deal price gets: the shares add up to
+  // exactly the discount, so no rupee appears or disappears. Each share is at
+  // most its own line, so no line can go negative.
+  const shares = allocate(discount, priced.map((line) => line.amount));
+  const discounted = priced.map((line, index) => ({ ...line, amount: line.amount - shares[index] }));
+
+  return { lines: discounted, subtotal, discount, total: subtotal - discount };
 }
 
 export type PayMode = "cash" | "online" | "split";

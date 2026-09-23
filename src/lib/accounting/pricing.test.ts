@@ -95,3 +95,71 @@ describe("payment", () => {
     expect(checkPayment(0, 0, 0).ok).toBe(false);
   });
 });
+
+describe("priceCart with a discount (P3.10)", () => {
+  it("leaves the lines alone when there is no discount", () => {
+    const priced = priceCart([single("hc"), single("bd")], catalog, 0);
+    expect(priced).toMatchObject({ subtotal: 1200, discount: 0, total: 1200 });
+    expect(priced.lines.map((l) => l.amount)).toEqual([800, 400]);
+  });
+
+  it("takes the discount off the total", () => {
+    const priced = priceCart([single("hc"), single("bd")], catalog, 300);
+    expect(priced.subtotal).toBe(1200);
+    expect(priced.discount).toBe(300);
+    expect(priced.total).toBe(900);
+  });
+
+  it("shares the discount across the lines, in proportion", () => {
+    // 1200 off by 300 is a quarter: 800 -> 600, 400 -> 300.
+    const { lines } = priceCart([single("hc"), single("bd")], catalog, 300);
+    expect(lines.map((l) => l.amount)).toEqual([600, 300]);
+  });
+
+  it("the lines always add up to the total, whatever the rounding", () => {
+    // 1200 off by 7 does not divide evenly; the leftover rupee has to land
+    // somewhere, and it must not be invented or lost.
+    const { lines, total } = priceCart([single("hc"), single("bd")], catalog, 7);
+    expect(lines.reduce((sum, l) => sum + l.amount, 0)).toBe(total);
+    expect(total).toBe(1193);
+  });
+
+  it("commission follows the discounted line, because the line is what is stored", () => {
+    // The whole design in one assertion: nothing downstream reads the discount.
+    const { lines } = priceCart([single("fc")], catalog, 800);
+    expect(lines[0].amount).toBe(1000);
+  });
+
+  it("never takes a line below zero", () => {
+    // A lopsided cart is where a careless split would go negative: 2200 off by
+    // 2199 leaves 1 rupee to spread over a 1,800 line and a 400 line.
+    const { lines, total } = priceCart([single("fc"), single("bd")], catalog, 2199);
+    expect(lines.every((l) => l.amount >= 0)).toBe(true);
+    expect(lines.reduce((sum, l) => sum + l.amount, 0)).toBe(total);
+    expect(total).toBe(1);
+  });
+
+  it("discounts a deal too, on top of the deal price", () => {
+    const priced = priceCart(dealLines("d1"), catalog, 200);
+    expect(priced.subtotal).toBe(2000);
+    expect(priced.total).toBe(1800);
+    expect(priced.lines.reduce((sum, l) => sum + l.amount, 0)).toBe(1800);
+    expect(priced.lines.every((l) => l.note === "deal-share")).toBe(true);
+  });
+
+  it("refuses to give the bill away", () => {
+    expect(() => priceCart([single("hc")], catalog, 800)).toThrow(PricingError);
+    expect(() => priceCart([single("hc")], catalog, 900)).toThrow(/less than the bill total of Rs 800/);
+  });
+
+  it("refuses a negative or fractional discount", () => {
+    expect(() => priceCart([single("hc")], catalog, -50)).toThrow(/never negative/);
+    expect(() => priceCart([single("hc")], catalog, 10.5)).toThrow(/whole rupees/);
+  });
+
+  it("a discounted total is what the payment has to match", () => {
+    const { total } = priceCart([single("hc"), single("bd")], catalog, 200);
+    expect(checkPayment(total, 1000, 0).ok).toBe(true);
+    expect(checkPayment(total, 1200, 0).ok).toBe(false);
+  });
+});

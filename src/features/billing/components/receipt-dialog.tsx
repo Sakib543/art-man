@@ -88,6 +88,17 @@ export function ReceiptDialog({
                 <span>Total</span>
                 <span className="tabular-nums">{rs(receipt.total)}</span>
               </div>
+              {/*
+                The prices above are already net of the discount — it is shared
+                across the lines when the cart is priced (P3.10) — so the slip
+                says so in words rather than printing a subtraction that the
+                listed amounts would contradict.
+              */}
+              {receipt.discount > 0 ? (
+                <div className="text-[11.5px] text-muted-foreground">
+                  Includes a discount of {rs(receipt.discount)} ({num(receipt.subtotal)} before)
+                </div>
+              ) : null}
               {receipt.cash > 0 ? (
                 <div className="flex justify-between">
                   <span>Cash</span>

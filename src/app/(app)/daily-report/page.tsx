@@ -1,4 +1,4 @@
-import { AlertTriangle, Banknote, CircleCheck, Pencil, QrCode, Receipt, TrendingUp, Undo2, Wallet } from "lucide-react";
+import { AlertTriangle, Banknote, CircleCheck, Pencil, QrCode, Receipt, Scissors, TrendingUp, Undo2, Wallet } from "lucide-react";
 import { BusinessDayPill } from "@/components/business-day-pill";
 import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
@@ -59,6 +59,16 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
           value={String(summary.editedBills)}
           hint="Corrected bills, shown as one line each"
         />
+        {/* Only when there was one: a row of zeros every day would be noise,
+            and a discount is meant to stand out (P3.10). */}
+        {summary.discount > 0 ? (
+          <StatCard
+            icon={Scissors}
+            label="Discount given"
+            value={rs(summary.discount)}
+            hint="Already taken off the sales above"
+          />
+        ) : null}
       </div>
 
       {closing ? (
