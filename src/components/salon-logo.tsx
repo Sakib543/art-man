@@ -34,7 +34,7 @@ export function SalonLogo({
       src={onDark ? "/logo-light.png" : "/logo.png"}
       alt="Art Men's Salon"
       width={408}
-      height={400}
+      height={278}
       priority={priority}
       /*
        * `object-contain` is the belt to `w-auto`'s braces. A flex column
@@ -52,7 +52,7 @@ export function SalonLogo({
 export function BrandLockup({ onDark = false, compact = false }: { onDark?: boolean; compact?: boolean }) {
   return (
     <div className="flex min-w-0 flex-col items-start gap-1">
-      <SalonLogo onDark={onDark} priority className={compact ? "h-9" : "h-14"} />
+      <SalonLogo onDark={onDark} priority className={compact ? "h-9" : "h-21"} />
       {compact ? null : (
         <p
           className={cn(
