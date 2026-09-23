@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-23 (P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-23 (P6.1 claimed; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -50,6 +50,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
 | P4.10 | Staff khata reads the whole ledger table | ✅ | done 2026-09-22 |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
+| P6.1 | Design system + responsive shell | 🟡 | **Sakib, 2026-09-23** |
 
 ---
 
@@ -1522,6 +1523,63 @@ is a fork. Here they were already on. If a run never appears, that is the first 
 | 🟡 P5.1 | **Go live on Vercel** — env vars, then migrate + seed on the Neon `live` branch. The build itself already passes (verified). **Blocked on access, not on code:** the Vercel project exists and is connected to this same repo, but it lives in the **other developer's** Vercel account (answered 2026-09-22). Nobody here can open Settings to set the environment variables. First step is to be added to that project, or to have it transferred |
 | ✅ P5.2 | **`docs/DEPLOY_VERCEL.md` rewritten** — done 2026-09-22. It now has the two steps it never had (`db:migrate` and `db:seed` against the live branch, with the commands), in both bash and PowerShell. Fixed as well: the stale "staff with PINs" line (P1.0 removed it), a warning never to run `db:seed:sample` on live, that a push to `main` deploys by itself so a migration must reach live first, that a green build means nothing because the build passes with no env vars at all, and a measured table of which variable is read where. `.env.example` also said `DATABASE_URL_UNPOOLED` was used by the seed scripts — it is not, they read `DATABASE_URL`, and seeding the wrong database is exactly the mistake that comment invites |
 | ⬜ P5.3 | **Move to a VPS** — after the client signs off. Postgres on the same VPS; carry the trial data over with `pg_dump` |
+
+---
+
+## P6 — Design system and responsive shell
+
+| | Item |
+|---|---|
+| 🟡 P6.1 | **Design system + responsive shell** — a token layer, stronger primitives, a navy sidebar, and a mobile navigation that is not a 19-item horizontal scroller |
+
+### 🟡 P6.1 — Design system and responsive shell
+**Owner:** Sakib, 2026-09-23
+
+**Why.** The screens work and the palette is the approved one from `docs/art-saloon.html`, but
+nothing underneath it is a system, and it shows. Counted on 2026-09-23, in `src/**/*.tsx`:
+
+| | Count |
+|---|---|
+| `text-[12.5px]` · `[13px]` · `[13.5px]` · `[15px]` — four sizes, no scale | **222** |
+| `px-[18px]` — off Tailwind's 4px grid, so nothing aligns with anything else | **130** |
+| `rounded-[14px] border bg-card` — a card re-typed by hand; the `Card` primitive is unused | **49** |
+| Hardcoded hex (`#fafbfc`, `#efe0c8`, `#e6c58f`, …) that no token can reach | **~77** |
+
+Those four numbers are the whole diagnosis. Every component picked its own values, so the work of
+changing anything globally is a sweep rather than an edit, and the result reads as assembled rather
+than designed.
+
+Two more, which are behaviour rather than looks:
+
+- **`Button`'s default is `h-8` (32px).** Below the 44px touch target a counter needs, which is why
+  roughly forty call sites override it with `className="h-10"`. The primitive's default being wrong
+  is what creates the overrides.
+- **On a phone the sidebar becomes a horizontally scrolling strip of all 19 nav items**, with the
+  section titles hidden. It is the worst thing in the app on a small screen.
+
+**Decided with the client, 2026-09-23** (they asked for the redesign):
+
+| Question | Answer |
+|---|---|
+| Buttons and nav buttons | **Bigger and more visible.** Both: size, weight, colour and press feedback |
+| The sidebar | **Dark navy** (`#15263d`) with a brass active state — it currently disappears against the page |
+| Phone navigation | **A drawer plus a bottom bar.** Hamburger opens the full sectioned menu; the four counter screens sit in a fixed bottom bar |
+| Dark mode | **Left alone.** It is half-built — the light theme is navy/brass, `.dark` is still shadcn's neutral greys, and there is no toggle. The salon works in daylight, so this is not worth the risk today |
+
+**Scope.** Four layers, bottom up:
+
+1. **Tokens** in `globals.css` — a type scale, surface and line tokens for the hardcoded hex, an
+   elevation scale (the app has no shadows at all today).
+2. **Primitives** — `Button`, `Input`, `NativeSelect`, `Textarea`, `Badge`, and a real section
+   `Card` to absorb the 49 hand-rolled ones.
+3. **The shell** — navy sidebar, mobile drawer, bottom bar, a sticky page header.
+4. **The screens** — the money tables become readable on a phone instead of scrolling sideways.
+
+**Constraint.** No behaviour changes, and no schema changes. `src/features/conventions.test.ts`
+still has to pass, so shared UI goes in `src/components/`, components stay in a feature's
+`components/` folder, and no feature imports another.
+
+**Size:** large
 
 ---
 
