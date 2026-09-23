@@ -235,6 +235,10 @@ Khata balances are no longer 0: Arshad +30 (earned, not paid), Sherry −10 (pai
 she ended up earning, which is the correct result of the edits). Three `bill.developer-edit` rows
 are in `audit_log`. None of it is real data — reopen or reseed freely.
 
+**Two bills carry a discount** — #20 (Rs 300, "Regular customer") and #22
+(Rs 300, "regular"), the second rung up by the user themselves while trying the
+feature out. Today's bills marks both with a **Disc Rs 300** chip.
+
 **Bill #20 is the first discounted bill** — Rs 1,100 of work with Rs 300 off,
 saved while verifying P3.10, with lines of 582 and 218. It is on the open day
 (24 Sep) and it is dev data like the rest.
