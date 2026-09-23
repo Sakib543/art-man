@@ -39,15 +39,23 @@ export default async function OverviewPage() {
           label={data.closed ? "Sales (day closed)" : "Sales today"}
           value={rs(data.sale)}
           hint={`${data.paidBills} bill${data.paidBills === 1 ? "" : "s"} paid`}
+          tone="success"
         />
         <StatCard
           icon={Banknote}
           label={data.drawerCounted ? "Cash in drawer" : "Cash in drawer (expected)"}
           value={rs(data.drawerCash)}
           hint={data.drawerCounted ? "Counted at day close" : "Before day close"}
+          tone="brass"
         />
         <StatCard icon={QrCode} label="Online to your bank" value={rs(data.online)} />
-        <StatCard icon={Wallet} label="Expenses today" value={rs(data.expenses)} hint="Drawer and Owner-paid" />
+        <StatCard
+          icon={Wallet}
+          label="Expenses today"
+          value={rs(data.expenses)}
+          hint="Drawer and Owner-paid"
+          tone="warning"
+        />
       </div>
 
       <div className="mb-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">

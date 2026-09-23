@@ -1,21 +1,20 @@
+import { Panel, PanelHeader } from "@/components/panel";
 import { rs, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { AccountRow } from "../types";
 
-const th = "px-3.5 py-2 text-right text-[12.5px] font-medium text-muted-foreground";
+const th = "px-3.5 py-2 text-right text-xs font-medium text-muted-foreground";
 const td = "px-3.5 py-2.5 text-right tabular-nums";
 
 /** Every partner's account for the month, side by side. */
 export function AccountsTable({ accounts }: { accounts: AccountRow[] }) {
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Partner accounts</h2>
-      </div>
+    <Panel>
+      <PanelHeader title="Partner accounts" />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={cn(th, "text-left")}>Partner</th>
               <th className={th}>Share</th>
               <th className={th}>Profit share</th>
@@ -49,9 +48,9 @@ export function AccountsTable({ accounts }: { accounts: AccountRow[] }) {
           </tbody>
         </table>
       </div>
-      <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+      <p className="border-t px-card py-3 text-xs text-muted-foreground">
         Net position = profit share + capital still owed - drawn. It is what the business owes the partner.
       </p>
-    </div>
+    </Panel>
   );
 }

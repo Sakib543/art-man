@@ -46,7 +46,7 @@ export function CartLines({
   if (lines.length === 0) {
     return (
       <div className="px-2.5 py-7 text-center text-muted-foreground">
-        <Receipt className="mx-auto mb-1.5 size-7 text-[#b7bec9]" aria-hidden />
+        <Receipt className="mx-auto mb-1.5 size-7 text-muted-foreground/50" aria-hidden />
         <p>Add a service or deal to start the bill</p>
       </div>
     );
@@ -57,7 +57,7 @@ export function CartLines({
 
   return (
     <>
-      <div className="border-b px-[18px] py-3">
+      <div className="border-b px-card py-3">
         <Label htmlFor="all-staff" className="mb-1.5">
           One person did everything
         </Label>
@@ -77,13 +77,13 @@ export function CartLines({
           ))}
         </NativeSelect>
         {lines.length > 1 ? (
-          <p className="mt-1.5 text-[12.5px] text-muted-foreground">
+          <p className="mt-1.5 text-xs text-muted-foreground">
             Different staff per service? Change the line below.
           </p>
         ) : null}
       </div>
 
-      <div className="px-[18px] py-1">
+      <div className="px-card py-1">
         {lines.map((line, index) => {
           const price = priced[index];
           const deal = line.dealId ? dealsById[line.dealId] : null;
@@ -109,8 +109,15 @@ export function CartLines({
                   {deal.name} ({rs(deal.price)})
                 </p>
               ) : null}
-              <div className="grid grid-cols-[minmax(0,1fr)_128px_70px_26px] items-center gap-2 border-b py-2.5 last:border-b-0">
-                <div>
+              {/*
+                On a phone the four-column row does not fit: the fixed columns
+                alone came to 248px of a 311px card, leaving sixty for the
+                service name. So below `sm` it becomes two rows — name and the
+                remove cross on top, staff and the amount underneath — placed
+                by grid position rather than by reordering the markup (P6.1).
+              */}
+              <div className="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-x-2 gap-y-2 border-b py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_128px_70px_26px] sm:gap-y-0 sm:py-2.5">
+                <div className="col-start-1 row-start-1 sm:col-auto sm:row-auto">
                   <p className="font-medium">{name}</p>
                   {price?.note ? <p className="text-xs text-muted-foreground">{NOTE_TEXT[price.note]}</p> : null}
                   {ranged ? (
@@ -121,7 +128,7 @@ export function CartLines({
                 </div>
                 <NativeSelect
                   size="sm"
-                  className="w-full"
+                  className="col-start-1 row-start-2 w-full sm:col-auto sm:row-auto"
                   aria-label={`Staff for ${name}`}
                   value={line.staffId ?? ""}
                   onChange={(event) => onStaff(line.key, event.target.value || null)}
@@ -150,16 +157,18 @@ export function CartLines({
                     value={line.amount ?? ""}
                     placeholder={String(ranged.price)}
                     onChange={(event) => onAmount(line.key, event.target.value === "" ? null : Number(event.target.value))}
-                    className="h-8 w-full px-1.5 text-right tabular-nums"
+                    className="col-start-2 row-start-2 h-8 w-full px-1.5 text-right tabular-nums sm:col-auto sm:row-auto"
                   />
                 ) : (
-                  <p className="text-right font-medium tabular-nums">{num(price?.amount ?? 0)}</p>
+                  <p className="col-start-2 row-start-2 text-right font-medium tabular-nums sm:col-auto sm:row-auto">
+                    {num(price?.amount ?? 0)}
+                  </p>
                 )}
                 <button
                   type="button"
                   onClick={() => onRemove(line.key)}
                   aria-label={`Remove ${name}`}
-                  className="grid place-items-center rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                  className="col-start-2 row-start-1 grid size-8 place-items-center justify-self-end rounded-md text-muted-foreground transition-colors hover:bg-danger-soft hover:text-destructive sm:col-auto sm:row-auto sm:size-6.5"
                 >
                   <X className="size-4" aria-hidden />
                 </button>

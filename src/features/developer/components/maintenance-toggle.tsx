@@ -24,7 +24,6 @@ export function MaintenanceToggle({ on }: { on: boolean }) {
       <Button
         type="button"
         variant={on ? "default" : "destructive"}
-        className="h-10"
         disabled={pending}
         onClick={flip}
       >

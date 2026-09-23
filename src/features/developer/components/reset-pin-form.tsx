@@ -43,7 +43,7 @@ export function ResetPinForm({ userId }: { userId: string }) {
         />
       </Field>
       <FormFeedback error={error} done={done} />
-      <Button type="submit" className="h-10" disabled={pending}>
+      <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : "Set PIN"}
       </Button>
     </form>

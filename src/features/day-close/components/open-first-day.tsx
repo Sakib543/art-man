@@ -7,6 +7,8 @@ import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { openFirstDayAction } from "../actions";
+import { panelClass } from "@/components/panel";
+import { cn } from "@/lib/utils";
 
 /** Owner only: open the very first business day and enter the drawer's opening cash. */
 export function OpenFirstDay({ today }: { today: string }) {
@@ -28,10 +30,10 @@ export function OpenFirstDay({ today }: { today: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="max-w-md space-y-4 rounded-[14px] border bg-card p-[18px]" noValidate>
+    <form onSubmit={submit} className={cn(panelClass, "max-w-md space-y-4 p-card")} noValidate>
       <div>
-        <h2 className="text-[15px] font-semibold">Open the first business day</h2>
-        <p className="text-[13px] text-muted-foreground">
+        <h2 className="text-md font-semibold">Open the first business day</h2>
+        <p className="text-sm text-muted-foreground">
           After this, each day opens automatically when the previous one is closed, with the cash left in the drawer.
         </p>
       </div>
@@ -51,12 +53,12 @@ export function OpenFirstDay({ today }: { today: string }) {
         />
       </Field>
       {error ? (
-        <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+        <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
           <AlertCircle className="size-4 shrink-0" aria-hidden />
           {error}
         </p>
       ) : null}
-      <Button type="submit" className="h-10" disabled={pending}>
+      <Button type="submit" disabled={pending}>
         {pending ? "Opening..." : "Open business day"}
       </Button>
     </form>

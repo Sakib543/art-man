@@ -17,7 +17,7 @@ export default async function PasswordsPage() {
     <>
       <PageHeader title="Passwords" subtitle="Set a new password when someone is locked out" />
 
-      <p className="mb-4 max-w-2xl text-[13.5px] text-muted-foreground">
+      <p className="mb-4 max-w-2xl text-sm text-muted-foreground">
         Passwords and PINs are stored as hashes, so nobody — not even you — can read one back. The
         only way to recover a forgotten one is to set a new one here and tell the person what it is.
         Every reset is written to the audit log.
@@ -29,14 +29,14 @@ export default async function PasswordsPage() {
             <CardContent className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
                 <div>
-                  <p className="text-[15px] font-semibold">{account.name}</p>
-                  <p className="text-[13px] text-muted-foreground">{account.username}</p>
+                  <p className="text-md font-semibold">{account.name}</p>
+                  <p className="text-sm text-muted-foreground">{account.username}</p>
                 </div>
                 <Badge variant="secondary">{ROLE_LABEL[account.role]}</Badge>
               </div>
 
               {account.id === dev.id ? (
-                <p className="text-[13px] text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   This is you. Change your own password in Settings, so this session stays signed in.
                 </p>
               ) : (
@@ -45,7 +45,7 @@ export default async function PasswordsPage() {
 
               {account.role === "owner" ? (
                 <div className="border-t pt-4">
-                  <p className="mb-3 text-[13px] text-muted-foreground">
+                  <p className="mb-3 text-sm text-muted-foreground">
                     The Owner also has a 4-digit PIN, used to confirm cash taken from or added to
                     the drawer. {account.hasPin ? "One is set." : "None is set yet."}
                   </p>

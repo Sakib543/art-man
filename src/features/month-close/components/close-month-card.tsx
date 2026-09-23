@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { formatDate, num, rs } from "@/lib/format";
 import { closeMonthAction } from "../actions";
 import type { CloseState } from "../queries";
+import { Panel } from "@/components/panel";
 
 export function CloseMonthCard({ state, monthLabel }: { state: CloseState; monthLabel: string }) {
   const router = useRouter();
@@ -28,25 +29,25 @@ export function CloseMonthCard({ state, monthLabel }: { state: CloseState; month
   }
 
   return (
-    <div className="mt-4 rounded-[14px] border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-[18px] py-4">
+    <Panel className="mt-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-card py-4">
         <div className="min-w-60 flex-1">
-          <h2 className="text-[15px] font-semibold">Close {monthLabel}</h2>
-          <p className="text-[13px] text-muted-foreground">
+          <h2 className="text-md font-semibold">Close {monthLabel}</h2>
+          <p className="text-sm text-muted-foreground">
             Closing freezes the month, adds the monthly salaries to the staff khata and saves the partners&apos; shares. A
             correction found later goes in next month as an adjustment.
           </p>
         </div>
-        <Button className="h-10" onClick={() => setOpen(true)} disabled={blocked}>
+        <Button onClick={() => setOpen(true)} disabled={blocked}>
           <CalendarCheck aria-hidden />
           Close {monthLabel}
         </Button>
       </div>
 
       {blocked ? (
-        <ul className="space-y-1.5 border-t px-[18px] py-3.5">
+        <ul className="space-y-1.5 border-t px-card py-3.5">
           {state.blockers.map((blocker) => (
-            <li key={blocker} className="flex items-start gap-2 text-[13px] text-warning">
+            <li key={blocker} className="flex items-start gap-2 text-sm text-warning">
               <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
               {blocker}
             </li>
@@ -76,7 +77,7 @@ export function CloseMonthCard({ state, monthLabel }: { state: CloseState; month
                   </li>
                 ))}
                 {state.salaries.length === 0 ? <li className="px-3 py-2 text-muted-foreground">No staff on a monthly salary</li> : null}
-                <li className="flex justify-between bg-[#fbf8f3] px-3 py-2 font-semibold">
+                <li className="flex justify-between bg-brass-tint px-3 py-2 font-semibold">
                   <span>Total</span>
                   <span className="tabular-nums">{num(salaryTotal)}</span>
                 </li>
@@ -85,7 +86,7 @@ export function CloseMonthCard({ state, monthLabel }: { state: CloseState; month
           </div>
 
           {error ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4 shrink-0" aria-hidden />
               {error}
             </p>
@@ -101,6 +102,6 @@ export function CloseMonthCard({ state, monthLabel }: { state: CloseState; month
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Panel>
   );
 }

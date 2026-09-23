@@ -1,3 +1,4 @@
+import { Panel, PanelHeader } from "@/components/panel";
 import type { ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { ChangePasswordForm } from "@/features/account/components/change-password-form";
@@ -9,13 +10,10 @@ export const metadata = { title: "Settings | Art Men's Salon" };
 
 function Section({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <section className="rounded-[14px] border bg-card">
-      <div className="border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">{title}</h2>
-        <p className="text-[13px] text-muted-foreground">{description}</p>
-      </div>
-      <div className="px-[18px] py-4">{children}</div>
-    </section>
+    <Panel>
+      <PanelHeader title={title} description={description} />
+      <div className="px-card py-4">{children}</div>
+    </Panel>
   );
 }
 

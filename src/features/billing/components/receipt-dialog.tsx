@@ -64,7 +64,7 @@ export function ReceiptDialog({
             */}
             <div
               data-print-receipt={open ? "" : undefined}
-              className="mx-auto w-full rounded-md border bg-white p-4 font-mono text-[12.5px] leading-relaxed"
+              className="mx-auto w-full rounded-md border bg-card p-4 font-mono text-xs leading-relaxed"
             >
               <p className="text-center font-medium">Art Men&apos;s Salon</p>
               <p className="text-center text-muted-foreground">
@@ -95,7 +95,7 @@ export function ReceiptDialog({
                 listed amounts would contradict.
               */}
               {receipt.discount > 0 ? (
-                <div className="text-[11.5px] text-muted-foreground">
+                <div className="text-2xs text-muted-foreground">
                   Includes a discount of {rs(receipt.discount)} ({num(receipt.subtotal)} before)
                 </div>
               ) : null}
@@ -116,11 +116,11 @@ export function ReceiptDialog({
             </div>
 
             <DialogFooter>
-              <Button variant="outline" className="h-10 w-full sm:w-auto" onClick={() => window.print()}>
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => window.print()}>
                 <Printer aria-hidden />
                 Print
               </Button>
-              <Button className="h-10 w-full sm:w-auto" onClick={onClose}>
+              <Button className="w-full sm:w-auto" onClick={onClose}>
                 {closeLabel}
               </Button>
             </DialogFooter>

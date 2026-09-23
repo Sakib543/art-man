@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel, PanelHeader } from "@/components/panel";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { Field } from "@/components/field";
@@ -50,7 +51,7 @@ function SetRate({ customer, row }: { customer: CustomerDetail; row: RateRow }) 
 
   return (
     <>
-      <Button variant="ghost" className="h-8 px-2 text-[12.5px]" onClick={() => setOpen(true)}>
+      <Button variant="ghost" className="h-8 px-2 text-xs" onClick={() => setOpen(true)}>
         {row.price === null ? "Set rate" : "Change"}
       </Button>
 
@@ -84,7 +85,7 @@ function RemoveRate({ customer, row }: { customer: CustomerDetail; row: RateRow 
 
   return (
     <>
-      <Button variant="ghost" className="h-8 px-2 text-[12.5px] text-destructive" onClick={() => setOpen(true)}>
+      <Button variant="ghost" className="h-8 px-2 text-xs text-destructive" onClick={() => setOpen(true)}>
         Remove
       </Button>
 
@@ -102,25 +103,23 @@ function RemoveRate({ customer, row }: { customer: CustomerDetail; row: RateRow 
   );
 }
 
-const th = "px-3.5 py-2 text-left text-[12.5px] font-medium text-muted-foreground";
+const th = "px-3.5 py-2 text-left text-xs font-medium text-muted-foreground";
 const td = "px-3.5 py-2.5";
 
 /** One customer: their details, and a fixed price per service (backlog P3.2). */
 export function CustomerCard({ customer }: { customer: CustomerDetail }) {
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2.5 border-b px-[18px] py-3.5">
-        <div>
-          <h2 className="text-[15px] font-semibold">{customer.name}</h2>
-          <p className="text-[12.5px] text-muted-foreground tabular-nums">{customer.phone}</p>
-        </div>
-        <EditDetails customer={customer} />
-      </div>
+    <Panel>
+      <PanelHeader
+        title={customer.name}
+        description={<span className="tabular-nums">{customer.phone}</span>}
+        action={<EditDetails customer={customer} />}
+      />
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={th}>Service</th>
               <th className={cn(th, "text-right")}>List price</th>
               <th className={cn(th, "text-right")}>This customer pays</th>
@@ -153,9 +152,9 @@ export function CustomerCard({ customer }: { customer: CustomerDetail }) {
         </table>
       </div>
 
-      <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+      <p className="border-t px-card py-3 text-xs text-muted-foreground">
         A special rate applies automatically the next time this customer is billed. Bills already rung up never change.
       </p>
-    </div>
+    </Panel>
   );
 }

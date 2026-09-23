@@ -15,6 +15,7 @@ import { cancelBillAction } from "../actions";
 import { receiptOfBill } from "../receipt-of-bill";
 import type { Receipt } from "../types";
 import { ReceiptDialog } from "./receipt-dialog";
+import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
 
 interface TodaysBillsProps {
   bills: DayBill[];
@@ -60,19 +61,21 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
   }
 
   return (
-    <section className="mt-4 rounded-[14px] border bg-card">
-      <div className="flex items-center justify-between border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Today&apos;s bills</h2>
-        <span className="text-[12.5px] text-muted-foreground">{bills.length} entries</span>
-      </div>
+    <Panel className="mt-4">
+      <PanelHeader
+        title="Today's bills"
+        action={<span className="text-xs text-muted-foreground">{bills.length} entries</span>}
+      />
 
       {bills.length === 0 ? (
-        <p className="px-4 py-8 text-center text-muted-foreground">No bills yet today</p>
+        <PanelEmpty>No bills yet today</PanelEmpty>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        /* Below `md` each bill is a card rather than a seven-column sideways
+           scroll; the labels come from `data-label` (see globals.css). */
+        <div className="md:overflow-x-auto">
+          <table className="table-stacked w-full text-sm">
             <thead>
-              <tr className="border-b bg-[#fafbfc] text-left text-[12.5px] text-muted-foreground">
+              <tr className="border-b bg-surface-sunken text-left text-xs text-muted-foreground">
                 <th className="px-3.5 py-2 font-medium">Time</th>
                 <th className="px-3.5 py-2 font-medium">Bill</th>
                 <th className="px-3.5 py-2 font-medium">Customer</th>
@@ -86,35 +89,43 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
             <tbody>
               {bills.map((bill) => (
                 <tr key={bill.id} className={cn("border-b last:border-b-0", bill.status !== "active" && "text-muted-foreground")}>
-                  <td className="px-3.5 py-2.5 tabular-nums">{formatTime(bill.createdAt)}</td>
-                  <td className="px-3.5 py-2.5 tabular-nums">
-                    #{bill.billNo}
-                    {bill.bookNo ? <span className="block text-[12.5px] text-muted-foreground">Book {bill.bookNo}</span> : null}
+                  <td className="px-3.5 py-2.5 tabular-nums" data-label="Time">
+                    {formatTime(bill.createdAt)}
                   </td>
-                  <td className="px-3.5 py-2.5">{bill.customerName ?? "Walk-in"}</td>
+                  <td className="px-3.5 py-2.5 tabular-nums" data-row-title="">
+                    #{bill.billNo}
+                    {bill.bookNo ? <span className="block text-xs text-muted-foreground">Book {bill.bookNo}</span> : null}
+                  </td>
+                  <td className="px-3.5 py-2.5" data-label="Customer">
+                    {bill.customerName ?? "Walk-in"}
+                  </td>
                   <td className="px-3.5 py-2.5">
                     {bill.lines.map((line) => line.name).join(", ")}
                     {/* Nothing else in the row shows a discount: the cash is
                         already net of it (P3.10). */}
                     <DiscountNote amount={bill.discount} reason={bill.discountReason} className="mt-0.5 flex" />
                   </td>
-                  <td className="px-3.5 py-2.5 text-right tabular-nums">{rs(bill.cash)}</td>
-                  <td className="px-3.5 py-2.5 text-right tabular-nums">{rs(bill.online)}</td>
-                  <td className="px-3.5 py-2.5">
-                    {bill.status === "active" ? <Badge className="bg-success-soft text-success">Active</Badge> : null}
+                  <td className="px-3.5 py-2.5 text-right tabular-nums" data-label="Cash">
+                    {rs(bill.cash)}
+                  </td>
+                  <td className="px-3.5 py-2.5 text-right tabular-nums" data-label="Online">
+                    {rs(bill.online)}
+                  </td>
+                  <td className="px-3.5 py-2.5 max-md:pt-2" data-label="Status">
+                    {bill.status === "active" ? <Badge variant="success">Active</Badge> : null}
                     {bill.status === "cancelled" ? (
                       <span title={bill.cancelReason ?? ""}>
-                        <Badge className="bg-danger-soft text-destructive">Cancelled</Badge>
+                        <Badge variant="destructive">Cancelled</Badge>
                       </span>
                     ) : null}
                     {bill.status === "reversal" ? (
-                      <Badge className="bg-secondary text-muted-foreground">Reverses #{bill.reversesBillNo}</Badge>
+                      <Badge variant="secondary">Reverses #{bill.reversesBillNo}</Badge>
                     ) : null}
                   </td>
-                  <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
+                  <td className="px-3.5 py-2.5 text-right whitespace-nowrap max-md:mt-1 max-md:flex max-md:gap-1 max-md:border-t max-md:pt-2">
                     {bill.status === "active" && canEdit ? (
                       editingId === bill.id ? (
-                        <Badge className="bg-secondary text-muted-foreground">Correcting</Badge>
+                        <Badge variant="secondary">Correcting</Badge>
                       ) : (
                         <Link href={`/billing?edit=${bill.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
                           Edit
@@ -172,7 +183,7 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
             rows={3}
           />
           {error ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4" aria-hidden />
               {error}
             </p>
@@ -187,6 +198,6 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </section>
+    </Panel>
   );
 }

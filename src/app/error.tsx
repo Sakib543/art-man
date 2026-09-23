@@ -14,7 +14,7 @@ export default function AppRootError({ error, retry }: { error: Error & { digest
     <main className="grid min-h-screen place-items-center px-4">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <div className="grid size-12 place-items-center rounded-xl bg-primary text-[#e6c58f]">
+          <div className="grid size-12 place-items-center rounded-xl bg-primary text-brass-bright">
             <Scissors className="size-6" aria-hidden />
           </div>
           <h1 className="text-xl font-semibold">Art Men&apos;s Salon</h1>

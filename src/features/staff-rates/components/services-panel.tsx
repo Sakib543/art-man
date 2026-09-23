@@ -21,7 +21,7 @@ export function ServicesPanel({ services }: { services: ServiceRow[] }) {
       >
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={th}>Service</th>
               <th className={th}>Category</th>
               <th className={cn(th, "text-right")}>Price</th>

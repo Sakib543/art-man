@@ -66,13 +66,13 @@ export function LoginForm() {
       </div>
 
       {error ? (
-        <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+        <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
           <AlertCircle className="size-4" aria-hidden />
           {error}
         </p>
       ) : null}
 
-      <Button type="submit" className="h-11 w-full text-[15px]" disabled={pending}>
+      <Button type="submit" size="lg" className="w-full" disabled={pending}>
         {pending ? "Signing in..." : "Sign in"}
       </Button>
     </form>

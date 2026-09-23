@@ -27,7 +27,7 @@ export function CancelClosedBill({ billId, billNo }: { billId: string; billNo: n
     <>
       <Button
         variant="outline"
-        className="h-8 px-2.5 text-[12.5px]"
+        className="h-8 px-2.5 text-xs"
         onClick={() => {
           setReason("");
           setError("");
@@ -54,7 +54,7 @@ export function CancelClosedBill({ billId, billNo }: { billId: string; billNo: n
             rows={3}
           />
           {error ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4 shrink-0" aria-hidden />
               {error}
             </p>

@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 export function FormFeedback({ error, done }: { error: string; done: string }) {
   if (error) {
     return (
-      <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+      <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
         <AlertCircle className="size-4 shrink-0" aria-hidden />
         {error}
       </p>
@@ -12,7 +12,7 @@ export function FormFeedback({ error, done }: { error: string; done: string }) {
   }
   if (done) {
     return (
-      <p role="status" className="flex items-center gap-1.5 text-[12.5px] text-success">
+      <p role="status" className="flex items-center gap-1.5 text-xs text-success">
         <CheckCircle2 className="size-4 shrink-0" aria-hidden />
         {done}
       </p>

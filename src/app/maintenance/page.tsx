@@ -25,28 +25,28 @@ export default async function MaintenancePage() {
     <main className="grid min-h-screen place-items-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <div className="grid size-12 place-items-center rounded-xl bg-primary text-[#e6c58f]">
+          <div className="grid size-12 place-items-center rounded-xl bg-primary text-brass-bright">
             <PowerOff className="size-6" aria-hidden />
           </div>
           <div>
             <h1 className="text-xl font-semibold">The system is closed</h1>
-            <p className="text-[13.5px] text-muted-foreground">Maintenance is in progress</p>
+            <p className="text-sm text-muted-foreground">Maintenance is in progress</p>
           </div>
         </div>
         <Card>
-          <CardContent className="space-y-3 text-[13.5px] text-muted-foreground">
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>
               Billing, day close and the reports are switched off for a short while. Nothing has
               been lost — everything already entered is safe.
             </p>
             <p>Use the paper bill book until this screen goes away, then enter those bills.</p>
             {changedAt ? (
-              <p className="text-[12.5px]">
+              <p className="text-xs">
                 Switched off at {formatDateTime(changedAt)}.
               </p>
             ) : null}
             <div className="flex items-center justify-between border-t pt-3">
-              <span className="text-[12.5px]">Signed in as {user.name}</span>
+              <span className="text-xs">Signed in as {user.name}</span>
               <SignOutButton />
             </div>
           </CardContent>

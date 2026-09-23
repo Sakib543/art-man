@@ -43,7 +43,7 @@ export function OwnerPinForm() {
         </Field>
       </div>
       <FormFeedback error={error} done={done} />
-      <Button type="submit" className="h-10" disabled={pending}>
+      <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : "Change PIN"}
       </Button>
     </form>

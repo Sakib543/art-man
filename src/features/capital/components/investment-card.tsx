@@ -1,23 +1,24 @@
+import { Panel, PanelHeader, panelClass } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, num, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { InvestmentRow } from "../types";
 import { RepayForm } from "./repay-form";
 
-const th = "px-[18px] py-2 text-left text-[12.5px] font-medium text-muted-foreground";
-const td = "px-[18px] py-2.5";
+const th = "px-card py-2 text-left text-xs font-medium text-muted-foreground";
+const td = "px-card py-2.5";
 
 function Figure({ label, value, tone }: { label: string; value: string; tone?: "owed" | "clear" }) {
   return (
     <div
       className={cn(
-        "rounded-[14px] border bg-card px-4 py-3",
-        tone === "owed" && "border-[#f6d2cc] bg-danger-soft",
-        tone === "clear" && "border-[#c9e6d8] bg-success-soft",
+        panelClass, "px-4 py-3",
+        tone === "owed" && "border-danger-line bg-danger-soft",
+        tone === "clear" && "border-success-line bg-success-soft",
       )}
     >
-      <p className={cn("text-[12.5px] text-muted-foreground", tone === "owed" && "text-destructive", tone === "clear" && "text-success")}>{label}</p>
-      <p className={cn("text-[22px] font-semibold tracking-tight tabular-nums", tone === "owed" && "text-destructive", tone === "clear" && "text-success")}>{value}</p>
+      <p className={cn("text-xs text-muted-foreground", tone === "owed" && "text-destructive", tone === "clear" && "text-success")}>{label}</p>
+      <p className={cn("text-2xl font-semibold tracking-tight tabular-nums", tone === "owed" && "text-destructive", tone === "clear" && "text-success")}>{value}</p>
     </div>
   );
 }
@@ -27,20 +28,16 @@ export function InvestmentCard({ investment }: { investment: InvestmentRow }) {
   const outstanding = investment.remaining > 0;
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="flex items-center justify-between gap-2 border-b px-[18px] py-3.5">
-        <div>
-          <h2 className="text-[15px] font-semibold">{investment.name}</h2>
-          <p className="text-[12.5px] text-muted-foreground">Added {formatDate(investment.addedOn)}</p>
-        </div>
-        {outstanding ? (
-          <Badge className="bg-warning-soft text-warning">Outstanding</Badge>
-        ) : (
-          <Badge className="bg-success-soft text-success">Fully repaid</Badge>
-        )}
-      </div>
+    <Panel>
+      <PanelHeader
+        title={investment.name}
+        description={`Added ${formatDate(investment.addedOn)}`}
+        action={
+          outstanding ? <Badge variant="warning">Outstanding</Badge> : <Badge variant="success">Fully repaid</Badge>
+        }
+      />
 
-      <div className="grid gap-3 px-[18px] py-4 sm:grid-cols-3">
+      <div className="grid gap-3 px-card py-4 sm:grid-cols-3">
         <Figure label="Total" value={rs(investment.total)} />
         <Figure label="Paid back" value={rs(investment.paid)} />
         <Figure label="Remaining" value={rs(investment.remaining)} tone={outstanding ? "owed" : "clear"} />
@@ -49,7 +46,7 @@ export function InvestmentCard({ investment }: { investment: InvestmentRow }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-y bg-[#fafbfc]">
+            <tr className="border-y bg-surface-sunken">
               <th className={th}>Funded by</th>
               <th className={cn(th, "text-right")}>Contributed</th>
               <th className={cn(th, "text-right")}>Paid back</th>
@@ -72,7 +69,7 @@ export function InvestmentCard({ investment }: { investment: InvestmentRow }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={th}>Installment date</th>
               <th className={th}>Paid to</th>
               <th className={th}>Note</th>
@@ -100,6 +97,6 @@ export function InvestmentCard({ investment }: { investment: InvestmentRow }) {
       </div>
 
       {owed.length > 0 ? <RepayForm capitalItemId={investment.id} owed={owed} nextNumber={investment.repayments.length + 1} /> : null}
-    </div>
+    </Panel>
   );
 }

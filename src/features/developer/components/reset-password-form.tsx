@@ -54,7 +54,7 @@ export function ResetPasswordForm({ userId, username }: { userId: string; userna
         />
       </Field>
       <FormFeedback error={error} done={done} />
-      <Button type="submit" className="h-10" disabled={pending}>
+      <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : "Set password"}
       </Button>
     </form>

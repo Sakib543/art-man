@@ -21,7 +21,7 @@ export function DealsPanel({ deals, services }: { deals: DealRow[]; services: Se
       >
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={th}>Deal</th>
               <th className={th}>Services</th>
               <th className={cn(th, "text-right")}>Price</th>

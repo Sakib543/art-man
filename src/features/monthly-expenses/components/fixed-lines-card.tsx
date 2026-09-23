@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel, PanelHeader } from "@/components/panel";
 import { AlertCircle, Plus } from "lucide-react";
 import { useState, useTransition, type FormEvent } from "react";
 import { Field } from "@/components/field";
@@ -34,13 +35,13 @@ function FixedRow({ month, line, closed, onError }: { month: string; line: Fixed
 
   return (
     <tr className="border-b">
-      <td className="px-[18px] py-2.5">
+      <td className="px-card py-2.5">
         {line.name}
-        {line.paidByOwner ? <Badge className="ml-2 bg-brass-soft text-brass-strong">Owner pays</Badge> : null}
-        {!line.active ? <Badge className="ml-2 bg-secondary text-muted-foreground">Inactive</Badge> : null}
-        {line.amount === 0 && !closed ? <Badge className="ml-2 bg-warning-soft text-warning">Not entered</Badge> : null}
+        {line.paidByOwner ? <Badge variant="brass" className="ml-2">Owner pays</Badge> : null}
+        {!line.active ? <Badge variant="secondary" className="ml-2">Inactive</Badge> : null}
+        {line.amount === 0 && !closed ? <Badge variant="warning" className="ml-2">Not entered</Badge> : null}
       </td>
-      <td className="w-56 px-[18px] py-2">
+      <td className="w-56 px-card py-2">
         <form onSubmit={save} className="flex items-center gap-2">
           <Input
             type="number"
@@ -83,47 +84,47 @@ export function FixedLinesCard({ month, lines, total, closed }: FixedLinesCardPr
   }
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Fixed monthly</h2>
+    <Panel>
+      <PanelHeader title="Fixed monthly" />
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <tbody>
+            {lines.map((line) => (
+              <FixedRow key={line.id} month={month} line={line} closed={closed} onError={setError} />
+            ))}
+            <tr className="bg-brass-tint font-semibold">
+              <td className="px-card py-2.5">Total fixed</td>
+              <td className="px-card py-2.5 text-right tabular-nums">{rs(total)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <table className="w-full text-sm">
-        <tbody>
-          {lines.map((line) => (
-            <FixedRow key={line.id} month={month} line={line} closed={closed} onError={setError} />
-          ))}
-          <tr className="bg-[#fbf8f3] font-semibold">
-            <td className="px-[18px] py-2.5">Total fixed</td>
-            <td className="px-[18px] py-2.5 text-right tabular-nums">{rs(total)}</td>
-          </tr>
-        </tbody>
-      </table>
-
       {error ? (
-        <p role="alert" className="flex items-center gap-1.5 border-t px-[18px] py-3 text-[12.5px] text-destructive">
+        <p role="alert" className="flex items-center gap-1.5 border-t px-card py-3 text-xs text-destructive">
           <AlertCircle className="size-4 shrink-0" aria-hidden />
           {error}
         </p>
       ) : null}
 
       {!closed ? (
-        <form onSubmit={addLine} className="space-y-2.5 border-t px-[18px] py-4">
+        <form onSubmit={addLine} className="space-y-2.5 border-t px-card py-4">
           <Field label="Add a fixed line" htmlFor="fixed-line-name" hint="Type the amount in its row. Changing it later adds a correction; the old figure stays in the record.">
             <div className="flex gap-2">
               <Input id="fixed-line-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Generator fuel" className="h-10" />
-              <Button type="submit" variant="outline" className="h-10" disabled={pending}>
+              <Button type="submit" variant="outline" disabled={pending}>
                 <Plus aria-hidden />
                 Add
               </Button>
             </div>
           </Field>
-          <label className="flex cursor-pointer items-center gap-2 text-[13px]">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input type="checkbox" checked={paidByOwner} onChange={(event) => setPaidByOwner(event.target.checked)} className="size-4 accent-primary" />
             The Owner pays this from his own account
           </label>
         </form>
       ) : null}
-    </div>
+    </Panel>
   );
 }

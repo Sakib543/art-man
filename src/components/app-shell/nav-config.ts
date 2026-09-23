@@ -26,6 +26,15 @@ export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  /**
+   * Shown in the bottom bar on a phone (P6.1). Four screens at most, because a
+   * fifth slot is the button that opens the rest of the menu. Keep this to the
+   * screens the counter uses through the day — everything else is one tap
+   * further away, in the drawer.
+   */
+  primary?: boolean;
+  /** A shorter label for the bottom bar, where there is room for one word. */
+  short?: string;
 }
 
 export interface NavSection {
@@ -44,11 +53,11 @@ export const NAV: NavSection[] = [
     title: "Counter",
     roles: ["owner", "manager"],
     items: [
-      { href: "/billing", label: "Billing", icon: Receipt },
+      { href: "/billing", label: "Billing", icon: Receipt, primary: true },
       { href: "/worksheet", label: "Daily worksheet", icon: Grid3x3 },
       { href: "/folders", label: "Daily folders", icon: Wallet },
-      { href: "/day-close", label: "Day close", icon: Lock },
-      { href: "/daily-report", label: "Daily report", icon: FileText },
+      { href: "/day-close", label: "Day close", icon: Lock, primary: true, short: "Day close" },
+      { href: "/daily-report", label: "Daily report", icon: FileText, primary: true, short: "Report" },
       { href: "/staff-khata", label: "Staff khata", icon: BookOpen },
     ],
   },
@@ -56,7 +65,7 @@ export const NAV: NavSection[] = [
     title: "Owner",
     roles: ["owner"],
     items: [
-      { href: "/overview", label: "Overview", icon: LayoutDashboard },
+      { href: "/overview", label: "Overview", icon: LayoutDashboard, primary: true },
       { href: "/monthly-report", label: "Monthly report", icon: ChartColumn },
       { href: "/monthly-expenses", label: "Monthly expenses", icon: CalendarCheck },
       { href: "/capital", label: "Capital / Outstanding", icon: Landmark },
@@ -96,3 +105,13 @@ export const ROLE_LABEL: Record<Role, string> = {
   owner: "Owner",
   manager: "Manager",
 };
+
+/** The name of the screen at this path, for the bar across the top of a phone. */
+export function labelOf(pathname: string): string {
+  for (const section of NAV) {
+    for (const item of section.items) {
+      if (item.href === pathname) return item.label;
+    }
+  }
+  return "Art Men's Salon";
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel } from "@/components/panel";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ interface ServicePickerProps {
 }
 
 const tile =
-  "flex min-h-[92px] flex-col gap-2 rounded-[10px] border bg-card p-3 text-left transition-colors hover:border-brass";
+  "flex min-h-[92px] flex-col gap-2 rounded-lg border bg-card p-3 text-left transition-colors hover:border-brass";
 
 export function ServicePicker({ services, deals, specialRates, onAddService, onAddDeal }: ServicePickerProps) {
   const categories = useMemo(() => [...new Set(services.map((s) => s.category)), DEALS_TAB], [services]);
@@ -38,8 +39,8 @@ export function ServicePicker({ services, deals, specialRates, onAddService, onA
     name === DEALS_TAB ? deals.length : services.filter((s) => s.category === name).length;
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="px-[18px] pt-4">
+    <Panel>
+      <div className="px-card pt-4">
         <div className="relative">
           <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
@@ -52,7 +53,7 @@ export function ServicePicker({ services, deals, specialRates, onAddService, onA
         </div>
       </div>
 
-      <div className="mt-2.5 flex gap-1 overflow-x-auto overflow-y-hidden border-b px-[18px]" role="tablist">
+      <div className="mt-2.5 flex gap-1 overflow-x-auto overflow-y-hidden border-b px-card" role="tablist">
         {categories.map((name) => {
           const active = !q && category === name;
           return (
@@ -77,19 +78,19 @@ export function ServicePicker({ services, deals, specialRates, onAddService, onA
         })}
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2.5 p-[18px]">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2.5 p-card">
         {visibleServices.map((service) => {
           const special = specialRates[service.id];
           return (
             <button key={service.id} type="button" className={tile} onClick={() => onAddService(service.id)}>
               <span className="font-medium">{service.name}</span>
-              <span className="flex-1 text-[12.5px] text-muted-foreground">
+              <span className="flex-1 text-xs text-muted-foreground">
                 {service.category}
                 {service.minutes ? `, ${service.minutes} min` : ""}
               </span>
               <span className="flex items-center justify-between">
-                <b className="text-[15px] font-semibold tabular-nums">{special === undefined ? priceRange(service.price, service.maxPrice) : rs(special)}</b>
-                {special !== undefined ? <Badge className="bg-brass-soft text-brass-strong">Special rate</Badge> : null}
+                <b className="text-md font-semibold tabular-nums">{special === undefined ? priceRange(service.price, service.maxPrice) : rs(special)}</b>
+                {special !== undefined ? <Badge variant="brass">Special rate</Badge> : null}
               </span>
             </button>
           );
@@ -98,12 +99,12 @@ export function ServicePicker({ services, deals, specialRates, onAddService, onA
         {visibleDeals.map((deal) => (
           <button key={deal.id} type="button" className={tile} onClick={() => onAddDeal(deal)}>
             <span className="font-medium">{deal.name}</span>
-            <span className="flex-1 text-[12.5px] text-muted-foreground">
+            <span className="flex-1 text-xs text-muted-foreground">
               {deal.serviceIds.map(serviceName).join(", ")}
             </span>
             <span className="flex items-center justify-between">
-              <b className="text-[15px] font-semibold tabular-nums">{rs(deal.price)}</b>
-              <Badge className="bg-brass-soft text-brass-strong">Deal</Badge>
+              <b className="text-md font-semibold tabular-nums">{rs(deal.price)}</b>
+              <Badge variant="brass">Deal</Badge>
             </span>
           </button>
         ))}
@@ -114,10 +115,10 @@ export function ServicePicker({ services, deals, specialRates, onAddService, onA
       </div>
 
       {category === DEALS_TAB && !q ? (
-        <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+        <p className="border-t px-card py-3 text-xs text-muted-foreground">
           The deal price is split across its services by list price, so each staff member&apos;s commission is correct.
         </p>
       ) : null}
-    </div>
+    </Panel>
   );
 }

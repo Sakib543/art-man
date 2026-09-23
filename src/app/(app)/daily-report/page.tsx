@@ -41,8 +41,8 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
       </PageHeader>
 
       {summary.cancelledBills >= CANCELLATION_ALERT_AT ? (
-        <div className="mb-3.5 flex items-start gap-2.5 rounded-[10px] border border-[#f3dfb2] bg-warning-soft px-3.5 py-3 text-[13.5px] text-warning">
-          <AlertTriangle className="mt-0.5 size-[17px] shrink-0" aria-hidden />
+        <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-warning-line bg-warning-soft px-3.5 py-3 text-sm text-warning">
+          <AlertTriangle className="mt-0.5 size-4.5 shrink-0" aria-hidden />
           <p>{summary.cancelledBills} bills were cancelled on this day. Check the reason given for each.</p>
         </div>
       ) : null}

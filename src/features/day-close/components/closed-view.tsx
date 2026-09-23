@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel, PanelHeader } from "@/components/panel";
 import { AlertCircle, ArrowRight, Banknote, ChartColumn, Clock, LockOpen, MessageCircle, ShieldCheck, TrendingUp, Users, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -11,6 +12,7 @@ import { formatTime, rs } from "@/lib/format";
 import { reopenDayAction, startNextDayAction } from "../actions";
 import { buildSummaryText } from "../summary-text";
 import type { SnapshotRow } from "../types";
+import { Badge } from "@/components/ui/badge";
 
 /** `canReopen` is true only for the Owner: reopening a closed day is theirs alone. */
 export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; canReopen: boolean }) {
@@ -47,9 +49,9 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
 
   return (
     <>
-      <div className="rounded-[14px] border bg-card">
-        <div className="flex flex-wrap items-center gap-[18px] px-[22px] py-5">
-          <div className="grid size-14 shrink-0 place-items-center rounded-[14px] bg-success-soft text-success">
+      <Panel>
+        <div className="flex flex-wrap items-center gap-4 px-card py-5">
+          <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-success-soft text-success">
             <ShieldCheck className="size-7" aria-hidden />
           </div>
           <div className="min-w-60 flex-1">
@@ -57,19 +59,18 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
             <p className="text-muted-foreground">
               Security code sent with the daily summary. If any old entry is changed later, this code will no longer match.
             </p>
-            <p className="mt-1.5 inline-block rounded-lg bg-secondary px-3 py-1.5 font-mono text-[22px] font-medium tracking-[2px] text-primary">
+            <p className="mt-1.5 inline-block rounded-lg bg-secondary px-3 py-1.5 font-mono text-2xl font-medium tracking-[2px] text-primary">
               {snapshot.securityCode}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="h-10" onClick={() => setShowSummary((value) => !value)}>
+            <Button variant="outline" onClick={() => setShowSummary((value) => !value)}>
               <MessageCircle aria-hidden />
               {showSummary ? "Hide summary" : "Preview WhatsApp summary"}
             </Button>
             {canReopen ? (
               <Button
                 variant="outline"
-                className="h-10"
                 onClick={() => {
                   setReason("");
                   setReopenError("");
@@ -80,7 +81,7 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
                 Reopen this day
               </Button>
             ) : null}
-            <Button className="h-10" onClick={nextDay} disabled={pending}>
+            <Button onClick={nextDay} disabled={pending}>
               {pending ? "Starting..." : "Start next business day"}
               {pending ? null : <ArrowRight aria-hidden />}
             </Button>
@@ -88,37 +89,37 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
         </div>
 
         {error ? (
-          <p role="alert" className="flex items-center gap-1.5 border-t px-[22px] py-3 text-[12.5px] text-destructive">
+          <p role="alert" className="flex items-center gap-1.5 border-t px-card py-3 text-xs text-destructive">
             <AlertCircle className="size-4 shrink-0" aria-hidden />
             {error}
           </p>
         ) : null}
 
         {showSummary ? (
-          <div className="border-t px-[18px] py-4">
-            <p className="mb-2 text-[12.5px] text-muted-foreground">Preview only: sending on WhatsApp is not connected yet.</p>
-            <pre className="max-w-md rounded-xl border border-[#d3e8da] bg-[#f1f8f3] px-4 py-3.5 font-sans text-[13.5px] whitespace-pre-line">
+          <div className="border-t px-card py-4">
+            <p className="mb-2 text-xs text-muted-foreground">Preview only: sending on WhatsApp is not connected yet.</p>
+            <pre className="max-w-md rounded-xl border border-success-line bg-success-soft px-4 py-3.5 font-sans text-sm whitespace-pre-line">
               {buildSummaryText(snapshot)}
             </pre>
           </div>
         ) : null}
-      </div>
+      </Panel>
 
-      <div className="mt-4 rounded-[14px] border bg-card">
-        <div className="flex items-center justify-between border-b px-[18px] py-3.5">
-          <h2 className="text-[15px] font-semibold">Today at a glance</h2>
-          <span className="rounded-full bg-brass-soft px-2 py-0.5 text-xs font-medium text-brass-strong">Saved for the monthly report</span>
-        </div>
-        <div className="grid gap-3 px-[18px] py-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Panel className="mt-4">
+        <PanelHeader
+          title="Today at a glance"
+          action={<Badge variant="brass">Saved for the monthly report</Badge>}
+        />
+        <div className="grid gap-3 px-card py-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard icon={TrendingUp} label="Sale" value={rs(snapshot.sale)} hint={`Cash ${rs(snapshot.cash)} + online ${rs(snapshot.online)}`} />
           <StatCard icon={Wallet} label="Expenses" value={rs(snapshot.expenses)} hint="Drawer and Owner-paid" />
           <StatCard icon={Users} label="Staff earnings" value={rs(snapshot.staffEarned)} hint={`Paid in hand today ${rs(snapshot.staffPaid)}`} />
           <StatCard icon={ChartColumn} label="Day profit" value={rs(snapshot.dayProfit)} hint="Sale - expenses - staff earnings" />
         </div>
-        <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+        <p className="border-t px-card py-3 text-xs text-muted-foreground">
           Staff advances and cash the Owner took are not expenses, so they do not reduce the day profit.
         </p>
-      </div>
+      </Panel>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Banknote} label="Expected" value={rs(snapshot.expectedCash)} />
@@ -150,7 +151,7 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
             rows={3}
           />
           {reopenError ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4 shrink-0" aria-hidden />
               {reopenError}
             </p>

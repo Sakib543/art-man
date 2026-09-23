@@ -1,3 +1,4 @@
+import { Panel } from "@/components/panel";
 import { Banknote, Info, Landmark, TriangleAlert } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -17,8 +18,8 @@ export default async function CapitalPage() {
     <>
       <PageHeader title="Capital / Outstanding" subtitle="Big one-off investments funded by partners and repaid in installments" />
 
-      <div className="mb-3.5 flex items-start gap-2.5 rounded-[10px] border border-[#d6e0f2] bg-info-soft px-3.5 py-3 text-[13.5px] text-info">
-        <Info className="mt-0.5 size-[17px] shrink-0" aria-hidden />
+      <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-info-line bg-info-soft px-3.5 py-3 text-sm text-info">
+        <Info className="mt-0.5 size-4.5 shrink-0" aria-hidden />
         <p>
           This is capital, not an expense: a partner put the money in and the business pays it back in installments. It
           does not reduce the month&apos;s net profit.
@@ -37,10 +38,10 @@ export default async function CapitalPage() {
             <InvestmentCard key={investment.id} investment={investment} />
           ))}
           {investments.length === 0 ? (
-            <div className="rounded-[14px] border bg-card px-6 py-12 text-center text-muted-foreground">
-              <Landmark className="mx-auto mb-2 size-7 text-[#b7bec9]" aria-hidden />
+            <Panel className="px-6 py-12 text-center text-muted-foreground">
+              <Landmark className="mx-auto mb-2 size-7 text-muted-foreground/50" aria-hidden />
               <p>No investments yet</p>
-            </div>
+            </Panel>
           ) : null}
         </div>
         <NewInvestmentForm partners={partners} />

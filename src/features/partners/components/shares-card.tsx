@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel, PanelHeader } from "@/components/panel";
 import { AlertCircle, Plus } from "lucide-react";
 import { useState, useTransition, type FormEvent } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -54,77 +55,79 @@ export function SharesCard({ partners, netProfit, monthLabel }: SharesCardProps)
   }
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="flex items-center justify-between gap-2 border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Profit share</h2>
-        <Badge className={total.ok ? "bg-success-soft text-success" : "bg-danger-soft text-destructive"}>Total {total.total}%</Badge>
+    <Panel>
+      <PanelHeader
+        title="Profit share"
+        action={<Badge variant={total.ok ? "success" : "destructive"}>Total {total.total}%</Badge>}
+      />
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-surface-sunken text-left text-xs text-muted-foreground">
+              <th className="px-card py-2 font-medium">Partner</th>
+              <th className="w-32 px-card py-2 font-medium">Share %</th>
+              <th className="px-card py-2 text-right font-medium">Share of net profit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {draft.map((row, index) => (
+              <tr key={row.id} className="border-b">
+                <td className="px-card py-2">
+                  <Input value={row.name} onChange={(e) => update(index, { name: e.target.value })} aria-label="Partner name" className="h-9" />
+                </td>
+                <td className="px-card py-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.5"
+                    inputMode="decimal"
+                    value={row.pct}
+                    onChange={(e) => update(index, { pct: e.target.value })}
+                    aria-label={`${row.name} share`}
+                    className="h-9 tabular-nums"
+                  />
+                </td>
+                <td className={cn("px-card py-2 text-right tabular-nums", preview && preview[row.id] < 0 && "text-destructive")}>
+                  {preview ? rs(preview[row.id]) : "-"}
+                </td>
+              </tr>
+            ))}
+            <tr className="bg-brass-tint font-semibold">
+              <td className="px-card py-2.5">Net profit, {monthLabel}</td>
+              <td className="px-card py-2.5 tabular-nums">{total.total}%</td>
+              <td className="px-card py-2.5 text-right tabular-nums">{rs(netProfit)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-[#fafbfc] text-left text-[12.5px] text-muted-foreground">
-            <th className="px-[18px] py-2 font-medium">Partner</th>
-            <th className="w-32 px-[18px] py-2 font-medium">Share %</th>
-            <th className="px-[18px] py-2 text-right font-medium">Share of net profit</th>
-          </tr>
-        </thead>
-        <tbody>
-          {draft.map((row, index) => (
-            <tr key={row.id} className="border-b">
-              <td className="px-[18px] py-2">
-                <Input value={row.name} onChange={(e) => update(index, { name: e.target.value })} aria-label="Partner name" className="h-9" />
-              </td>
-              <td className="px-[18px] py-2">
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.5"
-                  inputMode="decimal"
-                  value={row.pct}
-                  onChange={(e) => update(index, { pct: e.target.value })}
-                  aria-label={`${row.name} share`}
-                  className="h-9 tabular-nums"
-                />
-              </td>
-              <td className={cn("px-[18px] py-2 text-right tabular-nums", preview && preview[row.id] < 0 && "text-destructive")}>
-                {preview ? rs(preview[row.id]) : "-"}
-              </td>
-            </tr>
-          ))}
-          <tr className="bg-[#fbf8f3] font-semibold">
-            <td className="px-[18px] py-2.5">Net profit, {monthLabel}</td>
-            <td className="px-[18px] py-2.5 tabular-nums">{total.total}%</td>
-            <td className="px-[18px] py-2.5 text-right tabular-nums">{rs(netProfit)}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div className="space-y-3 border-t px-[18px] py-4">
+      <div className="space-y-3 border-t px-card py-4">
         {error ? (
-          <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+          <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
             <AlertCircle className="size-4 shrink-0" aria-hidden />
             {error}
           </p>
         ) : null}
         <div className="flex flex-wrap items-center gap-2">
-          <Button className="h-10" onClick={save} disabled={pending || !total.ok}>
+          <Button onClick={save} disabled={pending || !total.ok}>
             {pending ? "Saving..." : "Save shares"}
           </Button>
-          {saved ? <span className="text-[12.5px] text-success">Saved</span> : null}
+          {saved ? <span className="text-xs text-success">Saved</span> : null}
         </div>
         <form onSubmit={add} className="flex gap-2">
           <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New partner's name" aria-label="New partner's name" className="h-10 max-w-64" />
-          <Button type="submit" variant="outline" className="h-10" disabled={pending}>
+          <Button type="submit" variant="outline" disabled={pending}>
             <Plus aria-hidden />
             Add partner
           </Button>
         </form>
-        <p className="text-[12.5px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Shares must add up to 100%. A change applies from now on; a month that is already closed keeps the shares it
           closed with. A new partner starts at 0%.
         </p>
       </div>
-    </div>
+    </Panel>
   );
 }

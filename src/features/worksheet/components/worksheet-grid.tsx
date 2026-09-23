@@ -1,5 +1,7 @@
 "use client";
 
+import { Panel } from "@/components/panel";
+import { Segmented } from "@/components/segmented";
 import { AlertCircle } from "lucide-react";
 import { useState, useTransition, type FormEvent } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +17,7 @@ interface WorksheetGridProps {
   quickAddIds: string[];
 }
 
-const head = "min-w-32 border-l px-3.5 py-2 text-right text-[12.5px] font-medium text-muted-foreground first:border-l-0";
+const head = "min-w-32 border-l px-3.5 py-2 text-right text-xs font-medium text-muted-foreground first:border-l-0";
 const cellClass = "min-w-32 border-l px-3.5 py-2.5 align-top first:border-l-0";
 
 function Cell({ cell }: { cell?: SheetCell }) {
@@ -31,12 +33,17 @@ function Cell({ cell }: { cell?: SheetCell }) {
       >
         {num(cell.amount)}
       </p>
-      <p className="text-[12.5px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         #{cell.billNo} {cell.label}
       </p>
     </div>
   );
 }
+
+const PAY_MODES = [
+  { value: "cash", label: "Cash" },
+  { value: "online", label: "Online" },
+] as const;
 
 export function WorksheetGrid({ sheet, closed, quickAddIds }: WorksheetGridProps) {
   const [payMode, setPayMode] = useState<"cash" | "online">("cash");
@@ -55,43 +62,33 @@ export function WorksheetGrid({ sheet, closed, quickAddIds }: WorksheetGridProps
   }
 
   return (
-    <div className="rounded-[14px] border bg-card">
+    <Panel>
       {!closed ? (
-        <div className="flex flex-wrap items-center justify-end gap-2 border-b px-[18px] py-3">
-          <span className="text-[12.5px] text-muted-foreground">Quick add paid by</span>
-          <div className="grid min-w-44 grid-cols-2 gap-0.5 rounded-[9px] bg-secondary p-[3px]" role="radiogroup">
-            {(["cash", "online"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                role="radio"
-                aria-checked={payMode === mode}
-                onClick={() => setPayMode(mode)}
-                className={cn(
-                  "min-h-8 rounded-[7px] px-2 text-[13.5px] capitalize",
-                  payMode === mode ? "bg-white font-medium shadow-sm" : "text-muted-foreground",
-                )}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 border-b px-card py-3">
+          <span className="text-xs text-muted-foreground">Quick add paid by</span>
+          <Segmented
+            label="Quick add paid by"
+            value={payMode}
+            onChange={setPayMode}
+            options={PAY_MODES}
+            className="min-w-44"
+          />
         </div>
       ) : null}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               {sheet.columns.map(({ staff }) => (
                 <th key={staff.id} className={head}>
-                  {staff.name} {!staff.active ? <Badge className="ml-1 bg-secondary text-muted-foreground">Inactive</Badge> : null}
+                  {staff.name} {!staff.active ? <Badge variant="secondary" className="ml-1">Inactive</Badge> : null}
                 </th>
               ))}
               <th className={cn(head, "bg-brass-soft text-brass-strong")}>Owner / Account</th>
             </tr>
             {!closed ? (
-              <tr className="border-b bg-[#fafbfc]">
+              <tr className="border-b bg-surface-sunken">
                 {sheet.columns.map(({ staff }) => (
                   <td key={staff.id} className="min-w-32 border-l px-2.5 py-2 first:border-l-0">
                     {quickAddIds.includes(staff.id) ? (
@@ -112,7 +109,7 @@ export function WorksheetGrid({ sheet, closed, quickAddIds }: WorksheetGridProps
                     ) : null}
                   </td>
                 ))}
-                <td className="min-w-32 border-l bg-brass-soft px-3.5 py-2 text-[12.5px] text-muted-foreground">
+                <td className="min-w-32 border-l bg-brass-soft px-3.5 py-2 text-xs text-muted-foreground">
                   Online bills land here
                 </td>
               </tr>
@@ -131,7 +128,7 @@ export function WorksheetGrid({ sheet, closed, quickAddIds }: WorksheetGridProps
                 </td>
               </tr>
             ))}
-            <tr className="bg-[#fbf8f3] font-semibold">
+            <tr className="bg-brass-tint font-semibold">
               {sheet.columns.map(({ staff, total }) => (
                 <td key={staff.id} className={cn(cellClass, "text-right tabular-nums")}>
                   {rs(total)}
@@ -144,13 +141,13 @@ export function WorksheetGrid({ sheet, closed, quickAddIds }: WorksheetGridProps
       </div>
 
       {error ? (
-        <p role="alert" className="flex items-center gap-1.5 border-t px-[18px] py-3 text-[12.5px] text-destructive">
+        <p role="alert" className="flex items-center gap-1.5 border-t px-card py-3 text-xs text-destructive">
           <AlertCircle className="size-4 shrink-0" aria-hidden />
           {error}
         </p>
       ) : null}
 
-      <div className="space-y-1 border-t px-[18px] py-4">
+      <div className="space-y-1 border-t px-card py-4">
         <div className="flex justify-between text-xl font-semibold">
           <span>Grand total for the day</span>
           <span className="tabular-nums">{rs(sheet.grandTotal)}</span>
@@ -163,12 +160,12 @@ export function WorksheetGrid({ sheet, closed, quickAddIds }: WorksheetGridProps
           <span>Owner / Account (online, straight to the Owner)</span>
           <span className="tabular-nums">{rs(sheet.onlineSales)}</span>
         </div>
-        <p className="pt-1.5 text-[12.5px] text-muted-foreground">
+        <p className="pt-1.5 text-xs text-muted-foreground">
           The grand total is all the staff columns and matches Total sales in the Daily report. The Owner / Account
           column is the online part of that total, not extra. Cancelled amounts are struck through and their reversal
           shows in red.
         </p>
       </div>
-    </div>
+    </Panel>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel, PanelHeader, panelClass } from "@/components/panel";
 import { AlertCircle, ArrowLeft, Check, Lock } from "lucide-react";
 import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,11 +29,9 @@ export function CountStep({ counted, onCounted, error, pending, onBack, onNext }
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
-      <form onSubmit={submit} className="rounded-[14px] border bg-card">
-        <div className="border-b px-[18px] py-3.5">
-          <h2 className="text-[15px] font-semibold">Cash in drawer</h2>
-        </div>
-        <div className="px-[18px] py-4">
+      <form onSubmit={submit} className={cn(panelClass)}>
+        <PanelHeader title="Cash in drawer" />
+        <div className="px-card py-4">
           <Label htmlFor="cash-counted" className="mb-1.5">
             Total cash counted (Rs)
           </Label>
@@ -46,41 +45,39 @@ export function CountStep({ counted, onCounted, error, pending, onBack, onNext }
             onChange={(event) => onCounted(event.target.value)}
             placeholder="0"
             autoFocus
-            className="h-14 px-3.5 text-[26px] font-semibold tracking-tight tabular-nums"
+            className="h-14 px-3.5 text-3xl font-semibold tracking-tight tabular-nums"
           />
-          <p className="mt-2 text-[12.5px] text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             Count all the cash in the drawer and enter only the total, then press Enter.
           </p>
         </div>
       </form>
 
-      <div className="rounded-[14px] border bg-card">
-        <div className="border-b px-[18px] py-3.5">
-          <h2 className="text-[15px] font-semibold">Expected cash</h2>
-        </div>
-        <div className="px-[18px] py-4">
-          <div className="rounded-[10px] border border-dashed bg-[#fbfbfc] px-4 py-6 text-center text-muted-foreground">
-            <Lock className="mx-auto mb-1.5 size-6 text-[#9aa3b0]" aria-hidden />
-            <p className="font-medium text-[#475467]">Hidden until the count is complete</p>
-            <p className="mt-1 text-[12.5px]">The Manager counts first, so the count is honest and not adjusted to match.</p>
+      <Panel>
+        <PanelHeader title="Expected cash" />
+        <div className="px-card py-4">
+          <div className="rounded-lg border border-dashed bg-surface-sunken px-4 py-6 text-center text-muted-foreground">
+            <Lock className="mx-auto mb-1.5 size-6 text-muted-foreground/70" aria-hidden />
+            <p className="font-medium text-foreground-soft">Hidden until the count is complete</p>
+            <p className="mt-1 text-xs">The Manager counts first, so the count is honest and not adjusted to match.</p>
           </div>
           {error ? (
-            <p role="alert" className="mt-2 flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4 shrink-0" aria-hidden />
               {error}
             </p>
           ) : null}
         </div>
-        <div className="flex items-center justify-between border-t px-[18px] py-3.5">
-          <Button variant="outline" className="h-10" onClick={onBack} disabled={pending}>
+        <div className="flex items-center justify-between border-t px-card py-3.5">
+          <Button variant="outline" onClick={onBack} disabled={pending}>
             <ArrowLeft aria-hidden />
             Back
           </Button>
-          <Button className="h-10" onClick={onNext} disabled={pending}>
+          <Button onClick={onNext} disabled={pending}>
             {pending ? "Please wait..." : "Count complete"}
           </Button>
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }
@@ -114,36 +111,32 @@ export function ReviewStep({ review, reason, onReason, error, pending, onRecount
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
-        <div className="rounded-[14px] border bg-card">
-          <div className="border-b px-[18px] py-3.5">
-            <h2 className="text-[15px] font-semibold">How expected cash is calculated</h2>
-          </div>
+        <Panel>
+          <PanelHeader title="How expected cash is calculated" />
           <table className="w-full text-sm">
             <tbody>
               {breakdown.map((row) => (
                 <tr key={row.label} className="border-b">
-                  <td className="px-[18px] py-2.5">{row.label}</td>
-                  <td className="px-[18px] py-2.5 text-right tabular-nums">
+                  <td className="px-card py-2.5">{row.label}</td>
+                  <td className="px-card py-2.5 text-right tabular-nums">
                     {row.amount < 0 ? `-${num(-row.amount)}` : row.amount > 0 ? `+${num(row.amount)}` : "0"}
                   </td>
                 </tr>
               ))}
-              <tr className="bg-[#fbf8f3] font-semibold">
-                <td className="px-[18px] py-2.5">Expected cash in drawer</td>
-                <td className="px-[18px] py-2.5 text-right tabular-nums">{rs(expected)}</td>
+              <tr className="bg-brass-tint font-semibold">
+                <td className="px-card py-2.5">Expected cash in drawer</td>
+                <td className="px-card py-2.5 text-right tabular-nums">{rs(expected)}</td>
               </tr>
             </tbody>
           </table>
-          <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+          <p className="border-t px-card py-3 text-xs text-muted-foreground">
             Online payments ({rs(onlineSales)}) are not included because they never enter the drawer.
           </p>
-        </div>
+        </Panel>
 
-        <div className="rounded-[14px] border bg-card">
-          <div className="border-b px-[18px] py-3.5">
-            <h2 className="text-[15px] font-semibold">Close the day</h2>
-          </div>
-          <div className="space-y-3 px-[18px] py-4">
+        <Panel>
+          <PanelHeader title="Close the day" />
+          <div className="space-y-3 px-card py-4">
             {difference !== 0 ? (
               <div>
                 <Label htmlFor="difference-reason" className="mb-1.5">
@@ -158,32 +151,32 @@ export function ReviewStep({ review, reason, onReason, error, pending, onRecount
                 />
               </div>
             ) : (
-              <p className="flex items-center gap-2 rounded-[10px] border border-[#d6e0f2] bg-info-soft px-3 py-2.5 text-[13.5px] text-info">
+              <p className="flex items-center gap-2 rounded-lg border border-info-line bg-info-soft px-3 py-2.5 text-sm text-info">
                 <Check className="size-4 shrink-0" aria-hidden />
                 The drawer matches exactly.
               </p>
             )}
             {error ? (
-              <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+              <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
                 <AlertCircle className="size-4 shrink-0" aria-hidden />
                 {error}
               </p>
             ) : null}
-            <p className="text-[12.5px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               After closing, no entries can be added to today. Tomorrow&apos;s opening cash will be {rs(counted)}.
             </p>
           </div>
-          <div className="flex items-center justify-between border-t px-[18px] py-3.5">
-            <Button variant="outline" className="h-10" onClick={onRecount} disabled={pending}>
+          <div className="flex items-center justify-between border-t px-card py-3.5">
+            <Button variant="outline" onClick={onRecount} disabled={pending}>
               <ArrowLeft aria-hidden />
               Recount
             </Button>
-            <Button className="h-10" onClick={onClose} disabled={pending}>
+            <Button onClick={onClose} disabled={pending}>
               <Lock aria-hidden />
               {pending ? "Closing..." : "Close day"}
             </Button>
           </div>
-        </div>
+        </Panel>
       </div>
     </>
   );
@@ -193,13 +186,13 @@ function Result({ label, value, tone = "plain" }: { label: string; value: string
   return (
     <div
       className={cn(
-        "rounded-[14px] border bg-card px-[18px] py-4",
-        tone === "short" && "border-[#f6d2cc] bg-danger-soft",
-        tone === "extra" && "border-[#c9e6d8] bg-success-soft",
+        panelClass, "px-card py-4",
+        tone === "short" && "border-danger-line bg-danger-soft",
+        tone === "extra" && "border-success-line bg-success-soft",
       )}
     >
-      <p className={cn("text-[13px] text-muted-foreground", tone === "short" && "text-destructive", tone === "extra" && "text-success")}>{label}</p>
-      <p className={cn("text-[28px] font-semibold tracking-tight tabular-nums", tone === "short" && "text-destructive", tone === "extra" && "text-success")}>
+      <p className={cn("text-sm text-muted-foreground", tone === "short" && "text-destructive", tone === "extra" && "text-success")}>{label}</p>
+      <p className={cn("text-3xl font-semibold tracking-tight tabular-nums", tone === "short" && "text-destructive", tone === "extra" && "text-success")}>
         {value}
       </p>
     </div>

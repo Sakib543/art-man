@@ -22,6 +22,7 @@ import { resetUserPasswordAction, setUserActiveAction } from "../actions";
 import { checkResetPassword, checkSetActive, type Viewer } from "../rules";
 import type { UserRow } from "../types";
 import { ROLE_TEXT } from "./role-text";
+import { Panel } from "@/components/panel";
 
 const ROLE_LABEL = { owner: "Owner", manager: "Manager", developer: "Developer" } as const;
 
@@ -78,10 +79,10 @@ export function UsersTable({ rows, viewer, activeOwners }: UsersTableProps) {
 
   return (
     <>
-      <div className="overflow-x-auto rounded-[14px] border bg-card">
+      <Panel className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc] text-left text-[12.5px] text-muted-foreground">
+            <tr className="border-b bg-surface-sunken text-left text-xs text-muted-foreground">
               <th className="px-3.5 py-2 font-medium">Username</th>
               <th className="px-3.5 py-2 font-medium">Name</th>
               <th className="px-3.5 py-2 font-medium">Role</th>
@@ -104,15 +105,15 @@ export function UsersTable({ rows, viewer, activeOwners }: UsersTableProps) {
                   <td className="px-3.5 py-2.5">
                     <span title={ROLE_TEXT[row.role]}>{ROLE_LABEL[row.role]}</span>
                     {row.role === "owner" && !row.hasPin ? (
-                      <span className="block text-[12.5px] text-warning">No PIN set yet</span>
+                      <span className="block text-xs text-warning">No PIN set yet</span>
                     ) : null}
                   </td>
                   <td className="px-3.5 py-2.5 whitespace-nowrap">{formatDateTime(row.createdAt)}</td>
                   <td className="px-3.5 py-2.5">
                     {row.active ? (
-                      <Badge className="bg-success-soft text-success">Open</Badge>
+                      <Badge variant="success">Open</Badge>
                     ) : (
-                      <Badge className="bg-secondary text-muted-foreground">Closed</Badge>
+                      <Badge variant="secondary">Closed</Badge>
                     )}
                   </td>
                   <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
@@ -141,7 +142,7 @@ export function UsersTable({ rows, viewer, activeOwners }: UsersTableProps) {
                     ) : null}
                     {/* Say why, rather than leave a row with no buttons and no explanation. */}
                     {row.active && noClose && noPassword ? (
-                      <span className="text-[12.5px] text-muted-foreground">{noClose}</span>
+                      <span className="text-xs text-muted-foreground">{noClose}</span>
                     ) : null}
                   </td>
                 </tr>
@@ -149,7 +150,7 @@ export function UsersTable({ rows, viewer, activeOwners }: UsersTableProps) {
             })}
           </tbody>
         </table>
-      </div>
+      </Panel>
 
       <Dialog open={open} onOpenChange={(next) => !next && setOpen(false)}>
         <DialogContent className="max-w-sm">

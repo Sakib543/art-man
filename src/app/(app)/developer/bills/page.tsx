@@ -19,7 +19,7 @@ const BLOCKED: Record<BillEditBlock, string> = {
 
 function Warning({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-[13px] text-destructive">
+    <p className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
       <TriangleAlert className="mt-px size-4 shrink-0" aria-hidden />
       <span>{children}</span>
     </p>
@@ -40,7 +40,7 @@ export default async function EditBillPage({ searchParams }: { searchParams: Pro
 
       <div className="max-w-3xl space-y-4">
         <Card>
-          <CardContent className="space-y-3 text-[13.5px] text-muted-foreground">
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>
               Everywhere else in this app a bill is fixed by cancelling it and entering a corrected
               one, and the database refuses anything else. This screen is the one exception, and it
@@ -61,7 +61,7 @@ export default async function EditBillPage({ searchParams }: { searchParams: Pro
             </label>
             <Input id="bill" name="bill" inputMode="numeric" defaultValue={asked ?? ""} className="h-10" />
           </div>
-          <Button type="submit" variant="outline" className="h-10">
+          <Button type="submit" variant="outline">
             <Search aria-hidden />
             Find
           </Button>
@@ -74,8 +74,8 @@ export default async function EditBillPage({ searchParams }: { searchParams: Pro
             <CardContent className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
                 <div>
-                  <p className="text-[15px] font-semibold">Bill #{lookup.bill.billNo}</p>
-                  <p className="text-[13px] text-muted-foreground">
+                  <p className="text-md font-semibold">Bill #{lookup.bill.billNo}</p>
+                  <p className="text-sm text-muted-foreground">
                     {formatDate(lookup.bill.businessDate)} · entered by {lookup.bill.createdBy}
                   </p>
                 </div>

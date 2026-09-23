@@ -27,7 +27,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
 
       <form method="get" className="mb-4 flex max-w-md items-center gap-2">
         <Input name="q" defaultValue={q} placeholder="Search by name or phone number" aria-label="Search customers" className="h-10" />
-        <Button type="submit" variant="outline" className="h-10">
+        <Button type="submit" variant="outline">
           <Search className="size-4" aria-hidden />
           Search
         </Button>

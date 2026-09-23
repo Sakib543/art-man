@@ -1,3 +1,4 @@
+import { Panel, PanelHeader } from "@/components/panel";
 import type { MonthReport } from "@/lib/accounting";
 import { formatDayMonth, num, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -8,19 +9,17 @@ const minus = (amount: number) => (amount ? `-${num(amount)}` : "0");
 
 function Row({ label, value, total }: { label: string; value: string; total?: boolean }) {
   return (
-    <tr className={cn("border-b last:border-b-0", total && "bg-[#fbf8f3] font-semibold")}>
-      <td className="px-[18px] py-2.5">{label}</td>
-      <td className="px-[18px] py-2.5 text-right tabular-nums">{value}</td>
+    <tr className={cn("border-b last:border-b-0", total && "bg-brass-tint font-semibold")}>
+      <td className="px-card py-2.5">{label}</td>
+      <td className="px-card py-2.5 text-right tabular-nums">{value}</td>
     </tr>
   );
 }
 
 export function ProfitAndLoss({ report }: { report: MonthReport }) {
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Profit and loss</h2>
-      </div>
+    <Panel>
+      <PanelHeader title="Profit and loss" />
       <table className="w-full text-sm">
         <tbody>
           <Row label={`Total sales (sum of ${report.closedDays} closed day${report.closedDays === 1 ? "" : "s"})`} value={num(report.sales)} />
@@ -34,11 +33,11 @@ export function ProfitAndLoss({ report }: { report: MonthReport }) {
           <Row label="Net profit" value={rs(report.netProfit)} total />
         </tbody>
       </table>
-      <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+      <p className="border-t px-card py-3 text-xs text-muted-foreground">
         Staff advances and cash the Owner took are not expenses, so they are not subtracted here. Partner capital and its
         repayments are not expenses either (see Capital / Outstanding).
       </p>
-    </div>
+    </Panel>
   );
 }
 
@@ -47,10 +46,8 @@ export function OwnerAccountCard({ report }: { report: MonthReport }) {
   const ownerPaid = owner.reachedOwner - owner.netReachedOwner;
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Owner account</h2>
-      </div>
+    <Panel>
+      <PanelHeader title="Owner account" />
       <table className="w-full text-sm">
         <tbody>
           <Row label="Net profit" value={num(report.netProfit)} />
@@ -61,24 +58,24 @@ export function OwnerAccountCard({ report }: { report: MonthReport }) {
           <Row label="Balance with business" value={rs(owner.heldByBusiness)} total />
         </tbody>
       </table>
-    </div>
+    </Panel>
   );
 }
 
 export function ClosedDaysTable({ days, report, openDay }: { days: ClosedDayRow[]; report: MonthReport; openDay: string | null }) {
-  const th = "px-3.5 py-2 text-right text-[12.5px] font-medium text-muted-foreground";
+  const th = "px-3.5 py-2 text-right text-xs font-medium text-muted-foreground";
   const td = "px-3.5 py-2.5 text-right tabular-nums";
 
   return (
-    <div className="mt-4 rounded-[14px] border bg-card">
-      <div className="flex items-center justify-between border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Closed days</h2>
-        <span className="text-[12.5px] text-muted-foreground">From the Day close snapshot</span>
-      </div>
+    <Panel className="mt-4">
+      <PanelHeader
+        title="Closed days"
+        action={<span className="text-xs text-muted-foreground">From the Day close snapshot</span>}
+      />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={cn(th, "text-left")}>Date</th>
               <th className={th}>Sale</th>
               <th className={th}>Cash</th>
@@ -109,7 +106,7 @@ export function ClosedDaysTable({ days, report, openDay }: { days: ClosedDayRow[
                 </td>
               </tr>
             ) : null}
-            <tr className="bg-[#fbf8f3] font-semibold">
+            <tr className="bg-brass-tint font-semibold">
               <td className="px-3.5 py-2.5">Sum of {report.closedDays} days</td>
               <td className={td}>{num(report.sales)}</td>
               <td className={td}>{num(report.cash)}</td>
@@ -122,12 +119,12 @@ export function ClosedDaysTable({ days, report, openDay }: { days: ClosedDayRow[
           </tbody>
         </table>
       </div>
-      <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+      <p className="border-t px-card py-3 text-xs text-muted-foreground">
         Sum of day profits {rs(report.dayProfitTotal)} − fixed {num(report.fixed)} − others {num(report.others)} − salaries{" "}
         {num(report.salaries)}
         {report.bonuses ? ` − bonuses ${num(report.bonuses)}` : ""} = net profit {rs(report.netProfit)}.
         {openDay ? ` Today (${formatDayMonth(openDay)}) is added when the day is closed.` : ""}
       </p>
-    </div>
+    </Panel>
   );
 }

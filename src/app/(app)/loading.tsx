@@ -1,3 +1,4 @@
+import { Panel } from "@/components/panel";
 /**
  * Shown while a signed-in screen loads. It is worth having: these pages run
  * 5–11 database queries each and took 1–5 seconds against Neon when the
@@ -15,11 +16,11 @@ export default function Loading() {
         <div className="h-6 w-48 animate-pulse rounded-md bg-secondary" />
         <div className="h-4 w-72 max-w-full animate-pulse rounded-md bg-secondary" />
       </div>
-      <div className="space-y-3 rounded-[14px] border bg-card p-[18px]">
+      <Panel className="space-y-3 p-card">
         <div className="h-4 w-full animate-pulse rounded-md bg-secondary" />
         <div className="h-4 w-11/12 animate-pulse rounded-md bg-secondary" />
         <div className="h-4 w-9/12 animate-pulse rounded-md bg-secondary" />
-      </div>
+      </Panel>
     </div>
   );
 }

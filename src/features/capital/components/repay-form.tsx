@@ -29,7 +29,7 @@ export function RepayForm({ capitalItemId, owed, nextNumber }: { capitalItemId: 
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2.5 border-t px-[18px] py-4" noValidate>
+    <form onSubmit={submit} className="space-y-2.5 border-t px-card py-4" noValidate>
       <Label>Record an installment</Label>
       <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
         <NativeSelect aria-label="Paid to" className="w-full" value={partnerId} onChange={(e) => setPartnerId(e.target.value)}>
@@ -56,12 +56,12 @@ export function RepayForm({ capitalItemId, owed, nextNumber }: { capitalItemId: 
         </Button>
       </div>
       {error ? (
-        <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+        <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
           <AlertCircle className="size-4 shrink-0" aria-hidden />
           {error}
         </p>
       ) : null}
-      <p className="text-[12.5px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Paid from business cash. It lowers what the business owes the partner. It is not an expense and not profit.
       </p>
     </form>

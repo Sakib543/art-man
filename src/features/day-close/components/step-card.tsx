@@ -1,6 +1,8 @@
+import { Panel, PanelHeader } from "@/components/panel";
 import { AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface StepCardProps {
   title: string;
@@ -18,16 +20,13 @@ interface StepCardProps {
 /** The card around one Day Close step, with Back and Continue at the bottom. */
 export function StepCard({ title, badge, help, error, children, onBack, onNext, nextLabel = "Continue", pending }: StepCardProps) {
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="flex items-center justify-between gap-2.5 border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">{title}</h2>
-        {badge ? <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">{badge}</span> : null}
-      </div>
+    <Panel>
+      <PanelHeader title={title} action={badge ? <Badge variant="secondary">{badge}</Badge> : null} />
 
       {children}
 
       {help || error ? (
-        <div className="space-y-2 border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+        <div className="space-y-2 border-t px-card py-3 text-xs text-muted-foreground">
           {help ? <p>{help}</p> : null}
           {error ? (
             <p role="alert" className="flex items-center gap-1.5 text-destructive">
@@ -38,20 +37,20 @@ export function StepCard({ title, badge, help, error, children, onBack, onNext, 
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between border-t px-[18px] py-3.5">
+      <div className="flex items-center justify-between border-t px-card py-3.5">
         {onBack ? (
-          <Button variant="outline" className="h-10" onClick={onBack} disabled={pending}>
+          <Button variant="outline" onClick={onBack} disabled={pending}>
             <ArrowLeft aria-hidden />
             Back
           </Button>
         ) : (
           <span />
         )}
-        <Button className="h-10" onClick={onNext} disabled={pending}>
+        <Button onClick={onNext} disabled={pending}>
           {pending ? "Please wait..." : nextLabel}
           {pending ? null : <ArrowRight aria-hidden />}
         </Button>
       </div>
-    </div>
+    </Panel>
   );
 }

@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/page-header";
+import { Panel, PanelHeader } from "@/components/panel";
 import { CreateUserForm } from "@/features/users/components/create-user-form";
 import { UsersTable } from "@/features/users/components/users-table";
 import { getUsers } from "@/features/users/queries";
@@ -27,17 +28,12 @@ export default async function UsersPage() {
 
       <div className="grid gap-4">
         {data.creatable.length > 0 ? (
-          <section className="rounded-[14px] border bg-card">
-            <div className="border-b px-[18px] py-3.5">
-              <h2 className="text-[15px] font-semibold">Add someone</h2>
-              <p className="text-[13px] text-muted-foreground">
-                They sign in with a username and the password you set here.
-              </p>
-            </div>
-            <div className="px-[18px] py-4">
+          <Panel>
+            <PanelHeader title="Add someone" description="They sign in with a username and the password you set here." />
+            <div className="px-card py-4">
               <CreateUserForm creatable={data.creatable} />
             </div>
-          </section>
+          </Panel>
         ) : null}
 
         <UsersTable rows={data.rows} viewer={{ id: user.id, role: user.role }} activeOwners={data.activeOwners} />

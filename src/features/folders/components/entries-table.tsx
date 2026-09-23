@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel } from "@/components/panel";
 import { AlertCircle } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -80,8 +81,8 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
   }
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="flex gap-1 overflow-x-auto overflow-y-hidden border-b px-[18px]" role="tablist">
+    <Panel>
+      <div className="flex gap-1 overflow-x-auto overflow-y-hidden border-b px-card" role="tablist">
         {FILTERS.map(({ id, label }) => (
           <button
             key={id}
@@ -99,10 +100,10 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
         ))}
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="md:overflow-x-auto">
+        <table className="table-stacked w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc] text-left text-[12.5px] text-muted-foreground">
+            <tr className="border-b bg-surface-sunken text-left text-xs text-muted-foreground">
               <th className="px-3.5 py-2 font-medium">Time</th>
               <th className="px-3.5 py-2 font-medium">Folder</th>
               <th className="px-3.5 py-2 font-medium">Details</th>
@@ -116,35 +117,39 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
               const muted = entry && (entry.voided || entry.isVoid);
               return (
                 <tr key={key} className={cn("border-b last:border-b-0", muted && "text-muted-foreground")}>
-                  <td className="px-3.5 py-2.5 tabular-nums">{formatTime(createdAt)}</td>
-                  <td className="px-3.5 py-2.5">
-                    {bill ? <Badge className="bg-success-soft text-success">Online</Badge> : null}
-                    {entry?.kind === "expense" ? <Badge className="bg-secondary text-muted-foreground">Expense</Badge> : null}
-                    {entry?.kind.startsWith("staff") ? <Badge className="bg-brass-soft text-brass-strong">Staff</Badge> : null}
-                    {entry?.kind.startsWith("owner") ? <Badge className="bg-info-soft text-info">Owner</Badge> : null}
+                  <td className="px-3.5 py-2.5 tabular-nums" data-label="Time">
+                    {formatTime(createdAt)}
                   </td>
-                  <td className={cn("px-3.5 py-2.5", entry?.voided && "line-through")}>
+                  <td className="px-3.5 py-2.5">
+                    {bill ? <Badge variant="success">Online</Badge> : null}
+                    {entry?.kind === "expense" ? <Badge variant="secondary">Expense</Badge> : null}
+                    {entry?.kind.startsWith("staff") ? <Badge variant="brass">Staff</Badge> : null}
+                    {entry?.kind.startsWith("owner") ? <Badge variant="info">Owner</Badge> : null}
+                  </td>
+                  <td className={cn("px-3.5 py-2.5", entry?.voided && "line-through")} data-row-title="">
                     {bill ? (
                       <>
                         Bill #{bill.billNo}, {bill.customerName ?? "Walk-in"}{" "}
-                        <span className="text-[12.5px] text-muted-foreground">(to Owner&apos;s bank)</span>
+                        <span className="text-xs text-muted-foreground">(to Owner&apos;s bank)</span>
                       </>
                     ) : entry ? (
                       <>
                         {describe(entry)}
                         {entry.paidFrom === "owner" ? (
-                          <span className="text-[12.5px] text-muted-foreground"> (paid by Owner, not from drawer)</span>
+                          <span className="text-xs text-muted-foreground"> (paid by Owner, not from drawer)</span>
                         ) : null}
                       </>
                     ) : null}
                   </td>
                   <td className="px-3.5 py-2.5">
-                    {entry?.pinConfirmed ? <Badge className="bg-success-soft text-success">PIN confirmed</Badge> : null}
-                    {entry?.voided ? <Badge className="bg-danger-soft text-destructive">Cancelled</Badge> : null}
-                    {entry?.isVoid ? <Badge className="bg-secondary text-muted-foreground">Cancellation</Badge> : null}
+                    {entry?.pinConfirmed ? <Badge variant="success">PIN confirmed</Badge> : null}
+                    {entry?.voided ? <Badge variant="destructive">Cancelled</Badge> : null}
+                    {entry?.isVoid ? <Badge variant="secondary">Cancellation</Badge> : null}
                   </td>
-                  <td className="px-3.5 py-2.5 text-right font-medium tabular-nums">{rs(bill ? bill.amount : entry!.amount)}</td>
-                  <td className="px-3.5 py-2.5 text-right">
+                  <td className="px-3.5 py-2.5 text-right font-medium tabular-nums" data-label="Amount">
+                    {rs(bill ? bill.amount : entry!.amount)}
+                  </td>
+                  <td className="px-3.5 py-2.5 text-right max-md:mt-1 max-md:border-t max-md:pt-2">
                     {entry && !entry.voided && !entry.isVoid ? (
                       <Button variant="ghost" size="sm" className="text-destructive" onClick={() => openFor(entry)}>
                         Cancel
@@ -182,7 +187,7 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
             rows={3}
           />
           {error ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4" aria-hidden />
               {error}
             </p>
@@ -197,6 +202,6 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Panel>
   );
 }

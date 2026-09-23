@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import type { CloseStaffRow } from "../types";
 import { StepCard } from "./step-card";
 
-const th = "px-3.5 py-2 text-left text-[12.5px] font-medium text-muted-foreground";
+const th = "px-3.5 py-2 text-left text-xs font-medium text-muted-foreground";
 const td = "px-3.5 py-2.5";
 
 const initials = (name: string) => name.slice(0, 2).toUpperCase();
@@ -33,7 +33,7 @@ export function AttendanceStep({ staff, present, onToggle, onNext }: AttendanceS
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={th}>Staff</th>
               <th className={th}>Pay type</th>
               <th className={cn(th, "text-right")}>Work today</th>
@@ -45,7 +45,7 @@ export function AttendanceStep({ staff, present, onToggle, onNext }: AttendanceS
               <tr key={row.id} className="border-b last:border-b-0">
                 <td className={td}>
                   <div className="flex items-center gap-2.5">
-                    <span className="grid size-[34px] shrink-0 place-items-center rounded-full bg-[#efe0c8] text-[13px] font-semibold text-brass-strong">
+                    <span className="grid size-8.5 shrink-0 place-items-center rounded-full bg-brass-line text-sm font-semibold text-brass-strong">
                       {initials(row.name)}
                     </span>
                     {row.name}
@@ -59,7 +59,7 @@ export function AttendanceStep({ staff, present, onToggle, onNext }: AttendanceS
                     checked={present[row.id] ?? true}
                     onChange={(event) => onToggle(row.id, event.target.checked)}
                     aria-label={`${row.name} present`}
-                    className="size-[17px] accent-primary"
+                    className="size-4.5 accent-primary"
                   />
                 </td>
               </tr>
@@ -91,7 +91,7 @@ export function EarningsStep({ staff, earnings, onBack, onNext }: EarningsStepPr
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={th}>Staff</th>
               <th className={cn(th, "text-right")}>Work</th>
               <th className={cn(th, "text-right")}>Commission</th>
@@ -106,7 +106,7 @@ export function EarningsStep({ staff, earnings, onBack, onNext }: EarningsStepPr
                 <tr key={row.id} className="border-b last:border-b-0">
                   <td className={td}>
                     {row.name}
-                    <p className="text-[12.5px] text-muted-foreground">{payLabel(row)}</p>
+                    <p className="text-xs text-muted-foreground">{payLabel(row)}</p>
                   </td>
                   <td className={cn(td, "text-right tabular-nums")}>{num(e.work)}</td>
                   <td className={cn(td, "text-right tabular-nums")}>{num(e.commission)}</td>
@@ -147,7 +147,7 @@ export function PaymentsStep({ staff, earnings, payouts, onPayout, error, pendin
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={th}>Staff</th>
               <th className={cn(th, "text-right")}>Khata balance</th>
               <th className={cn(th, "text-right")}>Earned today</th>

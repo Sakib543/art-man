@@ -1,5 +1,6 @@
 "use client";
 
+import { PanelHeader, panelClass } from "@/components/panel";
 import { AlertCircle } from "lucide-react";
 import { useState, useTransition, type FormEvent } from "react";
 import { Field } from "@/components/field";
@@ -10,6 +11,7 @@ import { contributionsMatch } from "@/lib/accounting";
 import { rs } from "@/lib/format";
 import { addInvestmentAction } from "../actions";
 import type { PartnerOption } from "../types";
+import { cn } from "@/lib/utils";
 
 export function NewInvestmentForm({ partners }: { partners: PartnerOption[] }) {
   const [name, setName] = useState("");
@@ -39,11 +41,9 @@ export function NewInvestmentForm({ partners }: { partners: PartnerOption[] }) {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-[14px] border bg-card" noValidate>
-      <div className="border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">New investment</h2>
-      </div>
-      <div className="space-y-3.5 px-[18px] py-4">
+    <form onSubmit={submit} className={cn(panelClass)} noValidate>
+      <PanelHeader title="New investment" />
+      <div className="space-y-3.5 px-card py-4">
         <Field label="Name" htmlFor="capital-name">
           <Input id="capital-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Solar system" className="h-10" />
         </Field>
@@ -80,7 +80,7 @@ export function NewInvestmentForm({ partners }: { partners: PartnerOption[] }) {
             </div>
           ))}
           {total > 0 ? (
-            <p className="text-[12.5px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {match.ok
                 ? "Contributions add up to the total cost."
                 : match.difference > 0
@@ -91,13 +91,13 @@ export function NewInvestmentForm({ partners }: { partners: PartnerOption[] }) {
         </div>
 
         {error ? (
-          <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+          <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
             <AlertCircle className="size-4 shrink-0" aria-hidden />
             {error}
           </p>
         ) : null}
 
-        <Button type="submit" className="h-11 w-full text-[15px]" disabled={pending}>
+        <Button type="submit" size="lg" className="w-full" disabled={pending}>
           {pending ? "Adding..." : "Add investment"}
         </Button>
       </div>

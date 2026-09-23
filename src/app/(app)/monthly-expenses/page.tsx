@@ -34,8 +34,8 @@ export default async function MonthlyExpensesPage({ searchParams }: { searchPara
       </PageHeader>
 
       {data.closed ? (
-        <div className="mb-3.5 flex items-start gap-2.5 rounded-[10px] border border-[#efe0c8] bg-brass-soft px-3.5 py-3 text-[13.5px] text-brass-strong">
-          <Lock className="mt-0.5 size-[17px] shrink-0" aria-hidden />
+        <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-brass-line bg-brass-soft px-3.5 py-3 text-sm text-brass-strong">
+          <Lock className="mt-0.5 size-4.5 shrink-0" aria-hidden />
           <p>{data.monthLabel} is closed. Expenses are frozen.</p>
         </div>
       ) : null}

@@ -44,17 +44,17 @@ export function FormDialog({ open, title, description, submitLabel = "Save", onC
           {children}
 
           {error ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4 shrink-0" aria-hidden />
               {error}
             </p>
           ) : null}
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" className="h-10" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="h-10" disabled={pending}>
+            <Button type="submit" disabled={pending}>
               {pending ? "Saving..." : submitLabel}
             </Button>
           </div>

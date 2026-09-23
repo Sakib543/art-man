@@ -16,14 +16,14 @@ export default function NotFound() {
   return (
     <main className="grid min-h-screen place-items-center px-4">
       <div className="w-full max-w-sm text-center">
-        <div className="mx-auto mb-4 grid size-12 place-items-center rounded-xl bg-primary text-[#e6c58f]">
+        <div className="mx-auto mb-4 grid size-12 place-items-center rounded-xl bg-primary text-brass-bright">
           <Scissors className="size-6" aria-hidden />
         </div>
         <h1 className="text-xl font-semibold">This page does not exist</h1>
-        <p className="mt-1.5 text-[13.5px] text-muted-foreground">
+        <p className="mt-1.5 text-sm text-muted-foreground">
           Check the address, or go back to the counter.
         </p>
-        <Link href="/billing" className={`${buttonVariants()} mt-5 h-10`}>
+        <Link href="/billing" className={`${buttonVariants()} mt-5`}>
           Go to Billing
         </Link>
       </div>

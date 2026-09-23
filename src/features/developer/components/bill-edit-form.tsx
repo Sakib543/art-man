@@ -12,6 +12,7 @@ import { rs } from "@/lib/format";
 import { editBillRowAction } from "../actions";
 import { checkBillEdit, sumLines, type EditableLine } from "../bill-edit-rules";
 import type { EditableBill } from "../queries";
+import { Panel } from "@/components/panel";
 
 interface Props {
   bill: EditableBill;
@@ -57,8 +58,8 @@ export function BillEditForm({ bill, staff }: Props) {
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
-      <div className="overflow-x-auto rounded-[14px] border bg-card">
-        <table className="w-full text-[13px]">
+      <Panel className="overflow-x-auto">
+        <table className="w-full text-sm">
           <thead className="border-b text-left text-muted-foreground">
             <tr>
               <th className="px-3.5 py-2.5 font-medium">Line</th>
@@ -111,7 +112,7 @@ export function BillEditForm({ bill, staff }: Props) {
             </tr>
           </tfoot>
         </table>
-      </div>
+      </Panel>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Cash" htmlFor="edit-cash">
@@ -138,14 +139,14 @@ export function BillEditForm({ bill, staff }: Props) {
       </div>
 
       {bill.discount > 0 ? (
-        <p className="text-[12.5px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           This bill was given a discount of {rs(bill.discount)}
           {bill.discountReason ? ` — "${bill.discountReason}"` : ""}. The line amounts above are already net of it, so
           they are what to change; the discount itself stays as the record of what was given on the day.
         </p>
       ) : null}
 
-      <p className={paid === total ? "text-[12.5px] text-muted-foreground" : "text-[12.5px] text-destructive"}>
+      <p className={paid === total ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>
         Paid {rs(paid)} against a total of {rs(total)}
         {paid === total ? "." : ` — these must match before the bill can be saved.`}
       </p>
@@ -162,7 +163,7 @@ export function BillEditForm({ bill, staff }: Props) {
 
       <FormFeedback error={error} done={done} />
 
-      <Button type="submit" variant="destructive" className="h-10" disabled={pending}>
+      <Button type="submit" variant="destructive" disabled={pending}>
         {pending ? "Saving..." : "Change this bill"}
       </Button>
     </form>

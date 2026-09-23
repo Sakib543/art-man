@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel, PanelHeader } from "@/components/panel";
 import { AlertCircle, Receipt as ReceiptIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,6 +20,7 @@ import { CustomerBox, type CustomerState } from "./customer-box";
 import { PaymentBox } from "./payment-box";
 import { ReceiptDialog } from "./receipt-dialog";
 import { ServicePicker } from "./service-picker";
+import { Badge } from "@/components/ui/badge";
 
 /** A stable empty object, so memoised prices do not recompute on every render. */
 const NO_RATES: Record<string, number> = {};
@@ -187,21 +189,25 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
           }
         />
 
-        <div className="rounded-[14px] border bg-card">
-          <div className="flex items-center justify-between border-b px-[18px] py-3.5">
-            <h2 className="text-[15px] font-semibold">{editing ? `Correcting bill #${editing.billNo}` : "New bill"}</h2>
-            {editing ? (
-              <Link href="/billing" className="text-[12.5px] text-muted-foreground underline underline-offset-2">
-                Leave it as it is
-              </Link>
-            ) : (
-              <span className="text-muted-foreground tabular-nums">#{data.nextBillNo}</span>
-            )}
-          </div>
+        <Panel>
+          <PanelHeader
+            title={editing ? `Correcting bill #${editing.billNo}` : "New bill"}
+            action={
+              editing ? (
+                <Link href="/billing" className="text-xs text-muted-foreground underline underline-offset-2">
+                  Leave it as it is
+                </Link>
+              ) : (
+                <Badge variant="brass" className="tabular-nums">
+                  #{data.nextBillNo}
+                </Badge>
+              )
+            }
+          />
 
           {/* Filled in only when the bill was written on the paper book first (spec 5.5). */}
-          <div className="flex items-center gap-2.5 border-b px-[18px] py-2.5">
-            <Label htmlFor="book-no" className="shrink-0 text-[12.5px] font-normal text-muted-foreground">
+          <div className="flex items-center gap-2.5 border-b px-card py-2.5">
+            <Label htmlFor="book-no" className="shrink-0 text-xs font-normal text-muted-foreground">
               Bill book no.
             </Label>
             <Input
@@ -211,11 +217,11 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
               maxLength={20}
               autoComplete="off"
               placeholder="Only for a paper bill"
-              className="h-8 w-44 text-[13px]"
+              className="h-8 w-44 text-sm"
             />
           </div>
 
-          <div className="border-b px-[18px] py-4">
+          <div className="border-b px-card py-4">
             <CustomerBox value={customer} onChange={setCustomer} />
           </div>
 
@@ -232,9 +238,9 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
             onRemove={(key) => dispatch({ type: "remove", key })}
           />
 
-          <div className="border-t px-[18px] py-4">
+          <div className="border-t px-card py-4">
             {priceProblem ? (
-              <p role="alert" className="mb-1.5 text-[12.5px] text-destructive">
+              <p role="alert" className="mb-1.5 text-xs text-destructive">
                 {priceProblem}
               </p>
             ) : null}
@@ -269,7 +275,7 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
             </div>
 
             {discountProblem ? (
-              <p role="alert" className="py-1 text-[12.5px] text-destructive">
+              <p role="alert" className="py-1 text-xs text-destructive">
                 {discountProblem}
               </p>
             ) : null}
@@ -281,7 +287,7 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
                 onChange={(event) => setDiscountReason(event.target.value)}
                 maxLength={120}
                 placeholder="Why? e.g. regular customer"
-                className="mt-1 h-8 text-[13px]"
+                className="mt-1 h-8 text-sm"
               />
             ) : null}
 
@@ -312,7 +318,7 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
                   placeholder="Required, e.g. wrong service picked"
                   rows={2}
                 />
-                <p className="mt-1.5 text-[12.5px] text-muted-foreground">
+                <p className="mt-1.5 text-xs text-muted-foreground">
                   Bill #{editing.billNo} is cancelled and a reversal is added, then this bill is saved with a new
                   number. All three stay in the day&apos;s record.
                 </p>
@@ -320,13 +326,13 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
             ) : null}
 
             {error ? (
-              <p role="alert" className="mt-2 flex items-center gap-1.5 text-[12.5px] text-destructive">
+              <p role="alert" className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
                 <AlertCircle className="size-4 shrink-0" aria-hidden />
                 {error}
               </p>
             ) : null}
 
-            <Button className="mt-3.5 h-11 w-full text-[15px]" onClick={submit} disabled={pending}>
+            <Button size="lg" className="mt-3.5 w-full" onClick={submit} disabled={pending}>
               <ReceiptIcon aria-hidden />
               {pending
                 ? "Saving..."
@@ -335,7 +341,7 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
                   : `Save bill${total ? ` ${rs(total)}` : ""}`}
             </Button>
           </div>
-        </div>
+        </Panel>
       </div>
 
       <ReceiptDialog receipt={receipt} open={receiptOpen} onClose={() => setReceiptOpen(false)} />

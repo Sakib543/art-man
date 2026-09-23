@@ -21,7 +21,7 @@ export function PreviousVersions({ billNo, previous }: { billNo: number; previou
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 px-2 text-[12px] text-muted-foreground underline underline-offset-2"
+        className="h-7 px-2 text-xs text-muted-foreground underline underline-offset-2"
         onClick={() => setOpen(true)}
       >
         {previous.length === 1 ? "See previous version" : `See ${previous.length} previous versions`}
@@ -39,30 +39,30 @@ export function PreviousVersions({ billNo, previous }: { billNo: number; previou
 
           <div className="space-y-2.5">
             {previous.map((version) => (
-              <div key={version.id} className="rounded-[10px] border px-3 py-2.5">
+              <div key={version.id} className="rounded-lg border px-3 py-2.5">
                 <div className="flex items-baseline justify-between">
                   <p className="font-medium tabular-nums">#{version.billNo}</p>
-                  <p className="text-[12.5px] text-muted-foreground tabular-nums">{formatTime(version.createdAt)}</p>
+                  <p className="text-xs text-muted-foreground tabular-nums">{formatTime(version.createdAt)}</p>
                 </div>
 
-                <div className="mt-1.5 text-[13px]">
+                <div className="mt-1.5 text-sm">
                   {version.lines.map((line, index) => (
                     <p key={index} className="flex justify-between gap-3">
                       <span>
-                        {line.name} <Badge className="ml-1 bg-secondary text-muted-foreground">{line.staffName}</Badge>
+                        {line.name} <Badge variant="secondary" className="ml-1">{line.staffName}</Badge>
                       </span>
                       <span className="tabular-nums">{num(line.amount)}</span>
                     </p>
                   ))}
                 </div>
 
-                <p className="mt-1.5 flex justify-between border-t pt-1.5 text-[13px] font-medium">
+                <p className="mt-1.5 flex justify-between border-t pt-1.5 text-sm font-medium">
                   <span>Total</span>
                   <span className="tabular-nums">{num(version.total)}</span>
                 </p>
 
                 {editReason(version) ? (
-                  <p className="mt-1.5 text-[12.5px] text-muted-foreground">Changed because: {editReason(version)}</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">Changed because: {editReason(version)}</p>
                 ) : null}
               </div>
             ))}

@@ -50,13 +50,13 @@ export function CustomerBox({ value, onChange }: CustomerBoxProps) {
     const { info } = value;
     const hasSpecial = Object.keys(info.specialRates).length > 0;
     return (
-      <div className="rounded-[10px] border border-[#efe0c8] bg-brass-soft px-3 py-2.5">
+      <div className="rounded-lg border border-brass-line bg-brass-soft px-3 py-2.5">
         <div className="flex items-center gap-2.5">
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium">{info.name}</p>
-            <p className="text-[12.5px] text-brass-strong">{visitLabel(info.visits)}</p>
+            <p className="text-xs text-brass-strong">{visitLabel(info.visits)}</p>
           </div>
-          {hasSpecial ? <Badge className="bg-white text-brass-strong">Special rate</Badge> : null}
+          {hasSpecial ? <Badge variant="brass">Special rate</Badge> : null}
           <Button variant="ghost" size="sm" onClick={clear}>
             Change
           </Button>
@@ -67,8 +67,8 @@ export function CustomerBox({ value, onChange }: CustomerBoxProps) {
           customer is still standing there, mid-conversation.
         */}
         {info.lastVisit ? (
-          <div className="mt-2.5 border-t border-[#efe0c8] pt-2.5">
-            <p className="flex items-baseline justify-between gap-2 text-[12.5px] text-brass-strong">
+          <div className="mt-2.5 border-t border-brass-line pt-2.5">
+            <p className="flex items-baseline justify-between gap-2 text-xs text-brass-strong">
               <span>
                 Last visit · {formatDate(info.lastVisit.businessDate)} · Bill #{info.lastVisit.billNo}
               </span>
@@ -76,7 +76,7 @@ export function CustomerBox({ value, onChange }: CustomerBoxProps) {
             </p>
             <ul className="mt-1 space-y-0.5">
               {info.lastVisit.lines.map((line, index) => (
-                <li key={index} className="flex items-baseline justify-between gap-2 text-[12.5px]">
+                <li key={index} className="flex items-baseline justify-between gap-2 text-xs">
                   <span className="min-w-0 truncate">
                     {line.name}
                     <span className="text-muted-foreground"> · {line.staffName}</span>
@@ -87,7 +87,7 @@ export function CustomerBox({ value, onChange }: CustomerBoxProps) {
             </ul>
           </div>
         ) : (
-          <p className="mt-2.5 border-t border-[#efe0c8] pt-2.5 text-[12.5px] text-muted-foreground">
+          <p className="mt-2.5 border-t border-brass-line pt-2.5 text-xs text-muted-foreground">
             No earlier visit to show.
           </p>
         )}
@@ -98,7 +98,7 @@ export function CustomerBox({ value, onChange }: CustomerBoxProps) {
   if (value.status === "new") {
     return (
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-[12.5px] text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>New customer: {value.phone}</span>
           <Button variant="ghost" size="sm" onClick={clear}>
             Cancel
@@ -135,12 +135,12 @@ export function CustomerBox({ value, onChange }: CustomerBoxProps) {
             className="h-10 pl-8.5"
           />
         </div>
-        <Button variant="outline" className="h-10" onClick={find} disabled={pending}>
+        <Button variant="outline" onClick={find} disabled={pending}>
           {pending ? "..." : "Find"}
         </Button>
       </div>
       {error ? (
-        <p role="alert" className="mt-2 flex items-center gap-1.5 text-[12.5px] text-destructive">
+        <p role="alert" className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
           <AlertCircle className="size-4" aria-hidden />
           {error}
         </p>

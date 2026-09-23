@@ -20,12 +20,12 @@ export default async function MaintenancePage() {
 
       <Card className="max-w-2xl">
         <CardContent className="space-y-4">
-          <p className="text-[13.5px] text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {on
               ? "The Owner and the Manager see a closed screen instead of the app. You still have the run of it, which is how you switch the site back on."
               : "Everyone can use the app. Closing it stops billing, day close and every report at once — the counter falls back to the paper bill book."}
           </p>
-          <p className="text-[13.5px] text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Nothing already entered is touched either way. The switch is checked on every page and
             every action, so it takes effect at once, without anyone signing out.
           </p>
@@ -33,7 +33,7 @@ export default async function MaintenancePage() {
           <MaintenanceToggle on={on} />
 
           {changedAt ? (
-            <p className="border-t pt-3 text-[12.5px] text-muted-foreground">
+            <p className="border-t pt-3 text-xs text-muted-foreground">
               Last changed by {changedBy ?? "someone"} on {formatDateTime(changedAt)}.
             </p>
           ) : null}

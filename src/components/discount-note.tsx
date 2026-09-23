@@ -33,7 +33,7 @@ export function DiscountNote({
   return (
     <span
       title={reason ?? undefined}
-      className={cn("inline-flex items-center gap-1 text-[12px] text-muted-foreground", className)}
+      className={cn("inline-flex items-center gap-1 text-xs text-muted-foreground", className)}
     >
       <TicketPercent className="size-3.5 shrink-0" aria-hidden />
       Discount {num(amount)}

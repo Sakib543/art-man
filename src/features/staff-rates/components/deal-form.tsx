@@ -42,7 +42,7 @@ export function DealForm({ deal, services, open, onClose }: DealFormProps) {
       </Field>
 
       <fieldset className="space-y-1.5">
-        <legend className="text-[12.5px] font-medium text-muted-foreground">Services in this deal</legend>
+        <legend className="text-xs font-medium text-muted-foreground">Services in this deal</legend>
         <div className="max-h-48 overflow-y-auto rounded-lg border p-2">
           {services.map((service) => (
             <label key={service.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1.5 text-sm hover:bg-secondary">

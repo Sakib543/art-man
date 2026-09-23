@@ -40,7 +40,7 @@ export function ChangePasswordForm() {
         <Input id="pw-again" type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} className="h-10" />
       </Field>
       <FormFeedback error={error} done={done} />
-      <Button type="submit" className="h-10" disabled={pending}>
+      <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : "Change password"}
       </Button>
     </form>

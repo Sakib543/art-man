@@ -37,7 +37,7 @@ export default async function DayClosePage() {
         </PageHeader>
         <ClosedView snapshot={data.snapshot} canReopen={atLeastOwner(user.role)} />
         {user.role === "manager" ? (
-          <p className="mt-3 text-[12.5px] text-muted-foreground">
+          <p className="mt-3 text-xs text-muted-foreground">
             Closed for the day. Only the Owner can reopen it, and only before the next day is started.
           </p>
         ) : null}

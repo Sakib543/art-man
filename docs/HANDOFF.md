@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2 done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -148,6 +148,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Customer's last visit | looked up in a browser as the Owner, before and after a bill and its cancellation (P3.8) |
 | Staff khata | opened in a browser for two staff members after the rewrite; balances and ledgers identical to before (P4.10) |
 | Login is reachable with a dead cookie | fixed and tested both ways, with a real signed-in session and with a stale one (P0.4) |
+| Look and responsiveness | the design system and the shell were rebuilt (P6.1, 2026-09-23) and checked at **375, 768 and 1440 CSS pixels** through a throwaway harness route. The drawer, the bottom bar, a table stacking and the billing cart's row were each measured in the DOM, not eyeballed |
 | Receipt printing | a bill was rung up and two older bills reprinted in a browser; the print rules were measured against the live DOM (P3.6). **Never put on actual paper** — no printer was available |
 | Error and loading screens | both boundaries were made to fire in a browser, and the 404 and skeleton checked against a production build (P4.6). `global-error.tsx` has never been triggered |
 | CI | the first run went **green in 56 seconds** on GitHub, commit `0f74808` (P4.7) |
@@ -408,6 +409,19 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A dialog takes about **a second to unmount** after closing | it goes, but not at once. P3.6 marks the slip only while the dialog is `open`, so a second receipt opened in that window cannot put two slips on one sheet |
 | `bill_lines` does not store a line's **note** | "Special rate" / "Deal share" are worked out while pricing a cart, never saved. A reprint cannot rebuild them — the receipt does not print them, so both paths still print alike |
 | **The receipt prints from the same markup it shows** | `window.print()` plus rules in `globals.css`, not a second copy built for paper. A separate print template is exactly the thing that drifts out of step with the screen |
+| **`globals.css` is the only file that decides a colour, a size or a radius** | P6.1. Before it: 222 font sizes written as `text-[12.5px]` and three neighbours, 130 uses of an off-grid `px-[18px]`, 49 cards typed out by hand, ~77 hex colours. All four are now zero. If a value is missing, add a token there rather than an arbitrary utility in a component |
+| **The 222 font sizes had one cause: `body` had no font size** | the app is designed at 14px (`docs/art-saloon.html` says so) and the browser's default is 16, so every piece of text was opting out. Setting it on `body` is what made the sweep possible — most text now needs no size class at all |
+| `--pad-card` is a plain custom property, not a theme token | a theme token is static, and card padding has to change with the viewport (16px on a phone, 20px above `sm`). It is reached through the `px-card` / `p-card` utilities |
+| **`Button` defaults to 40px and `lg` is 44px** | it was 32px, which is why ~36 call sites wrote `className="h-10"`. `Input`, `NativeSelect` and `Textarea` are 40px to match — the first time a field and the button beside it have been the same height |
+| A field's text is forced to 16px below `md`, from `globals.css` | iOS Safari zooms the page in when a focused field is smaller. Doing it in the base layer means no field has to carry `text-base md:text-sm` to avoid it |
+| **`Panel` is the box every screen is made of**, and `panelClass` is its look on its own | `components/panel.tsx`. The `Card` in `components/ui/` is the shadcn primitive and this app has never used it. `panelClass` exists for the handful of panels that must be a `<form>`, `<nav>` or `<ol>` |
+| A `Badge`'s variant is its meaning | `success` / `warning` / `destructive` / `info` / `brass`, replacing 35 hand-written colour pairs. Each has a hairline border as well as a tint, because a pale tint alone is nearly invisible on a white row |
+| **Below `lg` the sidebar is not rendered at all** | `MobileNav` is a different shape — a top bar, a drawer and a bottom bar — not the same element reflowed. The one element that tried to be both became a horizontal scroller holding all nineteen links |
+| Which four screens sit in the bottom bar is data | `primary: true` in `nav-config.ts`. Four at most: the fifth slot opens the drawer |
+| **`.table-stacked` makes a table a card per row below `md`** | each cell's heading comes from its own `data-label`, and `data-row-title` marks the one that leads. One set of markup rather than a table plus a phone copy of it. On four tables: Today's bills, the Daily report, Daily folders, the Staff khata |
+| The stacked row is a **flex column**, so `order` can pull the title up | a table's column order is decided for a wide screen — the bill number is the *second* column in Today's bills — but on a card it has to lead |
+| **The drawer closes on a route change by adjusting state during render**, not in an effect | `react-hooks/set-state-in-effect` fails the build on the effect version, and an effect would also close the drawer one paint after the new screen had already appeared behind it. It catches a Back, which no click handler sees |
+| `pnpm test` never sees a `.tsx` file | `vitest.config.mts` includes `src/**/*.test.ts` only, so no test covers a component. A UI change is verified by building it and looking at it, not by the suite going green |
 
 ---
 | **Better Auth's `after` hook sees a failed sign-in** | when an endpoint throws an `APIError`, the dispatcher catches it, writes it to `ctx.context.returned` and *then* runs the after hooks — read in `better-auth/dist/api/dispatch.mjs`. That is what makes P3.9 possible at all; a refused sign-in is an ordinary return value there, not an exception |
@@ -541,6 +555,37 @@ POST /customers 200
 **Before doubting the code, check the server log and re-fetch the page**
 (`await (await fetch(url)).text()`), which is served fresh and does not depend on
 the pane rendering. A screenshot, retried once or twice, unfreezes it.
+
+### 8.9 A screenshot of the Browser pane can be cropped, and lie about overflow
+
+Found while checking P6.1 at 375px. The page looked as though it overflowed to
+the right — a button cut off at the edge, a heading truncated mid-word — in two
+screenshots in a row. Nothing was wrong: `document.documentElement.scrollWidth`
+equalled `clientWidth`, no element's `right` passed the viewport, and the
+button that looked cut ended at 298px of 375.
+
+The pane had simply rendered a narrower frame than the emulated viewport. This
+is a cousin of 8.0e: **the pane is a camera, not a measuring tape.** Before
+changing a layout because a screenshot looks wrong, measure it:
+
+```js
+const vw = document.documentElement.clientWidth;
+[...document.querySelectorAll("*")].filter(el => el.getBoundingClientRect().right > vw + 1);
+```
+
+An empty array and `scrollWidth === clientWidth` mean the layout is fine and
+the picture is not.
+
+### 8.10 A media query does not agree with `clientWidth`
+
+Also P6.1, and it looked like a broken breakpoint. At an emulated 768px the
+stacked-table rules did not apply, while `document.documentElement.clientWidth`
+read **753**. Both are right: `clientWidth` excludes the scrollbar and a media
+query does not. So `(width < 48rem)` was false at a real 768.
+
+That is the behaviour that matches Tailwind's `md:`, which is what you want —
+but if a breakpoint ever seems off by a scrollbar's width, this is why, and
+`window.matchMedia("(width < 48rem)").matches` is the thing to ask.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -792,6 +837,8 @@ STAGE 3 — during the client's 20-day trial
   P4.3  features/auth merged into features/account    DONE 2026-09-23
   P4 is now complete.
   P3.10 Discount on a bill (client request)           DONE 2026-09-23
+  P3.11 A service can be priced in a range              DONE 2026-09-23
+  P6.1  Design system + responsive shell               DONE 2026-09-23
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)
@@ -812,8 +859,8 @@ Offline comes after the trial because the trial's purpose is to prove the **acco
 (spec Phase 1: run in parallel with the paper register, 7 straight days with a difference of 0).
 The paper bill book (P2.1) covers outages until then.
 
-**P4 is finished.** What is left is P2.2 (offline), P3.3/P3.4/P3.5, and the
-non-code items in STAGE 3b.
+**P4 and P6.1 are finished.** What is left is P2.2 (offline), P3.3/P3.4/P3.5,
+dark mode (deliberately left out of P6.1), and the non-code items in STAGE 3b.
 P3.3 and P3.5 both wait on one answer: what a "real alert" and a "staff receipt"
 are sent *through*. Nothing in the project sends anything yet — the Day close
 WhatsApp summary is still a preview on screen.

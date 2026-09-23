@@ -7,14 +7,19 @@ interface PageHeaderProps {
   children?: ReactNode;
 }
 
+/**
+ * The top of every screen. On a phone the title and whatever sits beside it
+ * stack rather than fighting over one line — the business-day pill and a
+ * twenty-character heading do not share 375px (P6.1).
+ */
 export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
   return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 className="text-[22px] leading-tight font-semibold tracking-tight">{title}</h1>
-        {subtitle ? <p className="mt-0.5 text-[13.5px] text-muted-foreground">{subtitle}</p> : null}
+    <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0">
+        <h1 className="text-xl leading-tight font-semibold tracking-tight text-balance">{title}</h1>
+        {subtitle ? <p className="mt-1 text-sm text-muted-foreground text-pretty">{subtitle}</p> : null}
       </div>
-      {children}
+      {children ? <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div> : null}
     </div>
   );
 }

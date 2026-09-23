@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-23 (P6.1 claimed; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-23 (P6.1 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -50,7 +50,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P4.9 | Index the financial tables | ✅ | done 2026-09-22 |
 | P4.10 | Staff khata reads the whole ledger table | ✅ | done 2026-09-22 |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
-| P6.1 | Design system + responsive shell | 🟡 | **Sakib, 2026-09-23** |
+| P6.1 | Design system + responsive shell | ✅ | done 2026-09-23 |
 
 ---
 
@@ -1530,10 +1530,10 @@ is a fork. Here they were already on. If a run never appears, that is the first 
 
 | | Item |
 |---|---|
-| 🟡 P6.1 | **Design system + responsive shell** — a token layer, stronger primitives, a navy sidebar, and a mobile navigation that is not a 19-item horizontal scroller |
+| ✅ P6.1 | **Design system + responsive shell** — done 2026-09-23. A token layer, stronger primitives, a navy sidebar, and a mobile navigation that is not a 19-item horizontal scroller. See below |
 
-### 🟡 P6.1 — Design system and responsive shell
-**Owner:** Sakib, 2026-09-23
+### ✅ P6.1 — Design system and responsive shell
+**Done:** 2026-09-23 · no migration, no behaviour change
 
 **Why.** The screens work and the palette is the approved one from `docs/art-saloon.html`, but
 nothing underneath it is a system, and it shows. Counted on 2026-09-23, in `src/**/*.tsx`:
@@ -1578,6 +1578,69 @@ Two more, which are behaviour rather than looks:
 **Constraint.** No behaviour changes, and no schema changes. `src/features/conventions.test.ts`
 still has to pass, so shared UI goes in `src/components/`, components stay in a feature's
 `components/` folder, and no feature imports another.
+
+---
+
+**What it came to.** Counted again after the sweep, in `src/**/*.tsx`:
+
+| | Before | After |
+|---|---|---|
+| Font sizes written as `text-[12.5px]` and friends | 222 | **0** |
+| `px-[18px]` | 130 | **0** |
+| Cards typed out by hand | 49 | **0** — one `Panel` |
+| Hex colours a token cannot reach | ~77 | **0** |
+| `className="h-10"` written on a `Button` | ~36 | **0** |
+
+`global-error.tsx` is the one file left with hex in it, and deliberately: it
+replaces the root layout, so it is served with no stylesheet at all.
+
+**The four layers, as built.**
+
+1. **Tokens** — `src/app/globals.css` is now the only file that decides a
+   colour, a size or a radius. The root cause of the 222 font sizes turned out
+   to be that **`body` had no font size**, so every piece of text was opting
+   out of the browser's 16px; the app is designed at 14. `body` sets it, and a
+   nine-step scale (`text-2xs` … `text-3xl`) covers the rest. Card padding is
+   one custom property, `--pad-card`, behind a `px-card` utility, so it can
+   change with the viewport — 16px on a phone, 20px above `sm`. There is also
+   an elevation scale; the app previously had **no shadows at all**, which is
+   why every card read as a flat rectangle.
+
+2. **Primitives** — `Button` defaults to 40px and `lg` is 44px, so the ~36
+   height overrides could go. `Input`, `NativeSelect` and `Textarea` moved to
+   40px to match, which is the first time a field and the button beside it have
+   been the same height. `Badge` gained `success` / `warning` / `destructive` /
+   `info` / `brass`, replacing 35 hand-written colour pairs — a badge now says
+   what it *means*, and each carries a hairline border, because a pale tint
+   alone was nearly invisible on a white table row.
+
+3. **The shell** — the sidebar is navy, sticky, with a brass rail on the active
+   row. Below `lg` it is not rendered at all: `MobileNav` gives a top bar, a
+   drawer with the sections intact, and a bottom bar holding the four screens
+   the counter lives in. Which four is data — `primary: true` in `nav-config.ts`.
+
+4. **The tables** — `.table-stacked` turns a table into a card per row below
+   `md`, taking each cell's heading from its own `data-label`. One set of
+   markup, not a table plus a hand-built phone copy that drift apart. Applied
+   to the four the counter uses: Today's bills, the Daily report, Daily folders
+   and the Staff khata. The Owner's wider tables keep a scroll box, and three
+   that had **no** scroll box at all were given one.
+
+Also folded in: the segmented control existed three times with three different
+button heights and is now one `Segmented` component; and the billing cart's
+row, whose fixed columns came to 248px of a 311px card on a phone — sixty for
+the service name — is two rows below `sm`, placed by grid position so the
+markup order is unchanged. Measured after: **222px** for the name.
+
+**Verified**: `pnpm build` (25 routes), `pnpm test` (345), `pnpm lint` all pass.
+Visually checked at 375, 768 and 1440 CSS pixels through a throwaway harness
+route — the drawer opening, the bottom bar, a table stacking, and the cart row
+measured in the DOM at both widths. The harness was deleted; nothing of it is
+committed.
+
+**Not done, deliberately:** dark mode. The light theme is the approved
+navy/brass palette, `.dark` is still shadcn's neutral greys, and no screen
+offers a toggle, so nothing reaches it. It is a task of its own.
 
 **Size:** large
 

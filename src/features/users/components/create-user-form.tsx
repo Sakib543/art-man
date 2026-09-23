@@ -87,7 +87,7 @@ export function CreateUserForm({ creatable }: { creatable: Role[] }) {
 
       <div className="sm:col-span-2">
         <FormFeedback error={error} done={done} />
-        <Button type="submit" className="mt-2 h-10" disabled={pending}>
+        <Button type="submit" className="mt-2" disabled={pending}>
           {pending ? "Creating..." : "Create account"}
         </Button>
       </div>

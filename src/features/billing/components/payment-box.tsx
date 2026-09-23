@@ -1,10 +1,10 @@
 "use client";
 
+import { Segmented } from "@/components/segmented";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkPayment, type PayMode } from "@/lib/accounting";
 import { rs } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 const MODES: { value: PayMode; label: string }[] = [
   { value: "cash", label: "Cash" },
@@ -28,23 +28,7 @@ export function PaymentBox({ total, mode, onModeChange, cash, online, onCashChan
   return (
     <div className="mt-3.5">
       <Label className="mb-1.5">Payment</Label>
-      <div className="grid grid-flow-col auto-cols-fr gap-0.5 rounded-[9px] bg-secondary p-[3px]" role="radiogroup">
-        {MODES.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={mode === value}
-            onClick={() => onModeChange(value)}
-            className={cn(
-              "min-h-9 rounded-[7px] px-2 text-[13.5px]",
-              mode === value ? "bg-white font-medium shadow-sm" : "text-muted-foreground",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Segmented label="Payment" value={mode} onChange={onModeChange} options={MODES} size="lg" />
 
       {mode === "split" ? (
         <>
@@ -81,7 +65,7 @@ export function PaymentBox({ total, mode, onModeChange, cash, online, onCashChan
             </div>
           </div>
           {total > 0 ? (
-            <p className="mt-1.5 text-[12.5px] text-muted-foreground">
+            <p className="mt-1.5 text-xs text-muted-foreground">
               {check.remaining === 0
                 ? "Payment matches total"
                 : check.remaining > 0

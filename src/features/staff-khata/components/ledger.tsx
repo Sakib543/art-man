@@ -1,10 +1,11 @@
+import { Panel, PanelHeader } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
 import { rs, formatDate, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { KhataStaff, LedgerRow } from "../queries";
 import { GiveBonus } from "./give-bonus";
 
-const th = "px-3.5 py-2 text-left text-[12.5px] font-medium text-muted-foreground";
+const th = "px-3.5 py-2 text-left text-xs font-medium text-muted-foreground";
 const td = "px-3.5 py-2.5";
 
 /** One staff member's running account: earnings add, payments and advances subtract. */
@@ -21,23 +22,25 @@ export function Ledger({
   canGiveBonus: boolean;
 }) {
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2.5 border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">{member.name}</h2>
-        <div className="flex items-center gap-2.5">
-          {monthClosed ? (
-            <Badge className="bg-success-soft text-success">Final, month closed</Badge>
-          ) : (
-            <Badge className="bg-warning-soft text-warning">Provisional until month close</Badge>
-          )}
-          {canGiveBonus && !monthClosed ? <GiveBonus staffId={member.id} staffName={member.name} /> : null}
-        </div>
-      </div>
+    <Panel>
+      <PanelHeader
+        title={member.name}
+        action={
+          <div className="flex flex-wrap items-center gap-2.5">
+            {monthClosed ? (
+              <Badge variant="success">Final, month closed</Badge>
+            ) : (
+              <Badge variant="warning">Provisional until month close</Badge>
+            )}
+            {canGiveBonus && !monthClosed ? <GiveBonus staffId={member.id} staffName={member.name} /> : null}
+          </div>
+        }
+      />
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="md:overflow-x-auto">
+        <table className="table-stacked w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={th}>Date</th>
               <th className={th}>Details</th>
               <th className={cn(th, "text-right")}>Amount</th>
@@ -47,8 +50,12 @@ export function Ledger({
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className="border-b">
-                <td className={cn(td, "text-muted-foreground")}>{formatDate(row.businessDate)}</td>
-                <td className={td}>{row.label}</td>
+                <td className={cn(td, "text-muted-foreground")} data-label="Date">
+                  {formatDate(row.businessDate)}
+                </td>
+                <td className={td} data-row-title="">
+                  {row.label}
+                </td>
                 <td
                   className={cn(
                     td,
@@ -56,10 +63,13 @@ export function Ledger({
                     row.amount > 0 && "text-success",
                     row.amount < 0 && "text-destructive",
                   )}
+                  data-label="Amount"
                 >
                   {row.amount > 0 ? `+${num(row.amount)}` : num(row.amount)}
                 </td>
-                <td className={cn(td, "text-right tabular-nums")}>{num(row.balance)}</td>
+                <td className={cn(td, "text-right tabular-nums")} data-label="Balance">
+                  {num(row.balance)}
+                </td>
               </tr>
             ))}
             {rows.length === 0 ? (
@@ -69,7 +79,7 @@ export function Ledger({
                 </td>
               </tr>
             ) : null}
-            <tr className="bg-[#fbf8f3] font-semibold">
+            <tr className="bg-brass-tint font-semibold">
               <td className={td} />
               <td className={td}>{member.balance < 0 ? `Advance taken by ${member.name}` : `Balance owed to ${member.name}`}</td>
               <td className={td} />
@@ -79,13 +89,13 @@ export function Ledger({
         </table>
       </div>
 
-      <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+      <p className="border-t px-card py-3 text-xs text-muted-foreground">
         {member.payType === 3
           ? "Daily wage and commission are added every night at Day Close."
           : member.payType === 2
             ? `Commission is added every night at Day Close. Monthly salary of ${rs(member.salary)} is added at month end.`
             : `Monthly salary of ${rs(member.salary)} is added at month end.`}
       </p>
-    </div>
+    </Panel>
   );
 }

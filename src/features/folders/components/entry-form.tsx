@@ -1,13 +1,14 @@
 "use client";
 
+import { Panel, PanelHeader } from "@/components/panel";
 import { AlertCircle } from "lucide-react";
 import { useState, useTransition, type FormEvent } from "react";
 import { Field } from "@/components/field";
+import { Segmented } from "@/components/segmented";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import type { PaidFrom } from "@/lib/accounting";
-import { cn } from "@/lib/utils";
 import { addEntryAction } from "../actions";
 import type { StaffOption } from "../types";
 
@@ -19,6 +20,11 @@ const KIND_LABEL: Record<FormKind, string> = {
   owner_took: "Owner took cash",
   owner_added: "Owner added cash",
 };
+
+const PAID_FROM = [
+  { value: "drawer", label: "Cash drawer" },
+  { value: "owner", label: "Owner's pocket or bank" },
+] as const;
 
 export function EntryForm({ staff }: { staff: StaffOption[] }) {
   const [kind, setKind] = useState<FormKind>("expense");
@@ -55,11 +61,9 @@ export function EntryForm({ staff }: { staff: StaffOption[] }) {
   }
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">New entry</h2>
-      </div>
-      <form onSubmit={submit} className="space-y-3.5 px-[18px] py-4" noValidate>
+    <Panel>
+      <PanelHeader title="New entry" />
+      <form onSubmit={submit} className="space-y-3.5 px-card py-4" noValidate>
         <Field label="Folder" htmlFor="entry-kind">
           <NativeSelect
             id="entry-kind"
@@ -108,29 +112,8 @@ export function EntryForm({ staff }: { staff: StaffOption[] }) {
 
         {kind === "expense" ? (
           <div className="space-y-1.5">
-            <p className="text-[12.5px] font-medium text-muted-foreground">Paid from</p>
-            <div className="grid grid-cols-2 gap-0.5 rounded-[9px] bg-secondary p-[3px]" role="radiogroup">
-              {(
-                [
-                  ["drawer", "Cash drawer"],
-                  ["owner", "Owner's pocket or bank"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={paidFrom === value}
-                  onClick={() => setPaidFrom(value)}
-                  className={cn(
-                    "min-h-9 rounded-[7px] px-2 text-[13.5px]",
-                    paidFrom === value ? "bg-white font-medium shadow-sm" : "text-muted-foreground",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <p className="text-xs font-medium text-muted-foreground">Paid from</p>
+            <Segmented label="Paid from" value={paidFrom} onChange={setPaidFrom} options={PAID_FROM} />
           </div>
         ) : null}
 
@@ -169,16 +152,16 @@ export function EntryForm({ staff }: { staff: StaffOption[] }) {
         ) : null}
 
         {error ? (
-          <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+          <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
             <AlertCircle className="size-4 shrink-0" aria-hidden />
             {error}
           </p>
         ) : null}
 
-        <Button type="submit" className="h-11 w-full text-[15px]" disabled={pending}>
+        <Button type="submit" size="lg" className="w-full" disabled={pending}>
           {pending ? "Saving..." : "Save entry"}
         </Button>
       </form>
-    </div>
+    </Panel>
   );
 }

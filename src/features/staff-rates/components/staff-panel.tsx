@@ -22,7 +22,7 @@ export function StaffPanel({ staff }: { staff: StaffRow[] }) {
       >
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={th}>Name</th>
               <th className={th}>Pay type</th>
               <th className={cn(th, "text-right")}>Salary</th>

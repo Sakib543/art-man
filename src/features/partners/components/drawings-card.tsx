@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel, PanelHeader } from "@/components/panel";
 import { AlertCircle } from "lucide-react";
 import { useState, useTransition, type FormEvent } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -55,13 +56,11 @@ export function DrawingsCard({ partnerId, month, rows, closed }: DrawingsCardPro
   }
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Profit drawn</h2>
-      </div>
+    <Panel>
+      <PanelHeader title="Profit drawn" />
 
       {!closed ? (
-        <form onSubmit={add} className="space-y-2.5 border-b px-[18px] py-4" noValidate>
+        <form onSubmit={add} className="space-y-2.5 border-b px-card py-4" noValidate>
           <div className="flex flex-wrap gap-2">
             <Input
               type="number"
@@ -75,12 +74,12 @@ export function DrawingsCard({ partnerId, month, rows, closed }: DrawingsCardPro
               className="h-10 w-36 tabular-nums"
             />
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note" aria-label="Note" className="h-10 min-w-40 flex-1" />
-            <Button type="submit" className="h-10" disabled={pending}>
+            <Button type="submit" disabled={pending}>
               {pending ? "..." : "Record"}
             </Button>
           </div>
           {error ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4 shrink-0" aria-hidden />
               {error}
             </p>
@@ -88,42 +87,44 @@ export function DrawingsCard({ partnerId, month, rows, closed }: DrawingsCardPro
         </form>
       ) : null}
 
-      <table className="w-full text-sm">
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className={cn("border-b last:border-b-0", (row.voided || row.isVoid) && "text-muted-foreground")}>
-              <td className="px-[18px] py-2.5">{formatDate(karachiDate(row.createdAt))}</td>
-              <td className={cn("px-[18px] py-2.5", row.voided && "line-through")}>
-                {row.note}
-                {row.voided ? <Badge className="ml-2 bg-danger-soft text-destructive">Cancelled</Badge> : null}
-              </td>
-              <td className={cn("px-[18px] py-2.5 text-right tabular-nums", row.voided && "line-through")}>{num(row.amount)}</td>
-              <td className="px-[18px] py-2.5 text-right">
-                {!closed && !row.voided && !row.isVoid ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive"
-                    onClick={() => {
-                      setTarget(row);
-                      setReason("");
-                      setVoidError("");
-                      setOpen(true);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                ) : null}
-              </td>
-            </tr>
-          ))}
-          {rows.length === 0 ? (
-            <tr>
-              <td className="px-4 py-8 text-center text-muted-foreground">Nothing drawn this month</td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id} className={cn("border-b last:border-b-0", (row.voided || row.isVoid) && "text-muted-foreground")}>
+                <td className="px-card py-2.5">{formatDate(karachiDate(row.createdAt))}</td>
+                <td className={cn("px-card py-2.5", row.voided && "line-through")}>
+                  {row.note}
+                  {row.voided ? <Badge variant="destructive" className="ml-2">Cancelled</Badge> : null}
+                </td>
+                <td className={cn("px-card py-2.5 text-right tabular-nums", row.voided && "line-through")}>{num(row.amount)}</td>
+                <td className="px-card py-2.5 text-right">
+                  {!closed && !row.voided && !row.isVoid ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => {
+                        setTarget(row);
+                        setReason("");
+                        setVoidError("");
+                        setOpen(true);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 ? (
+              <tr>
+                <td className="px-4 py-8 text-center text-muted-foreground">Nothing drawn this month</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">
@@ -133,7 +134,7 @@ export function DrawingsCard({ partnerId, month, rows, closed }: DrawingsCardPro
           </DialogHeader>
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (required)" aria-label="Reason for cancelling" rows={3} />
           {voidError ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4" aria-hidden />
               {voidError}
             </p>
@@ -148,6 +149,6 @@ export function DrawingsCard({ partnerId, month, rows, closed }: DrawingsCardPro
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Panel>
   );
 }

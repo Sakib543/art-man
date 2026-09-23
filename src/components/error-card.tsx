@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel } from "@/components/panel";
 import { AlertTriangle, RotateCw } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,38 +29,38 @@ export function ErrorCard({ error, retry }: ErrorCardProps) {
   }, [error]);
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="flex items-start gap-3 px-[18px] py-4">
+    <Panel>
+      <div className="flex items-start gap-3 px-card py-4">
         <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-danger-soft text-destructive">
-          <AlertTriangle className="size-[18px]" aria-hidden />
+          <AlertTriangle className="size-4.5" aria-hidden />
         </span>
         <div className="min-w-0">
-          <h2 className="text-[15px] font-semibold">This screen could not be loaded</h2>
-          <p className="mt-1 text-[13.5px] text-muted-foreground">
+          <h2 className="text-md font-semibold">This screen could not be loaded</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             The system could not reach the database. This is a fault in the system, not something
             you did, and nothing you have already entered has been lost.
           </p>
-          <p className="mt-1.5 text-[13.5px] text-muted-foreground">
+          <p className="mt-1.5 text-sm text-muted-foreground">
             Try again. If it keeps happening, the internet or the database is down — use the paper
             bill book and enter those bills once this screen goes away.
           </p>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-[#fafbfc] px-[18px] py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-surface-sunken px-card py-3">
         {/* Next generates the digest and writes the same value to the server log. */}
         {error.digest ? (
-          <span className="font-mono text-[12.5px] text-muted-foreground">
+          <span className="font-mono text-xs text-muted-foreground">
             Reference {error.digest}
           </span>
         ) : (
-          <span className="text-[12.5px] text-muted-foreground">No reference was recorded</span>
+          <span className="text-xs text-muted-foreground">No reference was recorded</span>
         )}
-        <Button className="h-10" onClick={() => retry()}>
+        <Button onClick={() => retry()}>
           <RotateCw aria-hidden />
           Try again
         </Button>
       </div>
-    </div>
+    </Panel>
   );
 }

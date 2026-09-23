@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { niceScale } from "@/lib/chart";
 import { num, rs } from "@/lib/format";
 import type { ChartDay } from "../queries";
+import { Panel, PanelHeader } from "@/components/panel";
 
 // Geometry in real pixels: the chart is drawn at the card's actual width, so
 // text stays a readable size on a phone and on a wide screen alike.
@@ -55,33 +56,35 @@ export function SalesChart({ days }: { days: ChartDay[] }) {
   const hasSales = days.some((d) => d.sale > 0);
 
   return (
-    <div className="min-w-0 rounded-[14px] border bg-card">
-      <div className="flex items-center justify-between gap-2 border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Sales, last 7 days</h2>
-        <Button variant="ghost" size="sm" onClick={() => setAsTable((value) => !value)}>
-          {asTable ? "View as chart" : "View as table"}
-        </Button>
-      </div>
+    <Panel className="min-w-0">
+      <PanelHeader
+        title="Sales, last 7 days"
+        action={
+          <Button variant="ghost" size="sm" onClick={() => setAsTable((value) => !value)}>
+            {asTable ? "View as chart" : "View as table"}
+          </Button>
+        }
+      />
 
       {asTable ? (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc] text-left text-[12.5px] text-muted-foreground">
-              <th className="px-[18px] py-2 font-medium">Day</th>
-              <th className="px-[18px] py-2 text-right font-medium">Sales</th>
+            <tr className="border-b bg-surface-sunken text-left text-xs text-muted-foreground">
+              <th className="px-card py-2 font-medium">Day</th>
+              <th className="px-card py-2 text-right font-medium">Sales</th>
             </tr>
           </thead>
           <tbody>
             {days.map((day) => (
               <tr key={day.businessDate} className="border-b last:border-b-0">
-                <td className="px-[18px] py-2.5">{day.label}</td>
-                <td className="px-[18px] py-2.5 text-right tabular-nums">{rs(day.sale)}</td>
+                <td className="px-card py-2.5">{day.label}</td>
+                <td className="px-card py-2.5 text-right tabular-nums">{rs(day.sale)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       ) : (
-        <div className="px-[18px] py-3.5">
+        <div className="px-card py-3.5">
           {/* The svg is absolutely placed so its own width never stretches this box: the box is
               sized by the card, we measure it, and the chart is drawn to that width. */}
           <div ref={holder} className="relative w-full" style={{ height: HEIGHT }}>
@@ -141,8 +144,8 @@ export function SalesChart({ days }: { days: ChartDay[] }) {
                 className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-lg border bg-popover px-3 py-2 shadow-md"
                 style={{ left: Math.min(Math.max(LEFT + (active + 0.5) * slot, 56), width - 56) }}
               >
-                <p className="text-[12.5px] text-muted-foreground">{days[active].label}</p>
-                <p className="flex items-center gap-2 text-[15px] font-semibold tabular-nums">
+                <p className="text-xs text-muted-foreground">{days[active].label}</p>
+                <p className="flex items-center gap-2 text-md font-semibold tabular-nums">
                   <span
                     aria-hidden
                     className="inline-block h-0.5 w-3.5 rounded"
@@ -154,11 +157,11 @@ export function SalesChart({ days }: { days: ChartDay[] }) {
             ) : null}
 
             {!hasSales ? (
-              <p className="absolute inset-x-0 top-1/2 text-center text-[13px] text-muted-foreground">No sales yet</p>
+              <p className="absolute inset-x-0 top-1/2 text-center text-sm text-muted-foreground">No sales yet</p>
             ) : null}
           </div>
         </div>
       )}
-    </div>
+    </Panel>
   );
 }

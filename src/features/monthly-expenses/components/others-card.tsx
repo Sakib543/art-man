@@ -1,5 +1,6 @@
 "use client";
 
+import { Panel, PanelHeader } from "@/components/panel";
 import { AlertCircle } from "lucide-react";
 import { useState, useTransition, type FormEvent } from "react";
 import { Field } from "@/components/field";
@@ -58,13 +59,11 @@ export function OthersCard({ month, rows, total, closed }: OthersCardProps) {
   }
 
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="border-b px-[18px] py-3.5">
-        <h2 className="text-[15px] font-semibold">Others</h2>
-      </div>
+    <Panel>
+      <PanelHeader title="Others" />
 
       {!closed ? (
-        <form onSubmit={add} className="space-y-3 border-b px-[18px] py-4" noValidate>
+        <form onSubmit={add} className="space-y-3 border-b px-card py-4" noValidate>
           <div className="grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <Field label="Reason (required)" htmlFor="other-reason">
               <Input id="other-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Chair repair" className="h-10" />
@@ -90,12 +89,12 @@ export function OthersCard({ month, rows, total, closed }: OthersCardProps) {
                 <NativeSelectOption value="owner">Owner&apos;s pocket or bank</NativeSelectOption>
               </NativeSelect>
             </Field>
-            <Button type="submit" className="h-10" disabled={pending}>
+            <Button type="submit" disabled={pending}>
               {pending ? "Adding..." : "Add"}
             </Button>
           </div>
           {error ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4 shrink-0" aria-hidden />
               {error}
             </p>
@@ -106,24 +105,24 @@ export function OthersCard({ month, rows, total, closed }: OthersCardProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc] text-left text-[12.5px] text-muted-foreground">
-              <th className="px-[18px] py-2 font-medium">Date</th>
-              <th className="px-[18px] py-2 font-medium">Reason</th>
-              <th className="px-[18px] py-2 text-right font-medium">Amount</th>
-              <th className="px-[18px] py-2" />
+            <tr className="border-b bg-surface-sunken text-left text-xs text-muted-foreground">
+              <th className="px-card py-2 font-medium">Date</th>
+              <th className="px-card py-2 font-medium">Reason</th>
+              <th className="px-card py-2 text-right font-medium">Amount</th>
+              <th className="px-card py-2" />
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className={cn("border-b", (row.voided || row.isVoid) && "text-muted-foreground")}>
-                <td className="px-[18px] py-2.5">{formatDate(karachiDate(row.createdAt))}</td>
-                <td className={cn("px-[18px] py-2.5", row.voided && "line-through")}>
+                <td className="px-card py-2.5">{formatDate(karachiDate(row.createdAt))}</td>
+                <td className={cn("px-card py-2.5", row.voided && "line-through")}>
                   {row.reason}
-                  {row.paidFrom === "owner" ? <span className="text-[12.5px] text-muted-foreground"> (paid by Owner)</span> : null}
-                  {row.voided ? <Badge className="ml-2 bg-danger-soft text-destructive">Cancelled</Badge> : null}
+                  {row.paidFrom === "owner" ? <span className="text-xs text-muted-foreground"> (paid by Owner)</span> : null}
+                  {row.voided ? <Badge variant="destructive" className="ml-2">Cancelled</Badge> : null}
                 </td>
-                <td className={cn("px-[18px] py-2.5 text-right font-medium tabular-nums", row.voided && "line-through")}>{num(row.amount)}</td>
-                <td className="px-[18px] py-2.5 text-right">
+                <td className={cn("px-card py-2.5 text-right font-medium tabular-nums", row.voided && "line-through")}>{num(row.amount)}</td>
+                <td className="px-card py-2.5 text-right">
                   {!closed && !row.voided && !row.isVoid ? (
                     <Button
                       variant="ghost"
@@ -149,10 +148,10 @@ export function OthersCard({ month, rows, total, closed }: OthersCardProps) {
                 </td>
               </tr>
             ) : null}
-            <tr className="bg-[#fbf8f3] font-semibold">
-              <td className="px-[18px] py-2.5" />
-              <td className="px-[18px] py-2.5">Total others</td>
-              <td className="px-[18px] py-2.5 text-right tabular-nums">{rs(total)}</td>
+            <tr className="bg-brass-tint font-semibold">
+              <td className="px-card py-2.5" />
+              <td className="px-card py-2.5">Total others</td>
+              <td className="px-card py-2.5 text-right tabular-nums">{rs(total)}</td>
               <td />
             </tr>
           </tbody>
@@ -175,7 +174,7 @@ export function OthersCard({ month, rows, total, closed }: OthersCardProps) {
             rows={3}
           />
           {voidError ? (
-            <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4" aria-hidden />
               {voidError}
             </p>
@@ -190,6 +189,6 @@ export function OthersCard({ month, rows, total, closed }: OthersCardProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Panel>
   );
 }

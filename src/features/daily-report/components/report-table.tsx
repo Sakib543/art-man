@@ -1,4 +1,5 @@
 import { DiscountNote } from "@/components/discount-note";
+import { Panel } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
 import type { DayBill } from "@/db/queries/day-bills";
 import { formatTime, num } from "@/lib/format";
@@ -7,13 +8,13 @@ import type { ReportBill } from "../corrections";
 import { CancelClosedBill } from "./cancel-closed-bill";
 import { PreviousVersions } from "./previous-versions";
 
-const th = "px-3.5 py-2 text-left text-[12.5px] font-medium text-muted-foreground";
+const th = "px-3.5 py-2 text-left text-xs font-medium text-muted-foreground";
 const td = "px-3.5 py-2.5 align-top";
 
 function StatusBadge({ bill }: { bill: DayBill }) {
-  if (bill.status === "cancelled") return <Badge className="bg-danger-soft text-destructive">Cancelled</Badge>;
-  if (bill.status === "reversal") return <Badge className="bg-secondary text-muted-foreground">Reversal</Badge>;
-  return <Badge className="bg-success-soft text-success">Paid</Badge>;
+  if (bill.status === "cancelled") return <Badge variant="destructive">Cancelled</Badge>;
+  if (bill.status === "reversal") return <Badge variant="secondary">Reversal</Badge>;
+  return <Badge variant="success">Paid</Badge>;
 }
 
 /**
@@ -23,11 +24,13 @@ function StatusBadge({ bill }: { bill: DayBill }) {
  */
 export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCancel: boolean }) {
   return (
-    <div className="rounded-[14px] border bg-card">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+    <Panel>
+      {/* Below `md` this is a card per bill, not a sideways scroll. The
+          labels come from each cell's `data-label`; see globals.css. */}
+      <div className="md:overflow-x-auto">
+        <table className="table-stacked w-full text-sm">
           <thead>
-            <tr className="border-b bg-[#fafbfc]">
+            <tr className="border-b bg-surface-sunken">
               <th className={cn(th, "w-32")}>Bill</th>
               <th className={th}>Customer</th>
               <th className={th}>Services and staff</th>
@@ -39,26 +42,28 @@ export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCanc
           <tbody>
             {bills.map((bill) => (
               <tr key={bill.id} className="border-b last:border-b-0">
-                <td className={td}>
+                <td className={td} data-row-title="">
                   <p className="font-medium tabular-nums">#{bill.billNo}</p>
                   {bill.bookNo ? (
-                    <p className="text-[12.5px] text-muted-foreground">Book {bill.bookNo}</p>
+                    <p className="text-xs text-muted-foreground">Book {bill.bookNo}</p>
                   ) : null}
-                  <p className="text-[12.5px] text-muted-foreground">{formatTime(bill.createdAt)}</p>
+                  <p className="text-xs text-muted-foreground">{formatTime(bill.createdAt)}</p>
                 </td>
-                <td className={td}>{bill.customerName ?? "Walk-in"}</td>
-                <td className={cn(td, "text-[13px]")}>
+                <td className={td} data-label="Customer">
+                  {bill.customerName ?? "Walk-in"}
+                </td>
+                <td className={cn(td, "text-sm")}>
                   {bill.lines.map((line, index) => (
                     <p key={index}>
-                      {line.name} <Badge className="ml-1 bg-secondary text-muted-foreground">{line.staffName}</Badge>
+                      {line.name} <Badge variant="secondary" className="ml-1">{line.staffName}</Badge>
                     </p>
                   ))}
                   <DiscountNote amount={bill.discount} reason={bill.discountReason} className="mt-1 flex" />
                   {bill.status === "cancelled" && bill.cancelReason ? (
-                    <p className="mt-1 text-[12.5px] text-muted-foreground">Reason: {bill.cancelReason}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Reason: {bill.cancelReason}</p>
                   ) : null}
                   {bill.status === "reversal" && bill.reversesBillNo ? (
-                    <p className="mt-1 text-[12.5px] text-muted-foreground">Cancels bill #{bill.reversesBillNo}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Cancels bill #{bill.reversesBillNo}</p>
                   ) : null}
                   {bill.previous.length > 0 ? (
                     <div className="mt-1 -ml-2">
@@ -66,23 +71,26 @@ export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCanc
                     </div>
                   ) : null}
                 </td>
-                <td className={cn(td, "text-[13px] text-muted-foreground tabular-nums")}>
+                <td className={cn(td, "text-sm text-muted-foreground tabular-nums")} data-label="Paid">
                   {bill.cash !== 0 ? <p>Cash {num(bill.cash)}</p> : null}
                   {bill.online !== 0 ? <p>Online {num(bill.online)}</p> : null}
                 </td>
-                <td className={cn(td, "text-right font-medium tabular-nums", bill.total < 0 && "text-destructive")}>
+                <td
+                  className={cn(td, "text-right font-medium tabular-nums", bill.total < 0 && "text-destructive")}
+                  data-label="Amount"
+                >
                   {/* What the services came to before the discount, struck
                       through above what was actually charged (P3.10). */}
                   {bill.discount > 0 ? (
-                    <p className="text-[12.5px] font-normal text-muted-foreground line-through">
+                    <p className="text-xs font-normal text-muted-foreground line-through">
                       {num(bill.total + bill.discount)}
                     </p>
                   ) : null}
                   {num(bill.total)}
                 </td>
-                <td className={cn(td, "text-right")}>
+                <td className={cn(td, "text-right max-md:pt-2")} data-label="Status">
                   {bill.previous.length > 0 ? (
-                    <Badge className="mr-1 bg-warning-soft text-warning">Edited</Badge>
+                    <Badge variant="warning" className="mr-1">Edited</Badge>
                   ) : null}
                   <StatusBadge bill={bill} />
                   {canCancel && bill.status === "active" ? (
@@ -103,10 +111,10 @@ export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCanc
           </tbody>
         </table>
       </div>
-      <p className="border-t px-[18px] py-3 text-[12.5px] text-muted-foreground">
+      <p className="border-t px-card py-3 text-xs text-muted-foreground">
         Totals include every line, cancelled bills and reversals too. A corrected bill shows as one line marked
         Edited; its earlier versions are still in the record and the totals already account for them.
       </p>
-    </div>
+    </Panel>
   );
 }

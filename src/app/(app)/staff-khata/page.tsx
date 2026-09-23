@@ -28,8 +28,8 @@ export default async function StaffKhataPage({ searchParams }: { searchParams: P
     <>
       <PageHeader title="Staff khata" subtitle={SUBTITLE} />
 
-      <div className="mb-3.5 flex items-start gap-2.5 rounded-[10px] border border-[#d6e0f2] bg-info-soft px-3.5 py-3 text-[13.5px] text-info">
-        <Info className="mt-0.5 size-[17px] shrink-0" aria-hidden />
+      <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-info-line bg-info-soft px-3.5 py-3 text-sm text-info">
+        <Info className="mt-0.5 size-4.5 shrink-0" aria-hidden />
         <p>Today&apos;s earnings and payments are added to the khata when the day is closed.</p>
       </div>
 
