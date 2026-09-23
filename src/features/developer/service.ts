@@ -10,6 +10,7 @@ import type { SessionUser } from "@/lib/auth/session";
 import { UserError } from "@/lib/errors";
 import { hashPin } from "@/lib/pin";
 import { checkBillEdit } from "./bill-edit-rules";
+import { checkUsername, usernameKey } from "./username-rules";
 import { findBillForEdit, listStaffForEdit } from "./queries";
 import type { EditBillRowInput } from "./schemas";
 
@@ -66,6 +67,56 @@ export async function resetPassword(
     action: self ? "password.self-reset" : "password.reset",
     target: target.username ?? target.id,
     after: { by: "developer" },
+  });
+}
+
+/**
+ * Change the developer's own username.
+ *
+ * Only their own, and only theirs: the Owner's and the Manager's usernames are
+ * the salon's, printed on whatever the counter staff were handed, and a
+ * developer renaming one of those out from under them would be a support call,
+ * not a feature. This account belongs to whoever maintains the system, so it
+ * is theirs to name.
+ *
+ * The session survives, because a session is bound to the account's id and
+ * knows nothing about its username — but the *next* sign-in needs the new one,
+ * which is why the screen says so.
+ */
+export async function changeOwnUsername(dev: SessionUser, next: string): Promise<void> {
+  const problem = checkUsername(next, dev.username);
+  if (problem) throw new UserError(problem);
+
+  const wanted = next.trim();
+  const key = usernameKey(wanted);
+
+  // `user.username` is unique in the database, so this is a nicer message
+  // rather than the guarantee — the constraint is the guarantee.
+  const [taken] = await db
+    .select({ id: userTable.id })
+    .from(userTable)
+    .where(eq(userTable.username, key))
+    .limit(1);
+  if (taken && taken.id !== dev.id) throw new UserError("That username is already taken.");
+
+  await db.transaction(async (tx) => {
+    // `username` is what is matched at sign-in and is lower case; the display
+    // one keeps the capitals the person typed. That is the plugin's own
+    // convention — see `seed-users.ts`, which sets both.
+    await tx
+      .update(userTable)
+      .set({ username: key, displayUsername: wanted })
+      .where(eq(userTable.id, dev.id));
+
+    await writeAudit(tx, {
+      // The name they had while doing it. The `before` says what it was, so
+      // the row reads correctly from either end.
+      actor: actorOf(dev),
+      action: "username.change",
+      target: dev.id,
+      before: { username: dev.username },
+      after: { username: key },
+    });
   });
 }
 

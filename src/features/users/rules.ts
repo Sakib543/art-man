@@ -53,20 +53,27 @@ export function checkCreate(viewer: Viewer, role: Role): string | null {
 /**
  * Why the viewer may not set this password, or null.
  *
- * Your own password is not set here, because a reset ends every session and
- * would sign you out mid-click. Where you go instead depends on who you are:
- * Settings asks for your current password and keeps this session alive, which
- * is the ordinary path — but it is no use to a developer who has forgotten
- * theirs, and nobody stands above a developer to rescue them. So the Passwords
- * screen lets that one account set its own, sparing the session it is being
- * done from. The message points each viewer at the door that will open.
+ * **Setting somebody else's password is the developer's alone** — the client's
+ * decision of 2026-09-23. The Owner used to be able to reset the Manager, both
+ * here and from Settings, and no longer can.
+ *
+ * The cost is worth writing down: if the Owner or the Manager forgets their
+ * password and the developer cannot be reached, nobody in the salon can let
+ * them back in. That was the trade the client chose.
+ *
+ * The refusal does not mention the developer. The Owner and the Manager are
+ * not shown that the role exists (see `visibleRoles`), and an error message is
+ * a poor place to break that.
+ *
+ * Your own password is never set here either way, because a reset ends every
+ * session and would sign you out mid-click. Settings asks for your current
+ * password and keeps this session alive — except for the developer, for whom
+ * that is no use if they have forgotten it and above whom nobody stands, so
+ * the Passwords screen lets that one account set its own.
  */
 export function checkResetPassword(viewer: Viewer, target: UserSummary): string | null {
-  if (target.id === viewer.id) {
-    return viewer.role === "developer"
-      ? "Change your own password on the Passwords screen, not here."
-      : "Change your own password in Settings, not here.";
-  }
+  if (viewer.role !== "developer") return "That password is not yours to set. Ask whoever maintains the system.";
+  if (target.id === viewer.id) return "Change your own password on the Passwords screen, not here.";
   return outOfReach(viewer, target);
 }
 

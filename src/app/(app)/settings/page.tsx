@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { ChangePasswordForm } from "@/features/account/components/change-password-form";
 import { OwnerPinForm } from "@/features/account/components/owner-pin-form";
-import { ResetManagerForm } from "@/features/account/components/reset-manager-form";
 import { requireUser } from "@/lib/auth/session";
 
 export const metadata = { title: "Settings | Art Men's Salon" };
@@ -29,18 +28,18 @@ export default async function SettingsPage() {
           <ChangePasswordForm />
         </Section>
 
+        {/*
+          The Owner used to be able to reset the Manager's password from here.
+          Removed on the client's word, 2026-09-23: setting somebody else's
+          password is the developer's alone now. See `users/rules.ts`.
+        */}
         {user.role === "owner" ? (
-          <>
-            <Section
-              title="Your PIN"
-              description="You confirm cash you take from or add to the drawer with this 4-digit PIN."
-            >
-              <OwnerPinForm />
-            </Section>
-            <Section title="Manager's password" description="Set a new password if the Manager forgot theirs. They are signed out everywhere.">
-              <ResetManagerForm />
-            </Section>
-          </>
+          <Section
+            title="Your PIN"
+            description="You confirm cash you take from or add to the drawer with this 4-digit PIN."
+          >
+            <OwnerPinForm />
+          </Section>
         ) : null}
       </div>
     </>

@@ -1,10 +1,10 @@
 "use client";
 
+import { PasswordInput } from "@/components/password-input";
 import { useState, type FormEvent } from "react";
 import { Field } from "@/components/field";
 import { FormFeedback } from "@/components/form-feedback";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useFormAction } from "@/components/use-form-action";
 import { checkNewPassword } from "@/lib/auth/password-rules";
 import { resetPasswordAction } from "../actions";
@@ -48,19 +48,13 @@ export function ResetPasswordForm({ userId, username, self = false }: ResetPassw
   return (
     <form onSubmit={submit} className="space-y-3.5" noValidate>
       <Field label="New password" htmlFor={`pw-${userId}`}>
-        <Input
-          id={`pw-${userId}`}
-          type="password"
-          autoComplete="new-password"
+        <PasswordInput id={`pw-${userId}`} autoComplete="new-password"
           value={next}
           onChange={(e) => setNext(e.target.value)}
         />
       </Field>
       <Field label="New password again" htmlFor={`pw2-${userId}`}>
-        <Input
-          id={`pw2-${userId}`}
-          type="password"
-          autoComplete="new-password"
+        <PasswordInput id={`pw2-${userId}`} autoComplete="new-password"
           value={again}
           onChange={(e) => setAgain(e.target.value)}
         />

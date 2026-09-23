@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-23 (P6.1 and P1.7 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-23 (P6.1, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -52,6 +52,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
 | P6.1 | Design system + responsive shell | ✅ | done 2026-09-23 |
 | P1.7 | The developer can reset their own password | ✅ | done 2026-09-23 |
+| P1.8 | Only the developer sets passwords · the eye on every password field · the developer names their own account | ✅ | done 2026-09-23 |
 
 ---
 
@@ -1570,6 +1571,85 @@ through the same form, signed out, and signed in again with the original
 password. Both resets appear in the dev server log as `resetPasswordAction`.
 
 **Size:** small
+
+---
+
+### ✅ P1.8 — Who sets a password, reading one back, and naming the developer's account
+**Done:** 2026-09-23 · no migration · three client requests in one sitting
+
+**1. Setting somebody else's password is the developer's alone.**
+
+The Owner could reset the Manager from Settings, and both the Owner and the
+Manager from the Users screen. Both are gone: `checkResetPassword` now refuses
+any viewer who is not the developer, which covers the screen and the Server
+Action at once because the same function guards both. `resetManagerPassword`,
+its action, its schema and `reset-manager-form.tsx` were deleted rather than
+left unreachable.
+
+**The cost, recorded because it is real:** if the Owner or the Manager forgets
+their password and the developer cannot be reached, nobody in the salon can let
+them back in. The client was told and chose it.
+
+Two details worth keeping:
+
+- The refusal does **not** name the developer — "*That password is not yours to
+  set. Ask whoever maintains the system.*" The Owner and the Manager are not
+  shown that the role exists (`visibleRoles`), and an error message is a poor
+  place to break that. There is a test that the string never matches
+  `/developer/i`.
+- The login screen used to say *"Ask the Owner to set a new one."* That is now
+  advice to a closed door, so it says *"ask whoever looks after the system."*
+
+**2. An eye on every password field.**
+
+`src/components/password-input.tsx`, on all twelve of them — the login form,
+both PIN boxes, the Owner's PIN confirmation on Daily folders, and every
+new-password pair. Each one was typed blind, twice, and a mistyped one is only
+found at the next sign-in, by which point nobody knows which of the two boxes
+was wrong.
+
+It swaps `type="password"` for `type="text"` rather than doing anything
+cleverer, so a password manager still sees an ordinary field. The toggle is a
+`type="button"` (or it submits the form it sits in) with `tabIndex={-1}` (so
+Tab goes to the next field, not the eye), and its `aria-label` and
+`aria-pressed` follow the state.
+
+**3. The developer can rename their own account.**
+
+Only their own: the Owner's and the Manager's usernames are the salon's,
+printed on whatever the counter staff were handed, and renaming one out from
+under them is a support call rather than a feature. The session survives — a
+session is bound to the account's id, not its name — but the next sign-in needs
+the new one, which the screen says.
+
+`username-rules.ts` is pure and tested: 3–32 characters, letters, digits and
+`. _ -`, at least one letter or digit, trimmed before judging, and case-folded
+so `Owner` and `owner` cannot become two accounts. `user.username` is unique in
+the database, so the "already taken" message is a courtesy and the constraint
+is the guarantee.
+
+The screen is now **Accounts** rather than Passwords, in the nav and in its
+heading, because that is what it does.
+
+**Verified:** the eye was measured in a browser — `type` goes `password` →
+`text`, the value becomes readable, `aria-label` flips to "Hide the password"
+and `aria-pressed` to `true`.
+
+**And verified by the client, not by us.** While this was being written they
+signed in and used the new screen themselves. `audit_log` has it:
+
+```
+23 Sep 09:03:46  developer  password.self-reset  developer
+23 Sep 09:04:13  developer  password.reset       manager
+23 Sep 09:04:17  developer  password.reset       owner
+```
+
+Three things that proves at once: the self-reset works for a real person, the
+session survived it (they went on to reset two more accounts in the next thirty
+seconds), and `password.self-reset` is distinguishable from `password.reset` in
+the log — which was the point of giving it its own name.
+
+**Size:** medium
 
 ---
 

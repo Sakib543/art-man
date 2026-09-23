@@ -62,8 +62,14 @@ export default async function LoginPage() {
             <LoginForm />
           </Panel>
 
+          {/*
+            It used to say "ask the Owner". The Owner cannot reset anyone's
+            password since 2026-09-23, so that was advice to a closed door. It
+            does not name who can, because the Owner and the Manager are not
+            shown that the developer role exists.
+          */}
           <p className="mt-5 text-center text-xs text-muted-foreground lg:text-left">
-            Forgotten your password? Ask the Owner to set a new one.
+            Forgotten your password? It has to be set for you — ask whoever looks after the system.
           </p>
         </div>
       </div>

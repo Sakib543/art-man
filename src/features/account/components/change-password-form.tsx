@@ -1,10 +1,10 @@
 "use client";
 
+import { PasswordInput } from "@/components/password-input";
 import { useState, type FormEvent } from "react";
 import { Field } from "@/components/field";
 import { FormFeedback } from "@/components/form-feedback";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useFormAction } from "@/components/use-form-action";
 import { checkNewPassword, MIN_PASSWORD_LENGTH } from "@/lib/auth/password-rules";
 import { changePasswordAction } from "../actions";
@@ -31,13 +31,13 @@ export function ChangePasswordForm() {
   return (
     <form onSubmit={submit} className="space-y-3.5" noValidate>
       <Field label="Current password" htmlFor="pw-current">
-        <Input id="pw-current" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} className="h-10" />
+        <PasswordInput id="pw-current" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} className="h-10" />
       </Field>
       <Field label="New password" htmlFor="pw-new" hint={`At least ${MIN_PASSWORD_LENGTH} characters, with letters as well as numbers.`}>
-        <Input id="pw-new" type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} className="h-10" />
+        <PasswordInput id="pw-new" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} className="h-10" />
       </Field>
       <Field label="New password again" htmlFor="pw-again">
-        <Input id="pw-again" type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} className="h-10" />
+        <PasswordInput id="pw-again" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} className="h-10" />
       </Field>
       <FormFeedback error={error} done={done} />
       <Button type="submit" disabled={pending}>

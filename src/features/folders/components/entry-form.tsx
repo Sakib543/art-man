@@ -1,6 +1,7 @@
 "use client";
 
 import { Panel, PanelHeader } from "@/components/panel";
+import { PasswordInput } from "@/components/password-input";
 import { AlertCircle } from "lucide-react";
 import { useState, useTransition, type FormEvent } from "react";
 import { Field } from "@/components/field";
@@ -136,10 +137,7 @@ export function EntryForm({ staff }: { staff: StaffOption[] }) {
             htmlFor="entry-pin"
             hint="The Owner confirms cash taken from or added to the drawer with their own PIN."
           >
-            <Input
-              id="entry-pin"
-              type="password"
-              inputMode="numeric"
+            <PasswordInput id="entry-pin" inputMode="numeric"
               maxLength={4}
               autoComplete="off"
               value={pin}

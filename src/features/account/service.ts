@@ -1,7 +1,6 @@
 import { and, count, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
-import { setUserPassword } from "@/db/user-account";
 import { auditLog, user as userTable } from "@/db/schema";
 import { auth } from "@/lib/auth/server";
 import { checkNewPassword } from "@/lib/auth/password-rules";
@@ -65,31 +64,3 @@ export async function changeOwnerPin(user: SessionUser, input: { password: strin
   });
 }
 
-/**
- * The Owner sets a new password for the Manager, and the Manager is signed out
- * everywhere. This is the quick path in Settings for the salon's one counter
- * account.
- *
- * It refuses as soon as there is more than one open Manager: "the Manager"
- * stops meaning anything, and this used to silently pick whichever row came
- * back first. Once P1.2 made several accounts possible, the Users screen
- * became the place that can say which one.
- */
-export async function resetManagerPassword(owner: SessionUser, newPassword: string): Promise<void> {
-  const problem = checkNewPassword(newPassword);
-  if (problem) throw new UserError(problem);
-
-  const managers = await db
-    .select({ id: userTable.id, username: userTable.username })
-    .from(userTable)
-    .where(and(eq(userTable.role, "manager"), eq(userTable.active, true)));
-
-  if (managers.length === 0) throw new UserError("There is no open Manager account.");
-  if (managers.length > 1) {
-    throw new UserError("There is more than one Manager. Use the Users screen to choose which one.");
-  }
-
-  const [manager] = managers;
-  await setUserPassword(manager.id, newPassword);
-  await writeAudit(db, { actor: actorOf(owner), action: "password.reset", target: manager.username ?? manager.id });
-}

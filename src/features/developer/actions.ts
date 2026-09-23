@@ -6,8 +6,8 @@ import { setMaintenance } from "@/db/app-settings";
 import { failure, type ActionResult } from "@/lib/action-result";
 import { auth } from "@/lib/auth/server";
 import { requireRole } from "@/lib/auth/session";
-import { editBillRowSchema, maintenanceSchema, resetPasswordSchema, resetPinSchema } from "./schemas";
-import { editBillRow, resetPassword, resetPin } from "./service";
+import { changeUsernameSchema, editBillRowSchema, maintenanceSchema, resetPasswordSchema, resetPinSchema } from "./schemas";
+import { changeOwnUsername, editBillRow, resetPassword, resetPin } from "./service";
 
 const firstIssue = (error: { issues: { message: string }[] }, fallback: string) =>
   error.issues[0]?.message ?? fallback;
@@ -22,6 +22,20 @@ export async function resetPasswordAction(input: unknown): Promise<ActionResult<
     // the reset must spare, or they would be signed out by their own click.
     const session = await auth.api.getSession({ headers: await headers() });
     await resetPassword(dev, parsed.data.userId, parsed.data.newPassword, session?.session.token);
+    revalidatePath("/developer/passwords");
+    return { ok: true, data: null };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function changeUsernameAction(input: unknown): Promise<ActionResult<null>> {
+  const dev = await requireRole("developer");
+  const parsed = changeUsernameSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error, "Invalid username") };
+
+  try {
+    await changeOwnUsername(dev, parsed.data.username);
     revalidatePath("/developer/passwords");
     return { ok: true, data: null };
   } catch (error) {

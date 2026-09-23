@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1** and **P1.7** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -148,6 +148,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Customer's last visit | looked up in a browser as the Owner, before and after a bill and its cancellation (P3.8) |
 | Staff khata | opened in a browser for two staff members after the rewrite; balances and ledgers identical to before (P4.10) |
 | Login is reachable with a dead cookie | fixed and tested both ways, with a real signed-in session and with a stale one (P0.4) |
+| Passwords | **the client reset all three from the screen at 09:04 on 2026-09-23** and holds them; the ones handed over earlier in that session no longer work. `audit_log` has the three rows |
 | Developer self-reset | exercised in a browser on the live data (P1.7, 2026-09-23): a new password set from the own-account form, the surviving session proved by a **200** on a re-fetch, then set back and signed in with again |
 | Look and responsiveness | the design system and the shell were rebuilt (P6.1, 2026-09-23) and checked at **375, 768 and 1440 CSS pixels** through a throwaway harness route. The drawer, the bottom bar, a table stacking and the billing cart's row were each measured in the DOM, not eyeballed |
 | Receipt printing | a bill was rung up and two older bills reprinted in a browser; the print rules were measured against the live DOM (P3.6). **Never put on actual paper** — no printer was available |
@@ -302,6 +303,8 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: everything the Owner can (P1.1), plus changing a bill **in place** on any day, closed month included (P1.6). |
 | **Is the developer visible?** | **No, not on the screens** (2026-09-22). No developer section in Settings; the Owner and Manager see no sign the role exists. They sign in with a username and a password, nothing more. The account is still an ordinary `user` row and **every action it takes is audited** — hidden from the screens, never from the record. |
 | **Marking an edited bill** | **Yes.** The Daily report's single line carries an "Edited" badge **with a link to the previous version** (P1.5, done). |
+| **Who may set a password** | **The developer alone (2026-09-23).** The Owner could reset the Manager from Settings and both from the Users screen; both are gone (P1.8). The client was told the cost and chose it: if the Owner or the Manager forgets their password and the developer cannot be reached, **nobody in the salon can let them back in** |
+| **The developer's own account** | **Theirs to name and theirs to unlock (2026-09-23).** They may reset their own password (P1.7) and change their own username (P1.8) — neither of which any other role may do. Nobody stands above that account, so nobody else can rescue it |
 | **Customer's last visit** | **Built 2026-09-22 (P3.8).** The phone lookup now shows what the customer had done last time. Asked and answered before building: **the last visit only** (not a list, not a history dialog), **with the staff member's name** beside each service, and **cancelled bills counted nowhere** — neither in the visit count nor as the last visit. |
 | **An edited bill's number** | The receipt number **need not stay the same**. That choice let P1.5 be built without weakening the append-only guarantee. |
 
@@ -427,6 +430,12 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A self-reset is audited as **`password.self-reset`** | a different action from `password.reset`, so the log says which of the two happened rather than leaving it to be inferred from actor and target being equal |
 | **`next dev` prints Server Action arguments in full** | measured 2026-09-23: `resetPasswordAction({"newPassword":"...","userId":"..."})` appeared in the dev server log in clear text. Only the dev server does this, but it means a password typed into a form while `pnpm dev` is running is in that terminal's scrollback |
 | **A dead session is proved by re-fetching the page, not by looking at it** | `await fetch(url, {redirect:"manual"})` returning **200** means `requireRole` let it through; a killed session redirects to `/login`. This is what verified P1.7, and it does not depend on the Browser pane having rendered (trap 8.0e) |
+| **`checkResetPassword` refuses everyone but the developer** | P1.8. It guards the Users screen *and* the Server Action, because the screen hides what the function refuses and the action refuses it again — one function, so the two cannot drift |
+| That refusal never says the word "developer" | the Owner and the Manager are not shown that the role exists (`visibleRoles`), and an error message is a poor place to break that. A test asserts the string does not match `/developer/i` |
+| **`PasswordInput` is on all twelve password and PIN fields** | `src/components/password-input.tsx`. It swaps `type="password"` for `type="text"`, so a password manager still sees an ordinary field. The toggle is `type="button"` — otherwise it submits the form it sits in — and `tabIndex={-1}`, so Tab reaches the next field rather than the eye |
+| A username is case-folded and unique | `username-rules.ts` decides the shape; `user.username` is `text().unique()` in the database, which is the actual guarantee. `username` is stored lower case and `displayUsername` keeps the capitals — the plugin's own convention, which `seed-users.ts` also follows |
+| **Renaming an account does not end its sessions** | a session is bound to the account's id and knows nothing about its username. The *next* sign-in needs the new one, which is why the screen says so |
+| `/developer/passwords` is called **Accounts** now | it sets passwords and PINs *and* names the developer's own account |
 | `pnpm test` never sees a `.tsx` file | `vitest.config.mts` includes `src/**/*.test.ts` only, so no test covers a component. A UI change is verified by building it and looking at it, not by the suite going green |
 
 ---
@@ -868,6 +877,7 @@ STAGE 3 — during the client's 20-day trial
   P3.11 A service can be priced in a range              DONE 2026-09-23
   P6.1  Design system + responsive shell               DONE 2026-09-23
   P1.7  The developer can reset their own password     DONE 2026-09-23
+  P1.8  Developer-only password resets · the eye · username DONE 2026-09-23
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)

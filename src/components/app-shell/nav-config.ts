@@ -94,7 +94,7 @@ export const NAV: NavSection[] = [
     items: [
       { href: "/developer/audit-log", label: "Audit log", icon: ScrollText },
       { href: "/developer/bills", label: "Edit a bill", icon: FilePen },
-      { href: "/developer/passwords", label: "Passwords", icon: KeyRound },
+      { href: "/developer/passwords", label: "Accounts", icon: KeyRound },
       { href: "/developer/maintenance", label: "Maintenance", icon: PowerOff },
     ],
   },

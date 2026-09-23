@@ -10,6 +10,3 @@ export const changePinSchema = z.object({
   newPin: z.string().regex(/^\d{4}$/, "The PIN must be exactly 4 digits"),
 });
 
-export const resetManagerPasswordSchema = z.object({
-  newPassword: z.string().max(128),
-});

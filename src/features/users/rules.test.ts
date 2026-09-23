@@ -48,15 +48,19 @@ describe("checkCreate", () => {
 });
 
 describe("checkResetPassword", () => {
-  it("allows the Owner to reset a Manager", () => {
-    expect(checkResetPassword(owner, account())).toBeNull();
+  it("refuses the Owner, even for a Manager", () => {
+    // The client's decision of 2026-09-23: setting somebody else's password is
+    // the developer's alone. The Owner used to be able to do this.
+    expect(checkResetPassword(owner, account())).toBe(
+      "That password is not yours to set. Ask whoever maintains the system.",
+    );
   });
 
-  it("sends you to Settings for your own password", () => {
-    // Doing it here would sign the person out mid-click.
-    expect(checkResetPassword(owner, account({ id: owner.id, role: "owner" }))).toBe(
-      "Change your own password in Settings, not here.",
-    );
+  it("does not tell the Owner that the developer role exists", () => {
+    // `visibleRoles` hides the role from them; an error message is a poor
+    // place to give it away again.
+    expect(checkResetPassword(owner, account())).not.toMatch(/developer/i);
+    expect(checkResetPassword(owner, account({ id: "u-dev", role: "developer" }))).not.toMatch(/developer/i);
   });
 
   it("sends the developer to the Passwords screen for their own", () => {
@@ -68,14 +72,12 @@ describe("checkResetPassword", () => {
     );
   });
 
-  it("refuses an Owner reaching a developer account", () => {
-    expect(checkResetPassword(owner, account({ id: "u-dev", role: "developer" }))).toBe(
-      "That account is not yours to manage.",
-    );
-  });
-
   it("lets the developer reset an Owner", () => {
     expect(checkResetPassword(developer, account({ id: "u-owner", role: "owner" }))).toBeNull();
+  });
+
+  it("lets the developer reset a Manager", () => {
+    expect(checkResetPassword(developer, account())).toBeNull();
   });
 });
 
