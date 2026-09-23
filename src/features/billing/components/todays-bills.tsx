@@ -3,6 +3,7 @@
 import { AlertCircle, Printer } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { DiscountNote } from "@/components/discount-note";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -89,23 +90,14 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
                   <td className="px-3.5 py-2.5 tabular-nums">
                     #{bill.billNo}
                     {bill.bookNo ? <span className="block text-[12.5px] text-muted-foreground">Book {bill.bookNo}</span> : null}
-                    {/*
-                      A discount does not show up anywhere else in this row —
-                      the line amounts and the cash are already net of it — so
-                      without this the counter cannot tell a discounted bill
-                      from a cheap one (P3.10). The reason is on hover.
-                    */}
-                    {bill.discount > 0 ? (
-                      <span
-                        title={bill.discountReason ?? "Discount given"}
-                        className="mt-0.5 inline-block rounded-full bg-warning-soft px-1.5 py-0.5 text-[11.5px] text-warning"
-                      >
-                        Disc {rs(bill.discount)}
-                      </span>
-                    ) : null}
                   </td>
                   <td className="px-3.5 py-2.5">{bill.customerName ?? "Walk-in"}</td>
-                  <td className="px-3.5 py-2.5">{bill.lines.map((line) => line.name).join(", ")}</td>
+                  <td className="px-3.5 py-2.5">
+                    {bill.lines.map((line) => line.name).join(", ")}
+                    {/* Nothing else in the row shows a discount: the cash is
+                        already net of it (P3.10). */}
+                    <DiscountNote amount={bill.discount} reason={bill.discountReason} className="mt-0.5 flex" />
+                  </td>
                   <td className="px-3.5 py-2.5 text-right tabular-nums">{rs(bill.cash)}</td>
                   <td className="px-3.5 py-2.5 text-right tabular-nums">{rs(bill.online)}</td>
                   <td className="px-3.5 py-2.5">

@@ -1043,7 +1043,7 @@ never as the source of any total.
 | `bills.discount` · `discount_reason` | migration `0016`, two `ADD COLUMN`s. Kept for the record, never used as the source of a total |
 | Receipt | *"Includes a discount of Rs 300 (1,100 before)"* under the total. The listed prices are already net, so the slip says it in words rather than printing a subtraction the lines would contradict |
 | Daily report | a **Discount given** card, shown only on a day that had one |
-| Today's bills | a **Disc Rs 300** chip under the bill number, with the reason on hover. Added 2026-09-23 on the client's word: nothing else in that row shows a discount, because the cash and the line amounts are already net of it, so a discounted bill looked like a cheap one |
+| Today's bills · Daily report | a quiet **Discount 300** line under the services, with the reason on hover, from one shared `components/discount-note.tsx` so the two tables cannot drift. The Daily report also strikes the pre-discount amount through above what was charged — **2,000 → 1,700**. Added 2026-09-23 on the client's word: nothing else in a row shows a discount, because the cash and the line amounts are already net of it, so a discounted bill looked like a cheap one. It was a yellow badge first and the client rejected it: badges in these tables mean *status*, and a discount is not a status |
 | Reversal bill | carries the negative discount, so a cancelled bill nets out in that column too |
 | Owner's edit (P1.4) | the draft carries the discount back, so re-opening a discounted bill does not quietly put the price up |
 | Developer's edit (P1.6) | shows what the discount was and says the line amounts already carry it |

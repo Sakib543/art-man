@@ -1,3 +1,4 @@
+import { DiscountNote } from "@/components/discount-note";
 import { Badge } from "@/components/ui/badge";
 import type { DayBill } from "@/db/queries/day-bills";
 import { formatTime, num } from "@/lib/format";
@@ -52,6 +53,7 @@ export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCanc
                       {line.name} <Badge className="ml-1 bg-secondary text-muted-foreground">{line.staffName}</Badge>
                     </p>
                   ))}
+                  <DiscountNote amount={bill.discount} reason={bill.discountReason} className="mt-1 flex" />
                   {bill.status === "cancelled" && bill.cancelReason ? (
                     <p className="mt-1 text-[12.5px] text-muted-foreground">Reason: {bill.cancelReason}</p>
                   ) : null}
@@ -69,6 +71,13 @@ export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCanc
                   {bill.online !== 0 ? <p>Online {num(bill.online)}</p> : null}
                 </td>
                 <td className={cn(td, "text-right font-medium tabular-nums", bill.total < 0 && "text-destructive")}>
+                  {/* What the services came to before the discount, struck
+                      through above what was actually charged (P3.10). */}
+                  {bill.discount > 0 ? (
+                    <p className="text-[12.5px] font-normal text-muted-foreground line-through">
+                      {num(bill.total + bill.discount)}
+                    </p>
+                  ) : null}
                   {num(bill.total)}
                 </td>
                 <td className={cn(td, "text-right")}>
