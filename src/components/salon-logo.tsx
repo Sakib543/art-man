@@ -53,16 +53,7 @@ export function BrandLockup({ onDark = false, compact = false }: { onDark?: bool
   return (
     <div className="flex min-w-0 flex-col items-start gap-1">
       <SalonLogo onDark={onDark} priority className={compact ? "h-9" : "h-21"} />
-      {compact ? null : (
-        <p
-          className={cn(
-            "text-2xs font-medium tracking-[0.14em] uppercase",
-            onDark ? "text-sidebar-heading" : "text-muted-foreground",
-          )}
-        >
-          POS &amp; Accounts
-        </p>
-      )}
+      
     </div>
   );
 }
