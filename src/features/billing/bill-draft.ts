@@ -11,6 +11,8 @@ export interface SavedBillLine {
   serviceId: string | null;
   dealId: string | null;
   staffId: string;
+  /** What this line was charged. It is what a price range re-opens on (P3.11). */
+  amount: number;
 }
 
 /**
@@ -27,7 +29,19 @@ export function draftLinesOf(saved: SavedBillLine[]): CartLine[] {
     if (!line.serviceId) return [];
 
     if (!line.dealId) {
-      return [{ key: `line-${index}`, serviceId: line.serviceId, staffId: line.staffId, dealId: null, dealInstanceId: null }];
+      // The amount comes back as it was charged, so re-opening a bill whose
+      // service has a price range does not quietly reprice it (P3.11). For a
+      // fixed price `priceCart` ignores it.
+      return [
+        {
+          key: `line-${index}`,
+          serviceId: line.serviceId,
+          staffId: line.staffId,
+          dealId: null,
+          dealInstanceId: null,
+          amount: line.amount,
+        },
+      ];
     }
 
     const slot = `${line.dealId}:${line.serviceId}`;
@@ -42,6 +56,8 @@ export function draftLinesOf(saved: SavedBillLine[]): CartLine[] {
         staffId: line.staffId,
         dealId: line.dealId,
         dealInstanceId,
+        // A deal's price is split by the deal, never chosen line by line.
+        amount: null,
       },
     ];
   });

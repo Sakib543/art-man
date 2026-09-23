@@ -10,9 +10,9 @@ import {
 
 const catalog: PricingCatalog = {
   services: {
-    hc: { id: "hc", name: "Haircut", price: 800 },
-    bd: { id: "bd", name: "Beard trim", price: 400 },
-    fc: { id: "fc", name: "Facial", price: 1800 },
+    hc: { id: "hc", name: "Haircut", price: 800, maxPrice: null },
+    bd: { id: "bd", name: "Beard trim", price: 400, maxPrice: null },
+    fc: { id: "fc", name: "Facial", price: 1800, maxPrice: null },
   },
   deals: { vip: { id: "vip", name: "VIP deal", price: 2000, serviceIds: ["hc", "bd", "fc"] } },
   specialRates: {},
@@ -161,5 +161,76 @@ describe("priceCart with a discount (P3.10)", () => {
     const { total } = priceCart([single("hc"), single("bd")], catalog, 200);
     expect(checkPayment(total, 1000, 0).ok).toBe(true);
     expect(checkPayment(total, 1200, 0).ok).toBe(false);
+  });
+});
+
+/** A service priced "300 - 500" on the salon's printed list (P3.11). */
+describe("priceCart with a price range", () => {
+  const ranged: PricingCatalog = {
+    services: {
+      fade: { id: "fade", name: "Hair cut (fades)", price: 300, maxPrice: 500 },
+      shave: { id: "shave", name: "Shave / trim", price: 150, maxPrice: null },
+    },
+    deals: { combo: { id: "combo", name: "Combo", price: 400, serviceIds: ["fade", "shave"] } },
+    specialRates: {},
+  };
+  const pick = (serviceId: string, amount: number | null): CartLineInput => ({
+    serviceId,
+    staffId: "s1",
+    dealId: null,
+    dealInstanceId: null,
+    amount,
+  });
+
+  it("charges what the counter chose inside the range", () => {
+    const { lines, total } = priceCart([pick("fade", 450)], ranged);
+    expect(lines[0].amount).toBe(450);
+    expect(lines[0].note).toBe("chosen");
+    expect(total).toBe(450);
+  });
+
+  it("charges the bottom of the range when nothing was chosen yet", () => {
+    expect(priceCart([pick("fade", null)], ranged).total).toBe(300);
+  });
+
+  it("allows both ends of the range", () => {
+    expect(priceCart([pick("fade", 300)], ranged).total).toBe(300);
+    expect(priceCart([pick("fade", 500)], ranged).total).toBe(500);
+  });
+
+  it("refuses anything outside it, and says the range", () => {
+    expect(() => priceCart([pick("fade", 250)], ranged)).toThrow(/between Rs 300 and Rs 500/);
+    expect(() => priceCart([pick("fade", 501)], ranged)).toThrow(PricingError);
+    expect(() => priceCart([pick("fade", 400.5)], ranged)).toThrow(PricingError);
+  });
+
+  it("ignores an amount sent for a service that has one fixed price", () => {
+    // The browser may send anything; a fixed price is the catalog's to decide.
+    expect(priceCart([pick("shave", 5000)], ranged).total).toBe(150);
+  });
+
+  it("a special rate beats the range", () => {
+    const withRate = { ...ranged, specialRates: { fade: 200 } };
+    const { lines } = priceCart([pick("fade", 500)], withRate);
+    expect(lines[0]).toMatchObject({ amount: 200, note: "special-rate" });
+  });
+
+  it("a deal ignores the choice, because the deal's own price is what is paid", () => {
+    const dealLines: CartLineInput[] = ["fade", "shave"].map((serviceId) => ({
+      serviceId,
+      staffId: "s1",
+      dealId: "combo",
+      dealInstanceId: "d1",
+      amount: 500,
+    }));
+    const { lines, total } = priceCart(dealLines, ranged);
+    expect(total).toBe(400);
+    expect(lines.every((l) => l.note === "deal-share")).toBe(true);
+  });
+
+  it("works with a discount on top", () => {
+    const { subtotal, total } = priceCart([pick("fade", 500)], ranged, 100);
+    expect(subtotal).toBe(500);
+    expect(total).toBe(400);
   });
 });

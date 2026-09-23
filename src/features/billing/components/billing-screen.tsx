@@ -54,13 +54,16 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
 
   const catalog = useMemo(
     () => ({
-      services: Object.fromEntries(data.services.map((s) => [s.id, { id: s.id, name: s.name, price: s.price }])),
+      services: Object.fromEntries(data.services.map((s) => [s.id, { id: s.id, name: s.name, price: s.price, maxPrice: s.maxPrice }])),
       deals: Object.fromEntries(data.deals.map((d) => [d.id, d])),
       specialRates,
     }),
     [data, specialRates],
   );
   const dealsById = catalog.deals;
+  // The cart needs the full service, not the pricing one: a line with a range
+  // shows its two ends under the name (P3.11).
+  const servicesById = useMemo(() => Object.fromEntries(data.services.map((s) => [s.id, s])), [data.services]);
 
   const discount = toRupees(discountText);
 
@@ -73,27 +76,31 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
    * message from the failed attempt is shown beside the field. Blanking the
    * whole bill because one number is too big would be a worse screen.
    */
-  const { priced, subtotal, total, discountProblem } = useMemo(() => {
+  const { priced, subtotal, total, discountProblem, priceProblem } = useMemo(() => {
+    const nothing = { priced: [] as PricedLine[], subtotal: 0, total: 0, discountProblem: "" };
     let gross;
     try {
       gross = priceCart(cart, catalog);
-    } catch {
-      return { priced: [] as PricedLine[], subtotal: 0, total: 0, discountProblem: "" };
+    } catch (error) {
+      // An amount typed outside its range lands here (P3.11). Saying so beats
+      // showing a total of Rs 0 with no explanation.
+      return { ...nothing, priceProblem: error instanceof PricingError ? error.message : "" };
     }
 
     if (discount === 0) {
-      return { priced: gross.lines, subtotal: gross.subtotal, total: gross.total, discountProblem: "" };
+      return { priced: gross.lines, subtotal: gross.subtotal, total: gross.total, discountProblem: "", priceProblem: "" };
     }
 
     try {
       const net = priceCart(cart, catalog, discount);
-      return { priced: net.lines, subtotal: net.subtotal, total: net.total, discountProblem: "" };
+      return { priced: net.lines, subtotal: net.subtotal, total: net.total, discountProblem: "", priceProblem: "" };
     } catch (error) {
       return {
         priced: gross.lines,
         subtotal: gross.subtotal,
         total: gross.total,
         discountProblem: error instanceof PricingError ? error.message : "That discount cannot be applied",
+        priceProblem: "",
       };
     }
   }, [cart, catalog, discount]);
@@ -107,6 +114,7 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
     if (cart.some((line) => !line.staffId)) return setError("Choose a staff member for every service");
     if (customer.status === "new" && !customer.name.trim()) return setError("Enter the customer's name");
     if (editing && reason.trim().length < 3) return setError("Write what was wrong with the bill");
+    if (priceProblem) return setError(priceProblem);
     if (discountProblem) return setError(discountProblem);
     if (discount > 0 && discountReason.trim().length < 3) return setError("Say why the discount is being given");
     if (!payment.ok) {
@@ -118,11 +126,13 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
     }
 
     const bill = {
-      lines: cart.map(({ serviceId, staffId, dealId, dealInstanceId }) => ({
+      lines: cart.map(({ serviceId, staffId, dealId, dealInstanceId, amount }) => ({
         serviceId,
         staffId,
         dealId,
         dealInstanceId,
+        // Checked against the range on the server; never taken on trust (P3.11).
+        amount,
       })),
       customer:
         customer.status === "found"
@@ -214,12 +224,20 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
             priced={priced}
             staff={data.staff}
             dealsById={dealsById}
+            servicesById={servicesById}
+            specialRates={specialRates}
             onStaff={(key, staffId) => dispatch({ type: "setStaff", key, staffId })}
+            onAmount={(key, amount) => dispatch({ type: "setAmount", key, amount })}
             onAllStaff={(staffId) => dispatch({ type: "setAllStaff", staffId })}
             onRemove={(key) => dispatch({ type: "remove", key })}
           />
 
           <div className="border-t px-[18px] py-4">
+            {priceProblem ? (
+              <p role="alert" className="mb-1.5 text-[12.5px] text-destructive">
+                {priceProblem}
+              </p>
+            ) : null}
             <div className="flex justify-between py-1 text-muted-foreground">
               <span>Items</span>
               <span className="tabular-nums">{cart.length}</span>

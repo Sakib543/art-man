@@ -34,7 +34,7 @@ export async function getBillingData(): Promise<BillingData | null> {
   return {
     businessDate: day.businessDate,
     nextBillNo: Number(next),
-    services: serviceRows.map(({ id, name, category, price, minutes }) => ({ id, name, category, price, minutes })),
+    services: serviceRows.map(({ id, name, category, price, maxPrice, minutes }) => ({ id, name, category, price, maxPrice, minutes })),
     // A deal is only offered while every one of its services is active.
     deals: dealRows
       .map(({ id, name, price }) => ({
@@ -129,7 +129,12 @@ export async function getBillForEdit(billId: string, data: BillingData): Promise
   if (cancelled) return { ok: false, reason: `Bill #${bill.billNo} is already cancelled.` };
 
   const saved = await db
-    .select({ serviceId: billLines.serviceId, dealId: billLines.dealId, staffId: billLines.staffId })
+    .select({
+      serviceId: billLines.serviceId,
+      dealId: billLines.dealId,
+      staffId: billLines.staffId,
+      amount: billLines.amount,
+    })
     .from(billLines)
     .where(eq(billLines.billId, bill.id));
 
@@ -141,7 +146,7 @@ export async function getBillForEdit(billId: string, data: BillingData): Promise
   // screen open with a total of 0 and no explanation.
   try {
     priceCart(lines, {
-      services: Object.fromEntries(data.services.map((s) => [s.id, { id: s.id, name: s.name, price: s.price }])),
+      services: Object.fromEntries(data.services.map((s) => [s.id, { id: s.id, name: s.name, price: s.price, maxPrice: s.maxPrice }])),
       deals: Object.fromEntries(data.deals.map((d) => [d.id, d])),
       specialRates: customer?.specialRates ?? {},
     });

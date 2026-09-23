@@ -7,7 +7,7 @@ const add = (lines: CartLine[], key: string, serviceId: string) =>
 describe("cartReducer", () => {
   it("adds a service with no staff chosen", () => {
     const lines = add([], "a", "hc");
-    expect(lines).toEqual([{ key: "a", serviceId: "hc", staffId: null, dealId: null, dealInstanceId: null }]);
+    expect(lines).toEqual([{ key: "a", serviceId: "hc", staffId: null, dealId: null, dealInstanceId: null, amount: null }]);
   });
 
   it("adds every service of a deal as one group", () => {
@@ -48,5 +48,29 @@ describe("commonStaff", () => {
     expect(commonStaff(base)).toBeNull();
     expect(commonStaff(cartReducer(base, { type: "setAllStaff", staffId: "s1" }))).toBe("s1");
     expect(commonStaff(cartReducer(base, { type: "setStaff", key: "a", staffId: "s1" }))).toBeNull();
+  });
+});
+
+describe("choosing an amount inside a price range (P3.11)", () => {
+  it("remembers what was typed against that line only", () => {
+    const lines = cartReducer(add([], "a", "fade"), { type: "addService", key: "b", serviceId: "shave" });
+    const after = cartReducer(lines, { type: "setAmount", key: "a", amount: 450 });
+
+    expect(after.map((l) => l.amount)).toEqual([450, null]);
+  });
+
+  it("clearing the box goes back to nothing chosen, which prices at the bottom of the range", () => {
+    const after = cartReducer(cartReducer(add([], "a", "fade"), { type: "setAmount", key: "a", amount: 450 }), {
+      type: "setAmount",
+      key: "a",
+      amount: null,
+    });
+
+    expect(after[0].amount).toBeNull();
+  });
+
+  it("ignores a key that is not in the cart", () => {
+    const lines = add([], "a", "fade");
+    expect(cartReducer(lines, { type: "setAmount", key: "gone", amount: 999 })).toEqual(lines);
   });
 });

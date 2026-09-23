@@ -28,6 +28,7 @@ export async function getServiceList(): Promise<ServiceRow[]> {
       name: services.name,
       category: services.category,
       price: services.price,
+      maxPrice: services.maxPrice,
       minutes: services.minutes,
       active: services.active,
     })

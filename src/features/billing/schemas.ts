@@ -32,6 +32,13 @@ export const createBillSchema = z
           staffId: z.uuid({ error: "Choose a staff member for every service" }),
           dealId: z.uuid().nullable(),
           dealInstanceId: z.string().min(1).max(64).nullable(),
+          /**
+           * What the counter chose for a service that has a price range
+           * (P3.11). `priceCart` is what checks it against the range, and
+           * ignores it entirely for a fixed price, a deal share or a special
+           * rate — an amount from the browser is never taken on trust.
+           */
+          amount: rupees.nullish().transform((value) => value ?? null),
         }),
       )
       .min(1, "Add a service or deal to start the bill")

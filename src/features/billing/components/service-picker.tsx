@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { rs } from "@/lib/format";
+import { priceRange, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CatalogDeal, CatalogService } from "../types";
 
@@ -88,7 +88,7 @@ export function ServicePicker({ services, deals, specialRates, onAddService, onA
                 {service.minutes ? `, ${service.minutes} min` : ""}
               </span>
               <span className="flex items-center justify-between">
-                <b className="text-[15px] font-semibold tabular-nums">{rs(special ?? service.price)}</b>
+                <b className="text-[15px] font-semibold tabular-nums">{special === undefined ? priceRange(service.price, service.maxPrice) : rs(special)}</b>
                 {special !== undefined ? <Badge className="bg-brass-soft text-brass-strong">Special rate</Badge> : null}
               </span>
             </button>

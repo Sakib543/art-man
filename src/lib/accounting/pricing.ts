@@ -11,7 +11,10 @@ import type { Rupees } from "./types";
 export interface PricingService {
   id: string;
   name: string;
+  /** The price, or the bottom of the range when `maxPrice` is set (P3.11). */
   price: Rupees;
+  /** The top of the range, or null for one fixed price. */
+  maxPrice: Rupees | null;
 }
 
 export interface PricingDeal {
@@ -27,9 +30,16 @@ export interface CartLineInput {
   /** Set when the line came from a deal. All lines of one deal share `dealInstanceId`. */
   dealId: string | null;
   dealInstanceId: string | null;
+  /**
+   * What the counter chose to charge for this line (P3.11). It is read **only**
+   * for a service that has a price range and is not part of a deal and has no
+   * special rate — everywhere else the price is the catalog's to decide, and a
+   * figure sent by the browser is ignored rather than trusted.
+   */
+  amount?: Rupees | null;
 }
 
-export type PriceNote = "special-rate" | "deal-share" | null;
+export type PriceNote = "special-rate" | "deal-share" | "chosen" | null;
 
 export interface PricedLine extends CartLineInput {
   name: string;
@@ -93,6 +103,9 @@ export function priceCart(
       throw new PricingError(`${deal.name} is missing services or has extra ones`);
     }
 
+    // The bottom of a range is the list price for splitting a deal: the deal's
+    // own price is what the customer pays, so there is nothing to choose, and
+    // the split only decides how it is shared between the services (P3.11).
     const listPrices = deal.serviceIds.map((id) => {
       const service = catalog.services[id];
       if (!service) throw new PricingError("Deal service not found");
@@ -111,10 +124,22 @@ export function priceCart(
       return { ...line, name: service.name, amount: share, note: "deal-share" };
     }
 
+    // A price the Owner fixed for this customer beats the list and the range
+    // alike: the counter chooses inside a range, never around a special rate.
     const special = catalog.specialRates[line.serviceId];
-    return special === undefined
-      ? { ...line, name: service.name, amount: service.price, note: null }
-      : { ...line, name: service.name, amount: special, note: "special-rate" };
+    if (special !== undefined) return { ...line, name: service.name, amount: special, note: "special-rate" };
+
+    if (service.maxPrice === null) return { ...line, name: service.name, amount: service.price, note: null };
+
+    // A range (P3.11). No choice made yet reads as the bottom of it, which is
+    // also what the screen shows the moment the service is added.
+    const chosen = line.amount ?? service.price;
+    if (!Number.isInteger(chosen) || chosen < service.price || chosen > service.maxPrice) {
+      throw new PricingError(
+        `${service.name} must be between Rs ${service.price} and Rs ${service.maxPrice}`,
+      );
+    }
+    return { ...line, name: service.name, amount: chosen, note: "chosen" };
   });
 
   const subtotal = priced.reduce((sum, line) => sum + line.amount, 0);

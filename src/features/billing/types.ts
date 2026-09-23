@@ -7,7 +7,10 @@ export interface CatalogService {
   id: string;
   name: string;
   category: string;
+  /** The price, or the bottom of the range when `maxPrice` is set (P3.11). */
   price: Rupees;
+  /** The top of the range, or null for one fixed price. */
+  maxPrice: Rupees | null;
   minutes: number | null;
 }
 

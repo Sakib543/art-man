@@ -60,6 +60,7 @@ export async function saveService(user: SessionUser, input: ServiceInput): Promi
     name: input.name,
     category: input.category,
     price: input.price,
+    maxPrice: input.maxPrice,
     minutes: input.minutes,
     active: input.active,
   };

@@ -29,7 +29,12 @@ import { UserError } from "@/lib/errors";
 import type { CreateBillInput, EditBillInput } from "./schemas";
 import type { Receipt } from "./types";
 
-const NOTE_TEXT = { "special-rate": "Special rate", "deal-share": "Deal share" } as const;
+const NOTE_TEXT: Record<string, string | undefined> = {
+  "special-rate": "Special rate",
+  "deal-share": "Deal share",
+  // "chosen" says nothing useful: the amount box beside it already shows that
+  // the counter picked a figure, and the range is written under it (P3.11).
+};
 
 const actorOf = (user: SessionUser) => user.username || user.name;
 
@@ -91,7 +96,7 @@ async function priceBill(input: CreateBillInput): Promise<PricedBill> {
   }
 
   const catalog: PricingCatalog = {
-    services: Object.fromEntries(serviceRows.map((row) => [row.id, { id: row.id, name: row.name, price: row.price }])),
+    services: Object.fromEntries(serviceRows.map((row) => [row.id, { id: row.id, name: row.name, price: row.price, maxPrice: row.maxPrice }])),
     deals: Object.fromEntries(
       dealRows.map((row) => [
         row.id,
@@ -195,7 +200,7 @@ function receiptOf(bill: typeof bills.$inferSelect, priced: PricedBill, input: C
       name: line.name,
       amount: line.amount,
       staffName: priced.staffName.get(line.staffId!) ?? "",
-      note: line.note ? NOTE_TEXT[line.note] : null,
+      note: (line.note ? NOTE_TEXT[line.note] : null) ?? null,
     })),
     subtotal: priced.subtotal,
     discount: priced.discount,

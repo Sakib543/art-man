@@ -13,14 +13,27 @@ export const staffSchema = z.object({
   active: z.boolean(),
 });
 
-export const serviceSchema = z.object({
-  id: z.uuid().optional(),
-  name: z.string().trim().min(1, "Enter a name").max(60),
-  category: z.string().trim().min(1, "Enter a category").max(40),
-  price: rupees,
-  minutes: z.number().int().min(1).max(600).nullable(),
-  active: z.boolean(),
-});
+export const serviceSchema = z
+  .object({
+    id: z.uuid().optional(),
+    name: z.string().trim().min(1, "Enter a name").max(60),
+    category: z.string().trim().min(1, "Enter a category").max(40),
+    /** The price, or the bottom of the range when `maxPrice` is given (P3.11). */
+    price: rupees,
+    /**
+     * The top of the range. Blank means one fixed price, which is what most
+     * of the printed list's simpler services are.
+     */
+    maxPrice: rupees.nullish().transform((value) => value ?? null),
+    minutes: z.number().int().min(1).max(600).nullable(),
+    active: z.boolean(),
+  })
+  // "300 - 500", never "500 - 300" and never "400 - 400": a range that is not
+  // a range would give the counter a box with nothing to decide.
+  .refine((service) => service.maxPrice === null || service.maxPrice > service.price, {
+    path: ["maxPrice"],
+    error: "The highest price must be more than the lowest",
+  });
 
 export const dealSchema = z.object({
   id: z.uuid().optional(),

@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { priceCart } from "@/lib/accounting";
 import { draftLinesOf, payModeOf, type SavedBillLine } from "./bill-draft";
 
-const line = (serviceId: string | null, dealId: string | null, staffId = "sherry"): SavedBillLine => ({
+const line = (serviceId: string | null, dealId: string | null, staffId = "sherry", amount = 0): SavedBillLine => ({
   serviceId,
   dealId,
   staffId,
+  amount,
 });
 
 describe("draftLinesOf", () => {
@@ -54,8 +55,8 @@ describe("draftLinesOf", () => {
 
     const { total } = priceCart(lines, {
       services: {
-        haircut: { id: "haircut", name: "Haircut", price: 800 },
-        shave: { id: "shave", name: "Shave", price: 400 },
+        haircut: { id: "haircut", name: "Haircut", price: 800, maxPrice: null },
+        shave: { id: "shave", name: "Shave", price: 400, maxPrice: null },
       },
       deals: { combo: { id: "combo", name: "Combo", price: 1000, serviceIds: ["haircut", "shave"] } },
       specialRates: {},
@@ -89,5 +90,19 @@ describe("payModeOf", () => {
 
   it("treats a bill of nothing as cash, the everyday default", () => {
     expect(payModeOf(0, 0)).toBe("cash");
+  });
+});
+
+describe("draftLinesOf and a price range (P3.11)", () => {
+  it("re-opens a line on what it was charged, not on the bottom of the range", () => {
+    const lines = draftLinesOf([line("fade", null, "sherry", 450)]);
+
+    expect(lines[0].amount).toBe(450);
+  });
+
+  it("leaves a deal's lines with nothing chosen, because the deal decides the price", () => {
+    const lines = draftLinesOf([line("haircut", "vip", "sherry", 900), line("shave", "vip", "sherry", 300)]);
+
+    expect(lines.every((l) => l.amount === null)).toBe(true);
   });
 });

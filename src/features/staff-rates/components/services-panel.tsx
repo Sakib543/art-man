@@ -35,7 +35,9 @@ export function ServicesPanel({ services }: { services: ServiceRow[] }) {
               <tr key={service.id} className={cn("border-b last:border-b-0", !service.active && "text-muted-foreground")}>
                 <td className={cn(td, "font-medium")}>{service.name}</td>
                 <td className={td}>{service.category}</td>
-                <td className={cn(td, "text-right tabular-nums")}>{num(service.price)}</td>
+                <td className={cn(td, "text-right tabular-nums")}>
+                  {service.maxPrice === null ? num(service.price) : `${num(service.price)} – ${num(service.maxPrice)}`}
+                </td>
                 <td className={cn(td, "text-right tabular-nums")}>{service.minutes ?? "-"}</td>
                 <td className={td}>
                   <ActiveBadge active={service.active} />

@@ -19,6 +19,9 @@ export function ServiceForm({ service, categories, open, onClose }: ServiceFormP
   const [name, setName] = useState(service?.name ?? "");
   const [category, setCategory] = useState(service?.category ?? "");
   const [price, setPrice] = useState(String(service?.price ?? ""));
+  // Blank means one fixed price, which is how every service behaved before
+  // the printed list's ranges were supported (P3.11).
+  const [maxPrice, setMaxPrice] = useState(service?.maxPrice ? String(service.maxPrice) : "");
   const [minutes, setMinutes] = useState(service?.minutes ? String(service.minutes) : "");
   const [active, setActive] = useState(service?.active ?? true);
 
@@ -36,6 +39,7 @@ export function ServiceForm({ service, categories, open, onClose }: ServiceFormP
           name,
           category,
           price: Number(price) || 0,
+          maxPrice: maxPrice.trim() === "" ? null : Number(maxPrice) || 0,
           minutes: minutes ? Number(minutes) : null,
           active,
         })
@@ -61,7 +65,10 @@ export function ServiceForm({ service, categories, open, onClose }: ServiceFormP
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Price (Rs)" htmlFor="service-price">
+        <Field
+          label={maxPrice.trim() === "" ? "Price (Rs)" : "Lowest price (Rs)"}
+          htmlFor="service-price"
+        >
           <Input
             id="service-price"
             type="number"
@@ -70,6 +77,25 @@ export function ServiceForm({ service, categories, open, onClose }: ServiceFormP
             inputMode="numeric"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
+            className="h-10 tabular-nums"
+          />
+        </Field>
+        {/* The printed list gives most services a range — "300 - 500" — and the
+            counter picks inside it when the bill is made (P3.11). */}
+        <Field
+          label="Highest price (Rs)"
+          htmlFor="service-max-price"
+          hint="Leave blank for one fixed price."
+        >
+          <Input
+            id="service-max-price"
+            type="number"
+            min={0}
+            step={1}
+            inputMode="numeric"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            placeholder="e.g. 500"
             className="h-10 tabular-nums"
           />
         </Field>

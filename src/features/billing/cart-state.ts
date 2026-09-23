@@ -10,10 +10,17 @@ export interface CartLine {
   staffId: string | null;
   dealId: string | null;
   dealInstanceId: string | null;
+  /**
+   * What the counter chose for a service with a price range (P3.11). Null
+   * until they type something, which `priceCart` reads as the bottom of the
+   * range — the figure the screen is already showing.
+   */
+  amount: number | null;
 }
 
 export type CartAction =
   | { type: "addService"; key: string; serviceId: string }
+  | { type: "setAmount"; key: string; amount: number | null }
   | { type: "addDeal"; instanceId: string; dealId: string; serviceIds: string[] }
   | { type: "remove"; key: string }
   | { type: "setStaff"; key: string; staffId: string | null }
@@ -25,7 +32,7 @@ export function cartReducer(lines: CartLine[], action: CartAction): CartLine[] {
     case "addService":
       return [
         ...lines,
-        { key: action.key, serviceId: action.serviceId, staffId: null, dealId: null, dealInstanceId: null },
+        { key: action.key, serviceId: action.serviceId, staffId: null, dealId: null, dealInstanceId: null, amount: null },
       ];
 
     case "addDeal":
@@ -37,6 +44,8 @@ export function cartReducer(lines: CartLine[], action: CartAction): CartLine[] {
           staffId: null,
           dealId: action.dealId,
           dealInstanceId: action.instanceId,
+          // A deal's price is the deal's own; there is nothing to choose.
+          amount: null,
         })),
       ];
 
@@ -48,6 +57,9 @@ export function cartReducer(lines: CartLine[], action: CartAction): CartLine[] {
         ? lines.filter((line) => line.dealInstanceId !== target.dealInstanceId)
         : lines.filter((line) => line.key !== action.key);
     }
+
+    case "setAmount":
+      return lines.map((line) => (line.key === action.key ? { ...line, amount: action.amount } : line));
 
     case "setStaff":
       return lines.map((line) => (line.key === action.key ? { ...line, staffId: action.staffId } : line));

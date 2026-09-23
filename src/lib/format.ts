@@ -7,6 +7,15 @@ export function rs(amount: number): string {
 /** Plain number with thousands separators, for table columns. */
 export const num = (amount: number): string => amount.toLocaleString("en-US");
 
+/**
+ * A service's price, or its range when it has one: "Rs 800" or "Rs 300 – 500"
+ * (backlog P3.11). One function, so the billing tiles, the cart and the Staff
+ * and rates list all write a range the same way.
+ */
+export function priceRange(price: number, maxPrice: number | null): string {
+  return maxPrice === null || maxPrice <= price ? rs(price) : `${rs(price)} – ${num(maxPrice)}`;
+}
+
 /** "14:30" in Karachi time. The zone is fixed so server and browser always agree. */
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", {

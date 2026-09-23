@@ -36,7 +36,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
 | P3.4 | Next-month adjustment for a closed month | ⬜ | — |
 | P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
-| P3.11 | Price ranges: pick the amount at billing | ⬜ | Sakib, 2026-09-23 |
+| P3.11 | Price ranges: pick the amount at billing | ✅ | done 2026-09-23 |
 | P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore has never been run |
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
@@ -1005,8 +1005,8 @@ with the Vercel/VPS question.
 
 ---
 
-### ⬜ P3.11 — A service can have a price range *(client asked for it 2026-09-23)*
-**Owner:** Sakib, 2026-09-23
+### ✅ P3.11 — A service can have a price range *(client asked for it 2026-09-23)*
+**Done:** 2026-09-23
 
 The salon's real printed price list has a **range** against most services, not
 one price. From the photo the client sent:
@@ -1029,7 +1029,39 @@ price this salon's own list.
 inside it. A customer's special rate still wins over both, because that is a
 price the Owner fixed for that person.
 
-**Size:** medium
+**What was built:**
+
+| Where | What |
+|---|---|
+| `services.max_price` | migration `0017`, one `ADD COLUMN`. Null keeps today's behaviour exactly: one fixed price |
+| Staff & rates | the service form's price field becomes **Lowest price** as soon as a **Highest price** is typed; blank means one fixed price. The list shows `300 – 500` |
+| Billing tiles | `Rs 300 – 500` instead of one figure |
+| The cart line | an **amount box** with the range under the service's name, `min`/`max` set, and the bottom of the range as the placeholder |
+| `priceCart` | the one place that decides. An amount outside the range is refused by name — *"Hair cut (fades) must be between Rs 300 and Rs 500"* — and an amount sent for a fixed-price service, a deal line or a special rate is **ignored**, never trusted |
+| Re-opening a bill (P1.4) | the line comes back on what it was charged, not on the bottom of the range |
+| A deal | splits on the bottom of the range, because the deal's own price is what is paid and there is nothing to choose |
+
+**Nothing downstream changed.** Commission, the khata, the day's sale and the
+month's profit are all built from the line amounts, and the chosen amount *is*
+the line amount.
+
+**Two real defects were found by using it, not by reading it:**
+
+1. Typing an amount outside the range made `priceCart` throw, which left every
+   priced line undefined — and **the amount box vanished**, so the number that
+   caused the problem could not be corrected. The box now comes from the
+   service and the customer's rates, never from the priced line.
+2. In the same state **the service's name disappeared** from the row, leaving a
+   blank line. It now falls back to the catalog's name.
+
+**Verified in the browser** against the dev database, with the salon's own
+figures from the client's photo: Haircut was set to **300 – 500** in Staff &
+rates; the billing tile read `Rs 300 – 500`; a fresh line priced at **300** with
+nothing chosen; **450** gave a total of Rs 450; **600** showed *"must be between
+Rs 300 and Rs 500"* while keeping the box, its value and the line's name; and
+**bill #23** saved with a line of exactly **450**.
+
+**Size:** medium · **Value:** high (the app could not price this salon's own list)
 
 ---
 

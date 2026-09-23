@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime } from "./format";
+import { formatDateTime, priceRange } from "./format";
 
 describe("formatDateTime", () => {
   it("reads the date and time in Karachi, whatever the server's zone", () => {
@@ -14,5 +14,25 @@ describe("formatDateTime", () => {
 
   it("takes an ISO string as well as a Date", () => {
     expect(formatDateTime("2026-01-05T06:05:00Z")).toBe("5 Jan 2026, 11:05");
+  });
+});
+
+describe("priceRange", () => {
+  it("shows one price when there is no range", () => {
+    expect(priceRange(800, null)).toBe("Rs 800");
+  });
+
+  it("shows both ends when there is", () => {
+    expect(priceRange(300, 500)).toBe("Rs 300 – 500");
+  });
+
+  it("separates thousands at both ends", () => {
+    expect(priceRange(3000, 9000)).toBe("Rs 3,000 – 9,000");
+  });
+
+  it("falls back to one price if the top is not above the bottom", () => {
+    // The form refuses this, but a screen must never print "Rs 500 – 500".
+    expect(priceRange(500, 500)).toBe("Rs 500");
+    expect(priceRange(500, 400)).toBe("Rs 500");
   });
 });

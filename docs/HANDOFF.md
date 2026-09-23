@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (328 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (345 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -139,8 +139,8 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — **25 routes** (2026-09-23), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **328 passed** (31 files), 2026-09-23 |
-| Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0016`** (P3.10 added the discount columns on 2026-09-23) |
+| `pnpm test` | **345 passed** (31 files), 2026-09-23 |
+| Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0017`** (P3.10's discount columns and P3.11's `services.max_price`, both 2026-09-23) |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
@@ -235,6 +235,10 @@ Khata balances are no longer 0: Arshad +30 (earned, not paid), Sherry −10 (pai
 she ended up earning, which is the correct result of the edits). Three `bill.developer-edit` rows
 are in `audit_log`. None of it is real data — reopen or reseed freely.
 
+**Haircut is now priced 300 – 500** in the dev data (it was a flat Rs 800),
+set while verifying P3.11 against the client's own price list. Bill #23 is the
+first bill priced inside a range: one Haircut line at **450**.
+
 **Two bills carry a discount** — #20 (Rs 300, "Regular customer") and #22
 (Rs 300, "regular"), the second rung up by the user themselves while trying the
 feature out. Today's bills marks both with a **Disc Rs 300** chip.
@@ -286,6 +290,7 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 |---|---|
 | **Manager's limit** | View-only on past daily reports; cannot edit. Only the Owner can. **Already works this way** — no change needed. |
 | **Discount at the counter** | **Reversed on 2026-09-23.** Spec §10.4 and the 2026-09-22 Q&A both say the Manager may not give discretionary discounts. The client asked for an open discount field usable by **the Manager or the Owner**, was told it contradicts the spec, and kept the request. Built as P3.10. Two decisions taken with it: **commission is charged on the discounted amount** (spec §10.1 — the karigar shares the discount), and the field is **whole rupees on the whole bill**, not a percentage and not per line. A reason is required, which is the control that replaces the rule. |
+| **A service may have a price range** | **2026-09-23.** The salon's printed list gives most services a range — "300 - 500" — and what is charged depends on what was done, so the counter chooses inside it when the bill is made (P3.11). The range is the Owner's decision, which is what keeps spec §10.4 intact; a customer's special rate still beats it. |
 | **Staff receipt and the cancellation alert** | **Dropped for now (2026-09-23)** — the client dropped the SMS/WhatsApp side. P3.3 and P3.5 stay in the backlog, unscheduled. |
 | **Staff (karigar) PIN** | **Removed from the whole project** (P1.0, done 2026-09-22). No replacement confirmation wanted. |
 | **Owner PIN** | **Kept.** They were two different columns: `staff.pin_hash` (dropped), `user.pin_hash` (still there). |
@@ -423,6 +428,10 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A discount can never take a line below zero | each share is at most its own line, because the discount is refused unless it is **less than** the subtotal. A bill cannot be given away, which also keeps `checkPayment`'s "total must be more than 0" true |
 | A reversal bill carries `-discount` | so a cancelled bill nets out in that column as it does in cash and online. Nothing sums it today except the daily report, which is exactly why it had to be right |
 | **The receipt does not print a subtraction** | the listed prices are already net of the discount, so a "subtotal − discount = total" block would contradict the lines above it. The slip says *"Includes a discount of Rs 300 (1,100 before)"* instead |
+| **A chosen price is the line amount, not a modifier** | P3.11, the same shape as the discount: `priceCart` writes the counter's choice into `bill_lines.amount`, so commission, the khata, the day's sale and the month's profit follow it without any of them knowing ranges exist |
+| `services.max_price` null means one fixed price | every service behaved that way before, and the column defaults to null, so nothing had to be migrated or back-filled |
+| **A screen must not read a priced line to decide what to render** | when `priceCart` throws — an amount outside its range — every priced line is undefined. The cart's amount box and the line's name were both derived from it, so typing a wrong number made the box *and* the service name disappear. Both now come from the catalog. Found by using the screen, not by reading it |
+| A deal splits on the **bottom** of a range | the deal's own price is what the customer pays, so there is nothing to choose; the split only decides how it is shared for commission |
 
 ## 8. Traps that have already cost time
 
