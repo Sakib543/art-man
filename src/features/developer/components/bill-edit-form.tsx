@@ -157,7 +157,6 @@ export function BillEditForm({ bill, staff }: Props) {
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="e.g. wrong price entered, customer paid Rs 900"
-          className="h-10"
         />
       </Field>
 

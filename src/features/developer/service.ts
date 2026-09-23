@@ -26,24 +26,44 @@ async function loadTarget(userId: string) {
 }
 
 /**
- * Set someone else's login password and sign them out everywhere.
+ * Set a login password and sign that account out everywhere.
  *
- * The developer cannot change their own password here — that would sign them
- * out mid-click. Settings has the normal "change your password" form, which
- * asks for the current one and keeps this session alive.
+ * **The developer may do this to their own account**, which every other role
+ * is refused. The reason is that nobody stands above the developer: the Owner
+ * and the Manager can always be rescued from this screen, and a second
+ * developer could rescue the first, but a salon with one developer account has
+ * no way back into it. Settings is not that way back — it asks for the current
+ * password, so it helps only someone who already knows it.
+ *
+ * Two things make a self-reset safe rather than merely allowed:
+ *
+ * - `keepToken` spares the session doing the resetting, so the developer is
+ *   not signed out by their own click. Every *other* session of theirs still
+ *   goes, which is the point of a reset.
+ * - it is audited as `password.self-reset`, a different action from the reset
+ *   of somebody else, so the log says plainly which happened.
+ *
+ * What this does **not** fix is being locked out already: you have to be
+ * signed in to reach this screen at all. A forgotten password with no live
+ * session is still a database job — see `docs/HANDOFF.md` section 9.
  */
-export async function resetPassword(dev: SessionUser, userId: string, newPassword: string): Promise<void> {
-  if (userId === dev.id) throw new UserError("Change your own password in Settings, not here.");
-
+export async function resetPassword(
+  dev: SessionUser,
+  userId: string,
+  newPassword: string,
+  /** The session running this. Only used when the developer resets themselves. */
+  currentToken?: string,
+): Promise<void> {
   const problem = checkNewPassword(newPassword);
   if (problem) throw new UserError(problem);
 
+  const self = userId === dev.id;
   const target = await loadTarget(userId);
-  await setUserPassword(target.id, newPassword);
+  await setUserPassword(target.id, newPassword, self ? currentToken : undefined);
 
   await writeAudit(db, {
     actor: actorOf(dev),
-    action: "password.reset",
+    action: self ? "password.self-reset" : "password.reset",
     target: target.username ?? target.id,
     after: { by: "developer" },
   });

@@ -55,7 +55,6 @@ export function ServiceForm({ service, categories, open, onClose }: ServiceFormP
           list="service-categories"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="h-10"
         />
         <datalist id="service-categories">
           {categories.map((name) => (

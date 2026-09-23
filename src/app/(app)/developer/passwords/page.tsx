@@ -35,13 +35,19 @@ export default async function PasswordsPage() {
                 <Badge variant="secondary">{ROLE_LABEL[account.role]}</Badge>
               </div>
 
-              {account.id === dev.id ? (
-                <p className="text-sm text-muted-foreground">
-                  This is you. Change your own password in Settings, so this session stays signed in.
-                </p>
-              ) : (
-                <ResetPasswordForm userId={account.id} username={account.username || account.name} />
-              )}
+              {/*
+                The developer may set their own password here, which no other
+                role may do on its own screen. Nobody stands above this
+                account: the Owner and the Manager can always be rescued from
+                this page, and a salon with one developer account cannot.
+                Settings is not the answer either — it asks for the current
+                password, so it only helps someone who already knows it.
+              */}
+              <ResetPasswordForm
+                userId={account.id}
+                username={account.username || account.name}
+                self={account.id === dev.id}
+              />
 
               {account.role === "owner" ? (
                 <div className="border-t pt-4">

@@ -109,7 +109,6 @@ export function CustomerBox({ value, onChange }: CustomerBoxProps) {
           onChange={(event) => onChange({ ...value, name: event.target.value })}
           placeholder="Customer name (saved with this bill)"
           aria-label="Customer name"
-          className="h-10"
         />
       </div>
     );

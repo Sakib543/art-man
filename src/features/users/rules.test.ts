@@ -59,6 +59,15 @@ describe("checkResetPassword", () => {
     );
   });
 
+  it("sends the developer to the Passwords screen for their own", () => {
+    // Settings is no use to a developer who has forgotten their password, and
+    // nobody stands above them to reset it. The Passwords screen lets that one
+    // account set its own, keeping the session it is done from.
+    expect(checkResetPassword(developer, account({ id: developer.id, role: "developer" }))).toBe(
+      "Change your own password on the Passwords screen, not here.",
+    );
+  });
+
   it("refuses an Owner reaching a developer account", () => {
     expect(checkResetPassword(owner, account({ id: "u-dev", role: "developer" }))).toBe(
       "That account is not yours to manage.",

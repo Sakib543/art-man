@@ -48,7 +48,6 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
           defaultValue={q}
           placeholder="Search by who, what or which record"
           aria-label="Search the audit log"
-          className="h-10"
         />
         <Button type="submit" variant="outline">
           <Search aria-hidden />

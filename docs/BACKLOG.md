@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-23 (P6.1 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-23 (P6.1 and P1.7 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -51,6 +51,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P4.10 | Staff khata reads the whole ledger table | ✅ | done 2026-09-22 |
 | P5.1–P5.3 | Deployment | 🟡 | P5.2 done 2026-09-22 |
 | P6.1 | Design system + responsive shell | ✅ | done 2026-09-23 |
+| P1.7 | The developer can reset their own password | ✅ | done 2026-09-23 |
 
 ---
 
@@ -1523,6 +1524,52 @@ is a fork. Here they were already on. If a run never appears, that is the first 
 | 🟡 P5.1 | **Go live on Vercel** — env vars, then migrate + seed on the Neon `live` branch. The build itself already passes (verified). **Blocked on access, not on code:** the Vercel project exists and is connected to this same repo, but it lives in the **other developer's** Vercel account (answered 2026-09-22). Nobody here can open Settings to set the environment variables. First step is to be added to that project, or to have it transferred |
 | ✅ P5.2 | **`docs/DEPLOY_VERCEL.md` rewritten** — done 2026-09-22. It now has the two steps it never had (`db:migrate` and `db:seed` against the live branch, with the commands), in both bash and PowerShell. Fixed as well: the stale "staff with PINs" line (P1.0 removed it), a warning never to run `db:seed:sample` on live, that a push to `main` deploys by itself so a migration must reach live first, that a green build means nothing because the build passes with no env vars at all, and a measured table of which variable is read where. `.env.example` also said `DATABASE_URL_UNPOOLED` was used by the seed scripts — it is not, they read `DATABASE_URL`, and seeding the wrong database is exactly the mistake that comment invites |
 | ⬜ P5.3 | **Move to a VPS** — after the client signs off. Postgres on the same VPS; carry the trial data over with `pg_dump` |
+
+---
+
+### ✅ P1.7 — The developer can reset their own password
+**Done:** 2026-09-23 · no migration · client request
+
+**Why.** Every other account has somebody above it. The Manager is rescued by
+the Owner or the developer; the Owner by the developer; a second developer by
+the first. A salon with **one** developer account has nobody, and the screen
+refused that account outright:
+
+```
+if (userId === dev.id) throw new UserError("Change your own password in Settings, not here.");
+```
+
+Settings is not the way out either — it asks for the current password, so it
+helps only someone who already knows it. A developer with a live session and a
+forgotten password could not rotate it by any means the app offered.
+
+**What was built.** The Passwords screen now shows the form on the developer's
+own row too. Two things make it safe rather than merely allowed:
+
+| | |
+|---|---|
+| The session survives | `signOutEverywhere` takes a `keepToken`, so the session doing the reset is spared and every *other* device still goes. Without it the developer is signed out by their own click, holding a password they have not written down |
+| The log says which happened | it is audited as **`password.self-reset`**, a different action from `password.reset` |
+
+Left alone on purpose: **the Owner still cannot self-reset**, on the Users
+screen or anywhere else. They have Settings, which asks for the current
+password — a control worth keeping — and a developer above them if they are
+truly stuck. `checkResetPassword` now sends each viewer to the door that will
+actually open: the developer to the Passwords screen, everyone else to
+Settings.
+
+**What it does NOT fix.** You must be signed in to reach the screen at all, so
+a forgotten password with no live session is still a database job. That path
+is written down in `docs/HANDOFF.md` section 9.
+
+**Verified in a browser, on the live data**, 2026-09-23: signed in as the
+developer, set a new password from the own-account form, and confirmed the
+session survived by re-fetching the page — **200, not a redirect to `/login`**,
+which is what `requireRole` would have done to a dead session. Then set it back
+through the same form, signed out, and signed in again with the original
+password. Both resets appear in the dev server log as `resetPasswordAction`.
+
+**Size:** small
 
 ---
 

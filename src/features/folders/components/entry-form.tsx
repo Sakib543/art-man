@@ -105,7 +105,6 @@ export function EntryForm({ staff }: { staff: StaffOption[] }) {
               placeholder={
                 kind === "expense" ? "Tea, lunch, towels" : kind === "owner_took" ? "Bank deposit" : "Change for the drawer"
               }
-              className="h-10"
             />
           </Field>
         )}

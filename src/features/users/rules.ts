@@ -51,12 +51,22 @@ export function checkCreate(viewer: Viewer, role: Role): string | null {
 }
 
 /**
- * Why the viewer may not set this password, or null. Your own password is
- * changed in Settings, which asks for the current one and keeps you signed in;
- * doing it here would sign you out mid-click.
+ * Why the viewer may not set this password, or null.
+ *
+ * Your own password is not set here, because a reset ends every session and
+ * would sign you out mid-click. Where you go instead depends on who you are:
+ * Settings asks for your current password and keeps this session alive, which
+ * is the ordinary path — but it is no use to a developer who has forgotten
+ * theirs, and nobody stands above a developer to rescue them. So the Passwords
+ * screen lets that one account set its own, sparing the session it is being
+ * done from. The message points each viewer at the door that will open.
  */
 export function checkResetPassword(viewer: Viewer, target: UserSummary): string | null {
-  if (target.id === viewer.id) return "Change your own password in Settings, not here.";
+  if (target.id === viewer.id) {
+    return viewer.role === "developer"
+      ? "Change your own password on the Passwords screen, not here."
+      : "Change your own password in Settings, not here.";
+  }
   return outOfReach(viewer, target);
 }
 

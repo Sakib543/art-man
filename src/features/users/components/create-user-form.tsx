@@ -51,7 +51,6 @@ export function CreateUserForm({ creatable }: { creatable: Role[] }) {
           onChange={(event) => setUsername(event.target.value)}
           autoComplete="off"
           spellCheck={false}
-          className="h-10"
         />
       </Field>
 
