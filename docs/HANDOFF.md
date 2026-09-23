@@ -720,6 +720,26 @@ meaning writing to the salon's books. A second Neon branch costs nothing and tak
 branch `production`, put the new branch's string in `.env.local`, and leave Vercel pointing at
 `production`. Do it before the trial starts, not after.
 
+**Nobody currently knows a password for any account (2026-09-23).** The user
+says they no longer have the ones printed during seeding, and `seed-users.ts`
+and `seed-developer.ts` both skip an account that already exists, so re-running
+them prints nothing. The documented recovery paths — `/developer/passwords` and
+Settings — both need you to be signed in already, so they are closed too.
+
+What is left is to reset one from a script, the way `seed-users.ts` does it:
+look the row up, then `ctx.internalAdapter.updatePassword(id, await
+ctx.password.hash(newPassword))` through `auth.$context`. Two things to know
+before running it:
+
+- **it writes to the live database**, because `.env.local` is the live database
+  (section 9a) — so a reset invalidates that account's sessions everywhere;
+- an assistant session may not be able to run it at all: the attempt on
+  2026-09-23 was refused by the sandbox as a credential-store write. Run it
+  yourself, or hand the password over another way.
+
+This blocks any assistant from opening a signed-in screen, which is why P6.1
+was verified through a throwaway harness route rather than the real screens.
+
 **Owed by the user:**
 - [x] **Apply `0013`, `0014` and `0015` to the live database** — already done, by accident, and the
   reason is the single most important thing on this page. See 9a.
