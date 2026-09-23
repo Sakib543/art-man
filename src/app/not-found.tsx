@@ -1,5 +1,5 @@
-import { Scissors } from "lucide-react";
 import Link from "next/link";
+import { SalonLogo } from "@/components/salon-logo";
 import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Page not found | Art Men's Salon" };
@@ -16,9 +16,7 @@ export default function NotFound() {
   return (
     <main className="grid min-h-screen place-items-center px-4">
       <div className="w-full max-w-sm text-center">
-        <div className="mx-auto mb-4 grid size-12 place-items-center rounded-xl bg-primary text-brass-bright">
-          <Scissors className="size-6" aria-hidden />
-        </div>
+        <SalonLogo className="mx-auto mb-5 h-14" />
         <h1 className="text-xl font-semibold">This page does not exist</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           Check the address, or go back to the counter.

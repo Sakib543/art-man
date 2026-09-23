@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { canAccess, type Role } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
-import { BrandLockup, BrandMark } from "./brand-mark";
+import { BrandLockup, SalonLogo } from "@/components/salon-logo";
 import { labelOf, NAV, ROLE_LABEL, type NavItem } from "./nav-config";
 import { SidebarNav } from "./sidebar-nav";
 import { SignOutButton } from "./sign-out-button";
@@ -67,7 +67,7 @@ export function MobileNav({ user }: { user: { name: string; role: Role } }) {
     <>
       {/* The bar across the top: what screen this is, and the way out. */}
       <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-sidebar px-4 text-sidebar-active-foreground print:hidden lg:hidden">
-        <BrandMark size="sm" />
+        <SalonLogo onDark priority className="h-7 shrink-0" />
         <p className="min-w-0 flex-1 truncate font-semibold">{labelOf(pathname)}</p>
         <SignOutButton onDark />
       </header>
@@ -96,7 +96,7 @@ export function MobileNav({ user }: { user: { name: string; role: Role } }) {
       >
         <div className="flex items-center gap-2 px-4 py-4">
           <div className="min-w-0 flex-1">
-            <BrandLockup onDark size="sm" />
+            <BrandLockup onDark compact />
           </div>
           <button
             type="button"

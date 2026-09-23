@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -436,6 +436,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A username is case-folded and unique | `username-rules.ts` decides the shape; `user.username` is `text().unique()` in the database, which is the actual guarantee. `username` is stored lower case and `displayUsername` keeps the capitals — the plugin's own convention, which `seed-users.ts` also follows |
 | **Renaming an account does not end its sessions** | a session is bound to the account's id and knows nothing about its username. The *next* sign-in needs the new one, which is why the screen says so |
 | `/developer/passwords` is called **Accounts** now | it sets passwords and PINs *and* names the developer's own account |
+| **The logo is two PNGs, not one tinted with CSS** | `public/logo.png` (the artwork's own black and brown, for light surfaces and the printed slip) and `public/logo-light.png` (cream, for the navy panels). `SalonLogo` picks between them with `onDark` |
+| Cutting white off a **JPEG** needs more than a colour key | alpha from inverted luminance, then a 6%–92% threshold curve to clear the ringing that otherwise shows as a grey box, then un-premultiply against white: `C = (c − 255(1−a)) / a`. The generator is not kept in the repo — it ran once; the recipe is here |
+| **The favicon is `src/app/icon.png`**, not `favicon.ico` | Next's file convention. `apple-icon.png` sits beside it. The old `.ico` was deleted, not regenerated |
+| The icon is the **whole lockup**, not the moustache | every crop that excluded "ART" and "MEN'S SALON" also clipped the curls, which reach into both bands. Tried and rendered before choosing |
+| **A flex column stretches an image across its cross axis** | the sidebar rendered the logo 232 × 44 against an artwork ratio of 1.47. `w-auto` does not resist `align-items: stretch`. `items-start` on the container fixes it; `object-contain` on the image stops the next container doing it again |
 | `pnpm test` never sees a `.tsx` file | `vitest.config.mts` includes `src/**/*.test.ts` only, so no test covers a component. A UI change is verified by building it and looking at it, not by the suite going green |
 
 ---
@@ -878,6 +883,7 @@ STAGE 3 — during the client's 20-day trial
   P6.1  Design system + responsive shell               DONE 2026-09-23
   P1.7  The developer can reset their own password     DONE 2026-09-23
   P1.8  Developer-only password resets · the eye · username DONE 2026-09-23
+  P6.2  The salon's real logo, everywhere              DONE 2026-09-23
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)

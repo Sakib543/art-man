@@ -1,5 +1,5 @@
 import type { SessionUser } from "@/lib/auth/session";
-import { BrandLockup } from "./brand-mark";
+import { BrandLockup } from "@/components/salon-logo";
 import { ROLE_LABEL } from "./nav-config";
 import { SidebarNav } from "./sidebar-nav";
 import { SignOutButton } from "./sign-out-button";

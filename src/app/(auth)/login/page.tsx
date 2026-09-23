@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { BrandMark } from "@/components/app-shell/brand-mark";
+import { SalonLogo } from "@/components/salon-logo";
 import { Panel } from "@/components/panel";
 import { LoginForm } from "@/features/account/components/login-form";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -28,9 +28,12 @@ export default async function LoginPage() {
           className="pointer-events-none absolute -bottom-40 -left-20 size-96 rounded-full bg-brass/8 blur-3xl"
         />
 
-        <BrandMark size="lg" />
+        <div aria-hidden />
 
         <div className="relative max-w-md">
+          {/* Above the sentence, not off in the corner — the client's
+              instruction, 2026-09-23. */}
+          <SalonLogo onDark priority className="mb-8 h-24" />
           <h2 className="text-3xl leading-tight font-semibold text-balance text-sidebar-active-foreground">
             The counter, the drawer and the books — in one place.
           </h2>
@@ -47,13 +50,11 @@ export default async function LoginPage() {
       <div className="flex items-center justify-center px-5 py-12 sm:px-8">
         <div className="w-full max-w-sm">
           <div className="mb-7 flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
-            <span className="lg:hidden">
-              <BrandMark size="lg" />
-            </span>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Art Men&apos;s Salon</h1>
-              <p className="mt-1 text-muted-foreground">Sign in to the counter</p>
-            </div>
+            {/* The logo carries the salon's name itself, so the heading that
+                repeated it is gone. On a wide screen the navy half already
+                shows it, so this one only appears on a phone. */}
+            <SalonLogo priority className="h-16 lg:hidden" />
+            <p className="text-muted-foreground">Sign in to the counter</p>
           </div>
 
           {/* Lifted further than a panel inside the app: this card is the

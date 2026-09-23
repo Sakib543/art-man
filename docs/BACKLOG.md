@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-23 (P6.1, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-23 (P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -53,6 +53,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.1 | Design system + responsive shell | ✅ | done 2026-09-23 |
 | P1.7 | The developer can reset their own password | ✅ | done 2026-09-23 |
 | P1.8 | Only the developer sets passwords · the eye on every password field · the developer names their own account | ✅ | done 2026-09-23 |
+| P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
 
 ---
 
@@ -1650,6 +1651,51 @@ seconds), and `password.self-reset` is distinguishable from `password.reset` in
 the log — which was the point of giving it its own name.
 
 **Size:** medium
+
+---
+
+### ✅ P6.2 — The salon's real logo, everywhere
+**Done:** 2026-09-23 · the client sent the artwork
+
+Every brand mark in the app was a **scissors glyph from the icon set** — a
+placeholder for a logo nobody had handed over. The client sent the real one:
+"ART", a handlebar moustache, "MEN'S SALON".
+
+**Where it now appears:** the navy sidebar, the drawer, the bar across the top
+of a phone, the login screen (**above** the sentence on the navy half, which is
+what the client asked for), the 404 and error screens, the browser tab, and the
+**printed receipt**, which used to spell the name out in text.
+
+**Two files, not one with a CSS filter.** The artwork arrived as dark ink on
+white and has to be cream on the navy panels. `public/logo.png` keeps the
+original black and brown for light surfaces and paper; `public/logo-light.png`
+is the same silhouette flattened to cream.
+
+**Cutting the white out took three steps, because a colour key is not enough
+on a JPEG.** Alpha comes from the inverted luminance; a threshold curve
+(6%–92%) then clears the ringing that would otherwise show as a grey box around
+the mark; and the colour is un-premultiplied against white —
+`C = (c − 255(1−a)) / a` — so the ink keeps its real black and brown instead of
+the washed-out version it had where it met the page.
+
+**The icon is the whole lockup, not the moustache.** Cropping to the moustache
+was tried and rendered side by side: the curls reach up into the rows that hold
+"ART" and down into "MEN'S SALON", so every crop that lost the words also
+clipped the curls. `src/app/icon.png` (512) and `apple-icon.png` (180) are the
+full mark in cream on a navy rounded square — Next's own file convention, so
+`favicon.ico` was deleted rather than regenerated.
+
+**One bug worth recording.** The sidebar rendered the logo **232 × 44** — a
+ratio of 5.3 against the artwork's 1.47. A flex column stretches its children
+across the cross axis by default, and `w-auto` on an image does not resist it.
+Fixed at both ends: `items-start` on the lockup, and `object-contain` on the
+image so the next container that tries it letterboxes rather than smears.
+Measured after: 65 × 44, ratio 1.47.
+
+**Swept up with it:** the five Next.js template SVGs in `public/` — `file`,
+`globe`, `next`, `vercel`, `window` — which nothing had ever referenced.
+
+**Size:** small
 
 ---
 

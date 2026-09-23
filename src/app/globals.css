@@ -486,6 +486,16 @@
     color: #000 !important;
   }
 
+  /*
+   * The logo at the head of the slip. `color: #000` above does nothing to an
+   * image, so its size is the only thing worth pinning: a 72mm roll has no
+   * room for the artwork at its natural width.
+   */
+  [data-print-receipt] img {
+    max-width: 44mm;
+    height: auto;
+  }
+
   [data-print-receipt] {
     /* Fits an 80mm thermal roll, and prints as a slip in the corner of A4. */
     width: 72mm;

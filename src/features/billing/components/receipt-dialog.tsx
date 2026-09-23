@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Printer } from "lucide-react";
+import { SalonLogo } from "@/components/salon-logo";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, formatTime, num, rs } from "@/lib/format";
@@ -66,7 +67,14 @@ export function ReceiptDialog({
               data-print-receipt={open ? "" : undefined}
               className="mx-auto w-full rounded-md border bg-card p-4 font-mono text-xs leading-relaxed"
             >
-              <p className="text-center font-medium">Art Men&apos;s Salon</p>
+              {/*
+                The salon's own logo at the head of the slip, which is what a
+                customer recognises (2026-09-23). It replaces the line of text
+                that spelled the name out, so the slip is no longer saying it
+                twice. `print:` keeps it black on white whatever the screen is
+                doing, and the artwork is already dark ink on transparent.
+              */}
+              <SalonLogo className="mx-auto mb-2 h-12" />
               <p className="text-center text-muted-foreground">
                 {formatDate(receipt.businessDate)}, {formatTime(receipt.createdAt)}
               </p>
