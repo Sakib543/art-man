@@ -23,7 +23,17 @@ export const services = pgTable("services", {
   id: id(),
   name: text("name").notNull(),
   category: text("category").notNull(),
+  /**
+   * The price, or the **bottom** of the range when `maxPrice` is set (P3.11).
+   * The salon's printed list reads "300 - 500" against most services.
+   */
   price: rupees("price").notNull(),
+  /**
+   * The top of the range, or null for a service with one fixed price. When it
+   * is set, the counter chooses the amount for each line of the bill and the
+   * server refuses anything outside `price`..`maxPrice`.
+   */
+  maxPrice: rupees("max_price"),
   minutes: integer("minutes"),
   active: boolean("active").notNull().default(true),
   createdAt: createdAt(),
