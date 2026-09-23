@@ -36,6 +36,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
 | P3.4 | Next-month adjustment for a closed month | ⬜ | — |
 | P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
+| P3.11 | Price ranges: pick the amount at billing | ⬜ | Sakib, 2026-09-23 |
 | P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore has never been run |
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
@@ -1001,6 +1002,34 @@ somewhere to put the files that is not this laptop — worth settling together
 with the Vercel/VPS question.
 
 **Size:** medium · **Value:** high
+
+---
+
+### ⬜ P3.11 — A service can have a price range *(client asked for it 2026-09-23)*
+**Owner:** Sakib, 2026-09-23
+
+The salon's real printed price list has a **range** against most services, not
+one price. From the photo the client sent:
+
+```
+HAIR CUT (SIMPLE)          250          <- one price
+HAIR CUT (FADES)        300 - 500       <- a range
+BEARD (SIMPLE)          200 - 250
+HAIR PROTEIN            500 - 2500
+FASHION COLORS          500 - 999
+```
+
+What is charged inside the range depends on what was actually done, so the
+**counter picks the amount when the bill is made**. Today a service has exactly
+one price and the counter cannot change it, which is why the app cannot yet
+price this salon's own list.
+
+**How it fits what is already there:** the Owner still sets the prices (spec
+§10.4) — the range *is* the Owner's decision, and the counter may only choose
+inside it. A customer's special rate still wins over both, because that is a
+price the Owner fixed for that person.
+
+**Size:** medium
 
 ---
 
