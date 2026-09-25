@@ -54,6 +54,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.7 | The developer can reset their own password | ✅ | done 2026-09-23 |
 | P1.8 | Only the developer sets passwords · the eye on every password field · the developer names their own account | ✅ | done 2026-09-23 |
 | P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
+| P1.9 | One seed script, and it creates only the developer | 🟡 | Sakib543, 2026-09-25 |
 
 ---
 
@@ -1696,6 +1697,17 @@ Measured after: 65 × 44, ratio 1.47.
 `globe`, `next`, `vercel`, `window` — which nothing had ever referenced.
 
 **Size:** small
+
+---
+
+### 🟡 P1.9 — One seed script, and it creates only the developer
+**Owner:** Sakib543, 2026-09-25
+
+Commit `5313fc3` deleted all four seed scripts but left their four commands in
+`package.json`, so every `pnpm db:seed*` failed — and with sign-up disabled, a
+fresh database had no way to get its first account. Bring back one script that
+creates the developer and nobody else; the developer creates the Owner and the
+Manager from the Users screen.
 
 ---
 
