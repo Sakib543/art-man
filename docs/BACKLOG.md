@@ -55,6 +55,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.8 | Only the developer sets passwords · the eye on every password field · the developer names their own account | ✅ | done 2026-09-23 |
 | P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
 | P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
+| P6.3 | Tidy the login page after `5313fc3` | 🟡 | Sakib543, 2026-09-25 |
 
 ---
 
@@ -1748,6 +1749,15 @@ database** — do that on the throwaway Neon branch 9a asks for.
 
 **Verified:** `pnpm build` (26 routes), `pnpm test` (353), `pnpm lint` all
 pass, and `tsc --noEmit` covers `scripts/seed-developer.ts` and passes.
+
+---
+
+### 🟡 P6.3 — Tidy the login page after `5313fc3`
+**Owner:** Sakib543, 2026-09-25
+
+`w-1xl` on the login logo is not a Tailwind class and generates nothing; the
+navy panel's `<div>` lost an indent; blank lines with trailing spaces were left
+behind in the login page and in `BrandLockup`.
 
 ---
 
