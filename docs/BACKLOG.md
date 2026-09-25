@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-23 (P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-25 (P1.9 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -54,7 +54,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.7 | The developer can reset their own password | ✅ | done 2026-09-23 |
 | P1.8 | Only the developer sets passwords · the eye on every password field · the developer names their own account | ✅ | done 2026-09-23 |
 | P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
-| P1.9 | One seed script, and it creates only the developer | 🟡 | Sakib543, 2026-09-25 |
+| P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
 
 ---
 
@@ -1700,14 +1700,54 @@ Measured after: 65 × 44, ratio 1.47.
 
 ---
 
-### 🟡 P1.9 — One seed script, and it creates only the developer
-**Owner:** Sakib543, 2026-09-25
+### ✅ P1.9 — One seed script, and it creates only the developer
+**Done:** 2026-09-25 · no migration · the user's request
 
-Commit `5313fc3` deleted all four seed scripts but left their four commands in
-`package.json`, so every `pnpm db:seed*` failed — and with sign-up disabled, a
-fresh database had no way to get its first account. Bring back one script that
-creates the developer and nobody else; the developer creates the Owner and the
-Manager from the Users screen.
+**Why.** Commit `5313fc3` deleted all four seed scripts (`seed-users`,
+`seed-developer`, `seed-sample`, `seed-accounts`) but left their four commands in
+`package.json`, so every `pnpm db:seed*` failed. With `disableSignUp: true` and
+no sign-up screen, that left a fresh database with no way to get its first
+account — and `docs/HANDOFF.md` 9a's plan for the trial is exactly a fresh
+database.
+
+**The user's decision:** bring back one script, for logging in only — not the
+services one — and let it create the developer and nobody else. The developer
+creates everyone else.
+
+**Checked in the code before building, not assumed:**
+
+- `creatableRoles("developer")` is `["developer", "owner", "manager"]`
+  (`features/users/rules.ts`), so the Users screen covers both salon accounts.
+- The Passwords screen shows `ResetPinForm` for the Owner even when "None is set
+  yet", and `resetPin` only refuses a non-Owner — so the Owner's PIN, which
+  `seed-users.ts` used to set, has a screen.
+- `addPartner` and `addFixedLine` exist, so `seed-accounts.ts` has nothing a
+  screen cannot do.
+
+**What was done:**
+
+- `scripts/seed-developer.ts` restored from `5313fc3~1`, header rewritten. One
+  change in behaviour: it skips when **any** account with role `developer`
+  exists, not only one named `developer`. P1.8 lets the developer rename their
+  own account, and the old name check would then have created a second one.
+- `package.json` — `db:seed`, `db:seed:sample` and `db:seed:accounts` removed.
+  `db:seed:developer` is the only seed command.
+- Comments that named the deleted scripts: `lib/auth/server.ts`,
+  `features/users/service.ts`, `features/users/components/create-user-form.tsx`,
+  `features/developer/service.ts`, `scripts/load-env.ts`.
+- `README.md`, `.env.example`, `docs/PROJECT_GUIDE.md`, and
+  `docs/DEPLOY_VERCEL.md` — the deploy steps now read: seed the developer,
+  redeploy, sign in as the developer, create the Owner and the Manager, set the
+  Owner's PIN, enter the real data.
+
+**Not done, on purpose:** the script was **not run**, at the user's instruction.
+The live database already has its developer; run against it, the script would
+only print `skip`. The new first-run path (seed, then create the Owner and
+Manager from the screens) has therefore **not been exercised on an empty
+database** — do that on the throwaway Neon branch 9a asks for.
+
+**Verified:** `pnpm build` (26 routes), `pnpm test` (353), `pnpm lint` all
+pass, and `tsc --noEmit` covers `scripts/seed-developer.ts` and passes.
 
 ---
 

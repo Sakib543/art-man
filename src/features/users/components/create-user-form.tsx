@@ -15,7 +15,7 @@ import { ROLE_TEXT } from "./role-text";
 /**
  * The password is typed here and shown on screen while it is typed, because
  * whoever creates the account has to read it out to the new person. It cannot
- * be recovered afterwards — the same bargain `pnpm db:seed` makes when it
+ * be recovered afterwards — the same bargain `pnpm db:seed:developer` makes when it
  * prints a password once.
  */
 export function CreateUserForm({ creatable }: { creatable: Role[] }) {

@@ -15,13 +15,14 @@ Needs Node.js 20+ and pnpm. You need **your own** Postgres database (a free [Neo
 pnpm install
 cp .env.example .env.local     # then fill in DATABASE_URL and BETTER_AUTH_SECRET
 pnpm db:migrate                # create the tables
-pnpm db:seed                   # Owner and Manager accounts (passwords are printed once)
-pnpm db:seed:sample            # sample services, deals, staff, customers
-pnpm db:seed:accounts          # sample partners and fixed monthly lines
+pnpm db:seed:developer         # the developer account (the password is printed once)
 pnpm dev                       # http://localhost:3000
 ```
 
-Sign in as `owner` or `manager` with the passwords printed by `pnpm db:seed`.
+Sign in as `developer` with the password printed by `pnpm db:seed:developer`. There is no other
+seed: the developer creates the Owner and the Manager on the Users screen, sets the Owner's PIN on
+the Passwords screen, and services, staff, partners and fixed expense lines are entered on their
+own screens.
 
 ## Other commands
 

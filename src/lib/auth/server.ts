@@ -26,9 +26,9 @@ async function isActive(userId: string): Promise<boolean> {
 
 /**
  * Server-side auth. Users sign in with a username and password.
- * Sign-up is disabled: the owner's and manager's accounts are created by
- * `pnpm db:seed` and the developer's by `pnpm db:seed:developer`, never
- * through the website.
+ * Sign-up is disabled. The first account, the developer's, is created by
+ * `pnpm db:seed:developer`; the developer then creates the owner and the
+ * manager on the Users screen. Never through a public form.
  */
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),

@@ -25,11 +25,11 @@ async function load(userId: string) {
 /**
  * Create a login (backlog P1.2). Public sign-up stays off — `disableSignUp` is
  * set on Better Auth, so this goes through the same internal adapter the seed
- * scripts use, and the only way to get an account is for someone who already
+ * script uses, and the only way to get an account is for someone who already
  * has one to make it.
  *
  * The password is chosen here and shown to the creator once, exactly as
- * `pnpm db:seed` prints it once. It cannot be read back afterwards.
+ * `pnpm db:seed:developer` prints it once. It cannot be read back afterwards.
  */
 export async function createUser(actor: SessionUser, input: CreateUserInput): Promise<{ username: string }> {
   const refusal = checkCreate(actor, input.role);

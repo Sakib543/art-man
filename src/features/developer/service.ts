@@ -102,7 +102,7 @@ export async function changeOwnUsername(dev: SessionUser, next: string): Promise
   await db.transaction(async (tx) => {
     // `username` is what is matched at sign-in and is lower case; the display
     // one keeps the capitals the person typed. That is the plugin's own
-    // convention — see `seed-users.ts`, which sets both.
+    // convention — `scripts/seed-developer.ts` sets both too.
     await tx
       .update(userTable)
       .set({ username: key, displayUsername: wanted })

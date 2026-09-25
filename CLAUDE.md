@@ -16,7 +16,7 @@ Standing rules (full list in `docs/HANDOFF.md` section 1):
   push that first), then work.
 - One backlog item per session. Do the task asked for; do not start the next one.
 - Ask before implementing. The user says when to build.
-- After every change: `pnpm build`, `pnpm test` (192 tests), `pnpm lint` — all three must pass.
+- After every change: `pnpm build`, `pnpm test` (353 tests), `pnpm lint` — all three must pass.
   Then pull, re-verify, and push.
 - Commit and push at the end of a task — never leave finished work uncommitted.
 - Only one person generates database migrations at a time (`docs/HANDOFF.md` section 8.1).

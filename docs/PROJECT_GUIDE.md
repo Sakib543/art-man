@@ -254,13 +254,11 @@ pnpm test              # 130 tests
 pnpm lint
 pnpm build             # production build
 pnpm db:migrate        # tables banana/update
-pnpm db:seed           # Owner aur Manager ke accounts (password khud banta hai aur screen par aata hai)
-pnpm db:seed:sample    # sample services, deals, staff, customers, pehla din
-pnpm db:seed:accounts  # 2 sample partners aur 4 fixed lines (rent, bijli...)
+pnpm db:seed:developer # sirf developer ka account (password ek dafa screen par aata hai)
 pnpm db:studio         # database dekhne ki screen
 ```
 
-Owner ka PIN `db:seed` khud banata hai aur screen par ek dafa dikhata hai. Asli use se pehle sab kuch **Settings** aur **Staff & rates** se badlein. (Staff ka koi PIN nahi hota.)
+Seed sirf **ek** hai, aur wo sirf developer banata hai (P1.9). Baqi sab screens se hota hai: developer **Users** screen par Owner aur Manager banata hai, **Passwords** screen par Owner ka PIN set karta hai, aur services, staff, partners aur fixed lines apni apni screens se daali jati hain. (Staff ka koi PIN nahi hota.)
 
 ---
 
@@ -274,7 +272,7 @@ Sirf **GitHub repo ka link**. Repo mein koi secret nahi hai (check kar liya). Re
 |---|---|
 | `.env.local` file | Is mein database ka password aur login ka secret hai |
 | Neon ki connection string | Neon mein role ka password **poore project** ka hota hai, branch ka nahi. String de di to dost aap ke asli data tak pahunch sakta hai |
-| Owner/Manager ka password, PIN | Seed script har jagah naye banata hai |
+| Developer/Owner/Manager ka password, PIN | Har database mein naye bante hain |
 
 ### Dost ko **apna database** banana hai (ye sab se surakshit tareeqa)
 
@@ -296,13 +294,12 @@ Dost ko aap ke Neon ki zaroorat **nahi**. Wo apna free Neon (ya local Postgres) 
 6. Tables aur shuruati data:
    ```bash
    pnpm db:migrate
-   pnpm db:seed          # Owner/Manager ke password screen par aayenge, note kar lein
-   pnpm db:seed:sample
-   pnpm db:seed:accounts
+   pnpm db:seed:developer   # developer ka password screen par aayega, note kar lein
    ```
-7. `pnpm dev` phir http://localhost:3000, username `owner` ya `manager`.
+7. `pnpm dev` phir http://localhost:3000, username `developer`.
+8. Developer ban kar **Users** screen se Owner aur Manager banayen, **Passwords** screen se Owner ka PIN, phir **Staff & rates** se services aur staff. Sample data ka ab koi seed nahi hai.
 
-**Yeh maine khud aazmaya hai:** naya clone, khali Neon database, sirf yehi steps: migrations, seeds, 130 tests, build, aur sign-in sab chale.
+**Yeh maine khud aazmaya tha (2026-09-22):** naya clone, khali Neon database, migrations, seeds, tests, build, aur sign-in sab chale. Us waqt chaar seed scripts thi; ab sirf developer wali hai, aur ye naya tareeqa abhi khali database par nahi aazmaya gaya.
 
 ### Agar wo aap ka hi database use kare (na karna behtar)
 Behtar hai ke pehle `neon branches create --name friend` se alag branch banayen, magar upar wali wajah se password phir bhi poore project ka hai. Agar dena hi pade to baad mein Neon dashboard se **role ka password reset** kar lein.

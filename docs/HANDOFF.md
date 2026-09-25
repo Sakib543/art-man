@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-23 (P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-25 (P1.9: one seed script, developer only. Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (345 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (353 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -137,9 +137,9 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Check | Result |
 |---|---|
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
-| `pnpm build` | pass — **25 routes** (2026-09-23), exit 0, **succeeds with no env vars set** |
+| `pnpm build` | pass — **26 routes** (2026-09-25; `icon.png` and `apple-icon.png` count as routes), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **345 passed** (31 files), 2026-09-23 |
+| `pnpm test` | **353 passed** (32 files), 2026-09-25 |
 | Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0017`** (P3.10's discount columns and P3.11's `services.max_price`, both 2026-09-23) |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
@@ -203,19 +203,26 @@ pnpm build
 pnpm test
 pnpm lint
 pnpm db:migrate
-pnpm db:seed          # owner + manager accounts, prints passwords ONCE
-pnpm db:seed:sample   # services, deals, staff, customers, opens the first business day
-pnpm db:seed:accounts # partners + fixed expense lines
-pnpm db:seed:developer # the developer account, prints its password ONCE
+pnpm db:seed:developer # the developer account, prints its password ONCE — the only seed
+pnpm db:check
+pnpm db:backup
 ```
+
+**There is one seed script, and it creates only the developer** (P1.9, 2026-09-25). Commit
+`5313fc3` deleted all four seed scripts and left their commands in `package.json`; P1.9 brought
+back `seed-developer.ts` alone. On a fresh database the developer signs in and creates the Owner
+and the Manager on the Users screen, sets the Owner's PIN on the Passwords screen, and the real
+services, staff, partners and fixed lines go in from their own screens. `db:seed`,
+`db:seed:sample` and `db:seed:accounts` no longer exist — the old versions are in git history
+(`git show 5313fc3~1:scripts/seed-sample.ts`) if a throwaway database ever needs sample data.
 
 `.env.local` points at **the live Neon database** — the same one the deployed site uses. It is not a
 dev database, whatever its name suggests; see section 9a, and treat every command on this page as
 running against production. Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty —
 optional), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
 
-**So `pnpm db:seed:sample` writes sample bills into the salon's books.** It is safe today only
-because the books are still nothing but sample data.
+**So anything run from here writes into the salon's books.** The sample seed that made that
+easiest to forget is gone (P1.9), but a browser check against `pnpm dev` still writes to live.
 
 **State of the dev database as this session ended:** 22 Sep 2026 is closed, carrying one cancelled
 bill (#1) and its reversal (#2), a reversed commission for Arshad, and three rows in
@@ -366,9 +373,8 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A corrected bill counts as **edited**, not cancelled | otherwise the "too many cancellations" alert would fire whenever the Owner fixed a typo |
 | Corrections made before migration `0010` are **not** folded | their `supersedes_bill_id` is null. Two of them are in the dev database |
 | Today's bills (Billing screen) does **not** fold | deliberate: it is the counter's working list. Only the Daily report folds |
-| **A command-line variable beats `.env.local`** | both `drizzle.config.ts` (`process.loadEnvFile`) and the seed scripts (`tsx --env-file=.env.local`) leave a variable alone when the environment already has it. Tested. This is what makes `DATABASE_URL=... pnpm db:seed` against live actually work |
-| `DATABASE_URL_UNPOOLED` is read by **migrations only** | `drizzle.config.ts`. The seed scripts go through `src/db`, which reads `DATABASE_URL` — `.env.example` used to claim otherwise and was fixed in P5.2 |
-| `pnpm db:seed:sample` is **test data** | Haircut Rs 800, invented customers. Never run it on the live branch |
+| **A command-line variable beats `.env.local`** | both `drizzle.config.ts` (`process.loadEnvFile`) and the scripts (`scripts/load-env.ts`, the same call) leave a variable alone when the environment already has it. Tested. This is what makes `DATABASE_URL=... pnpm db:seed:developer` against live actually work |
+| `DATABASE_URL_UNPOOLED` is read by **migrations only** | `drizzle.config.ts`. The seed script goes through `src/db`, which reads `DATABASE_URL` — `.env.example` used to claim otherwise and was fixed in P5.2 |
 | A closed-day correction never rewrites counted cash | the drawer was counted by hand; only expected cash moves, and the difference shows the correction |
 | **`canAccess` is the whole role hierarchy** | `src/lib/auth/roles.ts`. `developer` passes every check; everyone else is matched exactly. `requireRole` goes through it, so all 26 `requireRole("owner")` sites accepted the developer untouched |
 | Three checks stay strict `=== "owner"` on purpose | the owner's PIN (`account/service.ts`), the owner-only part of Settings, and the manager-only hint on Day close. The developer has no PIN, and the client asked that Settings show nothing about the role |
@@ -378,7 +384,7 @@ Measured, not guessed. Do not spend time re-deriving these.
 | `app_settings` is a key/value table with **one** key today | `maintenance` ("on"/"off"). No row means off, so an empty table is normal. No append-only trigger — it is config |
 | `readMaintenance()` is `cache()`d | one query per request even though `requireUser` asks on every page. The developer short-circuits before the query runs |
 | The developer has **no PIN** | `seed-developer.ts` does not set one, and `resetPin` refuses any account whose role is not `owner` |
-| `pnpm db:seed:developer` is separate from `pnpm db:seed` | the owner and manager belong to the salon; this account belongs to whoever maintains the system |
+| `pnpm db:seed:developer` is the **only** seed (P1.9) | sign-up is disabled, so something has to make the first account; the developer can create every role (`creatableRoles`) and set the Owner's PIN, so nothing else needs a script. It skips when **any** `developer`-role account exists, not only one named `developer` — the account can be renamed (P1.8) |
 | `form-feedback.tsx` and `use-form-action.ts` live in `src/components/` | moved up out of `features/account` in P1.1 so the developer feature could use them without breaking `ARCHITECTURE.md` rule 5 |
 | **The append-only triggers now have an escape hatch** | `set_config('app.allow_financial_edit', 'on', true)` — migration `0012`. `is_local = true` is the whole safety story: the setting dies with the transaction, so it cannot leak onto a pooled connection. Verified against the database, including that the same connection is refused again after the commit |
 | **`src/db/financial-edit.ts` is the only place that may set it** | if a second one appears, the guarantee stops being checkable by reading one file. `denyFinancialEdit` shuts it again as soon as the rows are written, so settling the day and writing the audit entry run with it closed |
@@ -433,7 +439,7 @@ Measured, not guessed. Do not spend time re-deriving these.
 | **`checkResetPassword` refuses everyone but the developer** | P1.8. It guards the Users screen *and* the Server Action, because the screen hides what the function refuses and the action refuses it again — one function, so the two cannot drift |
 | That refusal never says the word "developer" | the Owner and the Manager are not shown that the role exists (`visibleRoles`), and an error message is a poor place to break that. A test asserts the string does not match `/developer/i` |
 | **`PasswordInput` is on all twelve password and PIN fields** | `src/components/password-input.tsx`. It swaps `type="password"` for `type="text"`, so a password manager still sees an ordinary field. The toggle is `type="button"` — otherwise it submits the form it sits in — and `tabIndex={-1}`, so Tab reaches the next field rather than the eye |
-| A username is case-folded and unique | `username-rules.ts` decides the shape; `user.username` is `text().unique()` in the database, which is the actual guarantee. `username` is stored lower case and `displayUsername` keeps the capitals — the plugin's own convention, which `seed-users.ts` also follows |
+| A username is case-folded and unique | `username-rules.ts` decides the shape; `user.username` is `text().unique()` in the database, which is the actual guarantee. `username` is stored lower case and `displayUsername` keeps the capitals — the plugin's own convention, which `seed-developer.ts` also follows |
 | **Renaming an account does not end its sessions** | a session is bound to the account's id and knows nothing about its username. The *next* sign-in needs the new one, which is why the screen says so |
 | `/developer/passwords` is called **Accounts** now | it sets passwords and PINs *and* names the developer's own account |
 | **The logo is two PNGs, not one tinted with CSS** | `public/logo.png` (the artwork's own black and brown, for light surfaces and the printed slip) and `public/logo-light.png` (cream, for the navy panels). `SalonLogo` picks between them with `onDark` |
@@ -730,7 +736,6 @@ their own database. For *this* developer that last one is wrong: the Vercel proj
   the throwaway accounts for P3.6, P4.6 and P1.2, were all created on live. The accounts were
   deleted; the bills cannot be, because bills are append-only. They are harmless *today* only
   because the whole database is still sample data and the salon is not using it yet.
-- **`pnpm db:seed:sample` would now pollute the live books.** Never run it again from here.
 - **"Reopen or reseed freely, none of it is real data" — the advice elsewhere in this file — stops
   being true the day the trial starts.** From that day, this machine is pointed at production and
   must be treated that way.
@@ -796,8 +801,9 @@ is signed out, which is still the script above.
   database holds 19 sample bills, 3 business days, 31 khata lines and Neon's
   leftover `playing_with_neon` table. Bills cannot be deleted by the app, and
   `audit_log` cannot be cleaned by anything, so a clean start means a **fresh
-  database**: migrate, `db:seed`, `db:seed:developer`, then enter the real
-  services, staff and partners from the screens. **Never `db:seed:sample`.**
+  database**: migrate, `db:seed:developer`, then as the developer create the
+  Owner and the Manager (Users) and the Owner's PIN (Passwords), then enter the
+  real services, staff and partners from the screens. There is no other seed.
   The user has said this will be done when the site goes live (2026-09-23).
 
 **Questions blocking work:**
@@ -884,6 +890,7 @@ STAGE 3 — during the client's 20-day trial
   P1.7  The developer can reset their own password     DONE 2026-09-23
   P1.8  Developer-only password resets · the eye · username DONE 2026-09-23
   P6.2  The salon's real logo, everywhere              DONE 2026-09-23
+  P1.9  One seed script, developer only                DONE 2026-09-25
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)

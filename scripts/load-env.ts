@@ -8,7 +8,7 @@
  * editing it. This does not: `loadEnvFile` leaves a variable alone when the
  * environment already has one, so
  *
- *   DATABASE_URL="<other database>" pnpm db:seed
+ *   DATABASE_URL="<other database>" pnpm db:seed:developer
  *
  * reaches that database, and a missing file is not an error.
  */

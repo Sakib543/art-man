@@ -80,60 +80,59 @@ $env:DATABASE_URL_UNPOOLED="<live direct string>"; pnpm db:migrate; Remove-Item 
 Never paste a live connection string into a file git tracks. `.env.example` is tracked; `.env.local`
 is not.
 
-## 3. Create the two login accounts
+## 3. Create the developer account
 
-Sign-up is disabled on the website, so the accounts cannot be made from the browser. Seed them
+Sign-up is disabled on the website, so the first account cannot be made from the browser. Seed it
 against live, from your computer:
 
 ```bash
-DATABASE_URL="<live pooled string>" pnpm db:seed
+DATABASE_URL="<live pooled string>" pnpm db:seed:developer
 ```
 
 ```powershell
-$env:DATABASE_URL="<live pooled string>"; pnpm db:seed; Remove-Item Env:\DATABASE_URL
+$env:DATABASE_URL="<live pooled string>"; pnpm db:seed:developer; Remove-Item Env:\DATABASE_URL
 ```
 
-It creates `owner` and `manager` and **prints their passwords and the Owner PIN once**. Write them
-down there and then — running it again only says `skip (already exists)` and prints nothing. If you
-lose them, reset from the Settings screen once you are signed in.
+It creates `developer` and **prints its password once**. Write it down there and then — running it
+again only says `skip` and prints nothing.
+
+This is the **only** seed script (backlog P1.9). There is no seed for the Owner, the Manager,
+partners, fixed expense lines or sample data any more: all of it is entered from the screens in
+steps 6 and 7, so nothing placeholder ever reaches the live books.
 
 > The same warning as step 2, and worse here: while `$env:DATABASE_URL` is set, a `pnpm dev` in that
 > same PowerShell session would run your local app **against the live database**.
 
-## 4. Optional: partners and fixed expense lines
-
-```bash
-DATABASE_URL="<live pooled string>" pnpm db:seed:accounts
-```
-
-Adds two placeholder partners (50/50) and the usual fixed monthly bills (Rent, Electricity, Internet
-and bills, Supplies). The Owner renames the partners on the Partners screen. Skip it and enter them
-by hand if you prefer.
-
-## 5. Never run `pnpm db:seed:sample` against live
-
-It loads the prototype's **test data** — Haircut Rs 800, sample staff, two invented customers — and
-opens a business day. It belongs on a developer's database only. The live business day is opened
-from the app in step 8.
-
-## 6. Redeploy
+## 4. Redeploy
 
 Vercel → Deployments → the latest one → Redeploy. Environment variables only apply to deployments
 made after they were set, so a redeploy is required even though the code has not changed.
 
-## 7. Sign in and secure the accounts
+## 5. Sign in as the developer
 
-Open the site, sign in as `owner`, then Settings: change both passwords and the Owner PIN away from
-the seeded ones.
+Open the site and sign in as `developer` with the password from step 3. If it is lost, see
+`docs/HANDOFF.md` section 9a — a signed-out developer has no screen to recover from.
 
-## 8. Enter the real data
+## 6. Create the Owner and the Manager
 
-As the Owner:
+As the developer:
+
+1. **Users** — create the Owner and the Manager. You type each password; read it out to the person,
+   because it cannot be shown again. Only the developer can reset it later (P1.8).
+2. **Passwords** — set the Owner's 4-digit PIN. The Owner confirms cash taken from or added to the
+   drawer with it; without one, that folder cannot be used.
+
+The Owner can change their own password and PIN from Settings afterwards.
+
+## 7. Enter the real data
+
+As the Owner (or the developer):
 
 1. **Staff & rates** — the staff, their pay type and rates, then services and deals.
    (Staff have no PIN. That was removed from the whole project; only the Owner has one.)
 2. **Partners** — real names and shares.
-3. **Day close** → "Open the first business day".
+3. **Monthly expenses** — the fixed monthly lines (rent, electricity, and so on).
+4. **Day close** → "Open the first business day".
 
 ---
 
@@ -143,11 +142,11 @@ Measured from the code, because guessing this is how the wrong database gets wri
 
 | Variable | Read by | Where |
 |---|---|---|
-| `DATABASE_URL` | the app **and every seed script** | `src/db/index.ts` |
+| `DATABASE_URL` | the app **and the seed script** | `src/db/index.ts` |
 | `DATABASE_URL_UNPOOLED` | **migrations only** (`pnpm db:migrate`) | `drizzle.config.ts`, falling back to `DATABASE_URL` when it is empty |
 
 A value set on the command line **wins over `.env.local`**: both `drizzle.config.ts`
-(`process.loadEnvFile`) and the seed scripts (`tsx --env-file=.env.local`) leave a variable alone if
+(`process.loadEnvFile`) and the scripts (`scripts/load-env.ts`, the same call) leave a variable alone if
 the environment already has it. Verified by testing it, so the commands above do go to live.
 
 ## Later changes to the database
