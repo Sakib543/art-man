@@ -5,7 +5,11 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { DaySelect } from "@/features/daily-report/components/day-select";
 import { ReportTable } from "@/features/daily-report/components/report-table";
+import { ViewSwitch } from "@/features/daily-report/components/view-switch";
 import { getDailyReport } from "@/features/daily-report/queries";
+import { readView } from "@/features/daily-report/view";
+import { WorksheetGrid } from "@/features/worksheet/components/worksheet-grid";
+import { getSheet } from "@/features/worksheet/queries";
 import { CANCELLATION_ALERT_AT } from "@/lib/alerts";
 import { atLeastOwner } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
@@ -14,10 +18,16 @@ import { rs } from "@/lib/format";
 export const metadata = { title: "Daily report | Art Men's Salon" };
 
 const SUBTITLE = "All bills for a business day, including cancelled ones";
+const REGISTER_SUBTITLE = "The day's bills as a column per person, like the paper register";
 
-export default async function DailyReportPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
+export default async function DailyReportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string; view?: string }>;
+}) {
   const user = await requireUser();
-  const { date } = await searchParams;
+  const { date, view: requestedView } = await searchParams;
+  const view = readView(requestedView);
   const report = await getDailyReport(date);
 
   if (!report) {
@@ -30,12 +40,15 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
   }
 
   const { days, selected, bills, summary, closing } = report;
+  // The register (P6.4) is the old Daily worksheet, for whichever day is chosen.
+  const sheet = view === "register" ? await getSheet(selected.businessDate) : null;
 
   return (
     <>
-      <PageHeader title="Daily report" subtitle={SUBTITLE}>
+      <PageHeader title="Daily report" subtitle={sheet ? REGISTER_SUBTITLE : SUBTITLE}>
         <div className="flex flex-wrap items-center gap-2.5">
-          <DaySelect days={days} selected={selected.businessDate} />
+          <ViewSwitch date={selected.businessDate} view={view} />
+          <DaySelect days={days} selected={selected.businessDate} view={view} />
           <BusinessDayPill businessDate={selected.businessDate} closed={selected.closed} />
         </div>
       </PageHeader>
@@ -52,15 +65,20 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
         <StatCard icon={Banknote} label="Cash" value={rs(summary.cash)} />
         <StatCard icon={QrCode} label="Online" value={rs(summary.online)} />
         <StatCard icon={Receipt} label="Paid bills" value={String(summary.paidBills)} />
-        <StatCard icon={Undo2} label="Cancelled" value={String(summary.cancelledBills)} />
-        <StatCard
-          icon={Pencil}
-          label="Edited"
-          value={String(summary.editedBills)}
-          hint="Corrected bills, shown as one line each"
-        />
-        {/* Only when there was one: a row of zeros every day would be noise,
-            and a discount is meant to stand out (P3.10). */}
+        {/* These three only when there was one: a row of zeros every day is
+            noise (P6.4), and each is meant to stand out when it happens —
+            a discount especially (P3.10). */}
+        {summary.cancelledBills > 0 ? (
+          <StatCard icon={Undo2} label="Cancelled" value={String(summary.cancelledBills)} />
+        ) : null}
+        {summary.editedBills > 0 ? (
+          <StatCard
+            icon={Pencil}
+            label="Edited"
+            value={String(summary.editedBills)}
+            hint="Corrected bills, shown as one line each"
+          />
+        ) : null}
         {summary.discount > 0 ? (
           <StatCard
             icon={Scissors}
@@ -84,7 +102,11 @@ export default async function DailyReportPage({ searchParams }: { searchParams: 
         </div>
       ) : null}
 
-      <ReportTable bills={bills} canCancel={atLeastOwner(user.role) && selected.closed} />
+      {sheet ? (
+        <WorksheetGrid sheet={sheet} />
+      ) : (
+        <ReportTable bills={bills} canCancel={atLeastOwner(user.role) && selected.closed} />
+      )}
     </>
   );
 }

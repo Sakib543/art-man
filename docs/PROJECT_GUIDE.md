@@ -27,7 +27,7 @@ Sirf **2 log login** karte hain. Staff (karigar) na login karte hain, na un ka k
 
 | | Owner | Manager (counter) | Staff |
 |---|---|---|---|
-| Bill banana, kharche, advance, worksheet, day close, daily report, staff khata | Haan | Haan | Nahi |
+| Bill banana, kharche, advance, day close, daily report (register ke saath), staff khata | Haan | Haan | Nahi |
 | Staff, prices, deals badalna | Haan | Nahi | Nahi |
 | Overview, monthly report, monthly expenses | Haan | **Nahi** | Nahi |
 | Capital, partners, month close | Haan | **Nahi** | Nahi |
@@ -45,7 +45,7 @@ SUBAH
 DIN BHAR (Manager)
   Billing ─► customer ki bill: service/deal chuno, har service par kaun karigar, cash/online
   Daily folders ─► chai/kharcha, staff ko advance, Owner ne cash liya/diya (Owner ke PIN se)
-  Daily worksheet ─► register jaisa: har karigar ka column, neeche total, "quick add"
+  Bill sirf Billing se banta hai. Wo khud Daily report, uske Register view aur Folders (online) mein aa jata hai
 
 RAAT (Manager) ─► Day close, 5 qadam
   1. Attendance (kaun aaya)
@@ -70,10 +70,9 @@ MAHINA (Owner)
 | Screen | Kaam |
 |---|---|
 | Billing | Bill banana, customer phone se dhoondna (special rate khud), deals, split payment, aaj ki bills, bill cancel |
-| Daily worksheet | Register jaisa grid, Owner/Account column, quick add |
 | Daily folders | Expenses, staff advance, Owner cash, online payments |
 | Day close | Raat ka 5-qadam wizard, agla din shuru |
-| Daily report | Kisi bhi din ki saari bills (cancelled bhi) |
+| Daily report | Kisi bhi din ki saari bills (cancelled bhi). Upar `List \| Register` switch: Register purani Daily worksheet hai — har karigar ka column, Owner/Account column, neeche total. Sirf dekhne ke liye (P6.4) |
 | Staff khata | Har staff ka chalta hisaab (kamai jama, payment/advance kam) |
 
 **Owner**

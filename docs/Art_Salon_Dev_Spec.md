@@ -78,7 +78,9 @@ Model these as first-class entities. Field lists are the minimum; add ids, times
 
 ## 4. Screen map
 **Counter section (Manager + Owner):**
-`Billing` · `Daily worksheet` · `Daily folders` · `Day close` · `Daily report` · `Staff khata`
+`Billing` · `Daily folders` · `Day close` · `Daily report` · `Staff khata`
+
+> **Changed 2026-09-25 (client decision, backlog P6.4).** The Daily worksheet is no longer a screen of its own: it is the **Register** view of the Daily report (`List | Register`), for any business day. See §5.3.
 
 **Owner section (Owner only):**
 `Overview` · `Monthly report` · `Monthly expenses` · `Capital / Outstanding` · `Partners` · `Staff & rates`
@@ -106,7 +108,9 @@ A grid that mirrors the salon's register:
 - **One column per active staff member**, plus a final **"Owner / Account"** column for online/account money that goes directly to the owner.
 - Each billed service is a **row** in the relevant staff column (the amount). Column totals at the bottom; grand total for the day.
 - It is a **view of the same underlying bills + folder data**, not a separate ledger.
-- Optional **quick-add** per column (amount → Enter) that creates a minimal same-day bill so commission and day-close stay correct.
+- ~~Optional **quick-add** per column (amount → Enter) that creates a minimal same-day bill so commission and day-close stay correct.~~
+
+> **Changed 2026-09-25 (client decision, backlog P6.4).** Quick-add was removed. It was a second way to ring up a sale — no service, no customer, no receipt, any amount the counter typed (against §10.4) — and a counter used to the paper register could enter a sale on Billing and again in the grid, counting it twice. The worksheet is now read-only, and a bill is made on **Billing** only. Quick-add bills made before the change stay in the books as they are.
 
 ### 5.4 Day Close (nightly reconciliation)
 Runs in this order:

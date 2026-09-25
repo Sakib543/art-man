@@ -6,7 +6,6 @@ import {
   Contact,
   FilePen,
   FileText,
-  Grid3x3,
   KeyRound,
   Landmark,
   LayoutDashboard,
@@ -54,7 +53,6 @@ export const NAV: NavSection[] = [
     roles: ["owner", "manager"],
     items: [
       { href: "/billing", label: "Billing", icon: Receipt, primary: true },
-      { href: "/worksheet", label: "Daily worksheet", icon: Grid3x3 },
       { href: "/folders", label: "Daily folders", icon: Wallet },
       { href: "/day-close", label: "Day close", icon: Lock, primary: true, short: "Day close" },
       { href: "/daily-report", label: "Daily report", icon: FileText, primary: true, short: "Report" },

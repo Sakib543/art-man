@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-25 (P1.9, P6.3 and P4.11 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-25 (P1.9, P6.3, P4.11 and P6.4 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -57,7 +57,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
 | P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
 | P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
-| P6.4 | One way to ring up a bill, and the register inside the Daily report | 🟡 | Sakib543, 2026-09-25 |
+| P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
 
 ---
 
@@ -1810,13 +1810,55 @@ pass.
 
 ---
 
-### 🟡 P6.4 — One way to ring up a bill, and the register inside the Daily report
-**Owner:** Sakib543, 2026-09-25
+### ✅ P6.4 — One way to ring up a bill, and the register inside the Daily report
+**Done:** 2026-09-25 · no migration · the user's request, all three parts approved
 
-The user's request: the counter screens felt cluttered, as if the same thing had
-to be entered on several pages. Agreed: remove the worksheet's quick-add (a
-second way to create a bill), move the worksheet into the Daily report as a
-`List | Register` view, and drop the repeated banner and the zero cards.
+**Why.** The user found the counter screens cluttered — as if the same thing had
+to be entered on several pages. Checked in the code first: nothing is *stored*
+twice. A bill made on Billing appears by itself in Today's bills, the worksheet,
+the Online folder and the Daily report. But three things made it look and act
+that way:
+
+1. **The worksheet's quick-add was a second way to make a bill.** Each "+ amount,
+   Enter" box saved a bill with one "Quick add" line — no service, no customer,
+   no receipt, any amount (spec §10.4 keeps prices to the Owner's rates). A
+   counter used to the paper register could ring a sale up on Billing and type it
+   into the grid as well, and the sale, the cash and the commission would all
+   count twice. Bill #29 on 24 Sep is one.
+2. The worksheet and the Daily report were two screens of the same day's bills.
+3. Repeats: the worksheet's banner said its subtitle again; the Daily report
+   showed "Cancelled 0" and "Edited 0" every day.
+
+**What was built:**
+
+- **Quick-add removed.** `features/worksheet/actions.ts`, `service.ts` and
+  `schemas.ts` deleted; the grid is a server component with no inputs.
+  Quick-add bills already made stay as they are — bills are append-only.
+- **The worksheet is the Daily report's Register view.** A `List | Register`
+  switch (`daily-report/components/view-switch.tsx`), kept in the URL as
+  `?view=register` beside `?date=`, so the day picker keeps the view
+  (`daily-report/view.ts`, 4 tests). The register now works for **any** day,
+  not only the latest. The page composes both features; neither imports the
+  other (ARCHITECTURE rule 5).
+- The register's footer no longer repeats Grand total / Cash / Online: the
+  report's cards above carry them. One line explains the Owner / Account column.
+- `/worksheet` redirects to `/daily-report?view=register`; the sidebar item is
+  gone. Counter section: Billing · Daily folders · Day close · Daily report ·
+  Staff khata.
+- "Cancelled" and "Edited" cards only when above zero, like "Discount".
+- Spec §4 and §5.3 carry a dated change note; HANDOFF section 6 records the
+  decision; PROJECT_GUIDE updated.
+
+**Verified:** `pnpm build` (26 routes), `pnpm test` (**357**, was 353),
+`pnpm lint`. Signed-in pages could not be opened from here — two sign-in
+attempts never reached the Browser pane's tab (no `/api/auth` request) — so
+the new components were rendered on **live data, read-only**, through a
+throwaway route (`/p64.harness`, deleted, never committed): 24 Sep's register
+has no inputs, columns Arshad 3,550 + Hamid 4,400 + Sherry 3,300 = **Rs 11,250**,
+the day's Total sales, Owner / Account Rs 450; the switch links are right. At
+375 px the page does not overflow and the table scrolls inside its box. **Not
+seen in a browser:** the Daily report page itself with the switch in its header,
+and the `/worksheet` redirect. Check both on the next signed-in session.
 
 ---
 

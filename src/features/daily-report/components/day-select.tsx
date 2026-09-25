@@ -4,14 +4,19 @@ import { useRouter } from "next/navigation";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { formatDateLong } from "@/lib/format";
 import type { ReportDay } from "../queries";
+import { reportHref, type ReportView } from "../view";
 
 interface DaySelectProps {
   days: ReportDay[];
   selected: string;
+  view: ReportView;
 }
 
-/** Pick which business day's report to show. The date lives in the URL, so a report can be bookmarked. */
-export function DaySelect({ days, selected }: DaySelectProps) {
+/**
+ * Pick which business day's report to show. The date lives in the URL, so a
+ * report can be bookmarked — and so does the view, which a new day keeps.
+ */
+export function DaySelect({ days, selected, view }: DaySelectProps) {
   const router = useRouter();
 
   return (
@@ -19,7 +24,7 @@ export function DaySelect({ days, selected }: DaySelectProps) {
       aria-label="Choose a business day"
       className="w-64"
       value={selected}
-      onChange={(event) => router.push(`/daily-report?date=${event.target.value}`)}
+      onChange={(event) => router.push(reportHref(event.target.value, view))}
     >
       {days.map((day) => (
         <NativeSelectOption key={day.businessDate} value={day.businessDate}>

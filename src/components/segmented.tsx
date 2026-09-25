@@ -17,8 +17,8 @@ interface SegmentedProps<T extends string> {
  * Pick one of two or three (P6.1).
  *
  * It was written out three times — the payment mode on a bill, what an expense
- * was paid from, and the worksheet's quick-add — with the same markup and
- * three different button heights. The selected pill is `bg-card` on
+ * was paid from, and the worksheet's quick-add (gone since P6.4) — with the
+ * same markup and three different button heights. The selected pill is `bg-card` on
  * `bg-secondary`, so it works the same way the app's other surfaces do.
  */
 export function Segmented<T extends string>({
