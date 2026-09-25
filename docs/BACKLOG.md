@@ -57,6 +57,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
 | P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
 | P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
+| P6.4 | One way to ring up a bill, and the register inside the Daily report | 🟡 | Sakib543, 2026-09-25 |
 
 ---
 
@@ -1806,6 +1807,16 @@ entries (**"2 behind"**) and of 16 (**"2 more than this checkout has"**); the
 folder, with its temporary copy of `.env.local`, was deleted straight after.
 `pnpm build` (26 routes), `pnpm test` (353), `pnpm lint` and `tsc --noEmit`
 pass.
+
+---
+
+### 🟡 P6.4 — One way to ring up a bill, and the register inside the Daily report
+**Owner:** Sakib543, 2026-09-25
+
+The user's request: the counter screens felt cluttered, as if the same thing had
+to be entered on several pages. Agreed: remove the worksheet's quick-add (a
+second way to create a bill), move the worksheet into the Daily report as a
+`List | Register` view, and drop the repeated banner and the zero cards.
 
 ---
 
