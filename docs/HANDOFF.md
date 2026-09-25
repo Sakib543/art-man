@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-25 (P1.9: one seed script, developer only. P6.3: login page tidied. Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-25 (P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -892,6 +892,7 @@ STAGE 3 — during the client's 20-day trial
   P6.2  The salon's real logo, everywhere              DONE 2026-09-23
   P1.9  One seed script, developer only                DONE 2026-09-25
   P6.3  Tidy the login page after 5313fc3              DONE 2026-09-25
+  P4.11 db:check counts migrations against the repo    DONE 2026-09-25
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)

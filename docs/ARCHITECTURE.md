@@ -73,7 +73,7 @@ src/
 
   proxy.ts            Optimistic gate: is there a session cookie? It never
                       redirects away from /login — that locked people out once.
-scripts/              Seeds and db:check. load-env.ts must be imported first.
+scripts/              The developer seed, db:check, db:backup. load-env.ts must be imported first.
 drizzle/              Generated migrations. Never edited by hand.
 ```
 

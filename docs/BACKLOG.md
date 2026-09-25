@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-25 (P1.9 and P6.3 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-25 (P1.9, P6.3 and P4.11 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -56,7 +56,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
 | P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
 | P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
-| P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | 🟡 | Sakib543, 2026-09-25 |
+| P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
 
 ---
 
@@ -1780,11 +1780,32 @@ and the form shows, no overflow. No console errors. `pnpm build` (26 routes),
 
 ---
 
-### 🟡 P4.11 — `db:check` counts migrations against the repo
-**Owner:** Sakib543, 2026-09-25
+### ✅ P4.11 — `db:check` counts migrations against the repo
+**Done:** 2026-09-25 · no migration
 
-`pnpm db:check` prints "(16 means everything up to 0015)", which went stale
-two migrations ago. Read the expected count from `drizzle/meta/_journal.json`.
+`pnpm db:check` printed "(16 means everything up to 0015)" — true when it was
+written, wrong two migrations later, and it would have gone wrong again with
+every migration after.
+
+**What changed:** `scripts/check-db.ts` reads `drizzle/meta/_journal.json` —
+drizzle-kit's own list of this checkout's migrations — and prints:
+
+```
+migrations applied 18 of 18 in this checkout (last: 0017_superb_terror)
+```
+
+When the counts differ it adds one line saying which way: **behind** ("run pnpm
+db:migrate against this database") or **ahead** ("git pull before migrating" —
+the other developer migrated first). The header comment no longer calls the
+`.env.local` database "dev"; it is live (HANDOFF 9a). `docs/BACKUP.md` and
+`docs/ARCHITECTURE.md` updated to match.
+
+**Verified:** run against the live database (read-only) — 18 of 18. Both other
+branches run for real too, from a scratch folder with a fake journal of 20
+entries (**"2 behind"**) and of 16 (**"2 more than this checkout has"**); the
+folder, with its temporary copy of `.env.local`, was deleted straight after.
+`pnpm build` (26 routes), `pnpm test` (353), `pnpm lint` and `tsc --noEmit`
+pass.
 
 ---
 

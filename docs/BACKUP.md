@@ -94,8 +94,9 @@ one and point the app at it.
    DATABASE_URL="postgres://...<the restored database>" pnpm db:check
    ```
 
-   It prints the migration count, whether `user.active` exists and how many
-   login accounts there are. They must match the backup's database.
+   It prints the migration count against the ones this checkout has (and says
+   when the database is behind or ahead), whether `user.active` exists and how
+   many login accounts there are. They must match the backup's database.
 4. Point the app at it: `DATABASE_URL` in `.env.local` locally, or in the Vercel
    project for the live site, then redeploy.
 
