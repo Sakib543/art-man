@@ -59,6 +59,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
 | P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
 | P6.5 | A calmer Daily report | ✅ | done 2026-09-25 |
+| P6.6 | Today's bills, as calm as the Daily report | 🟡 | Sakib543, 2026-09-25 |
 
 ---
 
@@ -1899,6 +1900,15 @@ at 375 px the picker reads in full and a bill card's cells pad 3 px instead of
 12. No console errors. `pnpm build` (26 routes), `pnpm test` (357), `pnpm lint`
 pass. **Not seen:** the page inside the app shell, signed in — look at it on
 the live site.
+
+---
+
+### 🟡 P6.6 — Today's bills, as calm as the Daily report
+**Owner:** Sakib543, 2026-09-25
+
+The same clean-up as P6.5 on Billing's Today's bills: "Walk-in" and a green
+"Active" on every row, Cash and Online columns mostly "Rs 0", and cells that
+keep their desktop padding on a phone (HANDOFF trap 8.11).
 
 ---
 
