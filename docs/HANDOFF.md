@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-25 (P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5: the Daily report decluttered. Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-25 (P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (357 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (361 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -139,7 +139,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — **26 routes** (2026-09-25; `icon.png` and `apple-icon.png` count as routes; `/worksheet` is now only a redirect), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **357 passed** (33 files), 2026-09-25 |
+| `pnpm test` | **361 passed** (33 files), 2026-09-25 |
 | Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0017`** (P3.10's discount columns and P3.11's `services.max_price`, both 2026-09-23) |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
@@ -622,7 +622,7 @@ Found 2026-09-25 (P6.5). The phone layout for tables — each row a card — is 
 layer, so they win **whatever the specificity**: a cell's `px-3.5 py-2.5` kept
 its full padding on a phone and the cards came out loose, every line far from
 the next. Put a stacked table's cell padding behind `md:` (`md:px-3.5 md:py-3`).
-Done for the Daily report; **Today's bills on Billing still has it.**
+Fixed in the Daily report (P6.5) and Today's bills (P6.6). Any other `.table-stacked` still carrying bare `px-*`/`py-*` on its cells has it too.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -906,6 +906,7 @@ STAGE 3 — during the client's 20-day trial
   P4.11 db:check counts migrations against the repo    DONE 2026-09-25
   P6.4  Register inside Daily report, no quick-add     DONE 2026-09-25
   P6.5  A calmer Daily report                          DONE 2026-09-25
+  P6.6  Today's bills, as calm as the Daily report     DONE 2026-09-25
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)

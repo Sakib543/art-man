@@ -1,8 +1,7 @@
 import { DiscountNote } from "@/components/discount-note";
 import { Panel } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
-import type { DayBill } from "@/db/queries/day-bills";
-import { formatTime, num } from "@/lib/format";
+import { formatTime, num, paidBy } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ReportBill } from "../corrections";
 import { CancelClosedBill } from "./cancel-closed-bill";
@@ -27,14 +26,6 @@ function StatusBadges({ bill }: { bill: ReportBill }) {
       {bill.previous.length > 0 ? <Badge variant="warning">Edited</Badge> : null}
     </>
   );
-}
-
-/** "Cash" or "Online" when it was one of them — the amount is in the next column — and both amounts on a split. */
-function paidBy(bill: DayBill): string {
-  if (bill.cash !== 0 && bill.online !== 0) return `Cash ${num(bill.cash)} · Online ${num(bill.online)}`;
-  if (bill.online !== 0) return "Online";
-  if (bill.cash !== 0) return "Cash";
-  return "—";
 }
 
 /**
@@ -104,7 +95,7 @@ export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCanc
                     </div>
                   </td>
                   <td className={cn(td, "text-muted-foreground tabular-nums")} data-label="Paid by">
-                    {paidBy(bill)}
+                    {paidBy(bill.cash, bill.online)}
                   </td>
                   <td
                     className={cn(

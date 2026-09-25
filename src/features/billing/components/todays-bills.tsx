@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { formatTime, rs } from "@/lib/format";
+import { formatTime, num, paidBy } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { DayBill } from "@/db/queries/day-bills";
 import { cancelBillAction } from "../actions";
@@ -16,6 +16,9 @@ import { receiptOfBill } from "../receipt-of-bill";
 import type { Receipt } from "../types";
 import { ReceiptDialog } from "./receipt-dialog";
 import { Panel, PanelEmpty, PanelHeader } from "@/components/panel";
+
+// Padding from `md` up only; below it `.table-stacked` spaces the card itself.
+const td = "align-top md:px-3.5 md:py-3";
 
 interface TodaysBillsProps {
   bills: DayBill[];
@@ -70,90 +73,115 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
       {bills.length === 0 ? (
         <PanelEmpty>No bills yet today</PanelEmpty>
       ) : (
-        /* Below `md` each bill is a card rather than a seven-column sideways
-           scroll; the labels come from `data-label` (see globals.css). */
+        /* Below `md` each bill is a card rather than a sideways scroll; the
+           labels come from `data-label` (see globals.css). Cells pad from `md`
+           up only, so the card keeps its own tight spacing (HANDOFF 8.11). */
         <div className="md:overflow-x-auto">
           <table className="table-stacked w-full text-sm">
             <thead>
               <tr className="border-b bg-surface-sunken text-left text-xs text-muted-foreground">
-                <th className="px-3.5 py-2 font-medium">Time</th>
-                <th className="px-3.5 py-2 font-medium">Bill</th>
-                <th className="px-3.5 py-2 font-medium">Customer</th>
-                <th className="px-3.5 py-2 font-medium">Items</th>
-                <th className="px-3.5 py-2 text-right font-medium">Cash</th>
-                <th className="px-3.5 py-2 text-right font-medium">Online</th>
-                <th className="px-3.5 py-2 font-medium">Status</th>
+                <th className="w-44 px-3.5 py-2 font-medium">Bill</th>
+                <th className="px-3.5 py-2 font-medium">Services and staff</th>
+                <th className="px-3.5 py-2 font-medium">Paid by</th>
+                <th className="px-3.5 py-2 text-right font-medium">Amount</th>
                 <th className="px-3.5 py-2" />
               </tr>
             </thead>
             <tbody>
-              {bills.map((bill) => (
-                <tr key={bill.id} className={cn("border-b last:border-b-0", bill.status !== "active" && "text-muted-foreground")}>
-                  <td className="px-3.5 py-2.5 tabular-nums" data-label="Time">
-                    {formatTime(bill.createdAt)}
-                  </td>
-                  <td className="px-3.5 py-2.5 tabular-nums" data-row-title="">
-                    #{bill.billNo}
-                    {bill.bookNo ? <span className="block text-xs text-muted-foreground">Book {bill.bookNo}</span> : null}
-                  </td>
-                  <td className="px-3.5 py-2.5" data-label="Customer">
-                    {bill.customerName ?? "Walk-in"}
-                  </td>
-                  <td className="px-3.5 py-2.5">
-                    {bill.lines.map((line) => line.name).join(", ")}
-                    {/* Nothing else in the row shows a discount: the cash is
-                        already net of it (P3.10). */}
-                    <DiscountNote amount={bill.discount} reason={bill.discountReason} className="mt-0.5 flex" />
-                  </td>
-                  <td className="px-3.5 py-2.5 text-right tabular-nums" data-label="Cash">
-                    {rs(bill.cash)}
-                  </td>
-                  <td className="px-3.5 py-2.5 text-right tabular-nums" data-label="Online">
-                    {rs(bill.online)}
-                  </td>
-                  <td className="px-3.5 py-2.5 max-md:pt-2" data-label="Status">
-                    {bill.status === "active" ? <Badge variant="success">Active</Badge> : null}
-                    {bill.status === "cancelled" ? (
-                      <span title={bill.cancelReason ?? ""}>
-                        <Badge variant="destructive">Cancelled</Badge>
-                      </span>
-                    ) : null}
-                    {bill.status === "reversal" ? (
-                      <Badge variant="secondary">Reverses #{bill.reversesBillNo}</Badge>
-                    ) : null}
-                  </td>
-                  <td className="px-3.5 py-2.5 text-right whitespace-nowrap max-md:mt-1 max-md:flex max-md:gap-1 max-md:border-t max-md:pt-2">
-                    {bill.status === "active" && canEdit ? (
-                      editingId === bill.id ? (
-                        <Badge variant="secondary">Correcting</Badge>
-                      ) : (
-                        <Link href={`/billing?edit=${bill.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                          Edit
-                        </Link>
-                      )
-                    ) : null}
-                    {bill.status === "active" ? (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={`Print the receipt for bill #${bill.billNo}`}
-                          onClick={() => {
-                            setReprint(receiptOfBill(bill, businessDate));
-                            setReprintOpen(true);
-                          }}
-                        >
-                          <Printer aria-hidden />
-                          Print
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => openFor(bill)}>
-                          Cancel
-                        </Button>
-                      </>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
+              {bills.map((bill) => {
+                const muted = bill.status !== "active";
+                return (
+                  <tr key={bill.id} className={cn("border-b last:border-b-0", muted && "text-muted-foreground")}>
+                    <td className={td} data-row-title="">
+                      <div>
+                        <p className="flex flex-wrap items-center gap-1.5">
+                          <span className={cn("font-semibold tabular-nums", !muted && "text-foreground")}>
+                            #{bill.billNo}
+                          </span>
+                          {/* Only what is unusual gets a badge: a green
+                              "Active" on every row said nothing (P6.6). */}
+                          {bill.status === "cancelled" ? (
+                            <span title={bill.cancelReason ?? ""}>
+                              <Badge variant="destructive">Cancelled</Badge>
+                            </span>
+                          ) : null}
+                          {bill.status === "reversal" ? (
+                            <Badge variant="secondary">Reverses #{bill.reversesBillNo}</Badge>
+                          ) : null}
+                        </p>
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          {formatTime(bill.createdAt)}
+                          {bill.bookNo ? ` · Book ${bill.bookNo}` : null}
+                        </p>
+                        {/* A name when there is one; no "Walk-in" on every row. */}
+                        {bill.customerName ? <p className="mt-0.5 text-sm">{bill.customerName}</p> : null}
+                      </div>
+                    </td>
+                    <td className={td}>
+                      <div className="space-y-0.5">
+                        {bill.lines.map((line, index) => (
+                          <p key={index}>
+                            {line.name} <span className="text-muted-foreground">· {line.staffName}</span>
+                          </p>
+                        ))}
+                        {/* Nothing else in the row shows a discount: the amount
+                            is already net of it (P3.10). */}
+                        <DiscountNote amount={bill.discount} reason={bill.discountReason} className="flex" />
+                      </div>
+                    </td>
+                    <td className={cn(td, "text-muted-foreground tabular-nums")} data-label="Paid by">
+                      {paidBy(bill.cash, bill.online)}
+                    </td>
+                    <td
+                      className={cn(
+                        td,
+                        "text-right font-semibold tabular-nums",
+                        bill.total < 0 && "text-destructive",
+                        bill.status === "cancelled" && "font-normal line-through",
+                      )}
+                      data-label="Amount"
+                    >
+                      {num(bill.total)}
+                    </td>
+                    <td
+                      className={cn(
+                        td,
+                        "whitespace-nowrap md:text-right",
+                        "max-md:mt-1 max-md:flex max-md:gap-1 max-md:border-t max-md:pt-2 max-md:empty:hidden",
+                      )}
+                    >
+                      {bill.status === "active" && canEdit ? (
+                        editingId === bill.id ? (
+                          <Badge variant="secondary">Correcting</Badge>
+                        ) : (
+                          <Link href={`/billing?edit=${bill.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                            Edit
+                          </Link>
+                        )
+                      ) : null}
+                      {bill.status === "active" ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Print the receipt for bill #${bill.billNo}`}
+                            onClick={() => {
+                              setReprint(receiptOfBill(bill, businessDate));
+                              setReprintOpen(true);
+                            }}
+                          >
+                            <Printer aria-hidden />
+                            Print
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => openFor(bill)}>
+                            Cancel
+                          </Button>
+                        </>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

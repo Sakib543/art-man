@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4 and P6.5 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4, P6.5 and P6.6 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -59,7 +59,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
 | P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
 | P6.5 | A calmer Daily report | ✅ | done 2026-09-25 |
-| P6.6 | Today's bills, as calm as the Daily report | 🟡 | Sakib543, 2026-09-25 |
+| P6.6 | Today's bills, as calm as the Daily report | ✅ | done 2026-09-25 |
 
 ---
 
@@ -1887,8 +1887,8 @@ Also: the day picker is full width on a phone, where its fixed 256 px cut
 **A trap found on the way, and recorded in HANDOFF section 8:** the
 `.table-stacked` phone layout lives in `@layer components`, so a cell's own
 `px-3.5 py-2.5` (a utility) beat its tight card spacing on a phone. The Daily
-report's cells now pad from `md` up only. **Today's bills on Billing has the
-same problem and was left alone** — a separate screen.
+report's cells now pad from `md` up only. Today's bills on Billing had the same
+problem; fixed in P6.6.
 
 **Verified** on live data, read-only, through a throwaway route
 (`/p65.harness`, deleted, never committed), since signing in from here did not
@@ -1903,12 +1903,34 @@ the live site.
 
 ---
 
-### 🟡 P6.6 — Today's bills, as calm as the Daily report
-**Owner:** Sakib543, 2026-09-25
+### ✅ P6.6 — Today's bills, as calm as the Daily report
+**Done:** 2026-09-25 · no behaviour change · the user chose "like the Daily report" over "phone padding only"
 
-The same clean-up as P6.5 on Billing's Today's bills: "Walk-in" and a green
-"Active" on every row, Cash and Online columns mostly "Rs 0", and cells that
-keep their desktop padding on a phone (HANDOFF trap 8.11).
+Billing's Today's bills now follows P6.5's rules, so the two bill tables read
+the same:
+
+- Columns: **Bill · Services and staff · Paid by · Amount · actions**. Time,
+  book number and a customer's name sit under the bill number; there is no
+  Customer column of "Walk-in" and no separate Time column.
+- No green "Active" badge on every row — only **Cancelled** (reason on hover)
+  and **Reverses #n**. Cancelled and reversal rows are muted; a cancelled
+  amount is struck through.
+- **Cash and Online columns, mostly "Rs 0", became one "Paid by"** plus the
+  amount. `paidBy()` moved from the Daily report into `src/lib/format.ts` (4
+  tests) so both tables share it — a feature may not import another.
+- Each service shows its staff member ("Haircut · Hamid"), as in the report.
+- Cells pad from `md` up only (trap 8.11 fixed here too). On a phone a
+  cancelled bill's empty actions strip is hidden (`max-md:empty:hidden`)
+  rather than drawn as a bordered blank line.
+
+Edit, Print and Cancel are untouched.
+
+**Verified** on 24 Sep's live bills, read-only, through a throwaway route
+(`/p66.harness`, deleted, never committed; no button was pressed): 15 rows, no
+"Active", no "Walk-in", no "Rs 0"; #15 Cancelled and #16 Reverses #15 badged;
+13 Print buttons for the 13 active bills. At 375 px cells pad 3 px, the
+cancelled bill's actions strip is `display: none`, no overflow, no console
+errors. `pnpm build` (26 routes), `pnpm test` (**361**), `pnpm lint` pass.
 
 ---
 

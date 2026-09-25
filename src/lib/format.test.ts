@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime, priceRange } from "./format";
+import { formatDateTime, paidBy, priceRange } from "./format";
 
 describe("formatDateTime", () => {
   it("reads the date and time in Karachi, whatever the server's zone", () => {
@@ -34,5 +34,25 @@ describe("priceRange", () => {
     // The form refuses this, but a screen must never print "Rs 500 – 500".
     expect(priceRange(500, 500)).toBe("Rs 500");
     expect(priceRange(500, 400)).toBe("Rs 500");
+  });
+});
+
+describe("paidBy", () => {
+  it("names the one way a bill was paid, without the amount", () => {
+    expect(paidBy(400, 0)).toBe("Cash");
+    expect(paidBy(0, 450)).toBe("Online");
+  });
+
+  it("gives both amounts on a split", () => {
+    expect(paidBy(700, 400)).toBe("Cash 700 · Online 400");
+  });
+
+  it("reads a reversal's negative amounts the same way", () => {
+    expect(paidBy(-300, 0)).toBe("Cash");
+    expect(paidBy(-1500, -500)).toBe("Cash -1,500 · Online -500");
+  });
+
+  it("says nothing was paid on an empty bill", () => {
+    expect(paidBy(0, 0)).toBe("—");
   });
 });

@@ -59,3 +59,15 @@ export function formatDateLong(isoDate: string): string {
   const weekday = DAYS[new Date(y, m - 1, d).getDay()];
   return `${weekday}, ${formatDate(isoDate)}`;
 }
+
+/**
+ * How a bill was paid, for the two bill tables (P6.5, P6.6): "Cash" or
+ * "Online" when it was one of them — the amount has its own column — and both
+ * amounts on a split, where the column alone could not say how it divided.
+ */
+export function paidBy(cash: number, online: number): string {
+  if (cash !== 0 && online !== 0) return `Cash ${num(cash)} · Online ${num(online)}`;
+  if (online !== 0) return "Online";
+  if (cash !== 0) return "Cash";
+  return "—";
+}
