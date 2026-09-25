@@ -56,6 +56,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
 | P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
 | P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
+| P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | 🟡 | Sakib543, 2026-09-25 |
 
 ---
 
@@ -1776,6 +1777,14 @@ written to the database: at 1440 px the logo measures **282 × 192**, ratio
 1.47, the artwork's own; no horizontal overflow. At 375 px the panel is hidden
 and the form shows, no overflow. No console errors. `pnpm build` (26 routes),
 `pnpm test` (353), `pnpm lint` pass.
+
+---
+
+### 🟡 P4.11 — `db:check` counts migrations against the repo
+**Owner:** Sakib543, 2026-09-25
+
+`pnpm db:check` prints "(16 means everything up to 0015)", which went stale
+two migrations ago. Read the expected count from `drizzle/meta/_journal.json`.
 
 ---
 
