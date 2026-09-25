@@ -58,6 +58,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
 | P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
 | P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
+| P6.5 | A calmer Daily report | 🟡 | Sakib543, 2026-09-25 |
 
 ---
 
@@ -1859,6 +1860,15 @@ the day's Total sales, Owner / Account Rs 450; the switch links are right. At
 375 px the page does not overflow and the table scrolls inside its box. **Not
 seen in a browser:** the Daily report page itself with the switch in its header,
 and the `/worksheet` redirect. Check both on the next signed-in session.
+
+---
+
+### 🟡 P6.5 — A calmer Daily report
+**Owner:** Sakib543, 2026-09-25
+
+The user: the Daily report is congested — make it easy to read, neat and clean.
+The date shows twice in the header, six tall cards wrap their figures, and every
+row repeats "Walk-in", a green "Paid" and the amount twice.
 
 ---
 
