@@ -61,7 +61,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.5 | A calmer Daily report | ✅ | done 2026-09-25 |
 | P6.6 | Today's bills, as calm as the Daily report | ✅ | done 2026-09-25 |
 | P3.12 | "Other" on a bill: extra work at whatever the counter charges | ✅ | done 2026-09-25 |
-| P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ⬜ | — |
+| P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | 🟡 | Sakib543, 2026-09-25 |
 
 ---
 
@@ -1990,8 +1990,8 @@ printed receipt with an Other line.
 
 ---
 
-### ⬜ P3.13 — Re-opening a discounted bill takes the discount off twice
-**Owner:** — · found 2026-09-25 while building P3.12 · **predates it** (P3.10 × P3.11)
+### 🟡 P3.13 — Re-opening a discounted bill takes the discount off twice
+**Owner:** Sakib543, 2026-09-25 · found 2026-09-25 while building P3.12 · **predates it** (P3.10 × P3.11)
 
 `bill_lines.amount` is stored **net** of the discount. When the Owner re-opens
 a bill (P1.4), `draftLinesOf` hands a price-range line (and now an Other line)
