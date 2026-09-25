@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-25 (P1.9 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-25 (P1.9 and P6.3 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -55,7 +55,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.8 | Only the developer sets passwords · the eye on every password field · the developer names their own account | ✅ | done 2026-09-23 |
 | P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
 | P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
-| P6.3 | Tidy the login page after `5313fc3` | 🟡 | Sakib543, 2026-09-25 |
+| P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
 
 ---
 
@@ -1752,12 +1752,30 @@ pass, and `tsc --noEmit` covers `scripts/seed-developer.ts` and passes.
 
 ---
 
-### 🟡 P6.3 — Tidy the login page after `5313fc3`
-**Owner:** Sakib543, 2026-09-25
+### ✅ P6.3 — Tidy the login page after `5313fc3`
+**Done:** 2026-09-25 · no behaviour change
 
-`w-1xl` on the login logo is not a Tailwind class and generates nothing; the
-navy panel's `<div>` lost an indent; blank lines with trailing spaces were left
-behind in the login page and in `BrandLockup`.
+Commit `5313fc3` enlarged and centred the login logo. It left three things behind:
+
+- **`w-1xl` on the logo is not a Tailwind class.** Removed. It generated no CSS —
+  checked in the built stylesheets before and after — so nothing on screen moved.
+  The width already follows the artwork through `w-auto`.
+- The navy panel's `<div>` was indented one space short. Fixed.
+- Blank lines holding trailing spaces, two in `login/page.tsx` and one in
+  `BrandLockup` (`components/salon-logo.tsx`). Removed.
+
+**Left alone, on purpose — they are design choices from that commit:** the panel
+is now `items-center justify-center`, so the `<div aria-hidden />` spacer no
+longer does anything and "Art Men's Salon · Karachi" sits under the sentence
+instead of at the bottom of the panel. `BrandLockup` no longer shows "POS &
+Accounts", so its doc comment ("the logo with what this app is underneath it")
+is out of date. Ask before changing either.
+
+**Verified in a browser** on a production build, signed out, so nothing was
+written to the database: at 1440 px the logo measures **282 × 192**, ratio
+1.47, the artwork's own; no horizontal overflow. At 375 px the panel is hidden
+and the form shows, no overflow. No console errors. `pnpm build` (26 routes),
+`pnpm test` (353), `pnpm lint` pass.
 
 ---
 

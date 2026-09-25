@@ -18,7 +18,7 @@ export default async function LoginPage() {
     <main className="grid min-h-screen lg:grid-cols-2">
       {/* The navy half. Hidden on a phone, where it would only push the form
           below the fold. */}
-     <div className="relative hidden flex-col items-center justify-center overflow-hidden bg-sidebar p-12 lg:flex">
+      <div className="relative hidden flex-col items-center justify-center overflow-hidden bg-sidebar p-12 lg:flex">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-32 -right-24 size-96 rounded-full bg-brass/12 blur-3xl"
@@ -33,7 +33,7 @@ export default async function LoginPage() {
         <div className="relative max-w-md">
           {/* Above the sentence, not off in the corner — the client's
               instruction, 2026-09-23. */}
-          <SalonLogo onDark priority className="mb-8 h-48 w-1xl" />
+          <SalonLogo onDark priority className="mb-8 h-48" />
           <h2 className="text-3xl leading-tight font-semibold text-balance text-sidebar-active-foreground">
             The counter, the drawer and the books — in one place.
           </h2>
@@ -42,8 +42,6 @@ export default async function LoginPage() {
             themselves up.
           </p>
         </div>
-        
-       
 
         <p className="relative text-sm text-sidebar-heading">Art Men&apos;s Salon · Karachi</p>
       </div>
