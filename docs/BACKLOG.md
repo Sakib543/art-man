@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4, P6.5, P6.6 and P3.12 done; P3.13 found. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12 and P3.13 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -61,7 +61,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.5 | A calmer Daily report | ✅ | done 2026-09-25 |
 | P6.6 | Today's bills, as calm as the Daily report | ✅ | done 2026-09-25 |
 | P3.12 | "Other" on a bill: extra work at whatever the counter charges | ✅ | done 2026-09-25 |
-| P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | 🟡 | Sakib543, 2026-09-25 |
+| P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
 
 ---
 
@@ -1990,23 +1990,56 @@ printed receipt with an Other line.
 
 ---
 
-### 🟡 P3.13 — Re-opening a discounted bill takes the discount off twice
-**Owner:** Sakib543, 2026-09-25 · found 2026-09-25 while building P3.12 · **predates it** (P3.10 × P3.11)
+### ✅ P3.13 — Re-opening a discounted bill takes the discount off twice
+**Done:** 2026-09-25 · **no migration** · found while building P3.12 · the bug **predated** it (P3.10 × P3.11)
 
-`bill_lines.amount` is stored **net** of the discount. When the Owner re-opens
-a bill (P1.4), `draftLinesOf` hands a price-range line (and now an Other line)
-back with that net amount, and the screen then applies the bill's discount
-**again**. Reproduced with a throwaway test: Haircut 300–500 charged 450 with
-Rs 50 off → saved total **400**; re-opened → **350**. A fixed-price or deal
-line is unaffected (its price comes from the catalog, not the saved amount).
+**The bug.** `bill_lines.amount` is stored **net** of the discount. When the
+Owner re-opened a bill (P1.4), `draftLinesOf` handed a price-range line (and,
+since P3.12, an Other line) back with that net amount, and the screen then took
+the bill's discount off **again**. Haircut 300–500 charged 450 with Rs 50 off:
+saved **400**, re-opened **350**. Worse, a range line charged at its bottom
+came back *below* the range (300 − 50 = 250), so the bill could not be re-opened
+at all. Fixed-price and deal lines were never affected — the catalog re-prices
+them whole.
 
-The Owner would see the lower total on the edit screen and could retype it, but
-nothing says why. Fix: give the draft the **gross** amount. With one variable
-line it is exact — gross total = stored total + discount, minus the fixed
-lines' catalog prices. With several it is ambiguous, so storing the gross (or
-the per-line share) is cleaner — a migration.
+**The fix: `restoreGross` in `bill-draft.ts`**, called from `getBillForEdit`.
+Nothing stored says how a discount was split, so it is worked back out, and
+then **checked**:
 
-**Size:** small–medium · **Value:** medium (money on a correction)
+1. the lines came to (saved total + discount) before it;
+2. the fixed lines' part of that is what the catalog prices them at;
+3. the rest belongs to the self-priced lines — guessed in proportion to what
+   they were saved at (`allocate`);
+4. the cart is priced **with** the discount and every line compared with what
+   was saved. The largest-remainder split can leave a guess a rupee out between
+   two lines, so one-, two- and three-rupee moves between them are tried.
+
+Even an unchecked guess adds up to the right total, so a bill can no longer
+come back cheaper; only which line holds a stray rupee could differ.
+
+A migration storing the gross amount was considered and not taken: old bills
+would still need exactly this, and it would have been one more change applied
+straight to the live database (HANDOFF 9a).
+
+`getBillForEdit`'s pre-check now prices the draft **with** the discount, so a
+discount that no longer fits is caught there too.
+
+**Verified.** 7 new tests (`pnpm test` **388**), including a round trip — ring
+a bill up as the counter would, re-open it as the edit screen does — over four
+mixes of range, fixed and Other lines at 43 discounts each, every line coming
+back to the rupee. On live data, read-only, through a throwaway route
+(`/p313.harness`, deleted, never committed), every active bill of the open day
+(24 Sep) was re-opened and re-priced: **12 of 14 come back to their saved
+total**, including the discounted #27 and #22. **#17 and #20 do not re-open**,
+exactly as before this change: both were rung up while Haircut was a flat Rs
+800, and it is 300–500 now, so the screen says to cancel and re-enter. (#17 has
+no discount; `restoreGross` does not touch it.)
+
+**Noticed, not changed:** re-opening prices a **deal** by today's list prices,
+so #22 comes back at its saved total but split 204 / 272 / 1224 instead of
+453 / 227 / 1020 — Haircut's list price moved under it. That is how
+`getBillForEdit` has always behaved ("price it against today's catalog"); it
+matters only to how commission divides if the Owner saves the correction.
 
 ---
 

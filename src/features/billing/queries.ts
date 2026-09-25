@@ -14,7 +14,7 @@ import {
   staff,
 } from "@/db/schema";
 import { priceCart, PricingError } from "@/lib/accounting";
-import { draftLinesOf } from "./bill-draft";
+import { draftLinesOf, restoreGross } from "./bill-draft";
 import { lastVisitOf } from "./last-visit";
 import type { BillDraft, BillingData, CustomerInfo } from "./types";
 
@@ -139,18 +139,26 @@ export async function getBillForEdit(billId: string, data: BillingData): Promise
     .from(billLines)
     .where(eq(billLines.billId, bill.id));
 
-  const lines = draftLinesOf(saved);
   const customer = bill.customerId ? await findCustomerById(bill.customerId) : null;
+  const catalog = {
+    services: Object.fromEntries(data.services.map((s) => [s.id, { id: s.id, name: s.name, price: s.price, maxPrice: s.maxPrice }])),
+    deals: Object.fromEntries(data.deals.map((d) => [d.id, d])),
+    specialRates: customer?.specialRates ?? {},
+  };
+  // Saved amounts are net of the discount, which the screen takes off again;
+  // a line that carries its own price gets it put back first (P3.13).
+  const lines = restoreGross(
+    draftLinesOf(saved),
+    saved.map((line) => line.amount),
+    bill.discount,
+    catalog,
+  );
 
   // Price it against today's catalog before showing it. If a service or deal
   // has changed since the bill was rung up, say so now rather than let the
   // screen open with a total of 0 and no explanation.
   try {
-    priceCart(lines, {
-      services: Object.fromEntries(data.services.map((s) => [s.id, { id: s.id, name: s.name, price: s.price, maxPrice: s.maxPrice }])),
-      deals: Object.fromEntries(data.deals.map((d) => [d.id, d])),
-      specialRates: customer?.specialRates ?? {},
-    });
+    priceCart(lines, catalog, bill.discount);
   } catch (error) {
     if (error instanceof PricingError) {
       return {
