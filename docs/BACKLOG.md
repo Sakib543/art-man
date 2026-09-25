@@ -60,6 +60,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
 | P6.5 | A calmer Daily report | ✅ | done 2026-09-25 |
 | P6.6 | Today's bills, as calm as the Daily report | ✅ | done 2026-09-25 |
+| P3.12 | "Other" on a bill: extra work at whatever the counter charges | 🟡 | Sakib543, 2026-09-25 |
 
 ---
 
@@ -1931,6 +1932,16 @@ Edit, Print and Cancel are untouched.
 13 Print buttons for the 13 active bills. At 375 px cells pad 3 px, the
 cancelled bill's actions strip is `display: none`, no overflow, no console
 errors. `pnpm build` (26 routes), `pnpm test` (**361**), `pnpm lint` pass.
+
+---
+
+### 🟡 P3.12 — "Other" on a bill: extra work at whatever the counter charges
+**Owner:** Sakib543, 2026-09-25
+
+Client request: a customer sometimes has extra work done that is not on the
+list. Billing gets an **Other** line — the counter types the amount, a
+description is optional, a staff member is chosen like any line — and it flows
+everywhere a line does (receipt, reports, register, commission, khata).
 
 ---
 
