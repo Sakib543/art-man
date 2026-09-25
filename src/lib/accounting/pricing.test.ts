@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   checkPayment,
+  OTHER_MAX,
+  otherDescriptionOf,
+  otherLineName,
   paymentAmounts,
   priceCart,
   PricingError,
@@ -232,5 +235,74 @@ describe("priceCart with a price range", () => {
     const { subtotal, total } = priceCart([pick("fade", 500)], ranged, 100);
     expect(subtotal).toBe(500);
     expect(total).toBe(400);
+  });
+});
+
+describe("an Other line (P3.12)", () => {
+  const other = (amount: number | null, description: string | null = null): CartLineInput => ({
+    serviceId: null,
+    staffId: "s2",
+    dealId: null,
+    dealInstanceId: null,
+    amount,
+    description,
+  });
+
+  it("charges what the counter typed, beside services from the list", () => {
+    const cart = priceCart([single("hc"), other(250, "Beard shape")], catalog);
+    expect(cart.lines.map((line) => [line.name, line.amount])).toEqual([
+      ["Haircut", 800],
+      ["Other: Beard shape", 250],
+    ]);
+    expect(cart.total).toBe(1050);
+  });
+
+  it("is plain Other when nothing was said about it", () => {
+    expect(priceCart([other(300)], catalog).lines[0].name).toBe("Other");
+    expect(priceCart([other(300, "   ")], catalog).lines[0].name).toBe("Other");
+  });
+
+  it("keeps its staff member, so commission follows it like any line", () => {
+    expect(priceCart([other(300)], catalog).lines[0].staffId).toBe("s2");
+  });
+
+  it("reads a blank amount as 0 while it is being typed", () => {
+    const cart = priceCart([single("hc"), other(null)], catalog);
+    expect(cart.lines[1].amount).toBe(0);
+    expect(cart.total).toBe(800);
+  });
+
+  it("takes its share of a discount, like any line", () => {
+    const cart = priceCart([single("hc"), other(200)], catalog, 100);
+    expect(cart.lines.map((line) => line.amount)).toEqual([720, 180]);
+    expect(cart.total).toBe(900);
+  });
+
+  it("ignores a customer's special rates", () => {
+    const withRates = { ...catalog, specialRates: { hc: 500 } };
+    expect(priceCart([other(300)], withRates).lines[0].amount).toBe(300);
+  });
+
+  it("refuses a negative, fractional or runaway amount", () => {
+    expect(() => priceCart([other(-50)], catalog)).toThrow(PricingError);
+    expect(() => priceCart([other(12.5)], catalog)).toThrow(PricingError);
+    expect(() => priceCart([other(OTHER_MAX + 1)], catalog)).toThrow(/at most/);
+    expect(priceCart([other(OTHER_MAX)], catalog).total).toBe(OTHER_MAX);
+  });
+
+  it("cannot be part of a deal", () => {
+    expect(() => priceCart([{ ...other(300), dealId: "vip", dealInstanceId: "d1" }], catalog)).toThrow(PricingError);
+  });
+});
+
+describe("Other line names", () => {
+  it("round-trips a description through the saved name", () => {
+    expect(otherDescriptionOf(otherLineName("Beard shape"))).toBe("Beard shape");
+    expect(otherDescriptionOf(otherLineName(null))).toBe("");
+  });
+
+  it("keeps an older free-amount line's name as its description", () => {
+    // The worksheet's quick-add saved "Quick add" with no service (removed in P6.4).
+    expect(otherDescriptionOf("Quick add")).toBe("Quick add");
   });
 });

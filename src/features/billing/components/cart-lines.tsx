@@ -1,6 +1,6 @@
 "use client";
 
-import { Receipt, X } from "lucide-react";
+import { Plus, Receipt, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,9 @@ interface CartLinesProps {
   specialRates: Record<string, number>;
   onStaff: (key: string, staffId: string | null) => void;
   onAmount: (key: string, amount: number | null) => void;
+  /** What an "Other" line was for (P3.12). */
+  onDescription: (key: string, description: string) => void;
+  onAddOther: () => void;
   onAllStaff: (staffId: string | null) => void;
   onRemove: (key: string) => void;
 }
@@ -40,15 +43,38 @@ export function CartLines({
   specialRates,
   onStaff,
   onAmount,
+  onDescription,
+  onAddOther,
   onAllStaff,
   onRemove,
 }: CartLinesProps) {
+  /*
+    Extra work the list has no service for — the customer asked for one more
+    thing halfway through (P3.12). Always here, under the lines, because that
+    is where the counter is looking when it happens.
+  */
+  const addOther = (
+    <div className="px-card pb-3">
+      <button
+        type="button"
+        onClick={onAddOther}
+        className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed text-sm text-muted-foreground transition-colors hover:border-brass hover:text-foreground"
+      >
+        <Plus className="size-4" aria-hidden />
+        Other — extra work, any amount
+      </button>
+    </div>
+  );
+
   if (lines.length === 0) {
     return (
-      <div className="px-2.5 py-7 text-center text-muted-foreground">
-        <Receipt className="mx-auto mb-1.5 size-7 text-muted-foreground/50" aria-hidden />
-        <p>Add a service or deal to start the bill</p>
-      </div>
+      <>
+        <div className="px-2.5 py-7 text-center text-muted-foreground">
+          <Receipt className="mx-auto mb-1.5 size-7 text-muted-foreground/50" aria-hidden />
+          <p>Add a service or deal to start the bill</p>
+        </div>
+        {addOther}
+      </>
     );
   }
 
@@ -94,12 +120,13 @@ export function CartLines({
           // the range makes `priceCart` throw, which leaves every priced line
           // undefined — and a box that disappears the moment you type a wrong
           // number into it is a box you cannot correct.
-          const service = servicesById[line.serviceId];
+          const other = line.serviceId === null;
+          const service = line.serviceId ? servicesById[line.serviceId] : undefined;
           const ranged =
-            !deal && service?.maxPrice != null && specialRates[line.serviceId] === undefined ? service : null;
+            !deal && service?.maxPrice != null && specialRates[service.id] === undefined ? service : null;
           // The priced line is gone whenever the cart cannot be priced, and a
           // row with no name is no use to the person trying to fix it.
-          const name = price?.name ?? service?.name ?? "";
+          const name = other ? "Other" : (price?.name ?? service?.name ?? "");
           const startsDeal = deal && lines[index - 1]?.dealInstanceId !== line.dealInstanceId;
 
           return (
@@ -119,6 +146,16 @@ export function CartLines({
               <div className="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-x-2 gap-y-2 border-b py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_128px_70px_26px] sm:gap-y-0 sm:py-2.5">
                 <div className="col-start-1 row-start-1 sm:col-auto sm:row-auto">
                   <p className="font-medium">{name}</p>
+                  {other ? (
+                    <Input
+                      aria-label="What the Other line was for (optional)"
+                      value={line.description}
+                      onChange={(event) => onDescription(line.key, event.target.value)}
+                      maxLength={60}
+                      placeholder="What was done? (optional)"
+                      className="mt-1 h-8 text-sm"
+                    />
+                  ) : null}
                   {price?.note ? <p className="text-xs text-muted-foreground">{NOTE_TEXT[price.note]}</p> : null}
                   {ranged ? (
                     <p className="text-xs text-muted-foreground tabular-nums">
@@ -146,7 +183,19 @@ export function CartLines({
                   A deal line and a special rate are not the counter's to
                   choose, so those stay a plain figure.
                 */}
-                {ranged ? (
+                {other ? (
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    aria-label="Amount for Other"
+                    value={line.amount ?? ""}
+                    placeholder="Rs"
+                    onChange={(event) => onAmount(line.key, event.target.value === "" ? null : Number(event.target.value))}
+                    className="col-start-2 row-start-2 h-8 w-full px-1.5 text-right tabular-nums sm:col-auto sm:row-auto"
+                  />
+                ) : ranged ? (
                   <Input
                     type="number"
                     min={ranged.price}
@@ -177,6 +226,7 @@ export function CartLines({
           );
         })}
       </div>
+      {addOther}
     </>
   );
 }

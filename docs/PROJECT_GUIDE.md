@@ -69,7 +69,7 @@ MAHINA (Owner)
 
 | Screen | Kaam |
 |---|---|
-| Billing | Bill banana, customer phone se dhoondna (special rate khud), deals, split payment, aaj ki bills, bill cancel |
+| Billing | Bill banana, customer phone se dhoondna (special rate khud), deals, split payment, aaj ki bills, bill cancel. **"+ Other"**: list se bahar ka extra kaam — amount counter khud likhe, "kya kiya" optional (P3.12) |
 | Daily folders | Expenses, staff advance, Owner cash, online payments |
 | Day close | Raat ka 5-qadam wizard, agla din shuru |
 | Daily report | Kisi bhi din ki saari bills (cancelled bhi). Upar `List \| Register` switch: Register purani Daily worksheet hai — har karigar ka column, Owner/Account column, neeche total. Sirf dekhne ke liye (P6.4) |

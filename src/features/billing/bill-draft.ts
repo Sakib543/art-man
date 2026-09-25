@@ -1,4 +1,4 @@
-import type { PayMode } from "@/lib/accounting";
+import { otherDescriptionOf, type PayMode } from "@/lib/accounting";
 import type { CartLine } from "./cart-state";
 
 /**
@@ -7,8 +7,14 @@ import type { CartLine } from "./cart-state";
  */
 
 export interface SavedBillLine {
-  /** Null only on a reversal bill's lines, which are never editable. */
+  /**
+   * Null on an "Other" line (P3.12) and on the worksheet's old quick-add lines.
+   * A reversal's lines have none either, but a reversal is refused before it
+   * gets here (`getBillForEdit`).
+   */
   serviceId: string | null;
+  /** The name it was saved under — all an Other line has to say what it was. */
+  name: string;
   dealId: string | null;
   staffId: string;
   /** What this line was charged. It is what a price range re-opens on (P3.11). */
@@ -26,7 +32,22 @@ export function draftLinesOf(saved: SavedBillLine[]): CartLine[] {
   const used = new Map<string, number>();
 
   return saved.flatMap<CartLine>((line, index) => {
-    if (!line.serviceId) return [];
+    if (!line.serviceId) {
+      // An Other line comes back as one, with its amount and what it was for.
+      // Before P3.12 these were dropped, so correcting a bill that held a
+      // quick-add line lost the line — and its money — without a word.
+      return [
+        {
+          key: `line-${index}`,
+          serviceId: null,
+          staffId: line.staffId,
+          dealId: null,
+          dealInstanceId: null,
+          amount: line.amount,
+          description: otherDescriptionOf(line.name),
+        },
+      ];
+    }
 
     if (!line.dealId) {
       // The amount comes back as it was charged, so re-opening a bill whose
@@ -40,6 +61,7 @@ export function draftLinesOf(saved: SavedBillLine[]): CartLine[] {
           dealId: null,
           dealInstanceId: null,
           amount: line.amount,
+          description: "",
         },
       ];
     }
@@ -58,6 +80,7 @@ export function draftLinesOf(saved: SavedBillLine[]): CartLine[] {
         dealInstanceId,
         // A deal's price is split by the deal, never chosen line by line.
         amount: null,
+        description: "",
       },
     ];
   });

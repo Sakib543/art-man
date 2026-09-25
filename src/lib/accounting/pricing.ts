@@ -24,8 +24,32 @@ export interface PricingDeal {
   serviceIds: string[];
 }
 
+/**
+ * An "Other" line (P3.12): extra work the list has no service for, charged
+ * whatever the counter types. It is the one line whose amount comes from the
+ * browser by design, so it is written down: the line's name says "Other" on
+ * every receipt, report and khata, and the bill's audit entry lists it.
+ */
+export const OTHER_LINE = "Other";
+
+/** The most one Other line may charge — a guard against a slipped key, not a price rule. */
+export const OTHER_MAX = 100_000;
+
+/** "Other", or "Other: Beard shape" when the counter said what it was. */
+export function otherLineName(description: string | null | undefined): string {
+  const text = description?.trim();
+  return text ? `${OTHER_LINE}: ${text}` : OTHER_LINE;
+}
+
+/** The description back out of a saved line's name, for re-opening a bill. */
+export function otherDescriptionOf(name: string): string {
+  if (name === OTHER_LINE) return "";
+  return name.startsWith(`${OTHER_LINE}: `) ? name.slice(OTHER_LINE.length + 2) : name;
+}
+
 export interface CartLineInput {
-  serviceId: string;
+  /** Null on an "Other" line (P3.12), which has no service behind it. */
+  serviceId: string | null;
   staffId: string | null;
   /** Set when the line came from a deal. All lines of one deal share `dealInstanceId`. */
   dealId: string | null;
@@ -37,6 +61,8 @@ export interface CartLineInput {
    * figure sent by the browser is ignored rather than trusted.
    */
   amount?: Rupees | null;
+  /** What an "Other" line was for, when the counter said. Ignored on every other line. */
+  description?: string | null;
 }
 
 export type PriceNote = "special-rate" | "deal-share" | "chosen" | null;
@@ -97,7 +123,7 @@ export function priceCart(
     if (!deal) throw new PricingError("Deal not found");
 
     const sameDeal = group.every((line) => line.dealId === deal.id);
-    const sent = group.map((line) => line.serviceId).sort();
+    const sent = group.map((line) => line.serviceId ?? "").sort();
     const expected = [...deal.serviceIds].sort();
     if (!sameDeal || sent.join() !== expected.join()) {
       throw new PricingError(`${deal.name} is missing services or has extra ones`);
@@ -116,6 +142,17 @@ export function priceCart(
   }
 
   const priced = lines.map<PricedLine>((line) => {
+    if (line.serviceId === null) {
+      // An "Other" line (P3.12). Nothing in the catalog decides it: the amount
+      // is the counter's. A blank one reads as 0 so the screen can keep a live
+      // total while it is typed; the bill schema is what refuses to save a 0.
+      if (line.dealId) throw new PricingError("An Other line cannot be part of a deal");
+      const amount = line.amount ?? 0;
+      if (!Number.isInteger(amount) || amount < 0) throw new PricingError("Other must be whole rupees");
+      if (amount > OTHER_MAX) throw new PricingError(`Other can be at most Rs ${OTHER_MAX}`);
+      return { ...line, name: otherLineName(line.description), amount, note: null };
+    }
+
     const service = catalog.services[line.serviceId];
     if (!service) throw new PricingError("Service not found");
 

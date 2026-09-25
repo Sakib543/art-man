@@ -7,7 +7,9 @@ const add = (lines: CartLine[], key: string, serviceId: string) =>
 describe("cartReducer", () => {
   it("adds a service with no staff chosen", () => {
     const lines = add([], "a", "hc");
-    expect(lines).toEqual([{ key: "a", serviceId: "hc", staffId: null, dealId: null, dealInstanceId: null, amount: null }]);
+    expect(lines).toEqual([
+      { key: "a", serviceId: "hc", staffId: null, dealId: null, dealInstanceId: null, amount: null, description: "" },
+    ]);
   });
 
   it("adds every service of a deal as one group", () => {
@@ -72,5 +74,36 @@ describe("choosing an amount inside a price range (P3.11)", () => {
   it("ignores a key that is not in the cart", () => {
     const lines = add([], "a", "fade");
     expect(cartReducer(lines, { type: "setAmount", key: "gone", amount: 999 })).toEqual(lines);
+  });
+});
+
+describe("cartReducer and an Other line (P3.12)", () => {
+  it("adds one with no service, no amount and no description yet", () => {
+    const [line] = cartReducer([], { type: "addOther", key: "o" });
+    expect(line).toMatchObject({ key: "o", serviceId: null, dealId: null, amount: null, description: "" });
+  });
+
+  it("starts on the staff member the rest of the bill already shares", () => {
+    let lines = add([], "a", "hc");
+    lines = cartReducer(lines, { type: "setAllStaff", staffId: "hamid" });
+    lines = cartReducer(lines, { type: "addOther", key: "o" });
+    expect(lines[1].staffId).toBe("hamid");
+  });
+
+  it("starts with no staff when the bill is mixed or empty", () => {
+    expect(cartReducer([], { type: "addOther", key: "o" })[0].staffId).toBeNull();
+    let lines = add(add([], "a", "hc"), "b", "bd");
+    lines = cartReducer(lines, { type: "setStaff", key: "a", staffId: "hamid" });
+    lines = cartReducer(lines, { type: "setStaff", key: "b", staffId: "sherry" });
+    expect(cartReducer(lines, { type: "addOther", key: "o" })[2].staffId).toBeNull();
+  });
+
+  it("takes an amount and a description, and is removed on its own", () => {
+    let lines = add([], "a", "hc");
+    lines = cartReducer(lines, { type: "addOther", key: "o" });
+    lines = cartReducer(lines, { type: "setAmount", key: "o", amount: 250 });
+    lines = cartReducer(lines, { type: "setDescription", key: "o", description: "Beard shape" });
+    expect(lines[1]).toMatchObject({ amount: 250, description: "Beard shape" });
+    expect(cartReducer(lines, { type: "remove", key: "o" }).map((line) => line.key)).toEqual(["a"]);
   });
 });

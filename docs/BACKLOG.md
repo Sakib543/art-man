@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4, P6.5 and P6.6 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4, P6.5, P6.6 and P3.12 done; P3.13 found. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -60,7 +60,8 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
 | P6.5 | A calmer Daily report | ✅ | done 2026-09-25 |
 | P6.6 | Today's bills, as calm as the Daily report | ✅ | done 2026-09-25 |
-| P3.12 | "Other" on a bill: extra work at whatever the counter charges | 🟡 | Sakib543, 2026-09-25 |
+| P3.12 | "Other" on a bill: extra work at whatever the counter charges | ✅ | done 2026-09-25 |
+| P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ⬜ | — |
 
 ---
 
@@ -1935,13 +1936,77 @@ errors. `pnpm build` (26 routes), `pnpm test` (**361**), `pnpm lint` pass.
 
 ---
 
-### 🟡 P3.12 — "Other" on a bill: extra work at whatever the counter charges
-**Owner:** Sakib543, 2026-09-25
+### ✅ P3.12 — "Other" on a bill: extra work at whatever the counter charges
+**Done:** 2026-09-25 · **no migration** · client request
 
-Client request: a customer sometimes has extra work done that is not on the
-list. Billing gets an **Other** line — the counter types the amount, a
-description is optional, a staff member is chosen like any line — and it flows
-everywhere a line does (receipt, reports, register, commission, khata).
+**Why.** A customer sometimes has something extra done halfway through that
+the list has no service for. The client asked for an **Other** option: the
+amount is not fixed — the counter types it — and a reason is optional.
+
+**No migration was needed**, because two things were already true:
+`bill_lines.service_id` is nullable (the old quick-add wrote null), and
+**commission is the staff member's own rate on the line amount**
+(`commission.ts`), never the service's. So an Other line with a staff member
+is paid, posted to the khata and counted at Day Close exactly like any line.
+
+**What was built:**
+
+- `lib/accounting/pricing.ts` — `serviceId: null` is an Other line. `priceCart`
+  charges the typed amount; a blank one prices as 0 so the screen keeps a live
+  total while it is typed. Refused: part of a deal, negative, fractional, above
+  `OTHER_MAX` (Rs 100,000 — a slipped-key guard, not a price rule). Special
+  rates never apply; a discount is shared onto it like any line. The line is
+  named `Other` or `Other: <description>` (`otherLineName`), and that name is
+  what every receipt, report, register and khata shows.
+- `billing/schemas.ts` — `serviceId` nullable, `description` optional (≤ 60,
+  blank → null), and an Other line **must** have an amount ≥ 1: this is what
+  stops a 0 being saved.
+- `billing/service.ts` — no service query when a bill names none, and the
+  `bill.create` audit entry lists the Other lines (`other: [{name, amount}]`):
+  the one amount the catalog did not decide is written down.
+- `cart-state.ts` — `addOther` (starts on the staff member the bill already
+  shares, via `commonStaff`), `setDescription`.
+- `cart-lines.tsx` / `billing-screen.tsx` — a dashed **"+ Other — extra work,
+  any amount"** under the cart lines, also on an empty cart. The line has a
+  "What was done? (optional)" box, the staff picker and an amount box. Save
+  refuses a blank amount with "Enter the amount for Other".
+- `bill-draft.ts` — re-opening a bill brings an Other line back with its
+  amount and description. **This also fixed a silent loss:** a line with no
+  service used to be dropped from the cart, so correcting a bill that held a
+  quick-add line lost the line and its money. Its name now comes back as the
+  description ("Quick add").
+
+**Verified:** `pnpm build` (26 routes), `pnpm test` (**381**, 20 new),
+`pnpm lint`. The real Billing screen was driven in a browser through a
+throwaway route (`/p312.harness`, deleted, never committed), **Save never
+pressed with a valid bill**, so nothing was written: Haircut + Hamid for all,
+then "+ Other" → the Other line took **Hamid** by itself, no error while blank,
+total Rs 300; typed 250 and "Beard shape" → **Rs 550**, "Save bill Rs 550";
+cleared the amount and pressed Save → **"Enter the amount for Other"**, and the
+network log shows no request left the page. At 375 px the description box,
+amount box and remove button fit, no overflow, no console errors. **Not
+exercised:** an actual save end to end (it would write to live), and the
+printed receipt with an Other line.
+
+---
+
+### ⬜ P3.13 — Re-opening a discounted bill takes the discount off twice
+**Owner:** — · found 2026-09-25 while building P3.12 · **predates it** (P3.10 × P3.11)
+
+`bill_lines.amount` is stored **net** of the discount. When the Owner re-opens
+a bill (P1.4), `draftLinesOf` hands a price-range line (and now an Other line)
+back with that net amount, and the screen then applies the bill's discount
+**again**. Reproduced with a throwaway test: Haircut 300–500 charged 450 with
+Rs 50 off → saved total **400**; re-opened → **350**. A fixed-price or deal
+line is unaffected (its price comes from the catalog, not the saved amount).
+
+The Owner would see the lower total on the edit screen and could retype it, but
+nothing says why. Fix: give the draft the **gross** amount. With one variable
+line it is exact — gross total = stored total + discount, minus the fixed
+lines' catalog prices. With several it is ambiguous, so storing the gross (or
+the per-line share) is cleaner — a migration.
+
+**Size:** small–medium · **Value:** medium (money on a correction)
 
 ---
 

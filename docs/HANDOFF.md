@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-25 (P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-25 (P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** P3.13 found: re-opening a discounted bill discounts it twice. Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (361 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (381 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -139,7 +139,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — **26 routes** (2026-09-25; `icon.png` and `apple-icon.png` count as routes; `/worksheet` is now only a redirect), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **361 passed** (33 files), 2026-09-25 |
+| `pnpm test` | **381 passed** (33 files), 2026-09-25 |
 | Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0017`** (P3.10's discount columns and P3.11's `services.max_price`, both 2026-09-23) |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
@@ -314,6 +314,7 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **The developer's own account** | **Theirs to name and theirs to unlock (2026-09-23).** They may reset their own password (P1.7) and change their own username (P1.8) — neither of which any other role may do. Nobody stands above that account, so nobody else can rescue it |
 | **Customer's last visit** | **Built 2026-09-22 (P3.8).** The phone lookup now shows what the customer had done last time. Asked and answered before building: **the last visit only** (not a list, not a history dialog), **with the staff member's name** beside each service, and **cancelled bills counted nowhere** — neither in the visit count nor as the last visit. |
 | **An edited bill's number** | The receipt number **need not stay the same**. That choice let P1.5 be built without weakening the append-only guarantee. |
+| **Extra work not on the list** | **An "Other" line (2026-09-25, P3.12).** The counter types the amount; a description is optional (the client's words: "payment fixed na ho, bs reason ho, wo b optional"). A staff member is chosen like any line. It is the one amount no Owner-set rate decides, so it is named "Other" everywhere and listed in the bill's audit entry. |
 | **Where a bill is made** | **On Billing, and nowhere else (2026-09-25, P6.4).** The worksheet's quick-add was removed: it saved a bill with no service, customer or receipt at any amount typed, and invited entering the same sale twice. The worksheet itself is now the Daily report's read-only **Register** view, for any day; `/worksheet` redirects there. |
 
 ### Constraints on the developer edit feature
@@ -907,6 +908,8 @@ STAGE 3 — during the client's 20-day trial
   P6.4  Register inside Daily report, no quick-add     DONE 2026-09-25
   P6.5  A calmer Daily report                          DONE 2026-09-25
   P6.6  Today's bills, as calm as the Daily report     DONE 2026-09-25
+  P3.12 An "Other" line on a bill                      DONE 2026-09-25
+  P3.13 Re-opening a discounted bill discounts twice   OPEN (found 2026-09-25)
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)

@@ -6,7 +6,8 @@
 
 export interface CartLine {
   key: string;
-  serviceId: string;
+  /** Null on an "Other" line (P3.12): extra work the list has no service for. */
+  serviceId: string | null;
   staffId: string | null;
   dealId: string | null;
   dealInstanceId: string | null;
@@ -14,12 +15,18 @@ export interface CartLine {
    * What the counter chose for a service with a price range (P3.11). Null
    * until they type something, which `priceCart` reads as the bottom of the
    * range — the figure the screen is already showing.
+   *
+   * On an "Other" line it is the price itself, and blank until typed.
    */
   amount: number | null;
+  /** What an "Other" line was for. Optional; empty on every other line. */
+  description: string;
 }
 
 export type CartAction =
   | { type: "addService"; key: string; serviceId: string }
+  | { type: "addOther"; key: string }
+  | { type: "setDescription"; key: string; description: string }
   | { type: "setAmount"; key: string; amount: number | null }
   | { type: "addDeal"; instanceId: string; dealId: string; serviceIds: string[] }
   | { type: "remove"; key: string }
@@ -32,8 +39,36 @@ export function cartReducer(lines: CartLine[], action: CartAction): CartLine[] {
     case "addService":
       return [
         ...lines,
-        { key: action.key, serviceId: action.serviceId, staffId: null, dealId: null, dealInstanceId: null, amount: null },
+        {
+          key: action.key,
+          serviceId: action.serviceId,
+          staffId: null,
+          dealId: null,
+          dealInstanceId: null,
+          amount: null,
+          description: "",
+        },
       ];
+
+    case "addOther": {
+      // Starts with the staff member every other line already shares, so the
+      // usual case — one karigar, one extra job — needs no second choice.
+      return [
+        ...lines,
+        {
+          key: action.key,
+          serviceId: null,
+          staffId: commonStaff(lines),
+          dealId: null,
+          dealInstanceId: null,
+          amount: null,
+          description: "",
+        },
+      ];
+    }
+
+    case "setDescription":
+      return lines.map((line) => (line.key === action.key ? { ...line, description: action.description } : line));
 
     case "addDeal":
       return [
@@ -46,6 +81,7 @@ export function cartReducer(lines: CartLine[], action: CartAction): CartLine[] {
           dealInstanceId: action.instanceId,
           // A deal's price is the deal's own; there is nothing to choose.
           amount: null,
+          description: "",
         })),
       ];
 

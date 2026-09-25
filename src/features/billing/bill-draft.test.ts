@@ -2,8 +2,15 @@ import { describe, expect, it } from "vitest";
 import { priceCart } from "@/lib/accounting";
 import { draftLinesOf, payModeOf, type SavedBillLine } from "./bill-draft";
 
-const line = (serviceId: string | null, dealId: string | null, staffId = "sherry", amount = 0): SavedBillLine => ({
+const line = (
+  serviceId: string | null,
+  dealId: string | null,
+  staffId = "sherry",
+  amount = 0,
+  name = serviceId ?? "Other",
+): SavedBillLine => ({
   serviceId,
+  name,
   dealId,
   staffId,
   amount,
@@ -76,8 +83,17 @@ describe("draftLinesOf", () => {
     expect(new Set(lines.map((l) => l.key)).size).toBe(lines.length);
   });
 
-  it("drops a line with no service, so a reversal's lines never reach the cart", () => {
-    expect(draftLinesOf([line(null, null), line("haircut", null)])).toHaveLength(1);
+  it("brings an Other line back with its amount and what it was for (P3.12)", () => {
+    const [other, haircut] = draftLinesOf([line(null, null, "hamid", 250, "Other: Beard shape"), line("haircut", null)]);
+    expect(other).toMatchObject({ serviceId: null, staffId: "hamid", amount: 250, description: "Beard shape" });
+    expect(haircut.serviceId).toBe("haircut");
+  });
+
+  it("keeps an old quick-add line instead of dropping it and its money", () => {
+    // Before P3.12 a line with no service vanished from the cart, so a
+    // correction silently lost it.
+    const [quick] = draftLinesOf([line(null, null, "arshad", 400, "Quick add")]);
+    expect(quick).toMatchObject({ serviceId: null, amount: 400, description: "Quick add" });
   });
 });
 

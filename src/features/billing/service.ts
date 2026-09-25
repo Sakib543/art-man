@@ -54,15 +54,17 @@ interface PricedBill {
 
 /**
  * Work out what to charge. The price of every line is decided here from the
- * database; amounts sent by the browser are never used.
+ * database; amounts sent by the browser are never used — except on an "Other"
+ * line (P3.12), whose whole point is that the counter names the price.
  */
 async function priceBill(input: CreateBillInput): Promise<PricedBill> {
-  const serviceIds = [...new Set(input.lines.map((line) => line.serviceId))];
+  const serviceIds = [...new Set(input.lines.flatMap((line) => (line.serviceId ? [line.serviceId] : [])))];
   const dealIds = [...new Set(input.lines.flatMap((line) => (line.dealId ? [line.dealId] : [])))];
   const staffIds = [...new Set(input.lines.map((line) => line.staffId))];
 
   const [serviceRows, dealRows, dealItemRows, staffRows] = await Promise.all([
-    db.select().from(services).where(inArray(services.id, serviceIds)),
+    // A bill of nothing but Other lines names no service at all.
+    serviceIds.length ? db.select().from(services).where(inArray(services.id, serviceIds)) : [],
     dealIds.length ? db.select().from(deals).where(inArray(deals.id, dealIds)) : [],
     dealIds.length ? db.select().from(dealItems).where(inArray(dealItems.dealId, dealIds)) : [],
     db.select({ id: staff.id, name: staff.name, active: staff.active }).from(staff).where(inArray(staff.id, staffIds)),
@@ -210,6 +212,12 @@ function receiptOf(bill: typeof bills.$inferSelect, priced: PricedBill, input: C
   };
 }
 
+/** The Other lines of a bill, for its audit entry — nothing when it has none. */
+function otherLinesOf(priced: PricedBill): { other?: { name: string; amount: Rupees }[] } {
+  const other = priced.lines.filter((line) => line.serviceId === null);
+  return other.length ? { other: other.map((line) => ({ name: line.name, amount: line.amount })) } : {};
+}
+
 /** What the audit log keeps of a bill's contents, so a correction is readable later. */
 const auditLines = (lines: { name: string; amount: number; staffId: string | null }[]) =>
   lines.map((line) => ({ name: line.name, amount: line.amount, staffId: line.staffId }));
@@ -237,6 +245,9 @@ export async function createBill(user: SessionUser, input: CreateBillInput): Pro
         // A discount is the counter's own decision, so it is written down with
         // its reason even though the line amounts already carry it.
         ...(priced.discount > 0 ? { discount: priced.discount, discountReason: input.discountReason } : {}),
+        // So is an Other line's price (P3.12): it is the one amount the catalog
+        // did not decide.
+        ...otherLinesOf(priced),
       },
     });
 

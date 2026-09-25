@@ -97,6 +97,8 @@ Model these as first-class entities. Field lists are the minimum; add ids, times
 - Every bill prints a **receipt**.
 - Commission is calculated on the **amount actually charged** (special rate / deal share), not the list price.
 
+> **Added 2026-09-25 (client decision, backlog P3.12).** An **Other** line for extra work the list has no service for: the counter types the amount, a description is optional, and a staff member is chosen like any line, so commission follows. It is the one line not priced by an Owner-set rate (against §10.4), so its name says "Other" everywhere and the bill's audit entry lists it.
+
 ### 5.2 Daily folders (four)
 1. **Expenses** — tea, lunch, towels, etc. If the owner paid an expense from his own pocket/bank instead of the drawer, record that separately (it doesn't leave the drawer).
 2. **Staff** — advances, or paying a staff member their earning (commission/wage/bonus). Recorded by the Manager; no confirmation (see §2).

@@ -131,6 +131,7 @@ export async function getBillForEdit(billId: string, data: BillingData): Promise
   const saved = await db
     .select({
       serviceId: billLines.serviceId,
+      name: billLines.name,
       dealId: billLines.dealId,
       staffId: billLines.staffId,
       amount: billLines.amount,

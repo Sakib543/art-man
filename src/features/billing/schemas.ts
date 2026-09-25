@@ -27,19 +27,36 @@ export const createBillSchema = z
   .object({
     lines: z
       .array(
-        z.object({
-          serviceId: z.uuid(),
-          staffId: z.uuid({ error: "Choose a staff member for every service" }),
-          dealId: z.uuid().nullable(),
-          dealInstanceId: z.string().min(1).max(64).nullable(),
-          /**
-           * What the counter chose for a service that has a price range
-           * (P3.11). `priceCart` is what checks it against the range, and
-           * ignores it entirely for a fixed price, a deal share or a special
-           * rate — an amount from the browser is never taken on trust.
-           */
-          amount: rupees.nullish().transform((value) => value ?? null),
-        }),
+        z
+          .object({
+            /** Null on an "Other" line (P3.12), which has no service behind it. */
+            serviceId: z.uuid().nullable(),
+            staffId: z.uuid({ error: "Choose a staff member for every service" }),
+            dealId: z.uuid().nullable(),
+            dealInstanceId: z.string().min(1).max(64).nullable(),
+            /**
+             * What the counter chose for a service that has a price range
+             * (P3.11). `priceCart` is what checks it against the range, and
+             * ignores it entirely for a fixed price, a deal share or a special
+             * rate — an amount from the browser is never taken on trust.
+             *
+             * On an "Other" line it *is* the price (P3.12).
+             */
+            amount: rupees.nullish().transform((value) => value ?? null),
+            /** What an "Other" line was for. Optional — the client's call. */
+            description: z
+              .string()
+              .trim()
+              .max(60, "Keep what Other was for to 60 characters")
+              .nullish()
+              .transform((value) => value || null),
+          })
+          // The screen prices a blank Other as 0 so the total stays live while
+          // it is typed; this is what stops one being saved.
+          .refine((line) => line.serviceId !== null || (line.amount ?? 0) >= 1, {
+            path: ["amount"],
+            error: "Enter the amount for Other",
+          }),
       )
       .min(1, "Add a service or deal to start the bill")
       .max(40),

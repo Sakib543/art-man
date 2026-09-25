@@ -114,6 +114,8 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
     setError("");
     if (cart.length === 0) return setError("Add a service or deal to start the bill");
     if (cart.some((line) => !line.staffId)) return setError("Choose a staff member for every service");
+    // Priced as 0 while blank so the total stays live; not saved that way (P3.12).
+    if (cart.some((line) => line.serviceId === null && !line.amount)) return setError("Enter the amount for Other");
     if (customer.status === "new" && !customer.name.trim()) return setError("Enter the customer's name");
     if (editing && reason.trim().length < 3) return setError("Write what was wrong with the bill");
     if (priceProblem) return setError(priceProblem);
@@ -128,13 +130,15 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
     }
 
     const bill = {
-      lines: cart.map(({ serviceId, staffId, dealId, dealInstanceId, amount }) => ({
+      lines: cart.map(({ serviceId, staffId, dealId, dealInstanceId, amount, description }) => ({
         serviceId,
         staffId,
         dealId,
         dealInstanceId,
         // Checked against the range on the server; never taken on trust (P3.11).
+        // On an Other line it is the price, which is the point of one (P3.12).
         amount,
+        description: serviceId === null ? description.trim() || null : null,
       })),
       customer:
         customer.status === "found"
@@ -234,6 +238,8 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
             specialRates={specialRates}
             onStaff={(key, staffId) => dispatch({ type: "setStaff", key, staffId })}
             onAmount={(key, amount) => dispatch({ type: "setAmount", key, amount })}
+            onDescription={(key, description) => dispatch({ type: "setDescription", key, description })}
+            onAddOther={() => dispatch({ type: "addOther", key: crypto.randomUUID() })}
             onAllStaff={(staffId) => dispatch({ type: "setAllStaff", staffId })}
             onRemove={(key) => dispatch({ type: "remove", key })}
           />
