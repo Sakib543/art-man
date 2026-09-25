@@ -26,6 +26,7 @@ import {
 import { atLeastOwner } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/session";
 import { UserError } from "@/lib/errors";
+import { draftLinesOf, restoreSaved, type SavedBillLine } from "./bill-draft";
 import type { CreateBillInput, EditBillInput } from "./schemas";
 import type { Receipt } from "./types";
 
@@ -57,10 +58,24 @@ interface PricedBill {
  * database; amounts sent by the browser are never used — except on an "Other"
  * line (P3.12), whose whole point is that the counter names the price.
  */
-async function priceBill(input: CreateBillInput): Promise<PricedBill> {
-  const serviceIds = [...new Set(input.lines.flatMap((line) => (line.serviceId ? [line.serviceId] : [])))];
-  const dealIds = [...new Set(input.lines.flatMap((line) => (line.dealId ? [line.dealId] : [])))];
+async function priceBill(
+  input: CreateBillInput,
+  /**
+   * The bill being corrected, as it was saved (P3.14). Its deals keep the
+   * split they were sold with; it is read from the database by the caller,
+   * never from the browser, so a correction cannot be used to move
+   * commission between karigars.
+   */
+  original?: { lines: SavedBillLine[]; discount: Rupees },
+): Promise<PricedBill> {
+  const idsOf = (pick: (line: { serviceId: string | null; dealId: string | null }) => string | null) => [
+    ...new Set([...input.lines, ...(original?.lines ?? [])].flatMap((line) => pick(line) ?? [])),
+  ];
+  // The original's services and deals are loaded too, to work out its split.
+  const serviceIds = idsOf((line) => line.serviceId);
+  const dealIds = idsOf((line) => line.dealId);
   const staffIds = [...new Set(input.lines.map((line) => line.staffId))];
+  const inBill = new Set(input.lines.flatMap((line) => [line.serviceId, line.dealId]).filter(Boolean));
 
   const [serviceRows, dealRows, dealItemRows, staffRows] = await Promise.all([
     // A bill of nothing but Other lines names no service at all.
@@ -73,7 +88,9 @@ async function priceBill(input: CreateBillInput): Promise<PricedBill> {
   if (staffRows.length !== staffIds.length || staffRows.some((row) => !row.active)) {
     throw new UserError("One of the chosen staff members is not available");
   }
-  if (serviceRows.some((row) => !row.active) || dealRows.some((row) => !row.active)) {
+  // Only what the bill charges now must be active; a service the correction
+  // dropped may have been switched off since.
+  if ([...serviceRows, ...dealRows].some((row) => inBill.has(row.id) && !row.active)) {
     throw new UserError("A service or deal in this bill is no longer active");
   }
 
@@ -112,6 +129,14 @@ async function priceBill(input: CreateBillInput): Promise<PricedBill> {
     ),
     specialRates,
   };
+  if (original) {
+    catalog.dealSplits = restoreSaved(
+      draftLinesOf(original.lines),
+      original.lines.map((line) => line.amount),
+      original.discount,
+      catalog,
+    ).dealSplits;
+  }
 
   let priced;
   try {
@@ -289,7 +314,7 @@ export async function editBill(user: SessionUser, input: EditBillInput): Promise
   if (cancelled) throw new UserError("This bill is already cancelled");
 
   const originalLines = await db.select().from(billLines).where(eq(billLines.billId, original.id));
-  const priced = await priceBill(input);
+  const priced = await priceBill(input, { lines: originalLines, discount: original.discount });
   const actor = actorOf(user);
 
   return db.transaction(async (tx) => {

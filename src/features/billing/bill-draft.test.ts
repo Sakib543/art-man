@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { priceCart, type PricingCatalog } from "@/lib/accounting";
-import { draftLinesOf, payModeOf, restoreGross, type SavedBillLine } from "./bill-draft";
+import { priceCart, type CartLineInput, type PricingCatalog } from "@/lib/accounting";
+import { draftLinesOf, payModeOf, restoreSaved, type SavedBillLine } from "./bill-draft";
 
 const line = (
   serviceId: string | null,
@@ -123,42 +123,57 @@ describe("draftLinesOf and a price range (P3.11)", () => {
   });
 });
 
-describe("restoreGross (P3.13)", () => {
+describe("restoreSaved (P3.13, P3.14)", () => {
   const catalog: PricingCatalog = {
     services: {
       fade: { id: "fade", name: "Haircut", price: 300, maxPrice: 500 },
       beard: { id: "beard", name: "Beard trim", price: 400, maxPrice: null },
       color: { id: "color", name: "Hair color", price: 1000, maxPrice: 3000 },
+      facial: { id: "facial", name: "Facial", price: 1800, maxPrice: null },
+      wash: { id: "wash", name: "Hair wash", price: 800, maxPrice: null },
     },
-    deals: {},
+    deals: { vip: { id: "vip", name: "VIP", price: 2000, serviceIds: ["wash", "beard", "facial"] } },
     specialRates: {},
   };
 
-  type Sold = { serviceId: string | null; amount: number | null };
+  /** A line as sold: a service (with a chosen amount for a range), an Other line, or a whole deal. */
+  type Sold = { serviceId: string | null; amount: number | null } | { deal: string };
 
-  /** Ring a bill up as the counter would, then re-open it as the edit screen does. */
-  function roundTrip(sold: Sold[], discount: number, prices = catalog) {
-    const cart = sold.map((line) => ({
-      serviceId: line.serviceId,
-      staffId: "sherry",
-      dealId: null,
-      dealInstanceId: null,
-      amount: line.amount,
-    }));
-    const saved = priceCart(cart, prices, discount);
+  const cartOf = (sold: Sold[], prices: PricingCatalog): CartLineInput[] =>
+    sold.flatMap<CartLineInput>((item, at) =>
+      "deal" in item
+        ? prices.deals[item.deal].serviceIds.map((serviceId) => ({
+            serviceId,
+            staffId: "sherry",
+            dealId: item.deal,
+            dealInstanceId: `sold-${at}`,
+            amount: null,
+          }))
+        : [{ serviceId: item.serviceId, staffId: "sherry", dealId: null, dealInstanceId: null, amount: item.amount }],
+    );
+
+  /** Ring a bill up at one set of prices, then re-open it — as the edit screen does — at another. */
+  function roundTrip(sold: Sold[], discount: number, soldAt = catalog, reopenAt = soldAt) {
+    const saved = priceCart(cartOf(sold, soldAt), soldAt, discount);
     const stored = saved.lines.map((line) => line.amount);
     const draft = draftLinesOf(
-      saved.lines.map((line) => ({ serviceId: line.serviceId, name: line.name, dealId: null, staffId: "sherry", amount: line.amount })),
+      saved.lines.map((line) => ({
+        serviceId: line.serviceId,
+        name: line.name,
+        dealId: line.dealId,
+        staffId: "sherry",
+        amount: line.amount,
+      })),
     );
-    const restored = restoreGross(draft, stored, discount, prices);
-    const reopened = priceCart(restored, prices, discount);
+    const restored = restoreSaved(draft, stored, discount, reopenAt);
+    const reopened = priceCart(restored.lines, { ...reopenAt, dealSplits: restored.dealSplits }, discount);
     return { saved, stored, restored, reopened };
   }
 
-  it("re-opens Haircut 300–500 charged 450 with Rs 50 off at 450, not 400 — the reported case", () => {
+  it("re-opens Haircut 300–500 charged 450 with Rs 50 off at 450, not 400 (P3.13)", () => {
     const { saved, restored, reopened } = roundTrip([{ serviceId: "fade", amount: 450 }], 50);
     expect(saved.total).toBe(400);
-    expect(restored[0].amount).toBe(450);
+    expect(restored.lines[0].amount).toBe(450);
     expect(reopened.total).toBe(400);
   });
 
@@ -166,14 +181,29 @@ describe("restoreGross (P3.13)", () => {
     // Saved at 250 — under the range — so the bill could not even be re-opened.
     const { stored, restored, reopened } = roundTrip([{ serviceId: "fade", amount: 300 }], 50);
     expect(stored).toEqual([250]);
-    expect(restored[0].amount).toBe(300);
+    expect(restored.lines[0].amount).toBe(300);
     expect(reopened.total).toBe(250);
   });
 
   it("puts the discount back on an Other line too", () => {
     const { restored, reopened, saved } = roundTrip([{ serviceId: "beard", amount: null }, { serviceId: null, amount: 250 }], 65);
-    expect(restored[1].amount).toBe(250);
+    expect(restored.lines[1].amount).toBe(250);
     expect(reopened.total).toBe(saved.total);
+  });
+
+  it("keeps a deal's split after a list price moved under it (P3.14)", () => {
+    // Sold while Hair wash was 800: VIP 2000 over 800 / 400 / 1800 = 533 / 267 / 1200.
+    // Hair wash is 300 now, which would re-split it 240 / 320 / 1440 — unless kept.
+    const later = { ...catalog, services: { ...catalog.services, wash: { ...catalog.services.wash, price: 300 } } };
+    const { stored, reopened } = roundTrip([{ deal: "vip" }], 0, catalog, later);
+    expect(stored).toEqual([533, 267, 1200]);
+    expect(reopened.lines.map((line) => line.amount)).toEqual([533, 267, 1200]);
+  });
+
+  it("keeps a discounted deal's split too — the #22 case", () => {
+    const later = { ...catalog, services: { ...catalog.services, wash: { ...catalog.services.wash, price: 300 } } };
+    const { stored, reopened } = roundTrip([{ deal: "vip" }, { serviceId: "fade", amount: 450 }], 300, catalog, later);
+    expect(reopened.lines.map((line) => line.amount)).toEqual(stored);
   });
 
   it("gets every line back exactly, across many discounts and mixes", () => {
@@ -182,28 +212,31 @@ describe("restoreGross (P3.13)", () => {
       [{ serviceId: "fade", amount: 450 }, { serviceId: null, amount: 250 }],
       [{ serviceId: "fade", amount: 333 }, { serviceId: "color", amount: 1777 }, { serviceId: null, amount: 91 }],
       [{ serviceId: null, amount: 1 }, { serviceId: null, amount: 999 }, { serviceId: "beard", amount: null }],
+      [{ deal: "vip" }],
+      [{ deal: "vip" }, { deal: "vip" }, { serviceId: "fade", amount: 480 }],
+      [{ deal: "vip" }, { serviceId: null, amount: 350 }, { serviceId: "beard", amount: null }],
     ];
     for (const sold of mixes) {
-      for (let discount = 1; discount < 300; discount += 7) {
+      for (let discount = 0; discount < 300; discount += 7) {
         const { stored, reopened } = roundTrip(sold, discount);
         expect(reopened.lines.map((line) => line.amount)).toEqual(stored);
       }
     }
   });
 
-  it("leaves a bill with no discount alone", () => {
+  it("leaves a bill with no discount and no deal as it was saved", () => {
     const draft = draftLinesOf([line("fade", null, "sherry", 450)]);
-    expect(restoreGross(draft, [450], 0, catalog)).toBe(draft);
+    expect(restoreSaved(draft, [450], 0, catalog)).toEqual({ lines: draft, dealSplits: {} });
   });
 
   it("leaves a bill of fixed prices alone — the catalog already re-prices them whole", () => {
     const draft = draftLinesOf([line("beard", null, "sherry", 350)]);
-    expect(restoreGross(draft, [350], 50, catalog)).toBe(draft);
+    expect(restoreSaved(draft, [350], 50, catalog).lines).toBe(draft);
   });
 
   it("treats a special rate as fixed, even on a service with a range", () => {
     const withRate = { ...catalog, specialRates: { fade: 350 } };
     const draft = draftLinesOf([line("fade", null, "sherry", 300)]);
-    expect(restoreGross(draft, [300], 50, withRate)).toBe(draft);
+    expect(restoreSaved(draft, [300], 50, withRate).lines).toBe(draft);
   });
 });

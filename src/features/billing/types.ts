@@ -83,6 +83,12 @@ export type BillDraft =
       /** Carried into the correction, so re-opening a discounted bill keeps it (P3.10). */
       discount: Rupees;
       discountReason: string | null;
+      /**
+       * How each deal was split when the bill was sold (P3.14), so the screen
+       * shows what the server will save. The server works it out again for
+       * itself from the saved bill; this copy is for display only.
+       */
+      dealSplits: Record<string, Record<string, Rupees>>;
     }
   | { ok: false; reason: string };
 

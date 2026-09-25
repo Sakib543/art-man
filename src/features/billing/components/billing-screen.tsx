@@ -59,8 +59,10 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
       services: Object.fromEntries(data.services.map((s) => [s.id, { id: s.id, name: s.name, price: s.price, maxPrice: s.maxPrice }])),
       deals: Object.fromEntries(data.deals.map((d) => [d.id, d])),
       specialRates,
+      // A re-opened bill's deals keep the split they were sold with (P3.14).
+      dealSplits: editing?.dealSplits,
     }),
-    [data, specialRates],
+    [data, specialRates, editing],
   );
   const dealsById = catalog.deals;
   // The cart needs the full service, not the pricing one: a line with a range

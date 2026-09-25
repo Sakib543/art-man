@@ -306,3 +306,37 @@ describe("Other line names", () => {
     expect(otherDescriptionOf("Quick add")).toBe("Quick add");
   });
 });
+
+describe("a kept deal split (P3.14)", () => {
+  // Split by list price, VIP 2000 over 800 / 400 / 1800 is 533 / 267 / 1200.
+  const kept = { hc: 1000, bd: 500, fc: 500 };
+
+  it("uses the split a re-opened bill was saved with", () => {
+    const cart = priceCart(dealLines("d1"), { ...catalog, dealSplits: { d1: kept } });
+    expect(cart.lines.map((line) => line.amount)).toEqual([1000, 500, 500]);
+    expect(cart.total).toBe(2000);
+  });
+
+  it("applies only to its own deal instance", () => {
+    const cart = priceCart([...dealLines("d1"), ...dealLines("d2")], { ...catalog, dealSplits: { d1: kept } });
+    expect(cart.lines.map((line) => line.amount)).toEqual([1000, 500, 500, 533, 267, 1200]);
+  });
+
+  it("falls back to list price when the split no longer adds up to the deal", () => {
+    const bad: Record<string, number>[] = [
+      { hc: 1000, bd: 500, fc: 499 },
+      { hc: 1000, bd: 1000 },
+      { hc: 2001, bd: -1, fc: 0 },
+      { hc: 1000.5, bd: 499.5, fc: 500 },
+    ];
+    for (const split of bad) {
+      const cart = priceCart(dealLines("d1"), { ...catalog, dealSplits: { d1: split } });
+      expect(cart.lines.map((line) => line.amount)).toEqual([533, 267, 1200]);
+    }
+  });
+
+  it("still takes a discount on top", () => {
+    const cart = priceCart(dealLines("d1"), { ...catalog, dealSplits: { d1: kept } }, 200);
+    expect(cart.lines.map((line) => line.amount)).toEqual([900, 450, 450]);
+  });
+});

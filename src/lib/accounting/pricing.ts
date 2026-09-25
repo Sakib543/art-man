@@ -79,6 +79,25 @@ export interface PricingCatalog {
   deals: Record<string, PricingDeal>;
   /** The customer's fixed prices, by service id. Empty for walk-ins. */
   specialRates: Record<string, Rupees>;
+  /**
+   * How a deal instance's price was split when the bill was first rung up,
+   * by deal instance id and then service id (P3.14). Set only when a bill is
+   * re-opened for correction, and on the server only ever worked out from the
+   * bill as it was saved — never taken from the browser — so a correction
+   * keeps the split the sale had instead of re-splitting by today's list
+   * prices. An instance not in here, or whose split no longer adds up to the
+   * deal's price, is split by list price as usual.
+   */
+  dealSplits?: Record<string, Record<string, Rupees>>;
+}
+
+/** A kept split is used only if it still describes this deal exactly. */
+function keptSplit(deal: PricingDeal, kept: Record<string, Rupees> | undefined): Rupees[] | null {
+  if (!kept) return null;
+  const parts = deal.serviceIds.map((id) => kept[id]);
+  const whole = parts.every((part) => Number.isInteger(part) && part >= 0);
+  if (!whole || Object.keys(kept).length !== deal.serviceIds.length) return null;
+  return parts.reduce((sum, part) => sum + part, 0) === deal.price ? parts : null;
 }
 
 export class PricingError extends Error {}
@@ -137,7 +156,7 @@ export function priceCart(
       if (!service) throw new PricingError("Deal service not found");
       return service.price;
     });
-    const parts = splitDealPrice(deal.price, listPrices);
+    const parts = keptSplit(deal, catalog.dealSplits?.[instanceId]) ?? splitDealPrice(deal.price, listPrices);
     dealShares.set(instanceId, Object.fromEntries(deal.serviceIds.map((id, i) => [id, parts[i]])));
   }
 

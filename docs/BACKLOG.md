@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12 and P3.13 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -62,6 +62,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.6 | Today's bills, as calm as the Daily report | ✅ | done 2026-09-25 |
 | P3.12 | "Other" on a bill: extra work at whatever the counter charges | ✅ | done 2026-09-25 |
 | P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
+| P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
 
 ---
 
@@ -2035,11 +2036,58 @@ exactly as before this change: both were rung up while Haircut was a flat Rs
 800, and it is 300–500 now, so the screen says to cancel and re-enter. (#17 has
 no discount; `restoreGross` does not touch it.)
 
-**Noticed, not changed:** re-opening prices a **deal** by today's list prices,
-so #22 comes back at its saved total but split 204 / 272 / 1224 instead of
-453 / 227 / 1020 — Haircut's list price moved under it. That is how
-`getBillForEdit` has always behaved ("price it against today's catalog"); it
-matters only to how commission divides if the Owner saves the correction.
+**Noticed here, fixed in P3.14:** re-opening priced a **deal** by today's list
+prices, so #22 came back at its saved total but split 204 / 272 / 1224 instead
+of 453 / 227 / 1020.
+
+---
+
+### ✅ P3.14 — A corrected bill keeps its deals' split
+**Done:** 2026-09-25 · **no migration** · the user's request, after P3.13 · **not claimed first** — the claim commit was forgotten; recorded straight as done
+
+**The problem.** A deal's price is split across its services by their list
+prices (spec 6.3), and the split decides each karigar's commission. Re-opening
+a bill for correction (P1.4) split it again by **today's** list prices, so if
+one had moved since the sale, a correction saved even with nothing changed
+moved commission between karigars. Bill #22 (VIP deal, Rs 300 off) was saved
+453 / 227 / 1020 and re-opened 204 / 272 / 1224.
+
+**What was built:**
+
+- `PricingCatalog.dealSplits` (`pricing.ts`) — a kept split per deal instance.
+  `priceCart` uses it only if it still names exactly the deal's services, in
+  whole non-negative rupees, adding up to the deal's price; otherwise it splits
+  by list price as before. A new bill never has one.
+- `restoreGross` became **`restoreSaved`** (`bill-draft.ts`), returning the cart
+  **and** the deals' splits. With no discount the saved shares are the split.
+  With one, a deal's shares are unknowns that must add up to the deal's price —
+  a group, like the self-priced lines of P3.13 — and the same guess-and-check
+  now runs over all groups: split each in proportion to what was saved, price
+  the cart with the discount, and move a rupee at a time within a group while
+  that brings every line closer to what was saved.
+- **The server never takes the split from the browser.** `editBill` passes the
+  original bill's saved lines to `priceBill`, which loads their services and
+  deals too and works the split out itself. So a correction cannot be used to
+  shift commission. The copy on `BillDraft.dealSplits` is for the edit screen's
+  display only, so what it shows is what gets saved.
+- `priceBill`'s "no longer active" check now applies only to what the corrected
+  bill charges, since it loads the original's services as well.
+
+**Verified.** `pnpm test` **394** (6 new): `priceCart` with a kept split, only
+for its own instance, refused when it does not add up, and discounted on top;
+`restoreSaved` keeping a deal's split after a list price moved (533 / 267 /
+1200 stays, instead of 240 / 320 / 1440), with and without a discount; and the
+round trip now covers seven mixes — deals, two copies of a deal, ranges, fixed
+and Other lines — at 43 discounts each, every line back to the rupee. On live
+data, read-only (`/p314.harness`, deleted, never committed): every active bill
+of the open day re-opened with **every line equal to what was saved** — **#22
+now 227 / 453 / 1020** — except #17 and #20, which still cannot re-open because
+Haircut went from a flat 800 to 300–500 after they were sold.
+
+Bill **#30** (developer, 2026-09-25 06:52, "Other: Hair" 200 + Hair color 1500)
+appeared on the open day during this work. It was checked read-only: the user
+rang it up on the live site — the first Other line saved end to end — and it
+re-opens exactly.
 
 ---
 

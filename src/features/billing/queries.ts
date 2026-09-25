@@ -14,7 +14,7 @@ import {
   staff,
 } from "@/db/schema";
 import { priceCart, PricingError } from "@/lib/accounting";
-import { draftLinesOf, restoreGross } from "./bill-draft";
+import { draftLinesOf, restoreSaved } from "./bill-draft";
 import { lastVisitOf } from "./last-visit";
 import type { BillDraft, BillingData, CustomerInfo } from "./types";
 
@@ -145,9 +145,10 @@ export async function getBillForEdit(billId: string, data: BillingData): Promise
     deals: Object.fromEntries(data.deals.map((d) => [d.id, d])),
     specialRates: customer?.specialRates ?? {},
   };
-  // Saved amounts are net of the discount, which the screen takes off again;
-  // a line that carries its own price gets it put back first (P3.13).
-  const lines = restoreGross(
+  // Saved amounts are net of the discount, which the screen takes off again,
+  // and a deal is split by the list prices of the sale, not today's: both are
+  // put back as they were first (P3.13, P3.14).
+  const { lines, dealSplits } = restoreSaved(
     draftLinesOf(saved),
     saved.map((line) => line.amount),
     bill.discount,
@@ -158,7 +159,7 @@ export async function getBillForEdit(billId: string, data: BillingData): Promise
   // has changed since the bill was rung up, say so now rather than let the
   // screen open with a total of 0 and no explanation.
   try {
-    priceCart(lines, catalog, bill.discount);
+    priceCart(lines, { ...catalog, dealSplits }, bill.discount);
   } catch (error) {
     if (error instanceof PricingError) {
       return {
@@ -183,5 +184,6 @@ export async function getBillForEdit(billId: string, data: BillingData): Promise
     // would quietly put the price back up.
     discount: bill.discount,
     discountReason: bill.discountReason,
+    dealSplits,
   };
 }

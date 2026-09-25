@@ -97,95 +97,158 @@ function carriesItsPrice(line: CartLine, catalog: PricingCatalog): boolean {
   return !!service && service.maxPrice !== null && catalog.specialRates[line.serviceId] === undefined;
 }
 
+/** A re-opened bill: its cart, and how each of its deals was split when it was sold. */
+export interface RestoredDraft {
+  lines: CartLine[];
+  /** By deal instance id, then service id — `PricingCatalog.dealSplits`. */
+  dealSplits: Record<string, Record<string, number>>;
+}
+
 /**
- * Put the discount back on the lines that carry their own price, before the
- * edit screen takes it off again (backlog P3.13).
+ * Turn a saved bill back into what the counter had in front of it, before the
+ * edit screen prices it again (backlog P3.13, P3.14).
  *
- * `bill_lines.amount` is stored **net** of the discount (P3.10). A fixed price
- * or a deal share is re-priced from the catalog on re-opening, so it comes back
- * whole; but a price-range line (P3.11) or an Other line (P3.12) comes back as
- * the net figure — and the screen used to take the discount off that a second
- * time. Haircut 300–500 charged 450 with Rs 50 off was saved at 400 and
- * re-opened at 350.
+ * `bill_lines.amount` is what each line was charged: **net** of the bill's
+ * discount (P3.10), and for a deal, the deal's price **split by the list
+ * prices of that moment**. Two things go wrong if those figures are used as
+ * they are:
  *
- * Nothing stored says how the discount was split, so it is worked back out:
+ * - a line that carries its own price — a price range (P3.11), an Other line
+ *   (P3.12) — comes back net, and the screen takes the discount off a second
+ *   time. Haircut 300–500 charged 450 with Rs 50 off was saved at 400 and
+ *   re-opened at 350 (P3.13);
+ * - a deal is split again by *today's* list prices, so if one moved since the
+ *   sale, a correction quietly moves commission between karigars (P3.14).
  *
- * - the lines before the discount came to the saved lines plus the discount;
- * - the fixed lines' share of that is what the catalog prices them at;
- * - what is left belongs to the self-priced lines, first guessed in proportion
- *   to what they were saved at;
- * - and the guess is **checked** by pricing the cart with the discount and
- *   comparing every line with what was saved. The largest-remainder split can
- *   leave a guess a rupee out between two lines, so a few one-rupee moves are
- *   tried before settling.
+ * Nothing stored says how the discount was shared, so both are worked out:
+ * the unknowns are each self-priced line's amount and each deal line's share,
+ * in groups whose totals are known — a deal's shares come to the deal's price,
+ * the self-priced lines to whatever the discount and the fixed lines leave.
+ * A first guess splits each group in proportion to what was saved; it is then
+ * **checked** by pricing the cart with the discount and comparing every line
+ * with what was saved, and nudged a rupee at a time between lines of one group
+ * until they all match. Every guess keeps each group's total, so even one that
+ * never matches puts the bill back at the right total.
  *
- * Even an unchecked guess adds up to the right total, so the bill never comes
- * back cheaper than it was; only which line holds a stray rupee could differ.
+ * With no discount there is nothing to work out: the saved figures are the
+ * split and the amounts.
  *
  * @param stored what each line was saved at, in the same order as `lines`
  */
-export function restoreGross(
+export function restoreSaved(
   lines: CartLine[],
   stored: number[],
   discount: number,
   catalog: PricingCatalog,
-): CartLine[] {
-  if (discount <= 0) return lines;
+): RestoredDraft {
+  // Deal lines by instance, only for a deal the catalog still knows.
+  const instances = new Map<string, number[]>();
+  lines.forEach((line, index) => {
+    if (!line.dealId || !line.dealInstanceId || !catalog.deals[line.dealId]) return;
+    instances.set(line.dealInstanceId, [...(instances.get(line.dealInstanceId) ?? []), index]);
+  });
 
-  const own = lines.flatMap((line, index) => (carriesItsPrice(line, catalog) ? [index] : []));
-  if (own.length === 0) return lines;
+  const splitOf = (members: number[], shares: number[]) =>
+    Object.fromEntries(members.map((index, at) => [lines[index].serviceId, shares[at]]));
 
-  // What the fixed lines come to, whole. The self-priced ones stand at a
-  // figure the catalog accepts meanwhile; their amounts are not read here.
-  const placeholder = lines.map((line, index) =>
-    own.includes(index)
-      ? { ...line, amount: line.serviceId === null ? 0 : catalog.services[line.serviceId].price }
-      : line,
-  );
-  let fixedGross: number;
-  try {
-    fixedGross = priceCart(placeholder, catalog).lines.reduce(
-      (sum, line, index) => (own.includes(index) ? sum : sum + line.amount),
-      0,
-    );
-  } catch {
-    return lines;
+  if (discount <= 0) {
+    const dealSplits: RestoredDraft["dealSplits"] = {};
+    for (const [instance, members] of instances) {
+      dealSplits[instance] = splitOf(members, members.map((index) => stored[index]));
+    }
+    // A split that no longer adds up to the deal's price is dropped by
+    // `priceCart`, which then splits by list price as before.
+    return { lines, dealSplits };
   }
 
-  const ownGross = stored.reduce((sum, amount) => sum + amount, 0) + discount - fixedGross;
-  const ownNet = own.map((index) => stored[index]);
-  // The catalog would have to have moved under the bill for this to happen.
-  if (ownGross < ownNet.reduce((sum, amount) => sum + amount, 0)) return lines;
+  // The groups of unknowns, each with the total it must keep.
+  const own = lines.flatMap((line, index) => (carriesItsPrice(line, catalog) ? [index] : []));
+  const groups: { members: number[]; total: number; deal: string | null }[] = [];
+  for (const [instance, members] of instances) {
+    groups.push({ members, total: catalog.deals[lines[members[0]].dealId!].price, deal: instance });
+  }
 
-  const withGross = (gross: number[]) =>
-    lines.map((line, index) => {
-      const at = own.indexOf(index);
-      return at === -1 ? line : { ...line, amount: gross[at] };
-    });
-  const reproduces = (gross: number[]) => {
+  if (own.length > 0) {
+    // What the fixed lines come to, whole. Self-priced lines stand at a figure
+    // the catalog accepts meanwhile; deal lines are left out of the sum.
+    const placeholder = lines.map((line, index) =>
+      own.includes(index)
+        ? { ...line, amount: line.serviceId === null ? 0 : catalog.services[line.serviceId].price }
+        : line,
+    );
     try {
-      const repriced = priceCart(withGross(gross), catalog, discount).lines;
-      return repriced.every((line, index) => line.amount === stored[index]);
+      const fixed = priceCart(placeholder, catalog).lines.reduce(
+        (sum, line, index) => (own.includes(index) || line.dealId ? sum : sum + line.amount),
+        0,
+      );
+      const dealsTotal = groups.reduce((sum, group) => sum + group.total, 0);
+      const ownTotal = stored.reduce((sum, amount) => sum + amount, 0) + discount - fixed - dealsTotal;
+      // Below what was saved, the catalog must have moved under the bill;
+      // those lines keep their saved figures rather than a guess.
+      if (ownTotal >= own.reduce((sum, index) => sum + stored[index], 0)) {
+        groups.push({ members: own, total: ownTotal, deal: null });
+      }
     } catch {
-      return false;
+      // A service the bill used is gone; nothing sensible to restore for these.
+    }
+  }
+
+  if (groups.length === 0) return { lines, dealSplits: {} };
+
+  const build = (values: number[][]): RestoredDraft => {
+    const next = [...lines];
+    const dealSplits: RestoredDraft["dealSplits"] = {};
+    groups.forEach((group, at) => {
+      if (group.deal) dealSplits[group.deal] = splitOf(group.members, values[at]);
+      else group.members.forEach((index, k) => (next[index] = { ...next[index], amount: values[at][k] }));
+    });
+    return { lines: next, dealSplits };
+  };
+  const distance = (values: number[][]) => {
+    const draft = build(values);
+    try {
+      const repriced = priceCart(draft.lines, { ...catalog, dealSplits: draft.dealSplits }, discount).lines;
+      return repriced.reduce((sum, line, index) => sum + Math.abs(line.amount - stored[index]), 0);
+    } catch {
+      return Infinity;
     }
   };
 
-  const guess = allocate(ownGross, ownNet.some((amount) => amount > 0) ? ownNet : ownNet.map(() => 1));
-  if (reproduces(guess)) return withGross(guess);
+  let values = groups.map((group) => {
+    const saved = group.members.map((index) => stored[index]);
+    return allocate(group.total, saved.some((amount) => amount > 0) ? saved : saved.map(() => 1));
+  });
+  let best = distance(values);
 
-  for (let step = 1; step <= 3; step++) {
-    for (let from = 0; from < own.length; from++) {
-      for (let to = 0; to < own.length; to++) {
-        if (from === to || guess[from] < step) continue;
-        const moved = [...guess];
-        moved[from] -= step;
-        moved[to] += step;
-        if (reproduces(moved)) return withGross(moved);
+  // Nudge a rupee (up to three) between two lines of one group while that
+  // brings the cart closer to what was saved. Bounded, and cheap: a bill has
+  // a handful of lines.
+  for (let round = 0; round < 60 && best > 0; round++) {
+    let improved: number[][] | null = null;
+    let improvedBy = best;
+    groups.forEach((group, at) => {
+      for (let step = 1; step <= 3; step++) {
+        for (let from = 0; from < group.members.length; from++) {
+          for (let to = 0; to < group.members.length; to++) {
+            if (from === to || values[at][from] < step) continue;
+            const moved = values.map((row) => [...row]);
+            moved[at][from] -= step;
+            moved[at][to] += step;
+            const d = distance(moved);
+            if (d < improvedBy) {
+              improvedBy = d;
+              improved = moved;
+            }
+          }
+        }
       }
-    }
+    });
+    if (!improved) break;
+    values = improved;
+    best = improvedBy;
   }
-  return withGross(guess);
+
+  return build(values);
 }
 
 /** Which payment mode a saved bill was taken on, so the edit screen opens on it. */
