@@ -22,7 +22,7 @@ export function DaySelect({ days, selected, view }: DaySelectProps) {
   return (
     <NativeSelect
       aria-label="Choose a business day"
-      className="w-64"
+      className="w-full sm:w-64"
       value={selected}
       onChange={(event) => router.push(reportHref(event.target.value, view))}
     >

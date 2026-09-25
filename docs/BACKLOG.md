@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-25 (P1.9, P6.3, P4.11 and P6.4 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4 and P6.5 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -58,7 +58,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
 | P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
 | P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
-| P6.5 | A calmer Daily report | 🟡 | Sakib543, 2026-09-25 |
+| P6.5 | A calmer Daily report | ✅ | done 2026-09-25 |
 
 ---
 
@@ -1863,12 +1863,42 @@ and the `/worksheet` redirect. Check both on the next signed-in session.
 
 ---
 
-### 🟡 P6.5 — A calmer Daily report
-**Owner:** Sakib543, 2026-09-25
+### ✅ P6.5 — A calmer Daily report
+**Done:** 2026-09-25 · no migration · no behaviour change · the user's request
 
-The user: the Daily report is congested — make it easy to read, neat and clean.
-The date shows twice in the header, six tall cards wrap their figures, and every
-row repeats "Walk-in", a green "Paid" and the amount twice.
+The user sent a screenshot: congested, make it easy to read, neat and clean.
+Nothing was removed that carried information; what repeated, or said nothing,
+went.
+
+| Was | Now |
+|---|---|
+| The date twice in the header: the day picker and the business-day pill | The picker only — it already says "(open)" or "(closed)" |
+| Six tall cards (four more on a closed day); "Rs 11,250" wrapped onto two lines, "Discount gi…" cut off | One panel, `day-summary.tsx`: Total sales, Cash, Online on one row; Expected / Counted / Short-or-Extra / Security code on a second row on a closed day; then one quiet line — "13 paid bills · 1 cancelled · Rs 650 discount, already off the total" — each count after the first only when above zero. A shortfall is red, an extra amber |
+| A Customer column of "Walk-in" on nearly every row | No column. A customer's name shows under the bill number when there is one |
+| A green "Paid" badge on every row | Badges only for what is unusual: Cancelled, Reversal, Edited, beside the bill number. Cancelled and reversal rows are muted; a cancelled amount is struck through |
+| "Cash 400" beside "400" | "Paid by: Cash" — the amount is in its own column. A split still shows both amounts |
+| A grey pill round every staff name | "Haircut · Hamid", the name muted |
+| An empty Status column for a Manager | The cancel column exists only when the Owner may cancel (a closed day) |
+
+Also: the day picker is full width on a phone, where its fixed 256 px cut
+"(open)" short.
+
+**A trap found on the way, and recorded in HANDOFF section 8:** the
+`.table-stacked` phone layout lives in `@layer components`, so a cell's own
+`px-3.5 py-2.5` (a utility) beat its tight card spacing on a phone. The Daily
+report's cells now pad from `md` up only. **Today's bills on Billing has the
+same problem and was left alone** — a separate screen.
+
+**Verified** on live data, read-only, through a throwaway route
+(`/p65.harness`, deleted, never committed), since signing in from here did not
+work: 24 Sep at 1024 px — every figure on one line, no "Walk-in", no "Paid"
+badge, no overflow; 23 Sep (closed) as the Owner — the closing row reads Rs
+5,530 / 5,000 / **Short Rs 530** / D283-D3BF-87EB, badges on exactly the seven
+cancelled, reversal and edited rows, a cancel button on the three active ones;
+at 375 px the picker reads in full and a bill card's cells pad 3 px instead of
+12. No console errors. `pnpm build` (26 routes), `pnpm test` (357), `pnpm lint`
+pass. **Not seen:** the page inside the app shell, signed in — look at it on
+the live site.
 
 ---
 

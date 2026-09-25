@@ -1,9 +1,8 @@
-import { AlertTriangle, Banknote, CircleCheck, Pencil, QrCode, Receipt, Scissors, TrendingUp, Undo2, Wallet } from "lucide-react";
-import { BusinessDayPill } from "@/components/business-day-pill";
+import { AlertTriangle } from "lucide-react";
 import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
-import { StatCard } from "@/components/stat-card";
 import { DaySelect } from "@/features/daily-report/components/day-select";
+import { DaySummary } from "@/features/daily-report/components/day-summary";
 import { ReportTable } from "@/features/daily-report/components/report-table";
 import { ViewSwitch } from "@/features/daily-report/components/view-switch";
 import { getDailyReport } from "@/features/daily-report/queries";
@@ -13,7 +12,6 @@ import { getSheet } from "@/features/worksheet/queries";
 import { CANCELLATION_ALERT_AT } from "@/lib/alerts";
 import { atLeastOwner } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
-import { rs } from "@/lib/format";
 
 export const metadata = { title: "Daily report | Art Men's Salon" };
 
@@ -48,8 +46,9 @@ export default async function DailyReportPage({
       <PageHeader title="Daily report" subtitle={sheet ? REGISTER_SUBTITLE : SUBTITLE}>
         <div className="flex flex-wrap items-center gap-2.5">
           <ViewSwitch date={selected.businessDate} view={view} />
+          {/* The picker already says "(open)" or "(closed)", so the business-day
+              pill every other counter screen carries would only say it twice. */}
           <DaySelect days={days} selected={selected.businessDate} view={view} />
-          <BusinessDayPill businessDate={selected.businessDate} closed={selected.closed} />
         </div>
       </PageHeader>
 
@@ -60,47 +59,7 @@ export default async function DailyReportPage({
         </div>
       ) : null}
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        <StatCard icon={TrendingUp} label="Total sales" value={rs(summary.total)} />
-        <StatCard icon={Banknote} label="Cash" value={rs(summary.cash)} />
-        <StatCard icon={QrCode} label="Online" value={rs(summary.online)} />
-        <StatCard icon={Receipt} label="Paid bills" value={String(summary.paidBills)} />
-        {/* These three only when there was one: a row of zeros every day is
-            noise (P6.4), and each is meant to stand out when it happens —
-            a discount especially (P3.10). */}
-        {summary.cancelledBills > 0 ? (
-          <StatCard icon={Undo2} label="Cancelled" value={String(summary.cancelledBills)} />
-        ) : null}
-        {summary.editedBills > 0 ? (
-          <StatCard
-            icon={Pencil}
-            label="Edited"
-            value={String(summary.editedBills)}
-            hint="Corrected bills, shown as one line each"
-          />
-        ) : null}
-        {summary.discount > 0 ? (
-          <StatCard
-            icon={Scissors}
-            label="Discount given"
-            value={rs(summary.discount)}
-            hint="Already taken off the sales above"
-          />
-        ) : null}
-      </div>
-
-      {closing ? (
-        <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard icon={Wallet} label="Expected cash" value={rs(closing.expectedCash)} />
-          <StatCard icon={Banknote} label="Counted" value={rs(closing.countedCash)} />
-          <StatCard
-            icon={CircleCheck}
-            label={closing.difference < 0 ? "Short" : closing.difference > 0 ? "Extra" : "Difference"}
-            value={rs(Math.abs(closing.difference))}
-          />
-          <StatCard icon={CircleCheck} label="Security code" value={closing.securityCode} hint="Sent to the Owner at close" />
-        </div>
-      ) : null}
+      <DaySummary summary={summary} closing={closing} />
 
       {sheet ? (
         <WorksheetGrid sheet={sheet} />
