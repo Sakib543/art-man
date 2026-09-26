@@ -16,7 +16,7 @@ import { UserChip } from "./user-chip";
  */
 export function Sidebar({ user }: { user: SessionUser }) {
   return (
-    <aside className="sticky top-0 hidden h-screen flex-col bg-sidebar print:hidden lg:flex">
+    <aside className="sticky top-(--offline-bar) hidden h-[calc(100dvh-var(--offline-bar))] flex-col bg-sidebar print:hidden lg:flex">
       <div className="px-4 py-5">
         <BrandLockup onDark />
       </div>

@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-26 (P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-26 (**P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (394 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (400 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -137,9 +137,9 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Check | Result |
 |---|---|
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
-| `pnpm build` | pass — **26 routes** (2026-09-25; `icon.png` and `apple-icon.png` count as routes; `/worksheet` is now only a redirect), exit 0, **succeeds with no env vars set** |
+| `pnpm build` | pass — **27 routes** (2026-09-26; `icon.png`, `apple-icon.png` and `manifest.webmanifest` count as routes; `/worksheet` is now only a redirect), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **394 passed** (33 files), 2026-09-25 |
+| `pnpm test` | **400 passed** (34 files), 2026-09-26 |
 | Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0017`** (P3.10's discount columns and P3.11's `services.max_price`, both 2026-09-23) |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
@@ -159,7 +159,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
 staff & rates, settings), plus the developer role with its audit log, password, maintenance and
-bill-edit screens. Phase 4 (offline, backup) has not been started.
+bill-edit screens. Phase 4: the backup is built (a restore never run), and offline has started — P2.2a, the PWA foundation, is done; nothing works offline yet beyond an honest offline page and banner.
 
 **Live, deploying from this repo, and working.** The site is at
 **https://art-man-drab.vercel.app**, and since 2026-09-22 every push to `main` here deploys to it.
@@ -307,6 +307,7 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **Developer role** | A 4th role above Owner: sees everything, resets any password/PIN, manages users, maintenance mode, edits config. **Built 2026-09-22 (P1.1)**, except user management (P1.2) and editing financial rows (P1.6). |
 | **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. **Built 2026-09-22 (P1.6)**: a bill and its lines only, never deleted, always audited. Constraints below, all of them kept. |
 | **Offline** | Real offline required — 6–8 hours with no internet, then sync on reconnect. |
+| **Offline details (2026-09-26)** | **Day Close may happen offline** (security code computed on sync). **An offline receipt carries a temporary number (`T-5`)**; the real `bill_no` comes on sync — a reserved block of real numbers was offered and declined. **No Owner PIN offline**: Owner cash entries are simply unavailable. **An offline sign-in lasts 12 hours** from the last one the server confirmed, across browser restarts and reloads. |
 | **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: everything the Owner can (P1.1), plus changing a bill **in place** on any day, closed month included (P1.6). |
 | **Is the developer visible?** | **No, not on the screens** (2026-09-22). No developer section in Settings; the Owner and Manager see no sign the role exists. They sign in with a username and a password, nothing more. The account is still an ordinary `user` row and **every action it takes is audited** — hidden from the screens, never from the record. |
 | **Marking an edited bill** | **Yes.** The Daily report's single line carries an "Edited" badge **with a link to the previous version** (P1.5, done). |
@@ -477,6 +478,10 @@ Measured, not guessed. Do not spend time re-deriving these.
 | `services.max_price` null means one fixed price | every service behaved that way before, and the column defaults to null, so nothing had to be migrated or back-filled |
 | **A screen must not read a priced line to decide what to render** | when `priceCart` throws — an amount outside its range — every priced line is undefined. The cart's amount box and the line's name were both derived from it, so typing a wrong number made the box *and* the service name disappear. Both now come from the catalog. Found by using the screen, not by reading it |
 | A deal splits on the **bottom** of a range | the deal's own price is what the customer pays, so there is nothing to choose; the split only decides how it is shared for commission |
+| **The service worker never caches a page** | `public/sw.js` (P2.2a). Pages are server-rendered per person with that moment's figures, so a cached one would show old numbers as current and outlive a sign-out. Only `/_next/static/*` (hashed) and the offline page's two files are kept. Offline billing (P2.2d) must serve its own shell, fed from IndexedDB |
+| **"Online" means the server answered, not `navigator.onLine`** | `src/lib/connectivity.ts`: a `HEAD` to `/manifest.webmanifest` with `cache: "no-store"`. The worker does not intercept that path, so a cached copy can never fake an answer. Wi-Fi with dead internet fires no `offline` event, which is why the store re-probes every 20 s |
+| **`experimental.useOffline` is off on purpose** | it re-sends a failed Server Action when the network returns; a `createBill` whose *response* was lost would save twice. Its `useOffline` hook needs the flag, so the app has its own `useConnectivity` |
+| The worker registers **in production only** | `pwa-setup.tsx`. In `next dev` it unregisters any worker instead — a local `pnpm start` on port 3000 would otherwise leave a worker serving old chunks to the dev server |
 
 ## 8. Traps that have already cost time
 
@@ -626,6 +631,22 @@ layer, so they win **whatever the specificity**: a cell's `px-3.5 py-2.5` kept
 its full padding on a phone and the cards came out loose, every line far from
 the next. Put a stacked table's cell padding behind `md:` (`md:px-3.5 md:py-3`).
 Fixed in all four: the Daily report (P6.5), Today's bills (P6.6), Daily folders and the Staff khata (P6.7). A new `.table-stacked` must pad its cells behind `md:` from the start.
+
+### 8.12 Testing offline in the Browser pane: stop the server
+
+Found 2026-09-26 (P2.2a). The pane has no "offline" switch, but stopping the `prod` preview
+server is a faithful stand-in: every fetch to the origin fails at the network, exactly as it does
+with the internet gone. Three things to know:
+
+- test against `pnpm build` + the `prod` launch entry, never `next dev` — the worker is
+  production only;
+- the pane's `navigate` tool may **silently not navigate** to a server that is down; use
+  `location.assign(url)` from `javascript_tool` instead;
+- the connectivity store only re-probes on an `online` event while the page is **visible**, and
+  a hidden pane is not (trap 8.0e). Take a screenshot first, or wait out the 20 s timer.
+
+Afterwards, unregister the worker and delete its caches from the pane
+(`navigator.serviceWorker.getRegistrations()`, `caches.keys()`), so it cannot outlive the test.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -832,14 +853,12 @@ is signed out, which is still the script above.
    does not require. Split the two, or leave it?
 1. **Who can let us into the Vercel project?** It exists and is connected to this repo, but it is
    in the other developer's account (answered 2026-09-22). Blocks P5.1 until access is granted.
-2. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
-   the day offline, or must they wait? Needed for P2.2 — the security code needs the full day's
-   data in order.
-3. **What bill number goes on an offline receipt?** Plan: a temporary number (`T-5`) that becomes
-   real (`#127`) on sync. Acceptable, or must the customer's copy always carry the final number?
-   Needed for P2.2.
+2. ~~Can Day Close happen offline?~~ **Answered 2026-09-26: yes.** See section 6.
+3. ~~What bill number goes on an offline receipt?~~ **Answered 2026-09-26: a temporary `T-5` is
+   fine.** See section 6.
 
-Questions 2 and 3 are not needed until offline work starts.
+**Before P2.2c** (the first offline item that writes to the database): a separate dev Neon
+branch (9a). Syncing test bills into live would leave append-only rows in the salon's books.
 
 **Answered:**
 - **Does a Vercel project already exist?** Yes (2026-09-22) — connected to this same repo, but
@@ -915,6 +934,7 @@ STAGE 3 — during the client's 20-day trial
   P3.14 A corrected bill keeps its deals' split       DONE 2026-09-25
   P6.7  Folders and Staff khata tables on a phone     DONE 2026-09-26
   P6.8  Login footer · BrandLockup · dark mode gone   DONE 2026-09-26
+  P2.2a PWA foundation (started early, at the user's request) DONE 2026-09-26
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)
@@ -923,7 +943,8 @@ STAGE 3b — before the trial starts, and none of it is code
   4. Vercel access (P5.1)
 
 STAGE 4 — after the trial
-  P2.2  Offline PWA + sync (2–3 weeks)
+  P2.2  Offline PWA + sync (2–3 weeks) — split into P2.2a–f; P2.2a done.
+        P2.2b next (no migration). P2.2c needs the dev Neon branch first
   P3    Bonus, special rates screen, staff receipt, printing, alerts
   P5.3  Move to a VPS + carry trial data over with pg_dump
 ```

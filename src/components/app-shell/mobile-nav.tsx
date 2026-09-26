@@ -66,7 +66,7 @@ export function MobileNav({ user }: { user: { name: string; role: Role } }) {
   return (
     <>
       {/* The bar across the top: what screen this is, and the way out. */}
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-sidebar px-4 text-sidebar-active-foreground print:hidden lg:hidden">
+      <header className="sticky top-(--offline-bar) z-30 flex h-14 items-center gap-3 border-b bg-sidebar px-4 text-sidebar-active-foreground print:hidden lg:hidden">
         <SalonLogo onDark priority className="h-7 shrink-0" />
         <p className="min-w-0 flex-1 truncate font-semibold">{labelOf(pathname)}</p>
         <SignOutButton onDark />

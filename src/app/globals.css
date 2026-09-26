@@ -226,6 +226,16 @@
    * change with the viewport, and a theme token is static.
    */
   --pad-card: 1rem;
+
+  /*
+   * Height of the offline banner (P2.2a), 0 while online. The sticky mobile top
+   * bar and the sidebar are offset by it so the banner does not cover them.
+   */
+  --offline-bar: 0px;
+}
+
+:root[data-offline] {
+  --offline-bar: 2.25rem;
 }
 
 @media (min-width: 640px) {

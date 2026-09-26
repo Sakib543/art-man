@@ -1,4 +1,4 @@
-﻿# Backlog — what is left to build
+# Backlog — what is left to build
 
 The work queue. Higher sections come first. Each item records why it matters, how big it is, and
 what it depends on.
@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-26 (P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-26 (P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -31,7 +31,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync — split into P2.2a–f below | 🟡 | — |
-| P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | 🟡 | Sakib543, 2026-09-26 |
+| P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | ✅ | done 2026-09-26 |
 | P2.2b | Catalog copy in IndexedDB | ⬜ | — |
 | P2.2c | Outbox + sync endpoint (migration; needs a dev Neon branch first) | ⬜ | — |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ⬜ | — |
@@ -824,14 +824,53 @@ not whose request was lost — would save the bill twice. The outbox (P2.2c) is 
 | P2.2e | Folders / cash entries offline (no Owner entries), Register view shows local bills | maybe | P2.2c |
 | P2.2f | Day Close offline, security code on sync | maybe | P2.2c |
 
-### 🟡 P2.2a — PWA foundation
-**Owner:** Sakib543, 2026-09-26
+### ✅ P2.2a — PWA foundation
+**Done:** 2026-09-26
 
 A web app manifest and icons so the counter can install the app; a service worker that keeps the
 app's static files and serves a plain offline page instead of the browser's error screen; a banner
 on every screen when the server cannot be reached; and a request for persistent storage so the
 browser does not evict what later items keep. No database change and no offline billing yet — the
 banner says plainly that bills cannot be saved until the connection returns.
+
+**What was built:**
+
+- `src/app/manifest.ts` — served at `/manifest.webmanifest`. Icons: the existing 512px
+  `src/app/icon.png` and a new `public/icon-192.png` resized from it.
+- `public/sw.js` — plain JavaScript, no build step. Navigations go to the network and fall back to
+  `/offline.html` only when the network fails; `/_next/static/*` is cache-first (hashed names, so
+  never stale; capped at 400 files); `/offline.html` and `/logo.png` are network-first with the
+  kept copy as fallback. **Pages are never cached** — they are rendered per person with that
+  moment's figures. Everything else, Server Actions included, passes through. `VERSION` in the
+  file throws every cache away when bumped.
+- `public/offline.html` — self-contained (inline styles, no app bundle), points the counter at the
+  paper bill book, and reloads by itself once a probe reaches the server again.
+- `src/lib/connectivity.ts` (+ test) — `reachesServer()`: a `HEAD` to the manifest with
+  `cache: "no-store"`; any HTTP response is online, a network error or 8 s timeout is offline.
+- `src/components/use-connectivity.ts` — one `useSyncExternalStore` store: the `offline` event is
+  trusted at once, an `online` event is confirmed by a probe, and it re-probes every 20 s online
+  (Wi-Fi with dead internet fires no event) and every 3 s offline.
+- `src/components/offline-banner.tsx` — sticky bar at the top of every screen, login included. It
+  sets `<html data-offline>`, which gives `--offline-bar` a height in `globals.css`; the mobile top
+  bar and the sidebar are offset by it so the banner never covers them.
+- `src/components/pwa-setup.tsx` — registers the worker in production only (and **unregisters**
+  any worker in `next dev`, so a local `pnpm start` cannot leave stale chunks behind for the dev
+  server), fetches `/offline.html` once per load so the worker's copy follows deploys, and asks
+  for persistent storage.
+- `next.config.ts` — `/sw.js` is served `no-cache, no-store`.
+
+**Deliberately not used:** `experimental.useOffline` (see the P2.2 note above).
+
+**Verified** against `pnpm build && pnpm start` in the Browser pane, the server stopped and
+started to stand in for the internet: the worker registered and took control; the manifest,
+`/sw.js` headers and `/icon-192.png` were read back; `static-v1` filled with 18 of the page's 21
+static files after one reload; with the server down, the banner appeared on `/login` from the 20 s
+re-probe alone (no event), and `/billing` and `/overview` showed the offline page at their own
+URLs; with the server back, the offline page reloaded by itself and the banner went away within
+the 3 s re-probe. At 375px the banner is one line with no horizontal scroll. **Not seen signed
+in** — no password was available — so the sidebar and mobile top bar offsets were checked in the
+compiled CSS only. Persistent storage read `false`, as expected for a site that is not installed.
+`pnpm build` (27 routes — the manifest is new), `pnpm test` (400, 6 new), `pnpm lint` all pass.
 
 ---
 
