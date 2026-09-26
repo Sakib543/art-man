@@ -42,6 +42,13 @@ export const bills = pgTable(
     discount: rupees("discount").notNull().default(0),
     /** Why it was given. Required by the form whenever the discount is not 0. */
     discountReason: text("discount_reason"),
+    /**
+     * The id the billing screen gave this bill before sending it (P3.15). The
+     * server never saves one id twice, so a Save whose answer was lost can be
+     * asked about ("did it arrive?") and pressed again without making a second
+     * bill. Null on reversals, and on every bill saved before P3.15.
+     */
+    clientId: uuid("client_id").unique(),
     createdBy: text("created_by").notNull(),
     createdAt: createdAt(),
   },

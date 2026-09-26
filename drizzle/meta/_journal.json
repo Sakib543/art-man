@@ -127,6 +127,13 @@
       "when": 1790125338488,
       "tag": "0017_superb_terror",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790443814404,
+      "tag": "0018_smart_maelstrom",
+      "breakpoints": true
     }
   ]
 }
