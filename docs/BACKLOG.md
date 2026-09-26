@@ -63,6 +63,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.12 | "Other" on a bill: extra work at whatever the counter charges | ✅ | done 2026-09-25 |
 | P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
 | P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
+| P6.7 | Folders and Staff khata tables on a phone | 🟡 | Sakib543, 2026-09-26 |
 
 ---
 
@@ -2088,6 +2089,15 @@ Bill **#30** (developer, 2026-09-25 06:52, "Other: Hair" 200 + Hair color 1500)
 appeared on the open day during this work. It was checked read-only: the user
 rang it up on the live site — the first Other line saved end to end — and it
 re-opens exactly.
+
+---
+
+### 🟡 P6.7 — Folders and Staff khata tables on a phone
+**Owner:** Sakib543, 2026-09-26
+
+HANDOFF trap 8.11 in the two stacked tables P6.5 and P6.6 did not touch:
+Daily folders' entries table and the Staff khata ledger pad their cells with
+bare utilities, which beat `.table-stacked`'s tight card spacing on a phone.
 
 ---
 
