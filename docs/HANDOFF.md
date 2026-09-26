@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-25 (P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-26 (P6.7: Folders and Staff khata tables fixed on a phone. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -624,7 +624,7 @@ Found 2026-09-25 (P6.5). The phone layout for tables — each row a card — is 
 layer, so they win **whatever the specificity**: a cell's `px-3.5 py-2.5` kept
 its full padding on a phone and the cards came out loose, every line far from
 the next. Put a stacked table's cell padding behind `md:` (`md:px-3.5 md:py-3`).
-Fixed in the Daily report (P6.5) and Today's bills (P6.6). Any other `.table-stacked` still carrying bare `px-*`/`py-*` on its cells has it too.
+Fixed in all four: the Daily report (P6.5), Today's bills (P6.6), Daily folders and the Staff khata (P6.7). A new `.table-stacked` must pad its cells behind `md:` from the start.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -912,6 +912,7 @@ STAGE 3 — during the client's 20-day trial
   P3.12 An "Other" line on a bill                      DONE 2026-09-25
   P3.13 Re-opening a discounted bill discounts twice   DONE 2026-09-25
   P3.14 A corrected bill keeps its deals' split       DONE 2026-09-25
+  P6.7  Folders and Staff khata tables on a phone     DONE 2026-09-26
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)

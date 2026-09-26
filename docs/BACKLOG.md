@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-25 (P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-26 (P6.7 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -63,7 +63,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.12 | "Other" on a bill: extra work at whatever the counter charges | ✅ | done 2026-09-25 |
 | P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
 | P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
-| P6.7 | Folders and Staff khata tables on a phone | 🟡 | Sakib543, 2026-09-26 |
+| P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 
 ---
 
@@ -2092,12 +2092,33 @@ re-opens exactly.
 
 ---
 
-### 🟡 P6.7 — Folders and Staff khata tables on a phone
-**Owner:** Sakib543, 2026-09-26
+### ✅ P6.7 — Folders and Staff khata tables on a phone
+**Done:** 2026-09-26 · no behaviour change · the user's request
 
-HANDOFF trap 8.11 in the two stacked tables P6.5 and P6.6 did not touch:
-Daily folders' entries table and the Staff khata ledger pad their cells with
-bare utilities, which beat `.table-stacked`'s tight card spacing on a phone.
+HANDOFF trap 8.11 in the last two stacked tables: Daily folders' entries table
+(`entries-table.tsx`) and the Staff khata ledger (`ledger.tsx`) padded their
+cells with bare utilities, which beat `.table-stacked`'s tight card spacing on
+a phone. Their cells now pad from `md` up only (`md:px-3.5 md:py-2.5`).
+
+Two empty lines on a phone went with it:
+
+- Folders: the badge cell of an entry with no badge, and the Cancel cell of an
+  online bill or a cancelled entry, are hidden when empty
+  (`max-md:empty:hidden`) — the Cancel cell had drawn a bordered blank strip.
+- Khata: the two blank cells of the balance row, there only to line the figure
+  up under Balance on a wide screen, are hidden on a phone.
+
+The tables' content and wide-screen layout are unchanged. **All four
+`.table-stacked` tables in the app are now clear of 8.11.**
+
+**Verified** on live data, read-only, through a throwaway route
+(`/p67.harness`, deleted, never committed; nothing pressed): at 375 px every
+cell pads `3px 0`, no empty cell is drawn, no overflow, no console errors — the
+online bill #27 card has no Cancel strip; at 1280 px the cells pad `10px 14px`
+as before and the khata's balance row shows all four cells. There were no
+cancelled folder entries on the open day to look at; they use the same rule
+as bill #27's row. `pnpm build` (26 routes), `pnpm test` (394), `pnpm lint`
+pass.
 
 ---
 

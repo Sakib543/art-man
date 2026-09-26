@@ -6,7 +6,9 @@ import type { KhataStaff, LedgerRow } from "../queries";
 import { GiveBonus } from "./give-bonus";
 
 const th = "px-3.5 py-2 text-left text-xs font-medium text-muted-foreground";
-const td = "px-3.5 py-2.5";
+// Padding from `md` up only; below it `.table-stacked` spaces each card
+// itself, and a bare utility would beat it (HANDOFF 8.11).
+const td = "md:px-3.5 md:py-2.5";
 
 /** One staff member's running account: earnings add, payments and advances subtract. */
 export function Ledger({
@@ -79,10 +81,12 @@ export function Ledger({
                 </td>
               </tr>
             ) : null}
+            {/* The blank cells only line the figure up under Balance; on a
+                phone they would be two empty lines in the card. */}
             <tr className="bg-brass-tint font-semibold">
-              <td className={td} />
+              <td className={cn(td, "max-md:hidden")} />
               <td className={td}>{member.balance < 0 ? `Advance taken by ${member.name}` : `Balance owed to ${member.name}`}</td>
-              <td className={td} />
+              <td className={cn(td, "max-md:hidden")} />
               <td className={cn(td, "text-right tabular-nums")}>{rs(member.balance)}</td>
             </tr>
           </tbody>
