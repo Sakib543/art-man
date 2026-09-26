@@ -32,7 +32,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync — split into P2.2a–f below | 🟡 | — |
 | P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | ✅ | done 2026-09-26 |
-| P2.2b | Catalog copy in IndexedDB | ⬜ | — |
+| P2.2b | Catalog copy in IndexedDB | 🟡 | Sakib543, 2026-09-26 |
 | P2.2c | Outbox + sync endpoint (migration; needs a dev Neon branch first) | ⬜ | — |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ⬜ | — |
 | P2.2e | Folders / cash entries offline | ⬜ | — |
@@ -871,6 +871,16 @@ the 3 s re-probe. At 375px the banner is one line with no horizontal scroll. **N
 in** — no password was available — so the sidebar and mobile top bar offsets were checked in the
 compiled CSS only. Persistent storage read `false`, as expected for a site that is not installed.
 `pnpm build` (27 routes — the manifest is new), `pnpm test` (400, 6 new), `pnpm lint` all pass.
+
+
+### 🟡 P2.2b — Catalog copy in IndexedDB
+**Owner:** Sakib543, 2026-09-26
+
+Everything the counter needs to price a bill without the server — services, deals, staff,
+customers and their special rates, and the open business date — kept in the browser's IndexedDB
+and refreshed whenever the server can be reached. Stamped with a version of its pricing, which is
+what P2.2c will check an offline bill against. No database change, and nothing reads the copy yet:
+P2.2d does.
 
 ---
 
