@@ -1,4 +1,4 @@
-# Backlog — what is left to build
+﻿# Backlog — what is left to build
 
 The work queue. Higher sections come first. Each item records why it matters, how big it is, and
 what it depends on.
@@ -30,7 +30,13 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.6 | Developer edits a financial entry | ✅ | done 2026-09-22 |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
-| P2.2 | Offline PWA + sync | ⬜ | — |
+| P2.2 | Offline PWA + sync — split into P2.2a–f below | 🟡 | — |
+| P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | 🟡 | Sakib543, 2026-09-26 |
+| P2.2b | Catalog copy in IndexedDB | ⬜ | — |
+| P2.2c | Outbox + sync endpoint (migration; needs a dev Neon branch first) | ⬜ | — |
+| P2.2d | Billing offline, `T-` numbers on the receipt | ⬜ | — |
+| P2.2e | Folders / cash entries offline | ⬜ | — |
+| P2.2f | Day Close offline | ⬜ | — |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
 | P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
@@ -760,7 +766,7 @@ Day totals unchanged at Rs 1,100.
 
 ---
 
-### ⬜ P2.2 — Real offline PWA + sync *(client approved)*
+### 🟡 P2.2 — Real offline PWA + sync *(client approved)*
 **Owner:** —
 
 The app keeps working for 6–8 hours with no internet, then syncs when the connection returns.
@@ -788,6 +794,44 @@ The app keeps working for 6–8 hours with no internet, then syncs when the conn
 offline path for day close.
 
 **Size:** very large (2–3 weeks) · **Depends on:** all of P0, and P2.1
+
+**Client answers (2026-09-26), through the user:**
+
+| Question | Answer | What it means for the build |
+|---|---|---|
+| May Day Close happen offline? | **Yes** | The manager counts cash offline; the security code is computed on sync, because it hashes the day's bills in bill-number order |
+| What number goes on an offline receipt? | **A temporary number (`T-5`) is fine** | The real `bill_no` is assigned in order on sync. A reserved block of real numbers was offered and not wanted |
+| Owner PIN offline? | **Not needed** | Owner cash entries (`owner_took` / `owner_added`) are simply unavailable offline, so no PIN hash is kept on the device |
+| How long may an offline login last? | **12 hours**, and it must survive closing the browser and reloading | Trust window counted from the last sign-in the server confirmed; after it, the counter must go online and sign in again |
+
+Offline scope stays Billing, Folders, the Register view and Day Close. Everything else says it needs
+the internet.
+
+**Next.js 16's own offline feature (`experimental.useOffline`) is not the answer, and is not
+enabled.** Read in `node_modules/next/dist/docs/01-app/02-guides/offline-support.md`: it holds a
+failed Server Action in memory and re-sends it when the network returns. Memory dies on a reload,
+so it cannot carry eight hours of bills; and re-sending a `createBill` whose response was lost —
+not whose request was lost — would save the bill twice. The outbox (P2.2c) is still needed.
+
+**Split into six items, one per session:**
+
+| | Item | Migration | Waits on |
+|---|---|---|---|
+| P2.2a | PWA foundation: manifest, service worker (the app's files cached, an offline page instead of the browser's error), an offline banner, persistent storage | no | — |
+| P2.2b | Catalog copy in IndexedDB — services, deals, ranges, staff, customers, special rates — refreshed when online, stamped with a version | no | P2.2a |
+| P2.2c | Outbox + sync endpoint: a client UUID per bill, replayed through the existing `createBill`, deduplicated, rejects kept in a "Needs attention" list | **yes** (`bills.client_id`) | **a separate dev Neon branch** (HANDOFF 9a) |
+| P2.2d | Billing offline: `priceCart()` in the browser, `T-` number on the receipt, "pending sync" in Today's bills; the 12-hour sign-in window | no | P2.2b, P2.2c |
+| P2.2e | Folders / cash entries offline (no Owner entries), Register view shows local bills | maybe | P2.2c |
+| P2.2f | Day Close offline, security code on sync | maybe | P2.2c |
+
+### 🟡 P2.2a — PWA foundation
+**Owner:** Sakib543, 2026-09-26
+
+A web app manifest and icons so the counter can install the app; a service worker that keeps the
+app's static files and serves a plain offline page instead of the browser's error screen; a banner
+on every screen when the server cannot be reached; and a request for persistent storage so the
+browser does not evict what later items keep. No database change and no offline billing yet — the
+banner says plainly that bills cannot be saved until the connection returns.
 
 ---
 
