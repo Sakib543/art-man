@@ -64,6 +64,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
 | P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
+| P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | 🟡 | Sakib543, 2026-09-26 |
 
 ---
 
@@ -2119,6 +2120,16 @@ as before and the khata's balance row shows all four cells. There were no
 cancelled folder entries on the open day to look at; they use the same rule
 as bill #27's row. `pnpm build` (26 routes), `pnpm test` (394), `pnpm lint`
 pass.
+
+---
+
+### 🟡 P6.8 — Login footer back at the bottom · BrandLockup comment · dark mode removed
+**Owner:** Sakib543, 2026-09-26
+
+The user's three loose ends from the P6.3 review: put only "Art Men's Salon ·
+Karachi" back at the bottom of the login panel; drop `BrandLockup`'s stale
+comment about text under the logo; and remove dark mode, which had colours
+but no way to turn it on.
 
 ---
 
