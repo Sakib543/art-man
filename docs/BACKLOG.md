@@ -69,6 +69,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.12 | "Other" on a bill: extra work at whatever the counter charges | ✅ | done 2026-09-25 |
 | P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
 | P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
+| P3.15 | A dropped connection never leaves a bill in doubt — one id per bill, saved once | 🟡 | Sakib543, 2026-09-26 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 
@@ -897,6 +898,30 @@ P2.2d does.
 | 🟡 P3.7 | **Backup and restore** — the backup is built and checked (2026-09-23). **No restore has ever been run.** See below | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
+
+### 🟡 P3.15 — A dropped connection never leaves a bill in doubt
+**Owner:** Sakib543, 2026-09-26
+
+**Found on the live site, 2026-09-26, 22:19.** The manager pressed Save, the screen spun, then
+showed the full-screen "This screen could not be loaded" card with *No reference was recorded*,
+under the P2.2a "No internet" banner. The browser console read `TypeError: Failed to fetch`. The
+bill **had been saved** — #32, Rs 1,800 — but the answer was lost on the way back, so the counter
+could not tell, and saving again would have made a second bill. The cart was gone too: a rejected
+Server Action inside a transition goes to the error boundary.
+
+**Client decision (2026-09-26), through the user:** the proper fix, not a guess from amounts and
+times — and before P2.2b.
+
+**The fix:**
+- Every bill gets an id from the browser (`bills.client_id`, unique — one migration). The server
+  never saves the same id twice: a repeat, or two racing requests, get the bill that is already
+  there. Pressing Save again is always safe. This is the id P2.2c was going to add, brought forward.
+- A Save that loses its answer no longer throws the screen away. The cart stays, and the screen asks
+  the server "did this bill arrive?" until it gets an answer: the receipt, or "not saved — press
+  Save again".
+- A screen left open across a deploy is told to reload, instead of being left waiting.
+
+---
 
 ### ✅ P3.6 — Receipt printing
 **Done:** 2026-09-22
