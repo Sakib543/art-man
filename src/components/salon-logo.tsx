@@ -48,10 +48,13 @@ export function SalonLogo({
   );
 }
 
-/** The logo with what this app is underneath it — the sidebar and the drawer. */
+/**
+ * The logo as the sidebar and the drawer show it. `items-start` is what keeps
+ * the flex column from stretching the image (see `SalonLogo`).
+ */
 export function BrandLockup({ onDark = false, compact = false }: { onDark?: boolean; compact?: boolean }) {
   return (
-    <div className="flex min-w-0 flex-col items-start gap-1">
+    <div className="flex min-w-0 flex-col items-start">
       <SalonLogo onDark={onDark} priority className={compact ? "h-9" : "h-21"} />
     </div>
   );

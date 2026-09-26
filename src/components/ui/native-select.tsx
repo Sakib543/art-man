@@ -27,7 +27,7 @@ function NativeSelect({
       <select
         data-slot="native-select"
         data-size={size}
-        className="h-10 w-full min-w-0 appearance-none rounded-lg border border-input bg-card py-1 pr-9 pl-3 shadow-xs transition-[border-color,box-shadow] outline-none select-none selection:bg-brass-soft selection:text-brass-strong placeholder:text-muted-foreground hover:border-ring/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-muted aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=sm]:h-8 data-[size=sm]:rounded-md data-[size=sm]:py-0.5 data-[size=sm]:pr-8 data-[size=sm]:pl-2.5 data-[size=sm]:text-sm dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
+        className="h-10 w-full min-w-0 appearance-none rounded-lg border border-input bg-card py-1 pr-9 pl-3 shadow-xs transition-[border-color,box-shadow] outline-none select-none selection:bg-brass-soft selection:text-brass-strong placeholder:text-muted-foreground hover:border-ring/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-muted aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=sm]:h-8 data-[size=sm]:rounded-md data-[size=sm]:py-0.5 data-[size=sm]:pr-8 data-[size=sm]:pl-2.5 data-[size=sm]:text-sm"
         {...props}
       />
       <ChevronDownIcon

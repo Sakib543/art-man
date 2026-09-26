@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-26 (P6.7 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-26 (P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -64,7 +64,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
 | P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
-| P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | 🟡 | Sakib543, 2026-09-26 |
+| P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 
 ---
 
@@ -2123,13 +2123,35 @@ pass.
 
 ---
 
-### 🟡 P6.8 — Login footer back at the bottom · BrandLockup comment · dark mode removed
-**Owner:** Sakib543, 2026-09-26
+### ✅ P6.8 — Login footer back at the bottom · BrandLockup comment · dark mode removed
+**Done:** 2026-09-26 · no behaviour change on a light screen · the user's three loose ends from P6.3
 
-The user's three loose ends from the P6.3 review: put only "Art Men's Salon ·
-Karachi" back at the bottom of the login panel; drop `BrandLockup`'s stale
-comment about text under the logo; and remove dark mode, which had colours
-but no way to turn it on.
+1. **Login footer.** `5313fc3` centred the navy panel (`justify-center`), which
+   pulled "Art Men's Salon · Karachi" up under the sentence. The user wanted
+   only that line back at the bottom: it is now `absolute inset-x-12
+   bottom-12`, centred, while the logo and the sentence stay in the middle. The
+   empty `<div aria-hidden />` that `justify-between` once needed is gone.
+2. **`BrandLockup`.** Its comment still described text under the logo ("POS &
+   Accounts", removed in `5313fc3`). It now says what the wrapper is for —
+   `items-start` stops the flex column stretching the image — and the useless
+   `gap-1` went. The wrapper itself stays: it is that fix.
+3. **Dark mode, removed** — the user's choice between building it and removing
+   it. The `.dark` token block (shadcn's grey defaults, never switched on) is
+   gone from `globals.css`, and all **29** `dark:` utilities from the six shadcn
+   primitives (`button`, `tabs`, `textarea`, `native-select`, `input`, `badge`).
+   Checked token by token: apart from `dark:*`, every class in those six files
+   is exactly what it was. **`@custom-variant dark` was kept, on purpose,** with
+   a comment: without it Tailwind 4 reads `dark:` as the device's own dark
+   setting, so the next shadcn primitive added would arrive with `dark:`
+   classes that turned half a screen dark on a phone set to dark.
+
+**Verified** on a production build, in a browser (the login page needs no
+sign-in): at 1440 px the footer sits 48 px from the panel's foot, horizontally
+centred to the pixel, no overflow. With the browser emulating a **dark**
+device, the page's colours are identical to a light one — body
+`rgb(244,245,247)`, input white, button navy — and the built CSS contains no
+`.dark` rule. No console errors. `pnpm build` (26 routes), `pnpm test` (394),
+`pnpm lint` pass.
 
 ---
 
@@ -2171,7 +2193,7 @@ Two more, which are behaviour rather than looks:
 | Buttons and nav buttons | **Bigger and more visible.** Both: size, weight, colour and press feedback |
 | The sidebar | **Dark navy** (`#15263d`) with a brass active state — it currently disappears against the page |
 | Phone navigation | **A drawer plus a bottom bar.** Hamburger opens the full sectioned menu; the four counter screens sit in a fixed bottom bar |
-| Dark mode | **Left alone.** It is half-built — the light theme is navy/brass, `.dark` is still shadcn's neutral greys, and there is no toggle. The salon works in daylight, so this is not worth the risk today |
+| Dark mode | **Left alone.** It is half-built — the light theme is navy/brass, `.dark` is still shadcn's neutral greys, and there is no toggle. The salon works in daylight, so this is not worth the risk today. **Removed entirely in P6.8** |
 
 **Scope.** Four layers, bottom up:
 
@@ -2247,7 +2269,7 @@ committed.
 
 **Not done, deliberately:** dark mode. The light theme is the approved
 navy/brass palette, `.dark` is still shadcn's neutral greys, and no screen
-offers a toggle, so nothing reaches it. It is a task of its own.
+offers a toggle, so nothing reaches it. It is a task of its own. **Removed entirely in P6.8 (2026-09-26), at the user's choice.**
 
 **Size:** large
 

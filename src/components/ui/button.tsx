@@ -11,7 +11,7 @@ import { cn } from "cn"
  * button that sits inside a table row.
  */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding font-medium whitespace-nowrap transition-[background-color,border-color,box-shadow,transform] duration-150 outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/45 focus-visible:ring-offset-1 focus-visible:ring-offset-background active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-45 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding font-medium whitespace-nowrap transition-[background-color,border-color,box-shadow,transform] duration-150 outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/45 focus-visible:ring-offset-1 focus-visible:ring-offset-background active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-45 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -23,11 +23,11 @@ const buttonVariants = cva(
         brass:
           "bg-brass text-primary-foreground shadow-sm hover:bg-brass-strong hover:shadow-md active:shadow-xs",
         outline:
-          "border-border bg-card shadow-xs hover:border-ring/45 hover:bg-brass-tint hover:text-brass-strong aria-expanded:border-ring/45 aria-expanded:bg-brass-tint dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border-border bg-card shadow-xs hover:border-ring/45 hover:bg-brass-tint hover:text-brass-strong aria-expanded:border-ring/45 aria-expanded:bg-brass-tint",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_7%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
-          "text-muted-foreground hover:bg-secondary hover:text-foreground aria-expanded:bg-secondary aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "text-muted-foreground hover:bg-secondary hover:text-foreground aria-expanded:bg-secondary aria-expanded:text-foreground",
         // Solid, because every place this is used is the confirm button of a
         // dialog that cancels a bill or an entry. It should look like what it
         // does; a tint read as one more thing to click past.
@@ -36,7 +36,7 @@ const buttonVariants = cva(
         // The tinted version, for a destructive choice offered in a row rather
         // than confirmed in a dialog.
         "destructive-soft":
-          "bg-destructive/8 text-destructive hover:bg-destructive/15 focus-visible:ring-destructive/30 dark:bg-destructive/20 dark:hover:bg-destructive/30",
+          "bg-destructive/8 text-destructive hover:bg-destructive/15 focus-visible:ring-destructive/30",
         link: "text-primary underline underline-offset-4 decoration-brass/40 hover:decoration-brass",
       },
       size: {

@@ -28,8 +28,6 @@ export default async function LoginPage() {
           className="pointer-events-none absolute -bottom-40 -left-20 size-96 rounded-full bg-brass/8 blur-3xl"
         />
 
-        <div aria-hidden />
-
         <div className="relative max-w-md">
           {/* Above the sentence, not off in the corner — the client's
               instruction, 2026-09-23. */}
@@ -43,7 +41,11 @@ export default async function LoginPage() {
           </p>
         </div>
 
-        <p className="relative text-sm text-sidebar-heading">Art Men&apos;s Salon · Karachi</p>
+        {/* Pinned to the foot of the panel, so the logo and the sentence stay
+            centred and only this line sits at the bottom (P6.8). */}
+        <p className="absolute inset-x-12 bottom-12 text-center text-sm text-sidebar-heading">
+          Art Men&apos;s Salon · Karachi
+        </p>
       </div>
 
       {/* The form half. */}

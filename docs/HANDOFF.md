@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-26 (P6.7: Folders and Staff khata tables fixed on a phone. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-26 (P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -444,6 +444,7 @@ Measured, not guessed. Do not spend time re-deriving these.
 | A username is case-folded and unique | `username-rules.ts` decides the shape; `user.username` is `text().unique()` in the database, which is the actual guarantee. `username` is stored lower case and `displayUsername` keeps the capitals — the plugin's own convention, which `seed-developer.ts` also follows |
 | **The proxy never sees a path with a dot in it** | `src/proxy.ts`'s matcher skips `.*\..*` so that `icon.png` and the like pass. A route folder named with a dot (`app/x.y/`) is therefore not gated by the proxy at all. Every page still calls `requireUser`/`requireRole`, so nothing is exposed — but a new page must never rely on the proxy alone. P6.4 used this on purpose for a throwaway read-only harness |
 | **A saved line's amount is net of the bill's discount** | P3.10 shares the discount onto the lines, and `bill_lines.amount` keeps the result. Anything that turns a saved bill back into a cart must add it back first, or the discount is taken twice — and must keep each deal's split, or commission moves when a list price has (P3.14). `restoreSaved` in `billing/bill-draft.ts` does both, for re-opening (P3.13, P3.14); the server works a deal's split out from the saved bill itself, never from the browser. Neither the discount's split nor the deal's is stored; they are worked back out and checked with `priceCart` |
+| **There is no dark mode, and `@custom-variant dark` must stay** | Removed in P6.8. The line in `globals.css` ties `dark:` to a `.dark` class the app never sets. Delete it and Tailwind 4 falls back to the device's own dark setting — so `dark:` classes in any shadcn primitive added later would switch parts of a screen dark on a phone set to dark |
 | **Renaming an account does not end its sessions** | a session is bound to the account's id and knows nothing about its username. The *next* sign-in needs the new one, which is why the screen says so |
 | `/developer/passwords` is called **Accounts** now | it sets passwords and PINs *and* names the developer's own account |
 | **The logo is two PNGs, not one tinted with CSS** | `public/logo.png` (the artwork's own black and brown, for light surfaces and the printed slip) and `public/logo-light.png` (cream, for the navy panels). `SalonLogo` picks between them with `onDark` |
@@ -913,6 +914,7 @@ STAGE 3 — during the client's 20-day trial
   P3.13 Re-opening a discounted bill discounts twice   DONE 2026-09-25
   P3.14 A corrected bill keeps its deals' split       DONE 2026-09-25
   P6.7  Folders and Staff khata tables on a phone     DONE 2026-09-26
+  P6.8  Login footer · BrandLockup · dark mode gone   DONE 2026-09-26
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)
@@ -934,7 +936,7 @@ Offline comes after the trial because the trial's purpose is to prove the **acco
 The paper bill book (P2.1) covers outages until then.
 
 **P4 and P6.1 are finished.** What is left is P2.2 (offline), P3.3/P3.4/P3.5,
-dark mode (deliberately left out of P6.1), and the non-code items in STAGE 3b.
+and the non-code items in STAGE 3b. (Dark mode was removed outright in P6.8.)
 P3.3 and P3.5 both wait on one answer: what a "real alert" and a "staff receipt"
 are sent *through*. Nothing in the project sends anything yet — the Day close
 WhatsApp summary is still a preview on screen.
