@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-28 (P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-28 (P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -70,7 +70,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
 | P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
 | P3.15 | A dropped connection never leaves a bill in doubt — one id per bill, saved once | ✅ | done 2026-09-28 |
-| P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | 🟡 | Sakib543, 2026-09-28 |
+| P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | ✅ | done 2026-09-28 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 
@@ -1004,14 +1004,40 @@ under an open screen.
 
 ---
 
-### 🟡 P3.16 — The customer box keeps the last bill's number after a save
-**Owner:** Sakib543, 2026-09-28
+### ✅ P3.16 — The customer box keeps the last bill's number after a save
+**Done:** 2026-09-28
 
 Found while verifying P3.15 (2026-09-28). After a bill is saved the screen resets the customer,
 but the mobile number box still shows the previous bill's number. Typing the next customer's
 number appends to it (`0000031500200000315003`), and Find then says "Enter a valid mobile
 number". Not caused by P3.15 — the success path resets the customer the same way it always did.
-Small.
+
+**Why:** `CustomerBox` keeps the number being typed in its own `useState`. Setting the `customer`
+prop back to "none" brings the search input back, but the box was never unmounted, so its state —
+the old number — came back with it.
+
+**The fix:** one line in `billing-screen.tsx`, `<CustomerBox key={clientId} …>`. The bill's id
+(P3.15) changes exactly when the server is known to have the bill and the next one begins, so the
+box starts empty then. While a Save is in doubt, or comes back "not saved", the id stays, and so
+does the number typed.
+
+**Verified, 2026-09-28, with nothing written to the database** (35 bills before and after). In
+the Browser pane, signed in as the manager on the dev server: the screen was mounted with bill
+#35's `client_id`, customer `00000315003` found, a Hair wash added, and the Save blocked in
+`window.fetch` before it was sent. The screen asked, the server answered with #35, and the screen
+took the saved path — the same `afterSave` a normal Save runs. How: HANDOFF trap 8.16.
+
+| Run | The mobile box after the save |
+|---|---|
+| Fix reverted for the run | `00000315003` — the bug, reproduced |
+| With the fix | empty; `00000315002` then typed cleanly and Find found "Test customer P3.15 B", no error |
+| With the fix, a Save the server never got | "was not saved. Press Save to send it again" — the typed `03001234567` and the bill's id both kept |
+
+`pnpm build`, `pnpm test` (434, none new: the tests cover `src/**/*.test.ts` only, and there are
+no component tests) and `pnpm lint` pass.
+
+**Not verified:** a real Save reaching the server — it would put a bill in the live books
+(HANDOFF 9a). It runs the same `afterSave`.
 
 ---
 

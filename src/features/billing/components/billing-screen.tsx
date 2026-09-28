@@ -322,7 +322,14 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
           </div>
 
           <div className="border-b px-card py-4">
-            <CustomerBox value={customer} onChange={setCustomer} />
+            {/*
+              The box keeps the number being typed in its own state, which
+              resetting `customer` never reached — so the last bill's number
+              stayed in it and the next one was typed onto the end (P3.16).
+              Keyed on the bill's id, it starts empty exactly when a bill is
+              saved and the next begins, and not when a Save is only in doubt.
+            */}
+            <CustomerBox key={clientId} value={customer} onChange={setCustomer} />
           </div>
 
           <CartLines
