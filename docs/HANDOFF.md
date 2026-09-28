@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-28 (**P3.16: the customer box starts empty for the next bill — keyed on the bill's id; verified without writing a bill (trap 8.16).** **P2.2b: the catalog copy in IndexedDB, refreshed from `/api/offline/catalog`.** **P3.15: a Save that loses its answer no longer leaves the bill in doubt — `bills.client_id` (migration `0018`, on live), one bill per id, and the screen asks the server instead of falling over.** 2026-09-26: **P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-28 (**The user: no dev Neon branch before the VPS move — P2.2c–f are built against this database (section 9).** **P3.16: the customer box starts empty for the next bill — keyed on the bill's id; verified without writing a bill (trap 8.16).** **P2.2b: the catalog copy in IndexedDB, refreshed from `/api/offline/catalog`.** **P3.15: a Save that loses its answer no longer leaves the bill in doubt — `bills.client_id` (migration `0018`, on live), one bill per id, and the screen asks the server instead of falling over.** 2026-09-26: **P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -850,6 +850,9 @@ meaning writing to the salon's books. A second Neon branch costs nothing and tak
 branch `production`, put the new branch's string in `.env.local`, and leave Vercel pointing at
 `production`. Do it before the trial starts, not after.
 
+**Deferred by the user, 2026-09-28:** development stays on this database until the move to a VPS
+(P5.3), when a new one is made. See section 9, "Owed by the user".
+
 **All three passwords were reset on 2026-09-23** and the user has them. They
 had been lost: the ones printed during seeding were gone, both seed scripts
 skip an account that already exists, and `/developer/passwords` and Settings
@@ -897,11 +900,16 @@ is signed out, which is still the script above.
   backup is built and its contents were checked, but nothing has ever been
   restored from it, so spec phase 4's success test is not met. This needs a
   second database, which is the same thing section 9a asks for.
-- [ ] **A second Neon branch for development.** Still the single most valuable
-  hour anybody could spend on this project: today's verification wrote a bonus,
-  a special rate and four throwaway accounts into the live database. The
-  accounts and the rate were cleaned up; the khata line and the audit rows
-  cannot be, because those tables are append-only.
+- [ ] **A second Neon branch for development — deferred by the user, 2026-09-28,
+  until the move to a VPS (P5.3), when a new database is made.** Until then P2.2c–f
+  are built against this database, and every test write stays in it for good:
+  bills, khata and `audit_log` are append-only, and a test bill on the open day
+  counts in that day's totals. So keep test bills few, on `Test customer …`
+  names, record each in the item's backlog entry, and prefer checks that write
+  nothing (trap 8.16). If the trial, or P5.3's `pg_dump`, starts from this
+  database, those rows go with it. (History: on 2026-09-23 a verification wrote
+  a bonus, a special rate and four throwaway accounts here; the accounts and the
+  rate were cleaned up, the khata line and the audit rows cannot be.)
 - [ ] **Decide what happens to the sample data before the trial.** The live
   database holds 19 sample bills, 3 business days, 31 khata lines and Neon's
   leftover `playing_with_neon` table. Bills cannot be deleted by the app, and
@@ -927,8 +935,9 @@ is signed out, which is still the script above.
 3. ~~What bill number goes on an offline receipt?~~ **Answered 2026-09-26: a temporary `T-5` is
    fine.** See section 6.
 
-**Before P2.2c** (the first offline item that writes to the database): a separate dev Neon
-branch (9a). Syncing test bills into live would leave append-only rows in the salon's books.
+~~**Before P2.2c**: a separate dev Neon branch (9a).~~ **Decided 2026-09-28: not first.** The user
+chose to build P2.2c–f against this database and make a new one at the VPS move. The cost, and how
+to keep it small, is under "Owed by the user" above.
 
 4. **Should the offline copy hold every customer, or only those with a special rate?** P2.2b keeps
    only the second, so the full list of names and numbers does not sit in the browser of whoever
@@ -1016,14 +1025,14 @@ STAGE 3 — during the client's 20-day trial
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)
-  2. A separate Neon branch for development, so verifying stops writing to live
+  2. ~~A separate Neon branch for development~~ — deferred to the VPS move (the user, 2026-09-28)
   3. A clean database for the trial, and the real services/staff/partners in it
   4. Vercel access (P5.1)
 
 STAGE 4 — after the trial
   P2.2  Offline PWA + sync (2–3 weeks) — split into P2.2a–f; P2.2a and P2.2b done.
         P2.2c next. Its dedupe id, `bills.client_id`, already exists (P3.15, `0018`).
-        P2.2c needs the dev Neon branch first
+        P2.2c is built against this database — no dev branch first (the user, 2026-09-28)
   P3    Bonus, special rates screen, staff receipt, printing, alerts
   P5.3  Move to a VPS + carry trial data over with pg_dump
 ```

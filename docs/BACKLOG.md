@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-28 (P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-28 (P2.2c no longer waits on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -33,7 +33,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2 | Offline PWA + sync — split into P2.2a–f below | 🟡 | — |
 | P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | ✅ | done 2026-09-26 |
 | P2.2b | Catalog copy in IndexedDB | ✅ | done 2026-09-28 |
-| P2.2c | Outbox + sync endpoint (migration; needs a dev Neon branch first) | ⬜ | — |
+| P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | ⬜ | — |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ⬜ | — |
 | P2.2e | Folders / cash entries offline | ⬜ | — |
 | P2.2f | Day Close offline | ⬜ | — |
@@ -821,7 +821,7 @@ not whose request was lost — would save the bill twice. The outbox (P2.2c) is 
 |---|---|---|---|
 | P2.2a | PWA foundation: manifest, service worker (the app's files cached, an offline page instead of the browser's error), an offline banner, persistent storage | no | — |
 | P2.2b | Catalog copy in IndexedDB — services, deals, ranges, staff, customers, special rates — refreshed when online, stamped with a version | no | P2.2a |
-| P2.2c | Outbox + sync endpoint: a client UUID per bill, replayed through the existing `createBill`, deduplicated, rejects kept in a "Needs attention" list | **yes** (`bills.client_id`) | **a separate dev Neon branch** (HANDOFF 9a) |
+| P2.2c | Outbox + sync endpoint: a client UUID per bill, replayed through the existing `createBill`, deduplicated, rejects kept in a "Needs attention" list | `bills.client_id` — done early, in P3.15 (`0018`) | ~~a separate dev Neon branch~~ nothing: the user chose to build against this database until the VPS move (2026-09-28; HANDOFF section 9) |
 | P2.2d | Billing offline: `priceCart()` in the browser, `T-` number on the receipt, "pending sync" in Today's bills; the 12-hour sign-in window | no | P2.2b, P2.2c |
 | P2.2e | Folders / cash entries offline (no Owner entries), Register view shows local bills | maybe | P2.2c |
 | P2.2f | Day Close offline, security code on sync | maybe | P2.2c |
