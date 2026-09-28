@@ -1,4 +1,5 @@
 import type { Rupees } from "@/lib/accounting";
+import type { Role } from "@/lib/auth/roles";
 import type { CatalogDeal, CatalogService, StaffOption } from "@/lib/catalog";
 
 /**
@@ -16,21 +17,20 @@ export const CATALOG_URL = "/api/offline/catalog";
 export const REFRESH_EVERY_MS = 15 * 60_000;
 
 /**
- * A customer who has a special rate (P3.2) — and **only** those.
+ * A customer, so that a number typed at the counter with no internet still
+ * brings up the name and any special rate.
  *
- * The rates are what change a price, so offline billing cannot do without
- * them. Every other customer is left out on purpose: the full list with phone
- * numbers would sit in the browser of whoever signed in, where anyone with
- * the developer tools could copy it, and the Customers screen is kept from the
- * Manager for much the same reason (HANDOFF 9, question 1). Offline, any other
- * number is treated as new; the name typed for it is dropped on sync, because
- * `createBill` keeps an existing customer's own record.
+ * **Every** customer, since P2.2d — the client's choice (2026-09-29). P2.2b
+ * kept only those with a special rate, so the full list of names and numbers
+ * would not sit in the browser of whoever signs in; the client preferred that
+ * offline billing know everyone. The copy is still cleared at sign-out and
+ * never cached by the network (`no-store`).
  */
-export interface RateCustomer {
+export interface OfflineCustomer {
   id: string;
   phone: string;
   name: string;
-  /** Fixed prices by service id. */
+  /** Fixed prices by service id; empty for most customers. */
   specialRates: Record<string, Rupees>;
 }
 
@@ -41,7 +41,19 @@ export interface OfflineCatalog {
   services: CatalogService[];
   deals: CatalogDeal[];
   staff: StaffOption[];
-  customersWithRates: RateCustomer[];
+  customers: OfflineCustomer[];
+}
+
+/**
+ * Who was signed in when the server made the copy (P2.2d). Offline, it is the
+ * only word on who is at the counter: an offline bill is recorded as made by
+ * them, and the offline screen says whose sign-in it is running on.
+ */
+export interface OfflineUser {
+  id: string;
+  name: string;
+  username: string;
+  role: Role;
 }
 
 export interface CatalogCopy {
@@ -54,6 +66,7 @@ export interface CatalogCopy {
   version: string;
   /** The server's clock when the copy was made, ISO — "prices as of". */
   servedAt: string;
+  user: OfflineUser;
 }
 
 const byId = <T extends { id: string }>(rows: readonly T[]) =>
@@ -72,7 +85,7 @@ const byId = <T extends { id: string }>(rows: readonly T[]) =>
  * different order give the same fingerprint.
  */
 export function pricingFingerprint(catalog: OfflineCatalog): string {
-  const rates = catalog.customersWithRates
+  const rates = catalog.customers
     .flatMap((customer) =>
       Object.entries(customer.specialRates).map(([serviceId, price]) => [customer.id, serviceId, price] as const),
     )
@@ -94,7 +107,7 @@ export function pricingFingerprint(catalog: OfflineCatalog): string {
 export function isCatalogCopy(value: unknown): value is CatalogCopy {
   if (typeof value !== "object" || value === null) return false;
   const copy = value as Partial<CatalogCopy>;
-  const catalog = copy.catalog;
+  const { catalog, user } = copy;
   return (
     typeof copy.version === "string" &&
     typeof copy.servedAt === "string" &&
@@ -104,6 +117,16 @@ export function isCatalogCopy(value: unknown): value is CatalogCopy {
     Array.isArray(catalog.services) &&
     Array.isArray(catalog.deals) &&
     Array.isArray(catalog.staff) &&
-    Array.isArray(catalog.customersWithRates)
+    Array.isArray(catalog.customers) &&
+    typeof user === "object" &&
+    user !== null &&
+    typeof user.username === "string" &&
+    typeof user.name === "string"
   );
+}
+
+/** A customer in the copy by the number typed at the counter, as the server looks one up: exactly. */
+export function customerByPhone(catalog: OfflineCatalog, phone: string): OfflineCustomer | null {
+  const wanted = phone.trim();
+  return catalog.customers.find((customer) => customer.phone === wanted) ?? null;
 }

@@ -1,3 +1,4 @@
+import { OfflineWayOut } from "@/components/offline-way-out";
 import { Panel } from "@/components/panel";
 /**
  * Shown while a signed-in screen loads. It is worth having: these pages run
@@ -12,6 +13,8 @@ export default function Loading() {
   return (
     <div aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading</span>
+      {/* With no internet this never finishes: offer offline billing (P2.2d). */}
+      <OfflineWayOut />
       <div className="mb-5 space-y-2">
         <div className="h-6 w-48 animate-pulse rounded-md bg-secondary" />
         <div className="h-4 w-72 max-w-full animate-pulse rounded-md bg-secondary" />

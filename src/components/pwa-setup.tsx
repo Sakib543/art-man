@@ -3,6 +3,22 @@
 import { useEffect } from "react";
 
 /**
+ * Ask the service worker to keep the offline billing page and its files
+ * (P2.2d). Only a signed-in request is given the page — signed out, the proxy
+ * redirects and the worker keeps nothing — so this is asked again whenever a
+ * signed-in screen has just proved its session (`catalog-sync.tsx`), not only
+ * when a page loads: signing in moves to Billing without loading a page. Does
+ * nothing where no worker is registered (`next dev`).
+ */
+export function keepOfflineBilling() {
+  if (!("serviceWorker" in navigator)) return;
+  void navigator.serviceWorker
+    .getRegistration()
+    .then((registration) => registration?.active?.postMessage({ type: "cache-offline-billing" }))
+    .catch(() => undefined);
+}
+
+/**
  * Registers the service worker and asks the browser to keep this site's
  * storage (P2.2a). Renders nothing.
  *
@@ -13,7 +29,8 @@ import { useEffect } from "react";
  *
  * Persistent storage matters from P2.2b on, when the catalog and unsent bills
  * live in the browser: without it the browser may clear them under disk
- * pressure. Chrome grants it silently to an installed app and refuses silently
+ * pressure — and from P2.2d the offline billing page and its files live in
+ * the worker's caches too. Chrome grants it silently to an installed app and refuses silently
  * otherwise, so asking on every load costs nothing.
  */
 export function PwaSetup() {
@@ -33,12 +50,24 @@ export function PwaSetup() {
       // page is fetched while online, so fetch it once per load. Without this a
       // changed offline.html would only reach the counter with a new worker.
       .then(() => fetch("/offline.html", { cache: "no-cache" }))
+      // And the offline billing page with every file it needs (P2.2d), so that
+      // after each deploy the counter can still bill once the internet goes.
+      // Signed out, the worker is refused it by the proxy and keeps nothing.
+      .then(() => navigator.serviceWorker.ready)
+      .then(() => keepOfflineBilling())
       .catch((error) => console.error("Service worker setup failed", error));
+
+    // After a deploy that changed the worker, the request above can reach the
+    // old one, which does not know it (found verifying P2.2d). Ask again the
+    // moment the new worker takes over.
+    navigator.serviceWorker.addEventListener("controllerchange", keepOfflineBilling);
 
     void navigator.storage
       ?.persisted?.()
       .then((persisted) => persisted || navigator.storage.persist())
       .catch(() => undefined);
+
+    return () => navigator.serviceWorker.removeEventListener("controllerchange", keepOfflineBilling);
   }, []);
 
   return null;

@@ -1,15 +1,19 @@
 "use client";
 
-import { Check, Printer } from "lucide-react";
+import { Check, CloudUpload, Printer } from "lucide-react";
 import { SalonLogo } from "@/components/salon-logo";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, formatTime, num, rs } from "@/lib/format";
-import type { Receipt } from "../types";
+import { slipLabel } from "@/lib/offline/slip";
+import type { OfflineReceipt, Receipt } from "../types";
 
 interface ReceiptDialogProps {
-  /** Kept after closing so the dialog does not go blank while it animates out. */
-  receipt: Receipt | null;
+  /**
+   * Kept after closing so the dialog does not go blank while it animates out.
+   * An offline receipt (P2.2d) has a slip number and no bill number yet.
+   */
+  receipt: Receipt | OfflineReceipt | null;
   open: boolean;
   onClose: () => void;
   /**
@@ -46,15 +50,32 @@ export function ReceiptDialog({
         {receipt ? (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                {justSaved ? (
-                  <span className="grid size-6 place-items-center rounded-full bg-success-soft text-success">
-                    <Check className="size-4" aria-hidden />
-                  </span>
-                ) : null}
-                {justSaved ? `Bill #${receipt.billNo} saved` : `Receipt for bill #${receipt.billNo}`}
-              </DialogTitle>
-              <DialogDescription>Print it for the customer, or close to carry on.</DialogDescription>
+              {"slipNo" in receipt ? (
+                <>
+                  <DialogTitle className="flex items-center gap-2">
+                    <span className="grid size-6 place-items-center rounded-full bg-warning-soft text-warning">
+                      <CloudUpload className="size-4" aria-hidden />
+                    </span>
+                    Bill {receipt.slipNo} kept offline
+                  </DialogTitle>
+                  <DialogDescription>
+                    Print it for the customer. It goes to the server when the internet is back, and gets its bill
+                    number then.
+                  </DialogDescription>
+                </>
+              ) : (
+                <>
+                  <DialogTitle className="flex items-center gap-2">
+                    {justSaved ? (
+                      <span className="grid size-6 place-items-center rounded-full bg-success-soft text-success">
+                        <Check className="size-4" aria-hidden />
+                      </span>
+                    ) : null}
+                    {justSaved ? `Bill #${receipt.billNo} saved` : `Receipt for bill #${receipt.billNo}`}
+                  </DialogTitle>
+                  <DialogDescription>Print it for the customer, or close to carry on.</DialogDescription>
+                </>
+              )}
             </DialogHeader>
 
             {/*
@@ -74,12 +95,21 @@ export function ReceiptDialog({
                 twice. `print:` keeps it black on white whatever the screen is
                 doing, and the artwork is already dark ink on transparent.
               */}
-              <SalonLogo className="mx-auto mb-2 h-12" />
+              <SalonLogo unoptimized className="mx-auto mb-2 h-12" />
               <p className="text-center text-muted-foreground">
                 {formatDate(receipt.businessDate)}, {formatTime(receipt.createdAt)}
               </p>
               <hr className="my-2 border-dashed" />
-              <p>Bill #{receipt.billNo}</p>
+              {"slipNo" in receipt ? (
+                // No bill number exists yet: the slip carries its own (P2.2d).
+                <p>Bill {receipt.slipNo} (temporary number)</p>
+              ) : (
+                <>
+                  <p>Bill #{receipt.billNo}</p>
+                  {/* A paper book or offline slip number, so the two can be matched. */}
+                  {receipt.bookNo ? <p>{slipLabel(receipt.bookNo)}</p> : null}
+                </>
+              )}
               {receipt.customerName ? <p>Customer: {receipt.customerName}</p> : null}
               <hr className="my-2 border-dashed" />
               {receipt.lines.map((line, index) => (
@@ -120,6 +150,11 @@ export function ReceiptDialog({
                 </div>
               ) : null}
               <hr className="my-2 border-dashed" />
+              {"slipNo" in receipt ? (
+                <p className="text-center text-2xs text-muted-foreground">
+                  Made while the internet was down. The bill gets its number when it is back.
+                </p>
+              ) : null}
               <p className="text-center">Thank you</p>
             </div>
 

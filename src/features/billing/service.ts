@@ -4,7 +4,7 @@ import { writeAudit } from "@/db/audit";
 import { writeCancellation } from "@/db/bill-cancel";
 import type { Tx } from "@/db/day-settlement";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
-import { getCatalogCopy } from "@/db/queries/catalog";
+import { getCatalogVersion } from "@/db/queries/catalog";
 import {
   auditLog,
   billCancellations,
@@ -241,6 +241,7 @@ function receiptOf(bill: typeof bills.$inferSelect, priced: PricedBill, input: C
     total: priced.total,
     cash: input.cash,
     online: input.online,
+    bookNo: bill.bookNo,
   };
 }
 
@@ -292,8 +293,7 @@ async function priceOffline(input: CreateBillInput, offline: OfflineOrigin): Pro
     return await priceBill(input);
   } catch (error) {
     if (!(error instanceof UserError) || offline.catalogVersion === null) throw error;
-    const { version } = await getCatalogCopy();
-    if (version === offline.catalogVersion) throw error;
+    if ((await getCatalogVersion()) === offline.catalogVersion) throw error;
     throw new UserError(`Prices have changed since this bill was made offline. ${error.message}`);
   }
 }

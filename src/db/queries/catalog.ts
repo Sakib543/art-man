@@ -3,7 +3,13 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { customerSpecialRates, customers, dealItems, deals, services, staff } from "@/db/schema";
 import { offeredDeals, type CatalogDeal, type CatalogService, type StaffOption } from "@/lib/catalog";
-import { pricingFingerprint, type CatalogCopy, type OfflineCatalog, type RateCustomer } from "@/lib/offline/catalog";
+import {
+  pricingFingerprint,
+  type CatalogCopy,
+  type OfflineCatalog,
+  type OfflineCustomer,
+  type OfflineUser,
+} from "@/lib/offline/catalog";
 import { getOpenBusinessDay } from "./business-day";
 
 export interface ActiveCatalog {
@@ -33,43 +39,60 @@ export async function getActiveCatalog(): Promise<ActiveCatalog> {
 }
 
 /**
- * The counter's offline copy (P2.2b): the active catalog, the customers who
- * have a special rate, and the open business date, stamped with a version of
- * its pricing. Served by `app/api/offline/catalog`.
+ * The counter's offline copy (P2.2b): the active catalog, every customer with
+ * any special rates (all of them since P2.2d, the client's choice), the open
+ * business date and who it was made for, stamped with a version of its
+ * pricing. Served by `app/api/offline/catalog`.
  */
-export async function getCatalogCopy(): Promise<CatalogCopy> {
-  const [active, day, rateRows] = await Promise.all([
+export async function getCatalogCopy(user: OfflineUser): Promise<CatalogCopy> {
+  const catalog = await offlineCatalog();
+  return {
+    catalog,
+    version: versionOf(catalog),
+    servedAt: new Date().toISOString(),
+    user: { id: user.id, name: user.name, username: user.username, role: user.role },
+  };
+}
+
+/**
+ * The version a copy made now would carry — what an offline bill's
+ * `catalogVersion` is compared with, to tell "the prices moved" from any
+ * other refusal (P2.2c).
+ */
+export async function getCatalogVersion(): Promise<string> {
+  return versionOf(await offlineCatalog());
+}
+
+const versionOf = (catalog: OfflineCatalog) => createHash("sha256").update(pricingFingerprint(catalog)).digest("hex");
+
+async function offlineCatalog(): Promise<OfflineCatalog> {
+  const [active, day, customerRows, rateRows] = await Promise.all([
     getActiveCatalog(),
     getOpenBusinessDay(),
     db
+      .select({ id: customers.id, phone: customers.phone, name: customers.name })
+      .from(customers)
+      .orderBy(asc(customers.phone)),
+    db
       .select({
-        customerId: customers.id,
-        phone: customers.phone,
-        name: customers.name,
+        customerId: customerSpecialRates.customerId,
         serviceId: customerSpecialRates.serviceId,
         price: customerSpecialRates.price,
       })
-      .from(customerSpecialRates)
-      .innerJoin(customers, eq(customerSpecialRates.customerId, customers.id))
-      .orderBy(asc(customers.phone)),
+      .from(customerSpecialRates),
   ]);
 
-  const byCustomer = new Map<string, RateCustomer>();
-  for (const row of rateRows) {
-    const customer = byCustomer.get(row.customerId) ?? { id: row.customerId, phone: row.phone, name: row.name, specialRates: {} };
-    customer.specialRates[row.serviceId] = row.price;
-    byCustomer.set(row.customerId, customer);
+  const byId = new Map<string, OfflineCustomer>(
+    customerRows.map((row) => [row.id, { id: row.id, phone: row.phone, name: row.name, specialRates: {} }]),
+  );
+  for (const rate of rateRows) {
+    const customer = byId.get(rate.customerId);
+    if (customer) customer.specialRates[rate.serviceId] = rate.price;
   }
 
-  const catalog: OfflineCatalog = {
+  return {
     businessDate: day?.businessDate ?? null,
     ...active,
-    customersWithRates: [...byCustomer.values()],
-  };
-
-  return {
-    catalog,
-    version: createHash("sha256").update(pricingFingerprint(catalog)).digest("hex"),
-    servedAt: new Date().toISOString(),
+    customers: [...byId.values()],
   };
 }

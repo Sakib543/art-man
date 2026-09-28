@@ -15,12 +15,19 @@ import { isOutboxEntry, type OutboxEntry } from "./outbox";
  */
 
 const NAME = "art-man-offline";
-/** 1: the catalog copy (P2.2b). 2: the outbox (P2.2c). */
-const VERSION = 2;
+/** 1: the catalog copy (P2.2b). 2: the outbox (P2.2c). 3: counters, for `T-` numbers (P2.2d). */
+const VERSION = 3;
 
 /** One record, under `CURRENT`: the whole copy, replaced in one write so it is never half old, half new. */
 const CATALOG = "catalog";
 const CURRENT = "current";
+
+/**
+ * Plain numbers under string keys (P2.2d): today, the last `T-` number given
+ * out on each business day, as `temp:<date>`. Never cleared — not even at
+ * sign-out — so a number already on a customer's slip is never given twice.
+ */
+const COUNTERS = "counters";
 
 /**
  * Bills waiting for the server (P2.2c). Keyed by a number the store counts up
@@ -38,6 +45,7 @@ function upgrade(db: IDBDatabase) {
       unique: true,
     });
   }
+  if (!db.objectStoreNames.contains(COUNTERS)) db.createObjectStore(COUNTERS);
 }
 
 let opening: Promise<IDBDatabase> | null = null;
@@ -82,26 +90,70 @@ function resultOf<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
+/**
+ * The copy as this browser keeps it: with the moment it was saved, by this
+ * device's clock. That moment is the last time the server confirmed the
+ * sign-in, and starts the 12 hours of offline billing (`./session.ts`).
+ */
+export type StoredCatalog = CatalogCopy & { savedAt: number };
+
 export async function saveCatalog(copy: CatalogCopy): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(CATALOG, "readwrite");
-  tx.objectStore(CATALOG).put(copy, CURRENT);
+  tx.objectStore(CATALOG).put({ ...copy, savedAt: Date.now() } satisfies StoredCatalog, CURRENT);
   await finished(tx);
+  catalogListeners.forEach((listener) => listener());
 }
 
 /** The copy, or null when there is none — or when what is stored is not a copy any more. */
-export async function readCatalog(): Promise<CatalogCopy | null> {
+export async function readCatalog(): Promise<StoredCatalog | null> {
   const db = await openDb();
   const value = await resultOf(db.transaction(CATALOG, "readonly").objectStore(CATALOG).get(CURRENT));
-  return isCatalogCopy(value) ? value : null;
+  return isCatalogCopy(value) && typeof (value as Partial<StoredCatalog>).savedAt === "number"
+    ? (value as StoredCatalog)
+    : null;
 }
 
-/** On sign-out: the copy belongs to a signed-in session, and holds customers' numbers. */
+/** This tab is told when a new copy is saved (the offline banner, the offline screen). */
+const catalogListeners = new Set<() => void>();
+
+export function onCatalogSaved(listener: () => void): () => void {
+  catalogListeners.add(listener);
+  return () => {
+    catalogListeners.delete(listener);
+  };
+}
+
+/**
+ * The next `T-` number of a business day (P2.2d), counted up in one
+ * transaction: IndexedDB runs two tabs' read-and-write of the same store one
+ * after the other, so two bills never get the same number.
+ */
+export async function nextTempNo(businessDate: string): Promise<number> {
+  const db = await openDb();
+  const tx = db.transaction(COUNTERS, "readwrite");
+  const store = tx.objectStore(COUNTERS);
+  const key = `temp:${businessDate}`;
+  let next = 1;
+  const last = store.get(key);
+  last.onsuccess = () => {
+    next = (typeof last.result === "number" ? last.result : 0) + 1;
+    store.put(next, key);
+  };
+  await finished(tx);
+  return next;
+}
+
+/**
+ * On sign-out: the copy belongs to a signed-in session, and holds customers'
+ * numbers. With it goes offline billing, until the next sign-in fetches one.
+ */
 export async function clearCatalog(): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(CATALOG, "readwrite");
   tx.objectStore(CATALOG).delete(CURRENT);
   await finished(tx);
+  catalogListeners.forEach((listener) => listener());
 }
 
 /*

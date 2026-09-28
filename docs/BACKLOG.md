@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-28 (P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-29 (P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -34,7 +34,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | ✅ | done 2026-09-26 |
 | P2.2b | Catalog copy in IndexedDB | ✅ | done 2026-09-28 |
 | P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | ✅ | done 2026-09-28 |
-| P2.2d | Billing offline, `T-` numbers on the receipt | 🟡 | Sakib543, 2026-09-29 |
+| P2.2d | Billing offline, `T-` numbers on the receipt | ✅ | done 2026-09-29 |
 | P2.2e | Folders / cash entries offline | ⬜ | — |
 | P2.2f | Day Close offline | ⬜ | — |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
@@ -906,7 +906,7 @@ copy yet: P2.2d does.
   failed fetch keeps the old copy.
 - Sign out clears the copy (`sign-out-button.tsx`).
 
-**Only customers with a special rate are in the copy — a decision taken here, open to the client.**
+**Only customers with a special rate are in the copy — a decision taken here, open to the client.** *(Changed in P2.2d, the user's choice: every customer.)*
 The full list with phone numbers would sit in the browser of whoever signs in; the Customers
 screen is kept from the Manager for the same reason. Offline, any other number reads as new, and
 `createBill` keeps the existing customer on sync. See HANDOFF section 9.
@@ -1014,14 +1014,92 @@ without Web Locks or BroadcastChannel; the maintenance 503 (the same `checkUser`
 (Test customer P3.15 C); `bill.offline-refuse` rows for four test bills; `bill.offline-discard` rows
 for three (one of them twice, before the fix).
 
-### 🟡 P2.2d — Billing offline
-**Owner:** Sakib543, 2026-09-29
+### ✅ P2.2d — Billing offline
+**Done:** 2026-09-29
 
 The counter rings up bills with no internet: priced in the browser from the offline copy (P2.2b),
 kept in the outbox (P2.2c), a receipt with a temporary `T-` number, "pending" bills shown with
 the day's bills, and offline use allowed for 12 hours after the server last confirmed the
-sign-in. The first item that puts a bill in the outbox. The plan is shown to the user before
-building.
+sign-in. The first item that puts a bill in the outbox. **No migration.**
+
+**Decisions** (the plan was shown; the user took every recommendation, and chose one thing
+against the old default):
+
+- The `T-` number is stored in **`bills.book_no`** — the paper book's column, and the same idea: the
+  number on the slip a customer got while the system could not give one. Shown as "Offline T-5"
+  (a paper number stays "Book B-2/45"). A bill with a paper book number gets no `T-` number.
+- `T-` numbers **restart at T-1 each business day** (the slip carries the date).
+- A Save whose answer is lost gets **"Keep it for later and carry on"**, which sends it to the
+  outbox under the same id.
+- **The offline copy holds every customer** — the user's choice (HANDOFF 9, question 4).
+
+**What was built:**
+
+- **The copy** (`db/queries/catalog.ts`, `lib/offline/catalog.ts`): `customers` — every customer
+  with their special rates, replacing `customersWithRates` — and `user`, who it was made for.
+  `getCatalogVersion()` for the "prices changed" check. `customerByPhone()`.
+- `lib/offline/session.ts` (+ test) — the 12 hours from the copy's `savedAt`, and the refusal
+  text; a clock set back more than 5 minutes ends the window. `lib/offline/slip.ts` (+ test) —
+  `T-` numbers and `slipLabel()`.
+- `lib/offline/store.ts` — IndexedDB **v3**: store `counters` (`nextTempNo`, one transaction, never
+  cleared); `saveCatalog` stamps `savedAt`; `onCatalogSaved`.
+- **The billing screen:** offline (`!online`, or the offline page) a Save goes to `keep()` — the
+  12-hour check, the `T-` number, `offlineBill()` (`features/billing/offline-bill.ts`, + test: the
+  entry and the slip from the same priced lines), `queueBill`, the slip, the next customer. A
+  thrown Save with `navigator.onLine` false goes straight there; otherwise the P3.15 box offers
+  "Keep it for later and carry on". Corrections and refused bills say they need the internet.
+  Badge "Offline"; button "Save offline Rs …".
+- **The customer box** looks a number up in the copy offline — and a failed server lookup falls
+  back to it: before, "Find" with no internet took the whole screen down.
+- **The slip:** "Bill T-1 kept offline", `Bill T-1 (temporary number)`, a line saying the number
+  comes later; a reprint of a synced bill prints "Offline T-1" under its number (`Receipt.bookNo`).
+  The logo on the slip is `/logo.png` itself (`SalonLogo unoptimized`), which the worker keeps.
+- **Pending bills** (`pending-bills.tsx`) above Today's bills and on the offline page.
+- **Today's bills:** Edit and Cancel off with no internet; a Cancel that cannot reach the server
+  says so instead of taking the screen down. "Offline T-5" in Today's bills and the Daily report.
+- **`/offline-billing`** — a static page (`app/offline-billing`, `offline-billing.tsx`): the copy,
+  the 12-hour check, Needs attention, the billing screen with `offlineOnly`, pending bills, and its
+  own `OutboxSync` + `CatalogSync`; online, a bar sends the counter back to the full screen.
+- **`public/sw.js`:** keeps `/offline-billing` and every file its HTML names (`shell-v1`, stored
+  last); with no network, `/` and `/billing` redirect to it; `offline.html` offers it when kept.
+  Asked for on every page load, on `controllerchange` and after every copy saved
+  (`keepOfflineBilling()`); signed out, the proxy refuses the worker and nothing is kept.
+- **The banner** says "bills are kept on this computer" only when offline billing can run; the
+  loading and error screens offer offline billing when there is no internet (`OfflineWayOut`).
+
+**Verified, 2026-09-29** — `pnpm build` + `pnpm start` in the Browser pane, the user signed in as
+the manager, "offline" = the server stopped:
+
+| Test | Result |
+|---|---|
+| Signed out | the worker refused `/offline-billing` by the proxy; nothing kept |
+| Signed in, online | IndexedDB v3; the copy: 6 customers, `user` Manager; the page and its 20 files kept, from this build |
+| Server stopped, `/billing` open | "No internet — bills are kept on this computer…", badge "Offline" |
+| Find `00000315003` offline | "Test customer P3.15 C — Found on this computer — no internet" |
+| Save offline | **T-1**: "Bill T-1 kept offline", the slip with the logo, "Waiting to be sent: T-1 · Pending" |
+| `/billing` reopened offline | the worker redirected to `/offline-billing`: "Billing — offline", "On Manager's sign-in, until 15:51", T-1 pending |
+| A walk-in there | **T-2**, Rs 500 |
+| `/daily-report` offline | `offline.html` with "Open offline billing" |
+| `savedAt` moved back 13 hours | "Offline billing has ended: the server last confirmed this sign-in on 28 Sep 2026, 14:53…", banner back to the paper book |
+| Server started | the outbox sent both: **#38** (`book_no` T-1, the customer) and **#39** (T-2); audit `bill.create` with the offline details; the 12 hours renewed |
+| The full screen | Today's bills and the Daily report: "#38 · Offline T-1", "#39 · Offline T-2" |
+| A Save with no answer, online (actions blocked) | the P3.15 box with "Keep it for later and carry on" → **T-3**, sent at once → **#40** |
+| Reprint #38 | "Bill #38 / Offline T-1" |
+| 375 px, the offline page | no horizontal scroll |
+| A navigation that never answers, offline | the loading screen with "Open offline billing" |
+
+`pnpm test` 499 (20 new), lint clean, build passes (30 routes — `/offline-billing` static).
+
+**Found and fixed while verifying:** signing in reaches Billing without a page load, so the
+offline page was never kept (now `CatalogSync` asks too); the first ask after a changed worker
+reaches the old one (now asked again on `controllerchange`); a page cut off mid-load when the
+connection goes sat on "Loading" (now `OfflineWayOut`). HANDOFF trap 8.18.
+
+**Not verified:** a real internet outage (the server was stopped instead, which is what the
+browser sees); printing on paper; two browsers on one counter (each has its own IndexedDB, so each
+counts its own `T-` numbers).
+
+**Test data left in the database:** bills #38, #39, #40 on 24 Sep (T-1, T-2, T-3).
 
 ---
 

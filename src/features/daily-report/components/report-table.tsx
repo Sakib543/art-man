@@ -2,6 +2,7 @@ import { DiscountNote } from "@/components/discount-note";
 import { Panel } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
 import { formatTime, num, paidBy } from "@/lib/format";
+import { slipLabel } from "@/lib/offline/slip";
 import { cn } from "@/lib/utils";
 import type { ReportBill } from "../corrections";
 import { CancelClosedBill } from "./cancel-closed-bill";
@@ -68,7 +69,7 @@ export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCanc
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatTime(bill.createdAt)}
-                        {bill.bookNo ? ` · Book ${bill.bookNo}` : null}
+                        {bill.bookNo ? ` · ${slipLabel(bill.bookNo)}` : null}
                       </p>
                       {bill.customerName ? <p className="mt-0.5 text-sm">{bill.customerName}</p> : null}
                     </div>

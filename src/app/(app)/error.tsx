@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorCard } from "@/components/error-card";
+import { OfflineWayOut } from "@/components/offline-way-out";
 import { PageHeader } from "@/components/page-header";
 
 /**
@@ -16,6 +17,8 @@ export default function AppError({ error, retry }: { error: Error & { digest?: s
   return (
     <>
       <PageHeader title="Something went wrong" />
+      {/* Often the internet going: offer offline billing (P2.2d). */}
+      <OfflineWayOut />
       <ErrorCard error={error} retry={retry} />
     </>
   );

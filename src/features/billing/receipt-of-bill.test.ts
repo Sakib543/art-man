@@ -41,7 +41,13 @@ describe("receiptOfBill", () => {
       total: 1100,
       cash: 700,
       online: 400,
+      bookNo: null,
     });
+  });
+
+  it("carries the slip number the customer holds: a paper book's, or an offline bill's T- number (P2.2d)", () => {
+    expect(receiptOfBill(bill({ bookNo: "T-5" }), "2026-09-24").bookNo).toBe("T-5");
+    expect(receiptOfBill(bill({ bookNo: "B-2/45" }), "2026-09-24").bookNo).toBe("B-2/45");
   });
 
   it("puts a discounted bill's subtotal back together (P3.10)", () => {

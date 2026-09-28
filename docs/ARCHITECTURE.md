@@ -13,6 +13,9 @@ src/
     (app)/<route>/    A signed-in page. Thin: it calls a feature's queries.ts
                       and renders that feature's components. No business logic.
     (auth)/login/     The only page reachable signed out.
+    offline-billing/  Billing with no internet (P2.2d). Static, outside (app), so the
+                      service worker can keep it and open it when Billing cannot load;
+                      it fills itself from this browser's IndexedDB.
     api/auth/         Better Auth's route.
     api/offline/      The counter's offline catalog copy (P2.2b, catalog/ — a GET)
                       and the outbox's sync (P2.2c, sync/ — a POST that saves a
@@ -51,7 +54,9 @@ src/
                       signed-in screen carries them: pwa-setup, offline-banner,
                       use-connectivity, catalog-sync, and the outbox's
                       outbox-sync (sends it), use-outbox (reads it) and
-                      outbox-status (the line at the top of every screen).
+                      outbox-status (the line at the top of every screen);
+                      offline-way-out, the link to offline billing on the
+                      loading and error screens.
     ui/                 shadcn/ui primitives. Generic, no salon knowledge.
 
   lib/
@@ -74,9 +79,10 @@ src/
     catalog.ts        The catalog's shapes and offeredDeals(), shared by the
                       billing screen and the offline copy.
     offline/          Working offline (P2.2): catalog.ts, the copy's shape and
-                      version, and outbox.ts, the outbox's entries and what the
-                      server's answers mean (both pure); store.ts, the browser's
-                      IndexedDB that holds them — browser only.
+                      version; outbox.ts, the outbox's entries and what the
+                      server's answers mean; session.ts, the 12 hours per
+                      sign-in; slip.ts, `T-` numbers (all pure); store.ts, the
+                      browser's IndexedDB that holds them — browser only.
     same-origin.ts    Next's Server Action Origin check, for a Route Handler.
     security-code.ts · format.ts · chart.ts · alerts.ts · pin.ts · utils.ts
 

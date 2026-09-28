@@ -9,15 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useConnectivity } from "@/components/use-connectivity";
 import { checkPayment, paymentAmounts, priceCart, PricingError, type PayMode, type PricedLine } from "@/lib/accounting";
 import { formatDate, formatDateTime, paidBy, rs } from "@/lib/format";
-import type { OutboxEntry } from "@/lib/offline/outbox";
-import { readOutboxEntry, removeFromOutbox } from "@/lib/offline/store";
+import type { OutboxBill, OutboxEntry } from "@/lib/offline/outbox";
+import { offlineTrust, trustRefusal } from "@/lib/offline/session";
+import { tempNo } from "@/lib/offline/slip";
+import { nextTempNo, queueBill, readCatalog, readOutboxEntry, removeFromOutbox } from "@/lib/offline/store";
 import { createBillAction, editBillAction, findSavedBillAction, lookupCustomerAction } from "../actions";
 import { payModeOf } from "../bill-draft";
 import { cartReducer } from "../cart-state";
+import { offlineBill } from "../offline-bill";
 import { draftOfEntry } from "../outbox-draft";
-import type { BillDraft, BillingData, Receipt, SavedBill } from "../types";
+import type { BillDraft, BillingData, OfflineReceipt, Receipt, SavedBill } from "../types";
 import { CartLines } from "./cart-lines";
 import { CustomerBox, type CustomerState } from "./customer-box";
 import { PaymentBox } from "./payment-box";
@@ -43,17 +47,37 @@ const OUTDATED =
 /** The bill being corrected, when the Owner opened one from Today's bills (P1.4). */
 type Editing = Extract<BillDraft, { ok: true }>;
 
+/**
+ * One Save, exactly as it was sent, kept while its answer is in doubt (P3.15)
+ * so that it can go to the outbox as it was — not as the cart looks after the
+ * counter has touched it since (P2.2d).
+ */
+interface Sent {
+  bill: Omit<OutboxBill, "bookNo"> & { bookNo: string };
+  priced: { lines: PricedLine[]; subtotal: number; discount: number; total: number };
+  customerName: string | null;
+}
+
 export function BillingScreen({
   data,
   editing,
   fixing,
+  offlineOnly = false,
 }: {
   data: BillingData;
   editing?: Editing | null;
   /** The id of a bill made offline and refused by the server, opened to be put right (P2.2c). */
   fixing?: string | null;
+  /**
+   * The offline screen (P2.2d): the catalog came from this computer's copy,
+   * and every bill goes to the outbox, whatever the connection says.
+   */
+  offlineOnly?: boolean;
 }) {
   const router = useRouter();
+  const online = useConnectivity();
+  // With no internet a bill is kept on this computer for the server (P2.2d).
+  const offline = offlineOnly || !online;
   const startMode = editing ? payModeOf(editing.cash, editing.online) : "cash";
 
   const [cart, dispatch] = useReducer(cartReducer, editing?.lines ?? []);
@@ -76,10 +100,10 @@ export function BillingScreen({
   // is known to have the bill, so Save can be pressed again without ever
   // making a second one.
   const [clientId, setClientId] = useState(() => crypto.randomUUID());
-  // The total of a bill whose Save lost its answer: it may or may not have been
-  // saved. Null when nothing is in doubt.
-  const [doubtful, setDoubtful] = useState<number | null>(null);
-  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  // A bill whose Save lost its answer: it may or may not have been saved.
+  // Null when nothing is in doubt.
+  const [doubtful, setDoubtful] = useState<Sent | null>(null);
+  const [receipt, setReceipt] = useState<Receipt | OfflineReceipt | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   // The refused offline bill being put right (P2.2c), once read from the
@@ -229,6 +253,11 @@ export function BillingScreen({
     setNotice(note ?? (alreadySaved ? `Bill #${saved.billNo} had already been saved, so it was not saved twice.` : ""));
     setReceipt(saved);
     setReceiptOpen(true);
+    startNextBill();
+  }
+
+  /** An empty screen for the next customer, once the last bill is safe. */
+  function startNextBill() {
     dispatch({ type: "clear" });
     setCustomer({ status: "none" });
     setPayMode("cash");
@@ -237,6 +266,52 @@ export function BillingScreen({
     setBookNo("");
     setDiscountText("");
     setDiscountReason("");
+  }
+
+  /**
+   * Keep a bill on this computer for the server (P2.2d): into the outbox, with
+   * a `T-` number on the customer's slip, and on to the next customer. It keeps
+   * the id it has, so if a Save of it did reach the server after all, the sync
+   * is answered with that bill and no second one is made (P3.15).
+   *
+   * Only within 12 hours of the server last confirming the sign-in; after that
+   * the counter is sent to the paper bill book.
+   */
+  async function keep(sent: Sent) {
+    try {
+      const stored = await readCatalog().catch(() => null);
+      const trust = offlineTrust(stored?.savedAt ?? null, Date.now());
+      if (!trust.ok) return setError(trustRefusal(trust));
+      if (!stored) return setError(trustRefusal({ ok: false, reason: "no-copy" }));
+
+      // One number per slip: a bill first written in the paper book keeps
+      // that book's number and gets no `T-` number.
+      const slipNo = sent.bill.bookNo.trim() || tempNo(await nextTempNo(data.businessDate));
+      const { entry, receipt: slip } = offlineBill({
+        clientId,
+        businessDate: data.businessDate,
+        catalogVersion: stored.version,
+        madeBy: stored.user.username,
+        madeAt: new Date().toISOString(),
+        bill: { ...sent.bill, bookNo: slipNo },
+        priced: sent.priced,
+        staffNames: Object.fromEntries(data.staff.map((member) => [member.id, member.name])),
+        customerName: sent.customerName,
+      });
+      await queueBill(entry);
+
+      setClientId(crypto.randomUUID());
+      setDoubtful(null);
+      setNotice(
+        `No internet: bill ${slip.slipNo} is kept on this computer and goes to the server by itself when the internet is back.`,
+      );
+      setReceipt(slip);
+      setReceiptOpen(true);
+      startNextBill();
+    } catch (error) {
+      console.error(error);
+      setError("This computer could not keep the bill. Write it in the paper bill book.");
+    }
   }
 
   /** The server's answer to "did it arrive?" (P3.15). */
@@ -312,7 +387,8 @@ export function BillingScreen({
     const bill = {
       lines: cart.map(({ serviceId, staffId, dealId, dealInstanceId, amount, description }) => ({
         serviceId,
-        staffId,
+        // Checked above: every line has one.
+        staffId: staffId!,
         dealId,
         dealInstanceId,
         // Checked against the range on the server; never taken on trust (P3.11).
@@ -332,6 +408,21 @@ export function BillingScreen({
       discount,
       discountReason: discount > 0 ? discountReason.trim() : null,
     };
+    const sent: Sent = {
+      bill,
+      priced: { lines: priced, subtotal, discount, total },
+      customerName:
+        customer.status === "found" ? customer.info.name : customer.status === "new" ? customer.name.trim() : null,
+    };
+
+    if (offline) {
+      // A correction cancels a saved bill, and a refused bill has to be put
+      // right against the server's books: neither can wait in the outbox.
+      if (editing) return setError("Correcting a bill needs the internet.");
+      if (fixed) return setError("Putting right a refused bill needs the internet.");
+      startTransition(() => keep(sent));
+      return;
+    }
 
     startTransition(async () => {
       let result;
@@ -343,11 +434,15 @@ export function BillingScreen({
         // A screen from before the latest deploy: the server does not know
         // this Save any more, so it never ran. Only a reload fixes that.
         if (unstable_isUnrecognizedActionError(error)) return setError(OUTDATED);
+        // The browser itself says there is no network: the Save never left
+        // this computer, so there is nothing to wait for — keep it (P2.2d).
+        // Even if it had left, the outbox sends it under the same id.
+        if (!navigator.onLine && !editing && !fixed) return keep(sent);
         // Anything else is a lost connection. The request may have reached
         // the server and only the answer been lost on the way back, so keep
         // the cart and ask (P3.15) — never let the screen fall over, which is
         // what used to happen, with the cart and the answer both gone.
-        return setDoubtful(total);
+        return setDoubtful(sent);
       }
       if (!result.ok) return setError(result.error);
       afterSave(result.data);
@@ -381,6 +476,9 @@ export function BillingScreen({
                 <Link href="/billing" className="text-xs text-muted-foreground underline underline-offset-2">
                   Leave it as it is
                 </Link>
+              ) : offline ? (
+                // No bill number can be promised offline: it comes on sync.
+                <Badge variant="warning">Offline</Badge>
               ) : (
                 <Badge variant="brass" className="tabular-nums">
                   #{data.nextBillNo}
@@ -438,7 +536,7 @@ export function BillingScreen({
               Keyed on the bill's id, it starts empty exactly when a bill is
               saved and the next begins, and not when a Save is only in doubt.
             */}
-            <CustomerBox key={clientId} value={customer} onChange={setCustomer} />
+            <CustomerBox key={clientId} value={customer} onChange={setCustomer} offline={offline} />
           </div>
 
           <CartLines
@@ -564,23 +662,50 @@ export function BillingScreen({
                 className="mt-3.5 flex items-start gap-2.5 rounded-lg border border-warning-line bg-warning-soft px-3.5 py-3 text-sm text-warning"
               >
                 <LoaderCircle className="mt-0.5 size-4 shrink-0 animate-spin" aria-hidden />
-                <p>
-                  The connection dropped before the answer came back, so it is not known yet whether this{" "}
-                  {rs(doubtful)} bill was saved. Checking with the server — do not save it again or write it on
-                  paper until this clears.
-                </p>
+                <div className="space-y-2">
+                  <p>
+                    The connection dropped before the answer came back, so it is not known yet whether this{" "}
+                    {rs(doubtful.priced.total)} bill was saved. Checking with the server — do not save it again or
+                    write it on paper until this clears.
+                  </p>
+                  {/*
+                    The way on when the server stays out of reach (P2.2d): the
+                    bill goes to the outbox under the id it was sent with, so
+                    whether or not it arrived, it is saved exactly once.
+                  */}
+                  {!editing && !fixed ? (
+                    <>
+                      <p>
+                        Or keep it on this computer and carry on: it goes to the server when the internet is back,
+                        and is never saved twice.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={pending}
+                        onClick={() => startTransition(() => keep(doubtful))}
+                      >
+                        Keep it for later and carry on
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
               </div>
             ) : null}
 
             <Button size="lg" className="mt-3.5 w-full" onClick={submit} disabled={pending || doubtful !== null}>
               <ReceiptIcon aria-hidden />
               {pending
-                ? "Saving..."
+                ? offline
+                  ? "Keeping..."
+                  : "Saving..."
                 : doubtful !== null
                   ? "Checking whether it was saved..."
                   : editing
                     ? `Save correction${total ? ` ${rs(total)}` : ""}`
-                    : `Save bill${total ? ` ${rs(total)}` : ""}`}
+                    : offline
+                      ? `Save offline${total ? ` ${rs(total)}` : ""}`
+                      : `Save bill${total ? ` ${rs(total)}` : ""}`}
             </Button>
           </div>
         </Panel>

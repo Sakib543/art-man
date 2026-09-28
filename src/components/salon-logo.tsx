@@ -22,12 +22,19 @@ export function SalonLogo({
   onDark = false,
   className,
   priority = false,
+  unoptimized = false,
 }: {
   /** True on the navy sidebar, drawer, top bar and login panel. */
   onDark?: boolean;
   className?: string;
   /** The login screen and the sidebar are above the fold; nothing else is. */
   priority?: boolean;
+  /**
+   * The file itself rather than `/_next/image`'s resize of it. The receipt
+   * asks for this (P2.2d): the service worker keeps `/logo.png`, but not the
+   * resizer's answers, and a slip printed offline must still carry the logo.
+   */
+  unoptimized?: boolean;
 }) {
   return (
     <Image
@@ -36,6 +43,7 @@ export function SalonLogo({
       width={408}
       height={278}
       priority={priority}
+      unoptimized={unoptimized}
       /*
        * `object-contain` is the belt to `w-auto`'s braces. A flex column
        * stretches its children across the cross axis by default, which rendered

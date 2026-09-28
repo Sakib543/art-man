@@ -30,5 +30,6 @@ export function receiptOfBill(bill: DayBill, businessDate: string): Receipt {
     total: bill.total,
     cash: bill.cash,
     online: bill.online,
+    bookNo: bill.bookNo,
   };
 }

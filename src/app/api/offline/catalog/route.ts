@@ -27,5 +27,5 @@ export async function GET() {
       : Response.json({ error: "The system is under maintenance" }, { status: 503, headers: NO_STORE });
   }
 
-  return Response.json(await getCatalogCopy(), { headers: NO_STORE });
+  return Response.json(await getCatalogCopy(check.user), { headers: NO_STORE });
 }

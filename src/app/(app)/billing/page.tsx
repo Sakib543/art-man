@@ -6,6 +6,7 @@ import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
 import { BillingScreen } from "@/features/billing/components/billing-screen";
 import { NeedsAttention } from "@/features/billing/components/needs-attention";
+import { PendingBills } from "@/features/billing/components/pending-bills";
 import { TodaysBills } from "@/features/billing/components/todays-bills";
 import { getBillForEdit, getBillingData } from "@/features/billing/queries";
 import { atLeastOwner } from "@/lib/auth/roles";
@@ -70,6 +71,8 @@ export default async function BillingPage({
         editing={editing}
         fixing={fixing}
       />
+      {/* Bills made with no internet, until the server has them (P2.2d). */}
+      <PendingBills className="mt-4" />
       <TodaysBills
         bills={bills}
         businessDate={data.businessDate}

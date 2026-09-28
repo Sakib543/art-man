@@ -46,6 +46,11 @@ export interface CustomerInfo {
   /** Null for a customer whose only bills were cancelled. */
   lastVisit: LastVisit | null;
   specialRates: Record<string, Rupees>;
+  /**
+   * Found in the offline copy rather than asked of the server (P2.2d): the
+   * name and rates are known, the visits and the last visit are not.
+   */
+  offline?: true;
 }
 
 /**
@@ -97,7 +102,19 @@ export interface Receipt {
   total: Rupees;
   cash: Rupees;
   online: Rupees;
+  /**
+   * The number on the slip from before the bill had one: the paper bill
+   * book's (P2.1), or `T-5` for a bill made offline (P2.2d). Printed under the
+   * bill number, so a customer's slip can be matched to the bill.
+   */
+  bookNo: string | null;
 }
+
+/**
+ * The receipt of a bill made offline (P2.2d): kept on this computer and not
+ * yet on the server, so it has no bill number — only the one on its slip.
+ */
+export type OfflineReceipt = Omit<Receipt, "billNo"> & { slipNo: string };
 
 /**
  * A Save's answer (P3.15). `alreadySaved` is true when the bill's id had

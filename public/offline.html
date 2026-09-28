@@ -64,7 +64,9 @@
         color: var(--warning);
         text-align: left;
       }
-      button {
+      button,
+      .button {
+        display: inline-block;
         margin-top: 8px;
         height: 40px;
         padding: 0 20px;
@@ -74,7 +76,17 @@
         color: #fff;
         font: inherit;
         font-weight: 500;
+        line-height: 40px;
+        text-decoration: none;
         cursor: pointer;
+      }
+      .secondary {
+        background: #fff;
+        color: var(--primary);
+        box-shadow: inset 0 0 0 1px #d0d5dd;
+      }
+      [hidden] {
+        display: none !important;
       }
     </style>
   </head>
@@ -83,13 +95,31 @@
       <img src="/logo.png" alt="Art Men's Salon" />
       <h1>No internet connection</h1>
       <p>The salon's system cannot be reached right now, so this page cannot be opened.</p>
-      <p class="note">
+      <p class="note" id="offline-note" hidden>
+        Bills can still be made in offline billing: they are kept on this computer and sent by themselves when
+        the internet is back.
+      </p>
+      <p class="note" id="paper-note">
         Keep writing bills in the paper bill book. When the internet is back, enter each one on the Billing
         screen with its book number, before Day Close.
       </p>
-      <button type="button" onclick="location.reload()">Try again</button>
+      <a class="button" id="offline-billing" href="/offline-billing" hidden>Open offline billing</a>
+      <button type="button" id="try-again" onclick="location.reload()">Try again</button>
     </main>
     <script>
+      // Offline billing (backlog P2.2d), when the worker has kept its page on
+      // this computer. Whether it may run (12 hours from the last sign-in the
+      // server confirmed) that page decides for itself.
+      if ("caches" in self) {
+        caches.match("/offline-billing").then(function (kept) {
+          if (!kept) return;
+          document.getElementById("offline-billing").hidden = false;
+          document.getElementById("offline-note").hidden = false;
+          document.getElementById("paper-note").hidden = true;
+          document.getElementById("try-again").className = "secondary";
+        });
+      }
+
       // Come back by itself as soon as the server answers again. The `online`
       // event alone is not enough: Wi-Fi with dead internet never fires it.
       // Same probe as src/lib/connectivity.ts; the worker does not cache it.

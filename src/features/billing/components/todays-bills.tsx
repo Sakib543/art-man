@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useConnectivity } from "@/components/use-connectivity";
 import { formatTime, num, paidBy } from "@/lib/format";
+import { slipLabel } from "@/lib/offline/slip";
 import { cn } from "@/lib/utils";
 import type { DayBill } from "@/db/queries/day-bills";
 import { cancelBillAction } from "../actions";
@@ -31,6 +33,9 @@ interface TodaysBillsProps {
 }
 
 export function TodaysBills({ bills, businessDate, canEdit = false, editingId = null }: TodaysBillsProps) {
+  // Correcting and cancelling change the server's books, so they wait for the
+  // internet; printing does not (P2.2d).
+  const online = useConnectivity();
   // `target` is kept after closing so the dialog does not go blank while it animates out.
   const [target, setTarget] = useState<DayBill | null>(null);
   const [open, setOpen] = useState(false);
@@ -57,7 +62,14 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
   function confirmCancel() {
     if (!target) return;
     startTransition(async () => {
-      const result = await cancelBillAction({ billId: target.id, reason });
+      let result;
+      try {
+        result = await cancelBillAction({ billId: target.id, reason });
+      } catch {
+        // Uncaught, a dropped connection took the whole screen down. Nothing
+        // was cancelled that the server did not say so about: try again later.
+        return setError("The server could not be reached, so the bill was not cancelled. Try again when the internet is back.");
+      }
       if (!result.ok) return setError(result.error);
       close();
     });
@@ -111,7 +123,7 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
                         </p>
                         <p className="text-xs text-muted-foreground tabular-nums">
                           {formatTime(bill.createdAt)}
-                          {bill.bookNo ? ` · Book ${bill.bookNo}` : null}
+                          {bill.bookNo ? ` · ${slipLabel(bill.bookNo)}` : null}
                         </p>
                         {/* A name when there is one; no "Walk-in" on every row. */}
                         {bill.customerName ? <p className="mt-0.5 text-sm">{bill.customerName}</p> : null}
@@ -153,10 +165,14 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
                       {bill.status === "active" && canEdit ? (
                         editingId === bill.id ? (
                           <Badge variant="secondary">Correcting</Badge>
-                        ) : (
+                        ) : online ? (
                           <Link href={`/billing?edit=${bill.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
                             Edit
                           </Link>
+                        ) : (
+                          <Button variant="ghost" size="sm" disabled title="Needs the internet">
+                            Edit
+                          </Button>
                         )
                       ) : null}
                       {bill.status === "active" ? (
@@ -173,7 +189,14 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
                             <Printer aria-hidden />
                             Print
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => openFor(bill)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            disabled={!online}
+                            title={online ? undefined : "Needs the internet"}
+                            onClick={() => openFor(bill)}
+                          >
                             Cancel
                           </Button>
                         </>
