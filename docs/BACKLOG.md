@@ -33,7 +33,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2 | Offline PWA + sync — split into P2.2a–f below | 🟡 | — |
 | P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | ✅ | done 2026-09-26 |
 | P2.2b | Catalog copy in IndexedDB | ✅ | done 2026-09-28 |
-| P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | ⬜ | — |
+| P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | 🟡 | Sakib543, 2026-09-28 |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ⬜ | — |
 | P2.2e | Folders / cash entries offline | ⬜ | — |
 | P2.2f | Day Close offline | ⬜ | — |
@@ -922,6 +922,15 @@ passes with the new route.
 
 **Not verified:** sign-out clearing the copy — Claude does not sign a person out of their own
 session; the maintenance 503, which goes through the same `checkUser()` as every page.
+
+### 🟡 P2.2c — Outbox + sync endpoint
+**Owner:** Sakib543, 2026-09-28
+
+A queue in the browser's IndexedDB for bills the server has not yet received, and an endpoint that
+replays them through the existing `createBill`, oldest first, deduplicated by `bills.client_id`
+(which exists since P3.15). A bill the server refuses is kept in a "Needs attention" list, never
+dropped. Built against the current database, the user's call (HANDOFF section 9). The plan is
+shown to the user before building.
 
 ---
 
