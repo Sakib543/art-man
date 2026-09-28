@@ -34,7 +34,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | ✅ | done 2026-09-26 |
 | P2.2b | Catalog copy in IndexedDB | ✅ | done 2026-09-28 |
 | P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | ✅ | done 2026-09-28 |
-| P2.2d | Billing offline, `T-` numbers on the receipt | ⬜ | — |
+| P2.2d | Billing offline, `T-` numbers on the receipt | 🟡 | Sakib543, 2026-09-29 |
 | P2.2e | Folders / cash entries offline | ⬜ | — |
 | P2.2f | Day Close offline | ⬜ | — |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
@@ -1013,6 +1013,15 @@ without Web Locks or BroadcastChannel; the maintenance 503 (the same `checkUser`
 **Test data left in the database** (the user's call, HANDOFF section 9): bills #36 and #37 on 24 Sep
 (Test customer P3.15 C); `bill.offline-refuse` rows for four test bills; `bill.offline-discard` rows
 for three (one of them twice, before the fix).
+
+### 🟡 P2.2d — Billing offline
+**Owner:** Sakib543, 2026-09-29
+
+The counter rings up bills with no internet: priced in the browser from the offline copy (P2.2b),
+kept in the outbox (P2.2c), a receipt with a temporary `T-` number, "pending" bills shown with
+the day's bills, and offline use allowed for 12 hours after the server last confirmed the
+sign-in. The first item that puts a bill in the outbox. The plan is shown to the user before
+building.
 
 ---
 
