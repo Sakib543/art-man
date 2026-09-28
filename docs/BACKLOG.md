@@ -70,7 +70,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
 | P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
 | P3.15 | A dropped connection never leaves a bill in doubt — one id per bill, saved once | ✅ | done 2026-09-28 |
-| P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | ⬜ | — |
+| P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | 🟡 | Sakib543, 2026-09-28 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 
@@ -1004,8 +1004,8 @@ under an open screen.
 
 ---
 
-### ⬜ P3.16 — The customer box keeps the last bill's number after a save
-**Owner:** —
+### 🟡 P3.16 — The customer box keeps the last bill's number after a save
+**Owner:** Sakib543, 2026-09-28
 
 Found while verifying P3.15 (2026-09-28). After a bill is saved the screen resets the customer,
 but the mobile number box still shows the previous bill's number. Typing the next customer's
