@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-28 (**P3.15: a Save that loses its answer no longer leaves the bill in doubt — `bills.client_id` (migration `0018`, on live), one bill per id, and the screen asks the server instead of falling over.** P2.2b is half done and not pushed; see section 10. 2026-09-26: **P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-28 (**P2.2b: the catalog copy in IndexedDB, refreshed from `/api/offline/catalog`.** **P3.15: a Save that loses its answer no longer leaves the bill in doubt — `bills.client_id` (migration `0018`, on live), one bill per id, and the screen asks the server instead of falling over.** 2026-09-26: **P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (411 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (434 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -137,9 +137,9 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Check | Result |
 |---|---|
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
-| `pnpm build` | pass — **27 routes** (2026-09-26; `icon.png`, `apple-icon.png` and `manifest.webmanifest` count as routes; `/worksheet` is now only a redirect), exit 0, **succeeds with no env vars set** |
+| `pnpm build` | pass — **28 routes** (2026-09-28; `icon.png`, `apple-icon.png` and `manifest.webmanifest` count as routes, and `/api/offline/catalog` is the second API route; `/worksheet` is now only a redirect), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **411 passed** (35 files), 2026-09-28 |
+| `pnpm test` | **434 passed** (37 files), 2026-09-28 |
 | Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0018`** (P3.15's `bills.client_id`, applied 2026-09-26 and read back; before it P3.10's discount columns and P3.11's `services.max_price`) |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
@@ -497,6 +497,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | `unstable_isUnrecognizedActionError` | from `next/navigation`: the screen is from an older deploy and the server does not know the action, so it never ran. The billing screen says "reload" on it |
 | An action's id is **stable across builds** while its file is unchanged | measured 2026-09-26: `createBillAction` kept `4080281036…` over two builds. Its chunk's file name **did** change when the chunk's content did (`41nr_msyvi4hk.js` → `2mphcp9mkd3ej.js`) — which is what makes the worker's cache-first on `/_next/static` safe |
 | Drizzle 0.45 wraps a driver error | in `DrizzleQueryError`, with the `pg` error — and its SQLSTATE `code` — as `cause`. `isUniqueViolation` (`lib/errors.ts`) walks the chain |
+| **The counter's offline copy is one IndexedDB record** | P2.2b: `art-man-offline` v1, store `catalog`, key `current`, replaced whole. From P2.2c a store may hold unsent bills, so **never delete or rename a store** — add one with a version bump |
+| The copy holds **only customers with a special rate** | a privacy call made in P2.2b, open to the client (section 9). The rates change a price, so pricing needs them; names and numbers of everyone else would sit in any signed-in browser |
+| `getActiveCatalog()` is read by the billing screen **and** the copy | `db/queries/catalog.ts`. Moving the screen onto it is what guarantees the two agree; the deal rule inside it is `offeredDeals()` in `lib/catalog.ts` |
+| **A deal's `serviceIds` order is part of its price** | `allocate` gives the leftover rupee by position. `deal_items` is read without `ORDER BY`, so the order is whatever Postgres returns — the same for the screen and the server today. `pricingFingerprint` keeps it rather than sorting it |
+| `checkUser()` holds the sign-in and maintenance checks | `lib/auth/session.ts`. `requireUser` turns a refusal into a redirect; `/api/offline/catalog` answers 401/503 instead |
 | **`next dev` writes to `.next/dev`** | Next 16 (`docs/01-app/03-api-reference/06-cli/next.md`): `next build` and `next dev` can run at the same time. Measured 2026-09-28 — a build during the user's dev server left it serving 200. Trap 8.0b predates this |
 
 ## 8. Traps that have already cost time
@@ -908,6 +913,11 @@ is signed out, which is still the script above.
 **Before P2.2c** (the first offline item that writes to the database): a separate dev Neon
 branch (9a). Syncing test bills into live would leave append-only rows in the salon's books.
 
+4. **Should the offline copy hold every customer, or only those with a special rate?** P2.2b keeps
+   only the second, so the full list of names and numbers does not sit in the browser of whoever
+   signs in. The cost: offline, a regular customer's name does not come up — the counter types it,
+   and the server keeps the existing customer on sync. One line to change if the client wants all.
+
 **Answered:**
 - **Does a Vercel project already exist?** Yes (2026-09-22) — connected to this same repo, but
   owned by the other developer's Vercel account. See the action above and section 2 rule 7.
@@ -984,7 +994,7 @@ STAGE 3 — during the client's 20-day trial
   P6.8  Login footer · BrandLockup · dark mode gone   DONE 2026-09-26
   P2.2a PWA foundation (started early, at the user's request) DONE 2026-09-26
   P3.15 A lost answer never leaves a bill in doubt        DONE 2026-09-28
-  P2.2b Catalog copy in IndexedDB                          IN PROGRESS — see STAGE 4
+  P2.2b Catalog copy in IndexedDB                          DONE 2026-09-28
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)
@@ -993,9 +1003,8 @@ STAGE 3b — before the trial starts, and none of it is code
   4. Vercel access (P5.1)
 
 STAGE 4 — after the trial
-  P2.2  Offline PWA + sync (2–3 weeks) — split into P2.2a–f; P2.2a done.
-        P2.2b is half built and NOT pushed: it waited in a local `git stash` on this machine
-        while P3.15 went first. P2.2c's `bills.client_id` already exists (P3.15, `0018`).
+  P2.2  Offline PWA + sync (2–3 weeks) — split into P2.2a–f; P2.2a and P2.2b done.
+        P2.2c next. Its dedupe id, `bills.client_id`, already exists (P3.15, `0018`).
         P2.2c needs the dev Neon branch first
   P3    Bonus, special rates screen, staff receipt, printing, alerts
   P5.3  Move to a VPS + carry trial data over with pg_dump

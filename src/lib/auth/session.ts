@@ -49,10 +49,24 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
  * let through, otherwise they could not switch the site back on.
  */
 export async function requireUser(): Promise<SessionUser> {
+  const check = await checkUser();
+  if (!check.ok) redirect(check.refused === "signed-out" ? "/login" : "/maintenance");
+  return check.user;
+}
+
+/**
+ * The signed-in user, or why they would be turned away — the same two checks
+ * as `requireUser`, in one place. `requireUser` turns a refusal into a
+ * redirect; an API route (P2.2b) answers with a status instead, since a
+ * `fetch` has no use for the login page's HTML.
+ */
+export async function checkUser(): Promise<
+  { ok: true; user: SessionUser } | { ok: false; refused: "signed-out" | "maintenance" }
+> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  if (user.role !== "developer" && (await readMaintenance()).on) redirect("/maintenance");
-  return user;
+  if (!user) return { ok: false, refused: "signed-out" };
+  if (user.role !== "developer" && (await readMaintenance()).on) return { ok: false, refused: "maintenance" };
+  return { ok: true, user };
 }
 
 /**

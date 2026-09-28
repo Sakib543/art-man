@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { MobileNav } from "@/components/app-shell/mobile-nav";
+import { CatalogSync } from "@/components/catalog-sync";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { requireUser } from "@/lib/auth/session";
 
@@ -18,6 +19,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[16.5rem_minmax(0,1fr)]">
+      <CatalogSync />
       <Sidebar user={user} />
       <MobileNav user={{ name: user.name, role: user.role }} />
 

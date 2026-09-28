@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
+import { clearCatalog } from "@/lib/offline/store";
 
 /** `onDark` is the navy sidebar and the bar across the top of a phone. */
 export function SignOutButton({ onDark = false }: { onDark?: boolean }) {
@@ -14,6 +15,9 @@ export function SignOutButton({ onDark = false }: { onDark?: boolean }) {
   function signOut() {
     startTransition(async () => {
       await authClient.signOut();
+      // The offline copy holds customers' numbers and belongs to a signed-in
+      // session (P2.2b). The next sign-in fetches a fresh one.
+      await clearCatalog().catch(() => undefined);
       router.push("/login");
       router.refresh();
     });

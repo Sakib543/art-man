@@ -2,18 +2,9 @@ import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
+import { getActiveCatalog } from "@/db/queries/catalog";
 import { getDayBills } from "@/db/queries/day-bills";
-import {
-  billCancellations,
-  billLines,
-  bills,
-  customerSpecialRates,
-  customers,
-  dealItems,
-  deals,
-  services,
-  staff,
-} from "@/db/schema";
+import { billCancellations, billLines, bills, customerSpecialRates, customers, staff } from "@/db/schema";
 import { priceCart, PricingError } from "@/lib/accounting";
 import { draftLinesOf, restoreSaved } from "./bill-draft";
 import { lastVisitOf } from "./last-visit";
@@ -25,29 +16,14 @@ export async function getBillingData(): Promise<BillingData | null> {
   const day = await getOpenBusinessDay();
   if (!day) return null;
 
-  const [serviceRows, dealRows, dealItemRows, staffRows, [{ next }]] = await Promise.all([
-    db.select().from(services).where(eq(services.active, true)).orderBy(services.createdAt, services.name),
-    db.select().from(deals).where(eq(deals.active, true)).orderBy(deals.name),
-    db.select().from(dealItems),
-    db.select({ id: staff.id, name: staff.name }).from(staff).where(eq(staff.active, true)).orderBy(staff.name),
+  // The same read the offline copy is made from (P2.2b), so the screen and
+  // the copy cannot disagree about what is on sale.
+  const [catalog, [{ next }]] = await Promise.all([
+    getActiveCatalog(),
     db.select({ next: sql<number>`coalesce(max(${bills.billNo}), 0) + 1` }).from(bills),
   ]);
 
-  return {
-    businessDate: day.businessDate,
-    nextBillNo: Number(next),
-    services: serviceRows.map(({ id, name, category, price, maxPrice, minutes }) => ({ id, name, category, price, maxPrice, minutes })),
-    // A deal is only offered while every one of its services is active.
-    deals: dealRows
-      .map(({ id, name, price }) => ({
-        id,
-        name,
-        price,
-        serviceIds: dealItemRows.filter((item) => item.dealId === id).map((item) => item.serviceId),
-      }))
-      .filter((deal) => deal.serviceIds.every((serviceId) => serviceRows.some((s) => s.id === serviceId))),
-    staff: staffRows,
-  };
+  return { businessDate: day.businessDate, nextBillNo: Number(next), ...catalog };
 }
 
 /**

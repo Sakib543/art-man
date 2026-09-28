@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-28 (P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-28 (P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -32,7 +32,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
 | P2.2 | Offline PWA + sync — split into P2.2a–f below | 🟡 | — |
 | P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | ✅ | done 2026-09-26 |
-| P2.2b | Catalog copy in IndexedDB | 🟡 | Sakib543, 2026-09-26 |
+| P2.2b | Catalog copy in IndexedDB | ✅ | done 2026-09-28 |
 | P2.2c | Outbox + sync endpoint (migration; needs a dev Neon branch first) | ⬜ | — |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ⬜ | — |
 | P2.2e | Folders / cash entries offline | ⬜ | — |
@@ -875,14 +875,53 @@ compiled CSS only. Persistent storage read `false`, as expected for a site that 
 `pnpm build` (27 routes — the manifest is new), `pnpm test` (400, 6 new), `pnpm lint` all pass.
 
 
-### 🟡 P2.2b — Catalog copy in IndexedDB
-**Owner:** Sakib543, 2026-09-26
+### ✅ P2.2b — Catalog copy in IndexedDB
+**Done:** 2026-09-28 (built 2026-09-26, held in a local stash while P3.15 went first)
 
 Everything the counter needs to price a bill without the server — services, deals, staff,
-customers and their special rates, and the open business date — kept in the browser's IndexedDB
-and refreshed whenever the server can be reached. Stamped with a version of its pricing, which is
-what P2.2c will check an offline bill against. No database change, and nothing reads the copy yet:
-P2.2d does.
+the customers who have a special rate, and the open business date — kept in the browser's
+IndexedDB and refreshed whenever the server can be reached. Stamped with a version of its pricing,
+which is what P2.2c will check an offline bill against. No database change, and nothing reads the
+copy yet: P2.2d does.
+
+**What was built:**
+
+- `lib/catalog.ts` (+ test) — `CatalogService`, `CatalogDeal`, `StaffOption` moved up out of
+  `features/billing/types.ts` (which re-exports them), and `offeredDeals()`: a deal is offered only
+  while every one of its services is active — the rule that was inline in `getBillingData`.
+- `db/queries/catalog.ts` — `getActiveCatalog()`, now what **both** the billing screen and the copy
+  read, so the two cannot disagree; and `getCatalogCopy()`: that, plus the customers with special
+  rates and the open business date, with `version` = sha-256 of `pricingFingerprint()`.
+- `lib/offline/catalog.ts` (+ test) — the copy's shape, `pricingFingerprint()` (only what changes a
+  price or a line's name, in a fixed order; a deal's service order kept, because `allocate` gives
+  the leftover rupee by position) and `isCatalogCopy()`.
+- `lib/offline/store.ts` — IndexedDB `art-man-offline` v1, store `catalog`, one record replaced in
+  one write. `saveCatalog` / `readCatalog` / `clearCatalog`. Never delete or rename a store.
+- `app/api/offline/catalog/route.ts` — a GET **Route Handler, not a Server Action**: Next runs
+  Server Actions one at a time per client, so a background refresh would hold up "Save bill".
+  401 signed out, 503 in maintenance (both from `checkUser()`, which `requireUser` now uses too),
+  `Cache-Control: no-store`.
+- `components/catalog-sync.tsx` — in the signed-in shell: fetches on load, on every return to
+  online, and when the copy is 15 minutes old (checked each minute and when the tab is shown). A
+  failed fetch keeps the old copy.
+- Sign out clears the copy (`sign-out-button.tsx`).
+
+**Only customers with a special rate are in the copy — a decision taken here, open to the client.**
+The full list with phone numbers would sit in the browser of whoever signs in; the Customers
+screen is kept from the Manager for the same reason. Offline, any other number reads as new, and
+`createBill` keeps the existing customer on sync. See HANDOFF section 9.
+
+**Verified:** from the database, read-only — the copy is 1.8 KB, its version is the same on two
+reads, and its services/deals/staff equal what the billing screen reads. On the local server: no
+cookie → the proxy's redirect, which the client treats as signed out; a made-up session cookie →
+401 `no-store`. In the Browser pane, signed in as the manager (dev server): the copy landed in
+IndexedDB on load (8 services, 2 deals, 3 staff, business day 24 Sep, version `c598c580…`); an
+`offline` then `online` event refreshed it (`servedAt` moved on) with the banner shown and gone;
+and 91 s later there had been no further request. `pnpm test` 434 (23 new), lint clean, build
+passes with the new route.
+
+**Not verified:** sign-out clearing the copy — Claude does not sign a person out of their own
+session; the maintenance 503, which goes through the same `checkUser()` as every page.
 
 ---
 

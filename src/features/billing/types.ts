@@ -1,30 +1,12 @@
 import type { PayMode, Rupees } from "@/lib/accounting";
+import type { CatalogDeal, CatalogService, StaffOption } from "@/lib/catalog";
 import type { CartLine } from "./cart-state";
 
 /** Plain data passed from the server to the billing screen (safe to serialise). */
 
-export interface CatalogService {
-  id: string;
-  name: string;
-  category: string;
-  /** The price, or the bottom of the range when `maxPrice` is set (P3.11). */
-  price: Rupees;
-  /** The top of the range, or null for one fixed price. */
-  maxPrice: Rupees | null;
-  minutes: number | null;
-}
-
-export interface CatalogDeal {
-  id: string;
-  name: string;
-  price: Rupees;
-  serviceIds: string[];
-}
-
-export interface StaffOption {
-  id: string;
-  name: string;
-}
+// The catalog's shapes moved to lib/catalog in P2.2b, so the offline copy is
+// built from them too. Re-exported so the screen's imports stay where they were.
+export type { CatalogDeal, CatalogService, StaffOption };
 
 export interface BillingData {
   businessDate: string;

@@ -13,8 +13,12 @@ src/
     (app)/<route>/    A signed-in page. Thin: it calls a feature's queries.ts
                       and renders that feature's components. No business logic.
     (auth)/login/     The only page reachable signed out.
-    api/auth/         The one API route in the project. Everything else is a
-                      Server Action.
+    api/auth/         Better Auth's route.
+    api/offline/      The counter's offline catalog copy (P2.2b) — a GET, because
+                      Next runs Server Actions one at a time per client and a
+                      background refresh must not hold up "Save bill". These two
+                      are the only API routes; everything else is a Server Action,
+                      and an API route checks the session itself (checkUser).
     error.tsx         Catches a failure in (app)/layout.tsx — where requireUser()
     global-error.tsx  touches the database. global-error replaces the root
                       layout, so it has no Tailwind and its styles are inline.
@@ -55,15 +59,22 @@ src/
     business-date.ts  Karachi dates. Servers run in UTC — never slice() a date
                       off a timestamp.
     action-result.ts  The ok/error shape every action returns.
-    errors.ts         UserError: a message meant for the person at the screen.
+    errors.ts         UserError: a message meant for the person at the screen;
+                      isUniqueViolation for the database's 23505.
+    catalog.ts        The catalog's shapes and offeredDeals(), shared by the
+                      billing screen and the offline copy.
+    offline/          The offline copy (P2.2): its shape and version (pure), and
+                      store.ts, the browser's IndexedDB — browser only.
     security-code.ts · format.ts · chart.ts · alerts.ts · pin.ts · utils.ts
 
   db/
     index.ts          The pool and the Drizzle instance.
     schema/           Drizzle tables, split by area (auth, billing, cash, days,
                       accounts, audit, config) and re-exported from index.ts.
-    queries/          Reads used by three or more features. All five are
-                      genuinely shared — check before adding a sixth.
+    queries/          Reads used by three or more features — and catalog.ts, the
+                      one exception: the billing screen and the offline copy's
+                      route read it, so the two cannot disagree about what is on
+                      sale. Check before adding another.
     audit.ts          writeAudit(). Every important action goes through it.
     bill-cancel.ts    cancelBill + writeCancellation, shared by billing,
                       the daily report and the developer's edit.
