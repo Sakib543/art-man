@@ -32,7 +32,8 @@ export type CartAction =
   | { type: "remove"; key: string }
   | { type: "setStaff"; key: string; staffId: string | null }
   | { type: "setAllStaff"; staffId: string | null }
-  | { type: "clear" };
+  | { type: "clear" }
+  | { type: "load"; lines: CartLine[] };
 
 export function cartReducer(lines: CartLine[], action: CartAction): CartLine[] {
   switch (action.type) {
@@ -105,6 +106,11 @@ export function cartReducer(lines: CartLine[], action: CartAction): CartLine[] {
 
     case "clear":
       return [];
+
+    case "load":
+      // A whole bill at once: one made offline and refused by the server,
+      // opened on the screen to be put right (P2.2c).
+      return action.lines;
   }
 }
 

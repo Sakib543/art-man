@@ -14,11 +14,16 @@ src/
                       and renders that feature's components. No business logic.
     (auth)/login/     The only page reachable signed out.
     api/auth/         Better Auth's route.
-    api/offline/      The counter's offline catalog copy (P2.2b) — a GET, because
-                      Next runs Server Actions one at a time per client and a
-                      background refresh must not hold up "Save bill". These two
-                      are the only API routes; everything else is a Server Action,
-                      and an API route checks the session itself (checkUser).
+    api/offline/      The counter's offline catalog copy (P2.2b, catalog/ — a GET)
+                      and the outbox's sync (P2.2c, sync/ — a POST that saves a
+                      bill made offline through billing's service). Route
+                      Handlers, because Next runs Server Actions one at a time
+                      per client and background work must not hold up "Save
+                      bill". With api/auth these are the only API routes;
+                      everything else is a Server Action. An API route checks
+                      the session itself (checkUser), and one that writes checks
+                      the Origin itself too (lib/same-origin.ts) — Next does
+                      that only for Server Actions.
     error.tsx         Catches a failure in (app)/layout.tsx — where requireUser()
     global-error.tsx  touches the database. global-error replaces the root
                       layout, so it has no Tailwind and its styles are inline.
@@ -42,6 +47,11 @@ src/
 
   components/         Shared app pieces: page-header, stat-card, field,
                       form-dialog, form-feedback, use-form-action, app-shell.
+                      The offline pieces (P2.2) live here too, because every
+                      signed-in screen carries them: pwa-setup, offline-banner,
+                      use-connectivity, catalog-sync, and the outbox's
+                      outbox-sync (sends it), use-outbox (reads it) and
+                      outbox-status (the line at the top of every screen).
     ui/                 shadcn/ui primitives. Generic, no salon knowledge.
 
   lib/
@@ -63,8 +73,11 @@ src/
                       isUniqueViolation for the database's 23505.
     catalog.ts        The catalog's shapes and offeredDeals(), shared by the
                       billing screen and the offline copy.
-    offline/          The offline copy (P2.2): its shape and version (pure), and
-                      store.ts, the browser's IndexedDB — browser only.
+    offline/          Working offline (P2.2): catalog.ts, the copy's shape and
+                      version, and outbox.ts, the outbox's entries and what the
+                      server's answers mean (both pure); store.ts, the browser's
+                      IndexedDB that holds them — browser only.
+    same-origin.ts    Next's Server Action Origin check, for a Route Handler.
     security-code.ts · format.ts · chart.ts · alerts.ts · pin.ts · utils.ts
 
   db/

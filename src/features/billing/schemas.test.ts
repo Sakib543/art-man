@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createBillSchema, findSavedBillSchema } from "./schemas";
+import { createBillSchema, discardOfflineBillSchema, findSavedBillSchema, syncBillSchema } from "./schemas";
 
 const bill = (bookNo?: unknown) => ({
   lines: [
@@ -147,5 +147,73 @@ describe("findSavedBillSchema", () => {
     expect(findSavedBillSchema.safeParse({ clientId: "33333333-3333-4333-8333-333333333333" }).success).toBe(true);
     expect(findSavedBillSchema.safeParse({}).success).toBe(false);
     expect(findSavedBillSchema.safeParse({ clientId: "32" }).success).toBe(false);
+  });
+});
+
+/** A bill made offline, sent later by the sync (P2.2c). */
+describe("syncBillSchema", () => {
+  const synced = (change: Record<string, unknown> = {}) => ({
+    v: 1,
+    clientId: "33333333-3333-4333-8333-333333333333",
+    businessDate: "2026-09-24",
+    catalogVersion: "c598c580",
+    madeAt: "2026-09-24T09:05:00.000Z",
+    madeBy: "manager",
+    bill: bill(),
+    ...change,
+  });
+
+  it("takes a bill with what the browser knew when it made it", () => {
+    const parsed = syncBillSchema.parse(synced());
+    expect(parsed.businessDate).toBe("2026-09-24");
+    expect(parsed.bill.cash).toBe(500);
+  });
+
+  it("takes a bill made before the counter had an offline copy", () => {
+    expect(syncBillSchema.safeParse(synced({ catalogVersion: null })).success).toBe(true);
+  });
+
+  it("checks the bill itself exactly as a Save from the screen is checked", () => {
+    const noLines = synced({ bill: { ...bill(), lines: [] } });
+    const result = syncBillSchema.safeParse(noLines);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe("Add a service or deal to start the bill");
+  });
+
+  it.each([
+    ["no id", { clientId: undefined }],
+    ["an id that is not a uuid", { clientId: "bill-1" }],
+    ["a day that is not a date", { businessDate: "24 Sep" }],
+    ["a time that is not a time", { madeAt: "yesterday" }],
+  ])("refuses %s", (_, change) => {
+    expect(syncBillSchema.safeParse(synced(change)).success).toBe(false);
+  });
+
+  it("says so when a bill was kept by a version of the app it no longer reads", () => {
+    const result = syncBillSchema.safeParse(synced({ v: 2 }));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toContain("version of the app");
+  });
+});
+
+describe("discardOfflineBillSchema", () => {
+  const discard = (change: Record<string, unknown> = {}) => ({
+    clientId: "33333333-3333-4333-8333-333333333333",
+    reason: "Customer came back and paid again",
+    entry: { clientId: "33333333-3333-4333-8333-333333333333", total: 300 },
+    ...change,
+  });
+
+  it("needs a reason, as a cancellation does", () => {
+    expect(discardOfflineBillSchema.safeParse(discard()).success).toBe(true);
+    const result = discardOfflineBillSchema.safeParse(discard({ reason: " x " }));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe("Write why this bill is being removed");
+  });
+
+  it("records the bill in any shape, but not an endless one", () => {
+    expect(discardOfflineBillSchema.safeParse(discard({ entry: { anything: [1, "two"] } })).success).toBe(true);
+    expect(discardOfflineBillSchema.safeParse(discard({ entry: { note: "x".repeat(20_001) } })).success).toBe(false);
+    expect(discardOfflineBillSchema.safeParse(discard({ entry: "a string" })).success).toBe(false);
   });
 });

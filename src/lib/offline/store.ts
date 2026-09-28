@@ -1,4 +1,5 @@
 import { isCatalogCopy, type CatalogCopy } from "./catalog";
+import { isOutboxEntry, type OutboxEntry } from "./outbox";
 
 /**
  * The browser's own database for working offline (backlog P2.2): IndexedDB,
@@ -9,19 +10,34 @@ import { isCatalogCopy, type CatalogCopy } from "./catalog";
  * from server code is harmless; calling it there is not.
  *
  * One database, `art-man-offline`. A new object store comes with a bump of
- * `VERSION` and a line in `upgrade()`. **Never delete or rename a store**: from
- * P2.2c a counter may hold bills in one that have not reached the server yet.
+ * `VERSION` and a line in `upgrade()`. **Never delete or rename a store**: the
+ * outbox (P2.2c) may hold bills that have not reached the server yet.
  */
 
 const NAME = "art-man-offline";
-const VERSION = 1;
+/** 1: the catalog copy (P2.2b). 2: the outbox (P2.2c). */
+const VERSION = 2;
 
 /** One record, under `CURRENT`: the whole copy, replaced in one write so it is never half old, half new. */
 const CATALOG = "catalog";
 const CURRENT = "current";
 
+/**
+ * Bills waiting for the server (P2.2c). Keyed by a number the store counts up
+ * by itself, so the order they were made in survives the device's clock being
+ * changed. `clientId` is a unique index: one bill cannot be queued twice.
+ */
+const OUTBOX = "outbox";
+const BY_CLIENT_ID = "clientId";
+
+/** Only adds what is missing, so it serves every older version as well as a new database. */
 function upgrade(db: IDBDatabase) {
   if (!db.objectStoreNames.contains(CATALOG)) db.createObjectStore(CATALOG);
+  if (!db.objectStoreNames.contains(OUTBOX)) {
+    db.createObjectStore(OUTBOX, { keyPath: "seq", autoIncrement: true }).createIndex(BY_CLIENT_ID, "clientId", {
+      unique: true,
+    });
+  }
 }
 
 let opening: Promise<IDBDatabase> | null = null;
@@ -59,6 +75,13 @@ function finished(tx: IDBTransaction): Promise<void> {
   });
 }
 
+function resultOf<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
 export async function saveCatalog(copy: CatalogCopy): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(CATALOG, "readwrite");
@@ -69,11 +92,7 @@ export async function saveCatalog(copy: CatalogCopy): Promise<void> {
 /** The copy, or null when there is none — or when what is stored is not a copy any more. */
 export async function readCatalog(): Promise<CatalogCopy | null> {
   const db = await openDb();
-  const request = db.transaction(CATALOG, "readonly").objectStore(CATALOG).get(CURRENT);
-  const value = await new Promise<unknown>((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+  const value = await resultOf(db.transaction(CATALOG, "readonly").objectStore(CATALOG).get(CURRENT));
   return isCatalogCopy(value) ? value : null;
 }
 
@@ -83,4 +102,104 @@ export async function clearCatalog(): Promise<void> {
   const tx = db.transaction(CATALOG, "readwrite");
   tx.objectStore(CATALOG).delete(CURRENT);
   await finished(tx);
+}
+
+/*
+ * The outbox (P2.2c). There is deliberately no way to empty it: sign-out
+ * leaves it alone, and a bill leaves it only through `removeFromOutbox` —
+ * called when the server has the bill, or after a person removed it with a
+ * reason the server recorded.
+ */
+
+/**
+ * Every change to the outbox is announced, to this tab and to the others, so
+ * the sync and the screens that list it read it again. A BroadcastChannel never
+ * delivers to the object that posted, so this tab's listeners are called
+ * directly and one channel per tab does both jobs.
+ */
+const CHANNEL = "art-man-outbox";
+const listeners = new Set<() => void>();
+let channel: BroadcastChannel | null | undefined;
+
+function theChannel(): BroadcastChannel | null {
+  if (channel === undefined) {
+    channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel(CHANNEL);
+    if (channel) channel.onmessage = () => listeners.forEach((listener) => listener());
+  }
+  return channel;
+}
+
+function announce() {
+  listeners.forEach((listener) => listener());
+  theChannel()?.postMessage("changed");
+}
+
+/** Called whenever the outbox changes, in this tab or another. Returns the way to stop. */
+export function onOutboxChange(listener: () => void): () => void {
+  listeners.add(listener);
+  theChannel();
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/**
+ * Queue a bill for the server. A bill that is already queued — the same id —
+ * is left as it is: queueing it again is not an error.
+ */
+export async function queueBill(entry: OutboxEntry): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(OUTBOX, "readwrite");
+  const request = tx.objectStore(OUTBOX).add(entry);
+  request.onerror = (event) => {
+    // The unique index refusing a second copy must not abort the transaction.
+    if (request.error?.name === "ConstraintError") event.preventDefault();
+  };
+  await finished(tx);
+  announce();
+}
+
+/** Every bill in the outbox, in the order it was queued. */
+export async function readOutbox(): Promise<OutboxEntry[]> {
+  const db = await openDb();
+  const rows = await resultOf(db.transaction(OUTBOX, "readonly").objectStore(OUTBOX).getAll());
+  // A row this build cannot read (a newer build wrote it) is left in place,
+  // untouched, for the build that can.
+  return rows.filter(isOutboxEntry);
+}
+
+/** One bill, by its id, or null when it is not in the outbox (sent, or removed). */
+export async function readOutboxEntry(clientId: string): Promise<OutboxEntry | null> {
+  const db = await openDb();
+  const value = await resultOf(db.transaction(OUTBOX, "readonly").objectStore(OUTBOX).index(BY_CLIENT_ID).get(clientId));
+  return isOutboxEntry(value) ? value : null;
+}
+
+/** The bill has reached the server, or a person removed it: it leaves the outbox. */
+export async function removeFromOutbox(clientId: string): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(OUTBOX, "readwrite");
+  const store = tx.objectStore(OUTBOX);
+  const key = store.index(BY_CLIENT_ID).getKey(clientId);
+  key.onsuccess = () => {
+    if (key.result !== undefined) store.delete(key.result);
+  };
+  await finished(tx);
+  announce();
+}
+
+/**
+ * Record the server's refusal of a bill — or, with null, put it back in line
+ * to be sent again ("Send again", once whatever was wrong has been put right).
+ */
+export async function setRejected(clientId: string, rejected: OutboxEntry["rejected"]): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(OUTBOX, "readwrite");
+  const store = tx.objectStore(OUTBOX);
+  const found = store.index(BY_CLIENT_ID).get(clientId);
+  found.onsuccess = () => {
+    if (found.result) store.put({ ...found.result, rejected });
+  };
+  await finished(tx);
+  announce();
 }

@@ -116,5 +116,40 @@ export const findSavedBillSchema = z.object({
   clientId: z.uuid(),
 });
 
+/**
+ * A bill the counter made while the server could not be reached, sent later
+ * by the sync (P2.2c; `lib/offline/outbox.ts`). The bill is exactly what the
+ * billing screen sends; around it, what the browser knew when it made it.
+ * `businessDate` never chooses the day a bill goes into — it only refuses the
+ * wrong one.
+ */
+export const syncBillSchema = z.object({
+  v: z.literal(1, { error: "This bill was kept by a version of the app this server no longer reads" }),
+  clientId: z.uuid(),
+  businessDate: z.iso.date(),
+  catalogVersion: z.string().max(128).nullable(),
+  madeAt: z.iso.datetime(),
+  madeBy: z.string().trim().max(80),
+  bill: createBillSchema,
+});
+
+/**
+ * Taking a refused offline bill off the counter's list (P2.2c). The reason is
+ * the control, as it is for a cancellation. The bill as the counter kept it
+ * goes to the audit log, since the server never had it any other way; it is
+ * recorded, never trusted, so any shape is accepted — up to a size.
+ */
+export const discardOfflineBillSchema = z.object({
+  clientId: z.uuid(),
+  reason: z.string().trim().min(3, "Write why this bill is being removed").max(200),
+  entry: z
+    .record(z.string(), z.unknown())
+    .refine((entry) => JSON.stringify(entry).length <= 20_000, { error: "That bill is too large to record" }),
+});
+
 export type CreateBillInput = z.infer<typeof createBillSchema>;
 export type EditBillInput = z.infer<typeof editBillSchema>;
+export type SyncBillInput = z.infer<typeof syncBillSchema>;
+/** Where an offline bill came from: everything the sync sends besides the bill and its id. */
+export type OfflineOrigin = Pick<SyncBillInput, "businessDate" | "catalogVersion" | "madeAt" | "madeBy">;
+export type DiscardOfflineBillInput = z.infer<typeof discardOfflineBillSchema>;

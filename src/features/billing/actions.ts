@@ -7,12 +7,13 @@ import { findBillByClientId, findCustomer } from "./queries";
 import {
   cancelBillSchema,
   createBillSchema,
+  discardOfflineBillSchema,
   editBillSchema,
   findSavedBillSchema,
   lookupCustomerSchema,
 } from "./schemas";
 import { cancelBill } from "@/db/bill-cancel";
-import { createBill, editBill } from "./service";
+import { createBill, discardOfflineBill, editBill } from "./service";
 import type { CustomerInfo, Receipt, SavedBill } from "./types";
 
 export async function createBillAction(input: unknown): Promise<ActionResult<SavedBill>> {
@@ -86,6 +87,23 @@ export async function findSavedBillAction(input: unknown): Promise<ActionResult<
 
   try {
     return { ok: true, data: await findBillByClientId(parsed.data.clientId) };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/**
+ * Remove a refused offline bill from the counter's list, with a reason
+ * (P2.2c). Any signed-in role may, as any may cancel a bill. The data is the
+ * bill's receipt when it turns out to have been saved after all, else null.
+ */
+export async function discardOfflineBillAction(input: unknown): Promise<ActionResult<Receipt | null>> {
+  const user = await requireUser();
+  const parsed = discardOfflineBillSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid request" };
+
+  try {
+    return { ok: true, data: await discardOfflineBill(user, parsed.data) };
   } catch (error) {
     return failure(error);
   }

@@ -38,6 +38,11 @@ describe("cartReducer", () => {
     expect(lines.map((l) => l.staffId)).toEqual(["hamid", "hamid"]);
   });
 
+  it("loads a whole bill in place of what was there (a refused offline bill, P2.2c)", () => {
+    const bill = cartReducer([], { type: "addDeal", instanceId: "d1", dealId: "vip", serviceIds: ["hc", "bd"] });
+    expect(cartReducer(add([], "x", "sh"), { type: "load", lines: bill })).toEqual(bill);
+  });
+
   it("clears the cart", () => {
     expect(cartReducer(add([], "a", "hc"), { type: "clear" })).toEqual([]);
   });

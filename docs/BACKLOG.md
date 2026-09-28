@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-28 (P2.2c no longer waits on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-28 (P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -33,7 +33,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2 | Offline PWA + sync — split into P2.2a–f below | 🟡 | — |
 | P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | ✅ | done 2026-09-26 |
 | P2.2b | Catalog copy in IndexedDB | ✅ | done 2026-09-28 |
-| P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | 🟡 | Sakib543, 2026-09-28 |
+| P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | ✅ | done 2026-09-28 |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ⬜ | — |
 | P2.2e | Folders / cash entries offline | ⬜ | — |
 | P2.2f | Day Close offline | ⬜ | — |
@@ -923,14 +923,96 @@ passes with the new route.
 **Not verified:** sign-out clearing the copy — Claude does not sign a person out of their own
 session; the maintenance 503, which goes through the same `checkUser()` as every page.
 
-### 🟡 P2.2c — Outbox + sync endpoint
-**Owner:** Sakib543, 2026-09-28
+### ✅ P2.2c — Outbox + sync endpoint
+**Done:** 2026-09-28
 
 A queue in the browser's IndexedDB for bills the server has not yet received, and an endpoint that
 replays them through the existing `createBill`, oldest first, deduplicated by `bills.client_id`
 (which exists since P3.15). A bill the server refuses is kept in a "Needs attention" list, never
-dropped. Built against the current database, the user's call (HANDOFF section 9). The plan is
-shown to the user before building.
+dropped. Built against the current database, the user's call (HANDOFF section 9). **No migration.**
+Nothing puts a bill in the outbox yet — P2.2d does — so the counter sees no change.
+
+**Decisions** (the plan was shown; the user left the three choices to Claude, 2026-09-28):
+
+- **A bill saved online still goes straight to the server**, as since P3.15. The outbox holds only
+  bills that could not reach it. (The flow sketched on 2026-09-25 sent every bill through the
+  outbox; P3.15 made the direct Save safe, and it gives the receipt its real number at once.)
+- **A price that changed while the counter was offline** gets the bill refused, saying so, and it
+  is put right on the screen. The server keeps no history of old prices — that would be a table.
+- **A refused bill can be sent again, opened on the billing screen, or removed** with a reason.
+
+**What was built:**
+
+- `lib/offline/outbox.ts` (+ test) — the entry: the bill as `createBill` takes it, the day it was
+  made on, the catalog version it was priced with, when and by whom, and a preview with names.
+  `outcomeOf()`: only 200 (saved) and 422 (refused) are final; a 401 or the proxy's redirect means
+  signed out; everything else is "try later". `nextToSend()`: oldest first, and a refused bill does
+  not hold up the rest.
+- `lib/offline/store.ts` — IndexedDB **v2**: store `outbox`, keyed by an auto-increment `seq` (so
+  the order survives a clock change), unique index `clientId`. `queueBill` (queueing one id twice
+  is not an error), `readOutbox`, `readOutboxEntry`, `removeFromOutbox`, `setRejected`, and
+  `onOutboxChange` — every change announced to this tab and the others (BroadcastChannel). Nothing
+  empties the outbox, and sign-out leaves it.
+- `app/api/offline/sync/route.ts` — POST, one bill. An Origin check first (`lib/same-origin.ts`, +
+  test: Next's own Server Action check, which a Route Handler does not get), `checkUser` (401/503),
+  `syncBillSchema`, then `syncOfflineBill`. 200 `{ billNo, alreadySaved }`, 422 `{ reason }`, 500.
+- `features/billing/service.ts` — `createBill(user, input, offline?)`: a bill made offline goes
+  into the day it was made on or is refused; the id check comes first, so a bill that did arrive
+  is answered with itself even after its day has closed. Refused over a price when its catalog
+  version is not today's, the reason starts "Prices have changed since this bill was made
+  offline." `bill.create`'s audit entry carries `offline: { madeAt, madeBy, catalogVersion }`.
+  `syncOfflineBill` records every refusal as `bill.offline-refuse` (`success: false`), so the
+  server knows of a bill its books do not have. `discardOfflineBill` writes `bill.offline-discard`
+  with the reason and the entry — once per bill — or returns the receipt if it was saved after all.
+- `components/outbox-sync.tsx` — in the signed-in shell. Sends while online: on load, on
+  reconnect, on any change to the outbox (any tab), and every 30 s while bills wait. One tab at a
+  time (Web Locks, `ifAvailable`); a send is given up after 30 s and simply sent again later.
+- `components/use-outbox.ts`, `components/outbox-status.tsx` — the outbox for screens, and a line
+  at the top of every screen: "N bills waiting to be sent" (or "Sign in again to send them"), and
+  away from Billing, "N bills made offline were refused by the server and need attention".
+- `features/billing/components/needs-attention.tsx` — above the billing screen: each refused bill
+  with its lines, its payment and the server's reason; **Open in billing**, **Send again**,
+  **Remove** (reason required, audited, guarded against a second press).
+- The billing screen: `?fix=<id>` opens a refused bill (`outbox-draft.ts`, + test; a cart action
+  `load`) under its own id, with the customer looked up again and a note: when it was made, why it
+  was refused, what was paid and — live — what it now comes to. Saving it clears it from the outbox.
+- Sign-out with bills in the outbox: a dialog says they are kept and sent after the next sign-in
+  here.
+
+**Verified, 2026-09-28** — dev server, Browser pane signed in as the manager. Nothing queues a bill
+until P2.2d, so entries were written into IndexedDB by hand (HANDOFF trap 8.17):
+
+| Test | Result |
+|---|---|
+| The network down (the sync's `fetch` patched to fail) | bill kept; "1 bill waiting to be sent to the server" |
+| The network back | **#36** saved (`{ billNo: 36, alreadySaved: false }`), outbox empty, the line gone |
+| The same bill queued again | `alreadySaved: true` — still one #36 |
+| Paid Rs 50 short · the same with an older catalog version · made on 23 Sep, a closed day | three 422s: "Payment is Rs 50 short of the total", "Prices have changed since this bill was made offline. …", "This bill was made on 23 Sep 2026, but the open day is 24 Sep 2026. …" — kept, in order, in Needs attention |
+| Send again | sent once more, refused again, back on the list |
+| Open in billing, the Rs 50 short one | Hair wash · Arshad, the customer found, "The customer paid Rs 250 (cash). This bill now comes to Rs 300."; a Rs 50 discount with a reason → **#37** for Rs 250, the entry gone, the URL back to `/billing` |
+| Remove | reason required; `bill.offline-discard` written; the entry gone |
+| A 401 (patched) | kept; "Sign in again to send it." |
+| Two tabs open | one POST; the second tab's lock request was refused while the first was sending |
+| Sign-out with a bill waiting | the dialog; "Stay signed in" kept the session |
+| 375 px | no horizontal scroll |
+| Remove pressed twice; removed again after re-queueing the same bill | one `bill.offline-discard` row |
+| curl: no cookie · a made-up cookie from another Origin · from this Origin | 307 to `/login` · 403 · 401 (`no-store`) |
+
+Read back, read-only: bills #36 and #37 only (37 in all), with their `client_id`s; the audit rows
+above.
+
+**Found and fixed while verifying:** in a pane that was not drawing, `pending` never disabled the
+Remove button, a second press went through, and one bill was discarded twice. The server now writes
+one discard per bill, and the button is guarded by a ref.
+
+`pnpm test` 479 (45 new), lint clean, build passes (29 routes — the sync is new).
+
+**Not verified:** a real offline session end to end (nothing queues a bill until P2.2d); a browser
+without Web Locks or BroadcastChannel; the maintenance 503 (the same `checkUser` as the catalog).
+
+**Test data left in the database** (the user's call, HANDOFF section 9): bills #36 and #37 on 24 Sep
+(Test customer P3.15 C); `bill.offline-refuse` rows for four test bills; `bill.offline-discard` rows
+for three (one of them twice, before the fix).
 
 ---
 

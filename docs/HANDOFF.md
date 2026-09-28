@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-28 (**The user: no dev Neon branch before the VPS move — P2.2c–f are built against this database (section 9).** **P3.16: the customer box starts empty for the next bill — keyed on the bill's id; verified without writing a bill (trap 8.16).** **P2.2b: the catalog copy in IndexedDB, refreshed from `/api/offline/catalog`.** **P3.15: a Save that loses its answer no longer leaves the bill in doubt — `bills.client_id` (migration `0018`, on live), one bill per id, and the screen asks the server instead of falling over.** 2026-09-26: **P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-28 (**P2.2c: the outbox and its sync — a bill that could not reach the server waits in IndexedDB and is sent by `/api/offline/sync` through `createBill`, into the day it was made on; a refused one waits in "Needs attention". No migration; nothing queues a bill until P2.2d.** **The user: no dev Neon branch before the VPS move — P2.2c–f are built against this database (section 9).** **P3.16: the customer box starts empty for the next bill — keyed on the bill's id; verified without writing a bill (trap 8.16).** **P2.2b: the catalog copy in IndexedDB, refreshed from `/api/offline/catalog`.** **P3.15: a Save that loses its answer no longer leaves the bill in doubt — `bills.client_id` (migration `0018`, on live), one bill per id, and the screen asks the server instead of falling over.** 2026-09-26: **P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (434 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (479 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -137,9 +137,9 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Check | Result |
 |---|---|
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
-| `pnpm build` | pass — **28 routes** (2026-09-28; `icon.png`, `apple-icon.png` and `manifest.webmanifest` count as routes, and `/api/offline/catalog` is the second API route; `/worksheet` is now only a redirect), exit 0, **succeeds with no env vars set** |
+| `pnpm build` | pass — **29 routes** (2026-09-28; `icon.png`, `apple-icon.png` and `manifest.webmanifest` count as routes, `/api/offline/catalog` and `/api/offline/sync` (P2.2c) are the offline API routes; `/worksheet` is now only a redirect), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **434 passed** (37 files), 2026-09-28 |
+| `pnpm test` | **479 passed** (40 files), 2026-09-28 (P2.2c) |
 | Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0018`** (P3.15's `bills.client_id`, applied 2026-09-26 and read back; before it P3.10's discount columns and P3.11's `services.max_price`) |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
@@ -159,7 +159,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
 staff & rates, settings), plus the developer role with its audit log, password, maintenance and
-bill-edit screens. Phase 4: the backup is built (a restore never run), and offline has started — P2.2a (the PWA foundation) and P2.2b (the catalog copy) are done; nothing works offline yet beyond an honest offline page and banner.
+bill-edit screens. Phase 4: the backup is built (a restore never run), and offline has started — P2.2a (the PWA foundation), P2.2b (the catalog copy) and P2.2c (the outbox and its sync) are done. Nothing puts a bill in the outbox until P2.2d, so the counter still sees only an honest offline page and banner.
 
 **Live, deploying from this repo, and working.** The site is at
 **https://art-man-drab.vercel.app**, and since 2026-09-22 every push to `main` here deploys to it.
@@ -498,6 +498,11 @@ Measured, not guessed. Do not spend time re-deriving these.
 | An action's id is **stable across builds** while its file is unchanged | measured 2026-09-26: `createBillAction` kept `4080281036…` over two builds. Its chunk's file name **did** change when the chunk's content did (`41nr_msyvi4hk.js` → `2mphcp9mkd3ej.js`) — which is what makes the worker's cache-first on `/_next/static` safe |
 | Drizzle 0.45 wraps a driver error | in `DrizzleQueryError`, with the `pg` error — and its SQLSTATE `code` — as `cause`. `isUniqueViolation` (`lib/errors.ts`) walks the chain |
 | **The counter's offline copy is one IndexedDB record** | P2.2b: `art-man-offline` v1, store `catalog`, key `current`, replaced whole. From P2.2c a store may hold unsent bills, so **never delete or rename a store** — add one with a version bump |
+| **The outbox is IndexedDB `art-man-offline` v2, store `outbox`** | P2.2c. Keyed by an auto-increment `seq` (queue order that survives a clock change), unique index `clientId`. Entries are `OutboxEntry` in `lib/offline/outbox.ts` (`v: 1`). **Nothing empties it** — sign-out keeps it; an entry leaves only when the server has the bill or a person removed it with a reason. Every write is announced on BroadcastChannel `art-man-outbox` |
+| **The sync's answers: only 200 and 422 are final** | `outcomeOf` in `lib/offline/outbox.ts`, matched by `app/api/offline/sync/route.ts`. 200 → the entry leaves; 422 → it waits in Needs attention; 401 or an `opaqueredirect` → waits for a sign-in; anything else (500, 503, 403, network, timeout) → sent again later. A machine never drops a bill |
+| **An offline bill goes into the day it was made on, or nowhere** | `createBill(user, input, offline)` refuses it when `offline.businessDate` is not the open day — but only after the `client_id` check, so a bill that did arrive is still answered with itself after its day closes. The screen's "Open in billing" saves through the ordinary `createBillAction`, into the open day, under the same id |
+| **Offline audit actions** | `bill.create` with `after.offline` (`madeAt`, `madeBy`, `catalogVersion`); `bill.offline-refuse` (`success: false`, every refusal, with what was sent); `bill.offline-discard` (the reason and the entry; one per bill). All three target `offline bill <client_id>` or the bill number, so a refused bill and the bill it became can be matched by id |
+| **A Route Handler gets no Origin check** | Next compares Origin with Host only for Server Actions (`node_modules/next/dist/server/app-render/action-handler.js`). `lib/same-origin.ts` repeats it for the sync; any future Route Handler that writes must call it too |
 | The copy holds **only customers with a special rate** | a privacy call made in P2.2b, open to the client (section 9). The rates change a price, so pricing needs them; names and numbers of everyone else would sit in any signed-in browser |
 | `getActiveCatalog()` is read by the billing screen **and** the copy | `db/queries/catalog.ts`. Moving the screen onto it is what guarantees the two agree; the deal rule inside it is `offeredDeals()` in `lib/catalog.ts` |
 | **A deal's `serviceIds` order is part of its price** | `allocate` gives the leftover rupee by position. `deal_items` is read without `ORDER BY`, so the order is whatever Postgres returns — the same for the screen and the server today. `pricingFingerprint` keeps it rather than sorting it |
@@ -717,6 +722,24 @@ does except write.
   to `BillingScreen`, then its hooks) shows which id the screen holds.
 - Block by body, not by action id: throw for any `next-action` request whose body contains
   `"lines"`, and prove it first with a dry-run `fetch`. Count the bills before and after.
+
+### 8.17 Testing the outbox by hand, and a button a hidden pane never disables
+
+Found 2026-09-28 (P2.2c). Until P2.2d nothing puts a bill in the outbox, so a test writes one
+itself: open `art-man-offline` **without a version** (`indexedDB.open(name)` — any version given
+older than the live one fails), `add()` an `OutboxEntry` to the `outbox` store with no `seq` (the
+store numbers it), then post `"changed"` on a **new** `BroadcastChannel("art-man-outbox")` — a raw
+write announces nothing, and a channel never hears its own messages. The page's sync then sends it.
+Ids for the entry come from the catalog copy in the same database (`catalog` / `current`).
+
+- A made-up entry that the server will refuse (a closed `businessDate`, cash short of the total)
+  writes nothing but audit rows; one it accepts is a real bill. Keep the accepted ones few.
+- The sync calls the global `fetch` at call time, so trap 8.13's patch works on it too — make
+  it throw for "network down", or return `new Response(..., { status: 401 })` for "signed out".
+- **In a pane that is not drawing, `useTransition`'s `pending` may never reach the screen**, so a
+  button disabled by it stays pressable and a second press is sent. That is how one test bill got
+  two `bill.offline-discard` rows. Anything that must not happen twice needs a guard that does not
+  wait for a render (a ref), and ideally a server that does it once anyway.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -1022,6 +1045,7 @@ STAGE 3 — during the client's 20-day trial
   P3.15 A lost answer never leaves a bill in doubt        DONE 2026-09-28
   P2.2b Catalog copy in IndexedDB                          DONE 2026-09-28
   P3.16 The customer box starts empty after a save        DONE 2026-09-28
+  P2.2c Outbox + sync endpoint (no migration)             DONE 2026-09-28
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)
@@ -1030,9 +1054,10 @@ STAGE 3b — before the trial starts, and none of it is code
   4. Vercel access (P5.1)
 
 STAGE 4 — after the trial
-  P2.2  Offline PWA + sync (2–3 weeks) — split into P2.2a–f; P2.2a and P2.2b done.
-        P2.2c next. Its dedupe id, `bills.client_id`, already exists (P3.15, `0018`).
-        P2.2c is built against this database — no dev branch first (the user, 2026-09-28)
+  P2.2  Offline PWA + sync (2–3 weeks) — split into P2.2a–f; P2.2a, P2.2b and P2.2c done.
+        P2.2d next: the billing screen offline, which is the first item that puts a bill
+        in the outbox (`queueBill`) — and serves its own shell, since pages are never
+        cached (section 7). Built against this database (the user, 2026-09-28)
   P3    Bonus, special rates screen, staff receipt, printing, alerts
   P5.3  Move to a VPS + carry trial data over with pg_dump
 ```

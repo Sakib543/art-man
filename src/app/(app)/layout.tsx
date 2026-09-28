@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { MobileNav } from "@/components/app-shell/mobile-nav";
 import { CatalogSync } from "@/components/catalog-sync";
+import { OutboxStatus } from "@/components/outbox-status";
+import { OutboxSync } from "@/components/outbox-sync";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { requireUser } from "@/lib/auth/session";
 
@@ -20,6 +22,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-[16.5rem_minmax(0,1fr)]">
       <CatalogSync />
+      {/* Bills made offline, sent to the server (P2.2c). */}
+      <OutboxSync />
       <Sidebar user={user} />
       <MobileNav user={{ name: user.name, role: user.role }} />
 
@@ -28,7 +32,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         the padding comes back to something ordinary.
       */}
       <main className="min-w-0 px-4 pt-5 pb-28 sm:px-6 lg:px-8 lg:pb-12 print:px-0 print:pt-0">
-        <div className="mx-auto w-full max-w-[1400px]">{children}</div>
+        <div className="mx-auto w-full max-w-[1400px]">
+          <OutboxStatus />
+          {children}
+        </div>
       </main>
     </div>
   );

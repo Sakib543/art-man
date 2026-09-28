@@ -10,10 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { checkPayment, paymentAmounts, priceCart, PricingError, type PayMode, type PricedLine } from "@/lib/accounting";
-import { rs } from "@/lib/format";
-import { createBillAction, editBillAction, findSavedBillAction } from "../actions";
+import { formatDate, formatDateTime, paidBy, rs } from "@/lib/format";
+import type { OutboxEntry } from "@/lib/offline/outbox";
+import { readOutboxEntry, removeFromOutbox } from "@/lib/offline/store";
+import { createBillAction, editBillAction, findSavedBillAction, lookupCustomerAction } from "../actions";
 import { payModeOf } from "../bill-draft";
 import { cartReducer } from "../cart-state";
+import { draftOfEntry } from "../outbox-draft";
 import type { BillDraft, BillingData, Receipt, SavedBill } from "../types";
 import { CartLines } from "./cart-lines";
 import { CustomerBox, type CustomerState } from "./customer-box";
@@ -40,7 +43,16 @@ const OUTDATED =
 /** The bill being corrected, when the Owner opened one from Today's bills (P1.4). */
 type Editing = Extract<BillDraft, { ok: true }>;
 
-export function BillingScreen({ data, editing }: { data: BillingData; editing?: Editing | null }) {
+export function BillingScreen({
+  data,
+  editing,
+  fixing,
+}: {
+  data: BillingData;
+  editing?: Editing | null;
+  /** The id of a bill made offline and refused by the server, opened to be put right (P2.2c). */
+  fixing?: string | null;
+}) {
   const router = useRouter();
   const startMode = editing ? payModeOf(editing.cash, editing.online) : "cash";
 
@@ -70,6 +82,61 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  // The refused offline bill being put right (P2.2c), once read from the
+  // outbox; "gone" when it is not waiting for attention any more.
+  const [fix, setFix] = useState<OutboxEntry | "gone" | null>(null);
+
+  /*
+   * Open a refused offline bill on the screen, as the counter made it (P2.2c).
+   * It keeps its id, so however it ends up saved — from here, or by a send of
+   * it that was still on its way — it is saved once. Only a bill waiting for a
+   * person is opened: one back in line belongs to the sync.
+   */
+  useEffect(() => {
+    if (!fixing) return;
+    let cancelled = false;
+
+    void (async () => {
+      const entry = await readOutboxEntry(fixing).catch(() => null);
+      if (cancelled) return;
+      if (!entry?.rejected) return setFix("gone");
+
+      const draft = draftOfEntry(entry);
+      dispatch({ type: "load", lines: draft.lines });
+      setPayMode(draft.payMode);
+      setTypedCash(draft.typedCash);
+      setTypedOnline(draft.typedOnline);
+      setBookNo(draft.bookNo);
+      setDiscountText(draft.discountText);
+      setDiscountReason(draft.discountReason);
+      setClientId(entry.clientId);
+      setFix(entry);
+
+      // The customer as the server knows them now — their visits and any
+      // special rate — or, for a number it has never seen, as typed.
+      const typed = entry.bill.customer;
+      if (!typed) return;
+      let known = null;
+      try {
+        const result = await lookupCustomerAction({ phone: typed.phone });
+        if (result.ok) known = result.data;
+      } catch {
+        // Not reachable just now: the number as typed will do.
+      }
+      if (cancelled) return;
+      setCustomer(
+        known
+          ? { status: "found", info: known }
+          : { status: "new", phone: typed.phone, name: typed.name ?? entry.preview.customerName ?? "" },
+      );
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fixing]);
+
+  const fixed = fix === "gone" ? null : fix;
 
   const specialRates = customer.status === "found" ? customer.info.specialRates : NO_RATES;
 
@@ -146,6 +213,17 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
       router.push("/billing");
       router.refresh();
       return;
+    }
+
+    if (fixed) {
+      // The refused offline bill is in the books now: off the outbox and out
+      // of "Needs attention" (P2.2c). If this fails, the list still shows it,
+      // and Send again or Remove then finds it saved — nothing is lost.
+      removeFromOutbox(fixed.clientId).catch((error) => console.warn("Could not clear the outbox entry", error));
+      setFix(null);
+      // Back to a plain new bill, without a navigation that would take the
+      // receipt below off the screen with it.
+      window.history.replaceState(null, "", "/billing");
     }
 
     setNotice(note ?? (alreadySaved ? `Bill #${saved.billNo} had already been saved, so it was not saved twice.` : ""));
@@ -291,9 +369,15 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
 
         <Panel>
           <PanelHeader
-            title={editing ? `Correcting bill #${editing.billNo}` : "New bill"}
+            title={
+              editing
+                ? `Correcting bill #${editing.billNo}`
+                : fixed
+                  ? "Putting right a bill made offline"
+                  : "New bill"
+            }
             action={
-              editing ? (
+              editing || fixed ? (
                 <Link href="/billing" className="text-xs text-muted-foreground underline underline-offset-2">
                   Leave it as it is
                 </Link>
@@ -304,6 +388,31 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
               )
             }
           />
+
+          {/* The refused offline bill on the screen, and what it was refused for (P2.2c). */}
+          {fixed ? (
+            <div
+              role="note"
+              className="space-y-1 border-b border-warning-line bg-warning-soft px-card py-3 text-sm text-warning"
+            >
+              <p>
+                Made offline {formatDateTime(fixed.madeAt)} and refused by the server: {fixed.rejected?.reason}
+              </p>
+              <p>
+                The customer paid {rs(fixed.bill.cash + fixed.bill.online)} (
+                {paidBy(fixed.bill.cash, fixed.bill.online).toLowerCase()}).{" "}
+                {total !== fixed.bill.cash + fixed.bill.online ? (
+                  <strong className="font-semibold">This bill now comes to {rs(total)}. </strong>
+                ) : null}
+                Put right what is wrong and save it: it goes once into the open day, {formatDate(data.businessDate)}.
+              </p>
+            </div>
+          ) : fix === "gone" ? (
+            <p role="status" className="border-b bg-surface-sunken px-card py-3 text-sm text-muted-foreground">
+              That offline bill is not waiting for attention any more: it was sent, removed, or put back in line.
+              This is a new bill.
+            </p>
+          ) : null}
 
           {/* Filled in only when the bill was written on the paper book first (spec 5.5). */}
           <div className="flex items-center gap-2.5 border-b px-card py-2.5">

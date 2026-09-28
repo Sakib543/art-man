@@ -1,10 +1,12 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { writeCancellation } from "@/db/bill-cancel";
 import type { Tx } from "@/db/day-settlement";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
+import { getCatalogCopy } from "@/db/queries/catalog";
 import {
+  auditLog,
   billCancellations,
   billLines,
   bills,
@@ -26,9 +28,10 @@ import {
 import { atLeastOwner } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/session";
 import { isUniqueViolation, UserError } from "@/lib/errors";
+import { formatDate } from "@/lib/format";
 import { draftLinesOf, restoreSaved, type SavedBillLine } from "./bill-draft";
 import { findBillByClientId } from "./queries";
-import type { CreateBillInput, EditBillInput } from "./schemas";
+import type { CreateBillInput, DiscardOfflineBillInput, EditBillInput, OfflineOrigin, SyncBillInput } from "./schemas";
 import type { Receipt, SavedBill } from "./types";
 
 const NOTE_TEXT: Record<string, string | undefined> = {
@@ -277,15 +280,47 @@ async function lostTheRace(error: unknown, clientId: string | null): Promise<Sav
   throw error;
 }
 
-/** Save a bill — once, however many times the same bill is sent (P3.15). */
-export async function createBill(user: SessionUser, input: CreateBillInput): Promise<SavedBill> {
+/**
+ * Price a bill made offline (P2.2c). It is priced as any other bill — by
+ * today's catalog, never by the browser's figures — so if a price moved while
+ * the counter was offline, the payment no longer matches and the bill is
+ * refused. That refusal says so, because "Payment is Rs 100 short" alone would
+ * send the counter looking for a mistake it did not make.
+ */
+async function priceOffline(input: CreateBillInput, offline: OfflineOrigin): Promise<PricedBill> {
+  try {
+    return await priceBill(input);
+  } catch (error) {
+    if (!(error instanceof UserError) || offline.catalogVersion === null) throw error;
+    const { version } = await getCatalogCopy();
+    if (version === offline.catalogVersion) throw error;
+    throw new UserError(`Prices have changed since this bill was made offline. ${error.message}`);
+  }
+}
+
+/**
+ * Save a bill — once, however many times the same bill is sent (P3.15).
+ *
+ * `offline` is set when the bill was made with no server and sent later by the
+ * sync (P2.2c). Such a bill goes into the day it was made on or nowhere: put
+ * into whichever day happens to be open when the connection comes back, its
+ * money would land in the wrong day's cash count. The id check comes first, so
+ * a bill that did arrive — a send whose answer was lost — is answered with
+ * itself even after its day has closed.
+ */
+export async function createBill(user: SessionUser, input: CreateBillInput, offline?: OfflineOrigin): Promise<SavedBill> {
   const earlier = await savedEarlier(input.clientId);
   if (earlier) return earlier;
 
   const day = await getOpenBusinessDay();
   if (!day) throw new UserError("No business day is open. Ask the Owner to open one.");
+  if (offline && offline.businessDate !== day.businessDate) {
+    throw new UserError(
+      `This bill was made on ${formatDate(offline.businessDate)}, but the open day is ${formatDate(day.businessDate)}. A bill made offline is only saved into the day it was made on.`,
+    );
+  }
 
-  const priced = await priceBill(input);
+  const priced = offline ? await priceOffline(input, offline) : await priceBill(input);
   const actor = actorOf(user);
 
   try {
@@ -307,6 +342,12 @@ export async function createBill(user: SessionUser, input: CreateBillInput): Pro
           // So is an Other line's price (P3.12): it is the one amount the catalog
           // did not decide.
           ...otherLinesOf(priced),
+          // Made with no server (P2.2c): when, by whom — as the browser tells
+          // it — and against which prices. The bill's own time is when it
+          // reached the server.
+          ...(offline
+            ? { offline: { madeAt: offline.madeAt, madeBy: offline.madeBy, catalogVersion: offline.catalogVersion } }
+            : {}),
         },
       });
 
@@ -316,6 +357,74 @@ export async function createBill(user: SessionUser, input: CreateBillInput): Pro
   } catch (error) {
     return lostTheRace(error, input.clientId);
   }
+}
+
+/** How much of what the browser sent a refusal keeps, at most. */
+const REFUSAL_RECORD_LIMIT = 20_000;
+
+/**
+ * A bill made offline that the server refused goes to the audit log (P2.2c).
+ * Its money was taken at the counter, so the server keeps a note of it even
+ * though the books do not have it: the Owner can see what was refused and
+ * why, and the bill it later becomes shares its id (`target`).
+ */
+export async function recordOfflineRefusal(user: SessionUser, clientId: string | null, reason: string, sent: unknown) {
+  const text = JSON.stringify(sent) ?? "";
+  await writeAudit(db, {
+    actor: actorOf(user),
+    action: "bill.offline-refuse",
+    target: clientId ? `offline bill ${clientId}` : "offline bill",
+    after: { reason, sent: text.length <= REFUSAL_RECORD_LIMIT ? sent : `(${text.length} characters, not kept)` },
+    success: false,
+  });
+}
+
+/**
+ * Save a bill the counter made offline, sent by the sync (P2.2c) — through
+ * `createBill`, with where it came from. A refusal is recorded before it is
+ * passed on.
+ */
+export async function syncOfflineBill(user: SessionUser, input: SyncBillInput): Promise<SavedBill> {
+  const { clientId, bill, businessDate, catalogVersion, madeAt, madeBy } = input;
+  try {
+    return await createBill(user, { ...bill, clientId }, { businessDate, catalogVersion, madeAt, madeBy });
+  } catch (error) {
+    if (error instanceof UserError) await recordOfflineRefusal(user, clientId, error.message, input);
+    throw error;
+  }
+}
+
+/**
+ * A bill made offline that the server refused, taken off the counter's list by
+ * a person, with a reason (P2.2c). Nothing reaches the books — the bill never
+ * did — but it goes to the audit log as the counter kept it, so it does not
+ * vanish without a trace.
+ *
+ * If a send whose answer was lost had saved it after all, it is in the books
+ * and there is nothing to discard: its receipt is returned instead, and
+ * nothing is written.
+ *
+ * Written once per bill. A Remove sent again — its answer lost, or pressed a
+ * second time before the button could show it was busy — finds the first
+ * record and writes no other. (Found while verifying P2.2c: a pane that was
+ * not drawing let a second press through, and one bill was discarded twice.)
+ */
+export async function discardOfflineBill(user: SessionUser, input: DiscardOfflineBillInput): Promise<Receipt | null> {
+  const saved = await findBillByClientId(input.clientId);
+  if (saved) return saved;
+
+  const action = "bill.offline-discard";
+  const target = `offline bill ${input.clientId}`;
+  // `audit_log_action_target_created_at_idx` answers this.
+  const [already] = await db
+    .select({ id: auditLog.id })
+    .from(auditLog)
+    .where(and(eq(auditLog.action, action), eq(auditLog.target, target)))
+    .limit(1);
+  if (already) return null;
+
+  await writeAudit(db, { actor: actorOf(user), action, target, after: { reason: input.reason, entry: input.entry } });
+  return null;
 }
 
 /**
