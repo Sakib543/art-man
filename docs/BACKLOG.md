@@ -35,7 +35,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2b | Catalog copy in IndexedDB | ✅ | done 2026-09-28 |
 | P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | ✅ | done 2026-09-28 |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ✅ | done 2026-09-29 |
-| P2.2e | Folders / cash entries offline | ⬜ | — |
+| P2.2e | Folders / cash entries offline | 🟡 | Sakib543, 2026-09-29 |
 | P2.2f | Day Close offline | ⬜ | — |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
@@ -1100,6 +1100,15 @@ browser sees); printing on paper; two browsers on one counter (each has its own 
 counts its own `T-` numbers).
 
 **Test data left in the database:** bills #38, #39, #40 on 24 Sep (T-1, T-2, T-3).
+
+### 🟡 P2.2e — Folders / cash entries offline
+**Owner:** Sakib543, 2026-09-29
+
+The counter records the day's folder entries — staff payments, expenses and the rest — with no
+internet, kept in the outbox and sent through the existing service when the connection returns;
+the Owner's own entries stay online only (no PIN offline, the client's answer). The Register view
+shows the bills and entries still waiting on this computer. The user left the choices to Claude
+(2026-09-29): the recommended ones are taken and recorded here when done.
 
 ---
 
