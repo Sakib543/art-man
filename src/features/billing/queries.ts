@@ -2,6 +2,7 @@ import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
+import { getDayBills } from "@/db/queries/day-bills";
 import {
   billCancellations,
   billLines,
@@ -16,7 +17,8 @@ import {
 import { priceCart, PricingError } from "@/lib/accounting";
 import { draftLinesOf, restoreSaved } from "./bill-draft";
 import { lastVisitOf } from "./last-visit";
-import type { BillDraft, BillingData, CustomerInfo } from "./types";
+import { receiptOfBill } from "./receipt-of-bill";
+import type { BillDraft, BillingData, CustomerInfo, Receipt } from "./types";
 
 /** Everything the billing screen needs, or null when no business day is open. */
 export async function getBillingData(): Promise<BillingData | null> {
@@ -46,6 +48,27 @@ export async function getBillingData(): Promise<BillingData | null> {
       .filter((deal) => deal.serviceIds.every((serviceId) => serviceRows.some((s) => s.id === serviceId))),
     staff: staffRows,
   };
+}
+
+/**
+ * The bill the billing screen sent under this id, as its receipt, or null if
+ * it never arrived (P3.15). Asked when a Save lost its answer, and by
+ * `createBill` / `editBill` before saving, so one id is never saved twice.
+ *
+ * Reuses the day's list and the reprint path (P3.6) rather than a query of its
+ * own, so a receipt rebuilt here is exactly the one Today's bills reprints.
+ * It runs only after a lost answer or a repeat, so reading one day is cheap.
+ */
+export async function findBillByClientId(clientId: string): Promise<Receipt | null> {
+  const [bill] = await db
+    .select({ id: bills.id, businessDate: bills.businessDate })
+    .from(bills)
+    .where(eq(bills.clientId, clientId))
+    .limit(1);
+  if (!bill) return null;
+
+  const saved = (await getDayBills(bill.businessDate)).find((row) => row.id === bill.id);
+  return saved ? receiptOfBill(saved, bill.businessDate) : null;
 }
 
 export async function findCustomer(phone: string): Promise<CustomerInfo | null> {

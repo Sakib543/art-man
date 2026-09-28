@@ -1,20 +1,20 @@
 "use client";
 
 import { Panel, PanelHeader } from "@/components/panel";
-import { AlertCircle, Receipt as ReceiptIcon } from "lucide-react";
+import { AlertCircle, CheckCircle2, LoaderCircle, Receipt as ReceiptIcon } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useReducer, useState, useTransition } from "react";
+import { unstable_isUnrecognizedActionError, useRouter } from "next/navigation";
+import { useEffect, useEffectEvent, useMemo, useReducer, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { checkPayment, paymentAmounts, priceCart, PricingError, type PayMode, type PricedLine } from "@/lib/accounting";
 import { rs } from "@/lib/format";
-import { createBillAction, editBillAction } from "../actions";
+import { createBillAction, editBillAction, findSavedBillAction } from "../actions";
 import { payModeOf } from "../bill-draft";
 import { cartReducer } from "../cart-state";
-import type { BillDraft, BillingData, Receipt } from "../types";
+import type { BillDraft, BillingData, Receipt, SavedBill } from "../types";
 import { CartLines } from "./cart-lines";
 import { CustomerBox, type CustomerState } from "./customer-box";
 import { PaymentBox } from "./payment-box";
@@ -26,6 +26,16 @@ import { Badge } from "@/components/ui/badge";
 const NO_RATES: Record<string, number> = {};
 
 const toRupees =(text: string) => Math.max(0, Math.trunc(Number(text) || 0));
+
+/**
+ * How often to ask "did it arrive?" after a Save lost its answer (P3.15). Not
+ * at once: a request cut off on the way back may still be finishing on the
+ * server, and asking too early would say "not saved" a moment before it is.
+ */
+const ASK_EVERY_MS = 4_000;
+
+const OUTDATED =
+  "The app was updated while this screen was open, so this bill was not saved. Reload the page (F5) and save it again.";
 
 /** The bill being corrected, when the Owner opened one from Today's bills (P1.4). */
 type Editing = Extract<BillDraft, { ok: true }>;
@@ -48,6 +58,15 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
   const [discountReason, setDiscountReason] = useState(editing?.discountReason ?? "");
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  // Said once a Save has worked out, e.g. after an answer was lost (P3.15).
+  const [notice, setNotice] = useState("");
+  // The id this bill is sent under (P3.15). It stays the same until the server
+  // is known to have the bill, so Save can be pressed again without ever
+  // making a second one.
+  const [clientId, setClientId] = useState(() => crypto.randomUUID());
+  // The total of a bill whose Save lost its answer: it may or may not have been
+  // saved. Null when nothing is in doubt.
+  const [doubtful, setDoubtful] = useState<number | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -112,8 +131,89 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
   const amounts = paymentAmounts(payMode, total, { cash: toRupees(typedCash), online: toRupees(typedOnline) });
   const payment = checkPayment(total, amounts.cash, amounts.online);
 
+  /**
+   * The server has the bill — from this Save, from an earlier one whose answer
+   * was lost, or found by asking (P3.15). Show its receipt and start the next
+   * bill under a new id.
+   */
+  function afterSave({ receipt: saved, alreadySaved }: SavedBill, note?: string) {
+    setClientId(crypto.randomUUID());
+    setDoubtful(null);
+    if (editing) {
+      // The bill just edited is now cancelled, so this screen has nothing
+      // left to show. Go back to a fresh bill; the correction is at the top
+      // of Today's bills.
+      router.push("/billing");
+      router.refresh();
+      return;
+    }
+
+    setNotice(note ?? (alreadySaved ? `Bill #${saved.billNo} had already been saved, so it was not saved twice.` : ""));
+    setReceipt(saved);
+    setReceiptOpen(true);
+    dispatch({ type: "clear" });
+    setCustomer({ status: "none" });
+    setPayMode("cash");
+    setTypedCash("");
+    setTypedOnline("");
+    setBookNo("");
+    setDiscountText("");
+    setDiscountReason("");
+  }
+
+  /** The server's answer to "did it arrive?" (P3.15). */
+  const onAnswer = useEffectEvent((found: Receipt | null) => {
+    if (found) {
+      afterSave(
+        { receipt: found, alreadySaved: true },
+        `The connection dropped, but bill #${found.billNo} had reached the server and is saved. Do not save it again.`,
+      );
+      // The Save's own answer, which would have refreshed Today's bills, was lost.
+      router.refresh();
+      return;
+    }
+    setDoubtful(null);
+    setError("The connection dropped before the bill reached the server, so it was not saved. Press Save to send it again.");
+  });
+
+  const onOutdated = useEffectEvent(() => {
+    setDoubtful(null);
+    setError(OUTDATED);
+  });
+
+  /*
+   * While a Save's answer is missing, ask the server every few seconds whether
+   * the bill arrived, until it can say (P3.15). A failed ask means the
+   * connection is still down; the next tick tries again.
+   */
+  useEffect(() => {
+    if (doubtful === null) return;
+    let stopped = false;
+    let asking = false;
+
+    async function ask() {
+      if (asking) return;
+      asking = true;
+      try {
+        const result = await findSavedBillAction({ clientId });
+        if (!stopped && result.ok) onAnswer(result.data);
+      } catch (error) {
+        if (!stopped && unstable_isUnrecognizedActionError(error)) onOutdated();
+      } finally {
+        asking = false;
+      }
+    }
+
+    const timer = setInterval(() => void ask(), ASK_EVERY_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [doubtful, clientId]);
+
   function submit() {
     setError("");
+    setNotice("");
     if (cart.length === 0) return setError("Add a service or deal to start the bill");
     if (cart.some((line) => !line.staffId)) return setError("Choose a staff member for every service");
     // Priced as 0 while blank so the total stays live; not saved that way (P3.12).
@@ -156,29 +256,23 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
     };
 
     startTransition(async () => {
-      if (editing) {
-        const result = await editBillAction({ ...bill, billId: editing.id, reason: reason.trim() });
-        if (!result.ok) return setError(result.error);
-        // The bill just edited is now cancelled, so this screen has nothing
-        // left to show. Go back to a fresh bill; the correction is at the top
-        // of Today's bills.
-        router.push("/billing");
-        return router.refresh();
+      let result;
+      try {
+        result = editing
+          ? await editBillAction({ ...bill, clientId, billId: editing.id, reason: reason.trim() })
+          : await createBillAction({ ...bill, clientId });
+      } catch (error) {
+        // A screen from before the latest deploy: the server does not know
+        // this Save any more, so it never ran. Only a reload fixes that.
+        if (unstable_isUnrecognizedActionError(error)) return setError(OUTDATED);
+        // Anything else is a lost connection. The request may have reached
+        // the server and only the answer been lost on the way back, so keep
+        // the cart and ask (P3.15) — never let the screen fall over, which is
+        // what used to happen, with the cart and the answer both gone.
+        return setDoubtful(total);
       }
-
-      const result = await createBillAction(bill);
       if (!result.ok) return setError(result.error);
-
-      setReceipt(result.data);
-      setReceiptOpen(true);
-      dispatch({ type: "clear" });
-      setCustomer({ status: "none" });
-      setPayMode("cash");
-      setTypedCash("");
-      setTypedOnline("");
-      setBookNo("");
-      setDiscountText("");
-      setDiscountReason("");
+      afterSave(result.data);
     });
   }
 
@@ -340,13 +434,37 @@ export function BillingScreen({ data, editing }: { data: BillingData; editing?: 
               </p>
             ) : null}
 
-            <Button size="lg" className="mt-3.5 w-full" onClick={submit} disabled={pending}>
+            {notice ? (
+              <p role="status" className="mt-2 flex items-center gap-1.5 text-xs text-success">
+                <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+                {notice}
+              </p>
+            ) : null}
+
+            {/* A Save that lost its answer (P3.15): say so, and keep asking. */}
+            {doubtful !== null ? (
+              <div
+                role="status"
+                className="mt-3.5 flex items-start gap-2.5 rounded-lg border border-warning-line bg-warning-soft px-3.5 py-3 text-sm text-warning"
+              >
+                <LoaderCircle className="mt-0.5 size-4 shrink-0 animate-spin" aria-hidden />
+                <p>
+                  The connection dropped before the answer came back, so it is not known yet whether this{" "}
+                  {rs(doubtful)} bill was saved. Checking with the server — do not save it again or write it on
+                  paper until this clears.
+                </p>
+              </div>
+            ) : null}
+
+            <Button size="lg" className="mt-3.5 w-full" onClick={submit} disabled={pending || doubtful !== null}>
               <ReceiptIcon aria-hidden />
               {pending
                 ? "Saving..."
-                : editing
-                  ? `Save correction${total ? ` ${rs(total)}` : ""}`
-                  : `Save bill${total ? ` ${rs(total)}` : ""}`}
+                : doubtful !== null
+                  ? "Checking whether it was saved..."
+                  : editing
+                    ? `Save correction${total ? ` ${rs(total)}` : ""}`
+                    : `Save bill${total ? ` ${rs(total)}` : ""}`}
             </Button>
           </div>
         </Panel>

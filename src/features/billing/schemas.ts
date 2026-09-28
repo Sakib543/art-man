@@ -23,6 +23,14 @@ const bookNo = z
  */
 const discount = rupees;
 
+/**
+ * The id the billing screen gives a bill before sending it (P3.15), so a Save
+ * whose answer was lost can be asked about and sent again without making a
+ * second bill. Optional only so a screen loaded before P3.15 still saves; it
+ * just cannot be asked about.
+ */
+const clientId = z.uuid().nullish().transform((value) => value ?? null);
+
 export const createBillSchema = z
   .object({
     lines: z
@@ -69,6 +77,7 @@ export const createBillSchema = z
     cash: rupees,
     online: rupees,
     bookNo,
+    clientId,
     discount: discount.default(0),
     /** Why money was taken off. Required as soon as there is a discount. */
     discountReason: z.string().trim().max(120).nullish().transform((value) => value || null),
@@ -100,6 +109,11 @@ export const cancelBillSchema = z.object({
 
 export const lookupCustomerSchema = z.object({
   phone: z.string().trim().min(7).max(20),
+});
+
+/** "Did the bill sent under this id arrive?" (P3.15) */
+export const findSavedBillSchema = z.object({
+  clientId: z.uuid(),
 });
 
 export type CreateBillInput = z.infer<typeof createBillSchema>;

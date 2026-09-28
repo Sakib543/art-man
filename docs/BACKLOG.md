@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-26 (P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-28 (P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -69,7 +69,8 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.12 | "Other" on a bill: extra work at whatever the counter charges | ✅ | done 2026-09-25 |
 | P3.13 | Re-opening a discounted bill takes the discount off twice (found in P3.12) | ✅ | done 2026-09-25 |
 | P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
-| P3.15 | A dropped connection never leaves a bill in doubt — one id per bill, saved once | 🟡 | Sakib543, 2026-09-26 |
+| P3.15 | A dropped connection never leaves a bill in doubt — one id per bill, saved once | ✅ | done 2026-09-28 |
+| P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | ⬜ | — |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 
@@ -899,8 +900,8 @@ P2.2d does.
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
 
-### 🟡 P3.15 — A dropped connection never leaves a bill in doubt
-**Owner:** Sakib543, 2026-09-26
+### ✅ P3.15 — A dropped connection never leaves a bill in doubt
+**Done:** 2026-09-28
 
 **Found on the live site, 2026-09-26, 22:19.** The manager pressed Save, the screen spun, then
 showed the full-screen "This screen could not be loaded" card with *No reference was recorded*,
@@ -920,6 +921,58 @@ times — and before P2.2b.
   the server "did this bill arrive?" until it gets an answer: the receipt, or "not saved — press
   Save again".
 - A screen left open across a deploy is told to reload, instead of being left waiting.
+
+**What was built:**
+
+- **Migration `0018`** — `bills.client_id uuid`, nullable, `bills_client_id_unique`. Applied to the
+  live database **before** the code was pushed, read back from `information_schema` and
+  `pg_constraint`, and pushed on its own (`b83c42d`). ADD COLUMN and a unique index touch no row,
+  so the append-only triggers never fired. All 32 existing bills keep `null`, as do reversals.
+- `schemas.ts` — `clientId` on `createBillSchema` (so on edits too): a uuid, **optional** so a
+  screen loaded before the deploy still saves. `findSavedBillSchema` for the lookup.
+- `queries.ts` — `findBillByClientId()`: the bill as a receipt, rebuilt through `getDayBills` and
+  `receiptOfBill`, so it is the very receipt Today's bills reprints.
+- `service.ts` — `createBill` and `editBill` return `SavedBill` (`{ receipt, alreadySaved }`).
+  `savedEarlier()` answers a repeat with the bill already there; `lostTheRace()` answers the loser
+  of two simultaneous requests the same way, recognised by `isUniqueViolation()` (SQLSTATE 23505,
+  looked for down Drizzle's `cause` chain — `lib/errors.ts`, tested). On an edit the check runs
+  **before** the guards, or a repeat would be told "already cancelled" — true, by itself.
+- `actions.ts` — `findSavedBillAction`: "did the bill sent under this id arrive?"
+- `billing-screen.tsx` — the id lives in state until the server is known to have the bill. A Save
+  that throws is caught: `unstable_isUnrecognizedActionError` means a stale deploy (never ran,
+  "reload"); anything else puts the bill **in doubt** — a warning box, Save off and reading
+  "Checking whether it was saved...", the cart kept — and the screen asks every 4 s
+  (`useEffectEvent`) until it can say: the receipt with "had reached the server and is saved. Do
+  not save it again", or "was not saved. Press Save to send it again". Not at once: a request cut
+  off on the way back may still be finishing on the server.
+
+**Verified, 2026-09-28** — three test bills on the open day (24 Sep), each with a new made-up
+customer (`00000315001`–`003`, "Test customer P3.15 A/B/C"), a Hair wash, an Other line of Rs 200
+and a Rs 50 discount, with the user's permission:
+
+| Test | How | Result |
+|---|---|---|
+| Two Saves of one bill at the same instant, then a third | a script calling `createBill` with one `clientId` (`Promise.allSettled`), actor `p3.15-check` | **#33** once; the twin got `alreadySaved: true` for #33, the third too. One bill with that id, one customer with that phone — the twin lost the race on the new customer's unique phone, inside its transaction, and was answered with #33 |
+| The answer lost on the way back | in the Browser pane, signed in as the manager, `window.fetch` patched to send the Save and then throw `Failed to fetch` | server answered 200; 4 s later the screen asked and said "bill **#34** had reached the server and is saved"; receipt shown, cart cleared, no error card |
+| The request never sent | the same patch throwing before sending | the warning box and "Checking whether it was saved..." at once, cart kept; 4 s later "was not saved. Press Save to send it again"; Save again → **#35**, once |
+
+Read back from the database afterwards: exactly three bills in those hours, three distinct
+`client_id`s, one bill per test customer, three `bill.create` audit rows. `pnpm test` 411
+(11 new), `pnpm lint` clean, `pnpm build` passes.
+
+**Not verified:** the "app was updated, reload" message — it needs a real deploy to go stale
+under an open screen.
+
+---
+
+### ⬜ P3.16 — The customer box keeps the last bill's number after a save
+**Owner:** —
+
+Found while verifying P3.15 (2026-09-28). After a bill is saved the screen resets the customer,
+but the mobile number box still shows the previous bill's number. Typing the next customer's
+number appends to it (`0000031500200000315003`), and Find then says "Enter a valid mobile
+number". Not caused by P3.15 — the success path resets the customer the same way it always did.
+Small.
 
 ---
 

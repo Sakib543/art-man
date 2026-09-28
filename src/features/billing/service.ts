@@ -25,10 +25,11 @@ import {
 } from "@/lib/accounting";
 import { atLeastOwner } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/session";
-import { UserError } from "@/lib/errors";
+import { isUniqueViolation, UserError } from "@/lib/errors";
 import { draftLinesOf, restoreSaved, type SavedBillLine } from "./bill-draft";
+import { findBillByClientId } from "./queries";
 import type { CreateBillInput, EditBillInput } from "./schemas";
-import type { Receipt } from "./types";
+import type { Receipt, SavedBill } from "./types";
 
 const NOTE_TEXT: Record<string, string | undefined> = {
   "special-rate": "Special rate",
@@ -199,6 +200,9 @@ async function writeBill(
       discount: priced.discount,
       discountReason: priced.discount > 0 ? input.discountReason : null,
       supersedesBillId,
+      // Unique: a second insert with the same id fails, and the caller answers
+      // with the bill already saved under it (P3.15).
+      clientId: input.clientId,
       createdBy: actor,
     })
     .returning();
@@ -247,37 +251,71 @@ function otherLinesOf(priced: PricedBill): { other?: { name: string; amount: Rup
 const auditLines = (lines: { name: string; amount: number; staffId: string | null }[]) =>
   lines.map((line) => ({ name: line.name, amount: line.amount, staffId: line.staffId }));
 
-/** Save a bill. */
-export async function createBill(user: SessionUser, input: CreateBillInput): Promise<Receipt> {
+/**
+ * The bill this id was already saved as, when it was (P3.15). A Save whose
+ * answer was lost is sent again with the same id, and gets the bill that is
+ * there instead of a second one.
+ */
+async function savedEarlier(clientId: string | null): Promise<SavedBill | null> {
+  if (!clientId) return null;
+  const receipt = await findBillByClientId(clientId);
+  return receipt ? { receipt, alreadySaved: true } : null;
+}
+
+/**
+ * Two requests with the same id can both get past `savedEarlier` before
+ * either has committed. The second then fails on a unique index — on
+ * `bills.client_id`, or earlier on a new customer's phone, which is written
+ * before the bill — and lands here, to answer with the bill that got in.
+ * Any other failure is passed on unchanged.
+ */
+async function lostTheRace(error: unknown, clientId: string | null): Promise<SavedBill> {
+  if (isUniqueViolation(error)) {
+    const earlier = await savedEarlier(clientId);
+    if (earlier) return earlier;
+  }
+  throw error;
+}
+
+/** Save a bill — once, however many times the same bill is sent (P3.15). */
+export async function createBill(user: SessionUser, input: CreateBillInput): Promise<SavedBill> {
+  const earlier = await savedEarlier(input.clientId);
+  if (earlier) return earlier;
+
   const day = await getOpenBusinessDay();
   if (!day) throw new UserError("No business day is open. Ask the Owner to open one.");
 
   const priced = await priceBill(input);
   const actor = actorOf(user);
 
-  return db.transaction(async (tx) => {
-    const bill = await writeBill(tx, day.businessDate, actor, input, priced);
+  try {
+    const receipt = await db.transaction(async (tx) => {
+      const bill = await writeBill(tx, day.businessDate, actor, input, priced);
 
-    await writeAudit(tx, {
-      actor,
-      action: "bill.create",
-      target: `bill #${bill.billNo}`,
-      after: {
-        total: priced.total,
-        cash: input.cash,
-        online: input.online,
-        bookNo: input.bookNo,
-        // A discount is the counter's own decision, so it is written down with
-        // its reason even though the line amounts already carry it.
-        ...(priced.discount > 0 ? { discount: priced.discount, discountReason: input.discountReason } : {}),
-        // So is an Other line's price (P3.12): it is the one amount the catalog
-        // did not decide.
-        ...otherLinesOf(priced),
-      },
+      await writeAudit(tx, {
+        actor,
+        action: "bill.create",
+        target: `bill #${bill.billNo}`,
+        after: {
+          total: priced.total,
+          cash: input.cash,
+          online: input.online,
+          bookNo: input.bookNo,
+          // A discount is the counter's own decision, so it is written down with
+          // its reason even though the line amounts already carry it.
+          ...(priced.discount > 0 ? { discount: priced.discount, discountReason: input.discountReason } : {}),
+          // So is an Other line's price (P3.12): it is the one amount the catalog
+          // did not decide.
+          ...otherLinesOf(priced),
+        },
+      });
+
+      return receiptOf(bill, priced, input);
     });
-
-    return receiptOf(bill, priced, input);
-  });
+    return { receipt, alreadySaved: false };
+  } catch (error) {
+    return lostTheRace(error, input.clientId);
+  }
 }
 
 /**
@@ -293,8 +331,13 @@ export async function createBill(user: SessionUser, input: CreateBillInput): Pro
  *
  * A bill in a day that is already closed cannot be edited, only cancelled.
  */
-export async function editBill(user: SessionUser, input: EditBillInput): Promise<Receipt> {
+export async function editBill(user: SessionUser, input: EditBillInput): Promise<SavedBill> {
   if (!atLeastOwner(user.role)) throw new UserError("Only the Owner can edit a bill.");
+
+  // Before the guards below: a correction sent again after its answer was
+  // lost would otherwise be told "already cancelled" — true, by itself (P3.15).
+  const earlier = await savedEarlier(input.clientId);
+  if (earlier) return earlier;
 
   const day = await getOpenBusinessDay();
   if (!day) throw new UserError("No business day is open, so there is nothing to correct.");
@@ -317,36 +360,44 @@ export async function editBill(user: SessionUser, input: EditBillInput): Promise
   const priced = await priceBill(input, { lines: originalLines, discount: original.discount });
   const actor = actorOf(user);
 
-  return db.transaction(async (tx) => {
-    const reversalBillNo = await writeCancellation(tx, original, originalLines, `Edited: ${input.reason}`, actor);
-    const bill = await writeBill(tx, day.businessDate, actor, input, priced, original.id);
+  try {
+    const receipt = await db.transaction(async (tx) => {
+      const reversalBillNo = await writeCancellation(tx, original, originalLines, `Edited: ${input.reason}`, actor);
+      const bill = await writeBill(tx, day.businessDate, actor, input, priced, original.id);
 
-    // Both versions go to the audit log, so the bill as it was stays readable
-    // even though the row itself was never touched.
-    await writeAudit(tx, {
-      actor,
-      action: "bill.edit",
-      target: `bill #${original.billNo}`,
-      before: {
-        billNo: original.billNo,
-        total: original.cash + original.online,
-        cash: original.cash,
-        online: original.online,
-        bookNo: original.bookNo,
-        lines: auditLines(originalLines),
-      },
-      after: {
-        billNo: bill.billNo,
-        reversalBillNo,
-        reason: input.reason,
-        total: priced.total,
-        cash: input.cash,
-        online: input.online,
-        bookNo: input.bookNo,
-        lines: auditLines(priced.lines),
-      },
+      // Both versions go to the audit log, so the bill as it was stays readable
+      // even though the row itself was never touched.
+      await writeAudit(tx, {
+        actor,
+        action: "bill.edit",
+        target: `bill #${original.billNo}`,
+        before: {
+          billNo: original.billNo,
+          total: original.cash + original.online,
+          cash: original.cash,
+          online: original.online,
+          bookNo: original.bookNo,
+          lines: auditLines(originalLines),
+        },
+        after: {
+          billNo: bill.billNo,
+          reversalBillNo,
+          reason: input.reason,
+          total: priced.total,
+          cash: input.cash,
+          online: input.online,
+          bookNo: input.bookNo,
+          lines: auditLines(priced.lines),
+        },
+      });
+
+      return receiptOf(bill, priced, input);
     });
-
-    return receiptOf(bill, priced, input);
-  });
+    return { receipt, alreadySaved: false };
+  } catch (error) {
+    // A racing twin of this correction trips over the cancellation's primary
+    // key rather than `client_id`; both are unique violations, and both are
+    // answered with the correction that got in.
+    return lostTheRace(error, input.clientId);
+  }
 }

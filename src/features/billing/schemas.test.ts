@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createBillSchema } from "./schemas";
+import { createBillSchema, findSavedBillSchema } from "./schemas";
 
 const bill = (bookNo?: unknown) => ({
   lines: [
@@ -121,5 +121,31 @@ describe("createBillSchema Other line", () => {
     const noStaff = other(300);
     noStaff.lines[0].staffId = "";
     expect(createBillSchema.safeParse(noStaff).success).toBe(false);
+  });
+});
+
+/** The id a bill is sent under, so a Save whose answer was lost can be asked about (P3.15). */
+describe("createBillSchema clientId", () => {
+  const id = "33333333-3333-4333-8333-333333333333";
+
+  it("keeps the id the screen sent", () => {
+    expect(createBillSchema.parse({ ...bill(), clientId: id }).clientId).toBe(id);
+  });
+
+  it("is null when a screen from before P3.15 sends none, so that screen still saves", () => {
+    expect(createBillSchema.parse(bill()).clientId).toBeNull();
+    expect(createBillSchema.parse({ ...bill(), clientId: null }).clientId).toBeNull();
+  });
+
+  it("refuses anything that is not a uuid, since the database column is one", () => {
+    expect(createBillSchema.safeParse({ ...bill(), clientId: "bill-1" }).success).toBe(false);
+  });
+});
+
+describe("findSavedBillSchema", () => {
+  it("needs the id, and only a uuid will do", () => {
+    expect(findSavedBillSchema.safeParse({ clientId: "33333333-3333-4333-8333-333333333333" }).success).toBe(true);
+    expect(findSavedBillSchema.safeParse({}).success).toBe(false);
+    expect(findSavedBillSchema.safeParse({ clientId: "32" }).success).toBe(false);
   });
 });

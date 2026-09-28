@@ -117,4 +117,14 @@ export interface Receipt {
   online: Rupees;
 }
 
+/**
+ * A Save's answer (P3.15). `alreadySaved` is true when the bill's id had
+ * arrived before — a Save sent again after its first answer was lost — and
+ * the receipt is of the bill that was already there, not a second one.
+ */
+export interface SavedBill {
+  receipt: Receipt;
+  alreadySaved: boolean;
+}
+
 export type { PayMode };

@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-26 (**P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-28 (**P3.15: a Save that loses its answer no longer leaves the bill in doubt — `bills.client_id` (migration `0018`, on live), one bill per id, and the screen asks the server instead of falling over.** P2.2b is half done and not pushed; see section 10. 2026-09-26: **P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (400 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (411 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -139,8 +139,8 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | `pnpm install` | pass (pnpm 12.3.4 via corepack; 12.5.1 also installed globally) |
 | `pnpm build` | pass — **27 routes** (2026-09-26; `icon.png`, `apple-icon.png` and `manifest.webmanifest` count as routes; `/worksheet` is now only a redirect), exit 0, **succeeds with no env vars set** |
 | `pnpm lint` | clean |
-| `pnpm test` | **400 passed** (34 files), 2026-09-26 |
-| Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0017`** (P3.10's discount columns and P3.11's `services.max_price`, both 2026-09-23) |
+| `pnpm test` | **411 passed** (35 files), 2026-09-28 |
+| Database | Neon, PostgreSQL 18.6, **30 tables** (29 plus Neon's leftover `playing_with_neon`), all seeds loaded, migrations through **`0018`** (P3.15's `bills.client_id`, applied 2026-09-26 and read back; before it P3.10's discount columns and P3.11's `services.max_price`) |
 | Backup | `pnpm db:backup` works; the file was read back and matches the database. **No restore has ever been run** (P3.7) |
 | Login → Billing → Overview | tested in a browser, all 200 OK |
 | Developer role | signed in as all three roles in a browser on 2026-09-22 (P1.1) |
@@ -282,6 +282,13 @@ strip filled in, ring up one bill against either number.
 (Walk-in, Hair wash Rs 300, Sherry) rung up to exercise the save-then-print path. All three are
 active. None of it is real data.
 
+**Bills #31–#35 (2026-09-26 and 2026-09-28), all on the open day 24 Sep.** #31 (Rs 950) and #32
+(Rs 1,800) were rung up by the user on the live site; #32 is the bill whose answer was lost, which
+started P3.15. #33–#35 are P3.15's three verification bills, each Rs 450 with a Rs 50 discount, for
+three made-up customers `00000315001`–`003` ("Test customer P3.15 A/B/C"); #33's `created_by` and
+audit actor are `p3.15-check`, a script, not a person. The customers can be deleted (no trigger);
+the bills cannot.
+
 Local logins: `owner`, `manager` and `developer`. Passwords were printed once during seeding and
 the user noted them down. `seed-users.ts` and `seed-developer.ts` both **skip accounts that
 already exist**, so re-running them will not print new ones. To recover one: sign in as the
@@ -307,6 +314,7 @@ Recorded so they are not re-litigated. Full detail in `docs/BACKLOG.md`.
 | **Developer role** | A 4th role above Owner: sees everything, resets any password/PIN, manages users, maintenance mode, edits config. **Built 2026-09-22 (P1.1)**, except user management (P1.2) and editing financial rows (P1.6). |
 | **Developer editing financial entries** | **Approved**, after being told it weakens the append-only guarantee and the security-code chain. **Built 2026-09-22 (P1.6)**: a bill and its lines only, never deleted, always audited. Constraints below, all of them kept. |
 | **Offline** | Real offline required — 6–8 hours with no internet, then sync on reconnect. |
+| **A Save whose answer is lost (2026-09-26)** | Found live: bill #32 was saved, the answer never came back, and the screen could not say which. The client chose **the proper fix** (P3.15): an id per bill, the server saves an id once, the screen asks "did it arrive?" — not a guess from amount and time. Done **before** P2.2b, at the user's request. |
 | **Offline details (2026-09-26)** | **Day Close may happen offline** (security code computed on sync). **An offline receipt carries a temporary number (`T-5`)**; the real `bill_no` comes on sync — a reserved block of real numbers was offered and declined. **No Owner PIN offline**: Owner cash entries are simply unavailable. **An offline sign-in lasts 12 hours** from the last one the server confirmed, across browser restarts and reloads. |
 | **Who may change a bill** | Manager: cancel, open day only. Owner: **edit** on the open day (P1.4), cancel only on a closed day (P0.3). Developer: everything the Owner can (P1.1), plus changing a bill **in place** on any day, closed month included (P1.6). |
 | **Is the developer visible?** | **No, not on the screens** (2026-09-22). No developer section in Settings; the Owner and Manager see no sign the role exists. They sign in with a username and a password, nothing more. The account is still an ordinary `user` row and **every action it takes is audited** — hidden from the screens, never from the record. |
@@ -482,6 +490,14 @@ Measured, not guessed. Do not spend time re-deriving these.
 | **"Online" means the server answered, not `navigator.onLine`** | `src/lib/connectivity.ts`: a `HEAD` to `/manifest.webmanifest` with `cache: "no-store"`. The worker does not intercept that path, so a cached copy can never fake an answer. Wi-Fi with dead internet fires no `offline` event, which is why the store re-probes every 20 s |
 | **`experimental.useOffline` is off on purpose** | it re-sends a failed Server Action when the network returns; a `createBill` whose *response* was lost would save twice. Its `useOffline` hook needs the flag, so the app has its own `useConnectivity` |
 | The worker registers **in production only** | `pwa-setup.tsx`. In `next dev` it unregisters any worker instead — a local `pnpm start` on port 3000 would otherwise leave a worker serving old chunks to the dev server |
+| **A bill is saved once per `client_id`** | P3.15, migration `0018`, `bills_client_id_unique`. `createBill`/`editBill` look the id up first (`savedEarlier`) and answer a repeat with the bill already there; two requests at the same instant are settled by the unique index and the loser answered the same way (`lostTheRace`). Measured with two simultaneous calls: one bill, one customer |
+| **A failed `fetch` does not mean nothing was saved** | "Failed to fetch" can come after the server has committed — #32 did exactly that. Only the server can say, which is why the screen asks `findSavedBillAction` rather than assuming either way |
+| A rejected Server Action inside `startTransition` goes to the **error boundary** | and takes the screen's state with it — the counter lost the cart as well as the answer. `billing-screen.tsx` now catches it. Any other screen that awaits an action in a transition still falls over the same way on a lost connection |
+| **Next dispatches Server Actions one at a time per client** | `node_modules/next/dist/docs/01-app/02-guides/server-actions.md`. A background call made as an action would queue "Save bill" behind it. This is why P2.2b's catalog comes from a Route Handler |
+| `unstable_isUnrecognizedActionError` | from `next/navigation`: the screen is from an older deploy and the server does not know the action, so it never ran. The billing screen says "reload" on it |
+| An action's id is **stable across builds** while its file is unchanged | measured 2026-09-26: `createBillAction` kept `4080281036…` over two builds. Its chunk's file name **did** change when the chunk's content did (`41nr_msyvi4hk.js` → `2mphcp9mkd3ej.js`) — which is what makes the worker's cache-first on `/_next/static` safe |
+| Drizzle 0.45 wraps a driver error | in `DrizzleQueryError`, with the `pg` error — and its SQLSTATE `code` — as `cause`. `isUniqueViolation` (`lib/errors.ts`) walks the chain |
+| **`next dev` writes to `.next/dev`** | Next 16 (`docs/01-app/03-api-reference/06-cli/next.md`): `next build` and `next dev` can run at the same time. Measured 2026-09-28 — a build during the user's dev server left it serving 200. Trap 8.0b predates this |
 
 ## 8. Traps that have already cost time
 
@@ -507,6 +523,10 @@ rm -rf .next        # then start the dev server again
 
 Since the working agreement says to run `pnpm build` after every change, this will happen again.
 If a route 404s in dev and the same route is listed in the build output, clear `.next` first.
+
+**Probably outdated (2026-09-28):** Next 16 puts `next dev`'s output in `.next/dev`, apart from the
+build's, and a `pnpm build` run while the user's dev server was up left it serving 200. Keep the
+fix above in mind if it ever recurs, but do not expect it.
 
 ### 8.0c `next dev` serves a stale Tailwind bundle when only a `.tsx` changes
 
@@ -647,6 +667,34 @@ with the internet gone. Three things to know:
 
 Afterwards, unregister the worker and delete its caches from the pane
 (`navigator.serviceWorker.getRegistrations()`, `caches.keys()`), so it cannot outlive the test.
+
+### 8.13 Simulating a lost connection: patch `window.fetch` in the page
+
+Found 2026-09-28 (P3.15). Next calls the global `fetch` at call time for a Server Action, so
+replacing `window.fetch` from `javascript_tool` reaches it. Two shapes were enough:
+
+- **the answer lost:** call the real `fetch`, then throw `new TypeError("Failed to fetch")` — the
+  server saves, the screen never hears;
+- **never sent:** throw before calling it.
+
+Recognise the action by its `next-action` request header, arm the patch for one call only, and
+**reload the page afterwards** so nothing patched outlives the test. Stopping the server (8.12)
+cannot produce the first case, which is the dangerous one.
+
+### 8.14 "I signed in" may mean the person's Chrome, not the Browser pane
+
+Cost three round trips on 2026-09-28. The pane is a separate browser with its own cookies; a
+sign-in in Chrome does nothing for it. To tell which one someone used without asking again:
+`session.user_agent` of the newest session — the pane's reads `Claude/<version> ... MSIX`,
+Chrome's does not. If the pane is hidden, ask them to press **Ctrl+Shift+B** in the desktop app.
+
+### 8.15 A browser extension in the counter's Chrome wraps `fetch`
+
+Seen 2026-09-26 in the user's console: `frame_ant.js` (not ours — an extension, probably a
+download manager's) sits in every `fetch` stack. It was in the stack when #32's answer was lost;
+it was **not** shown to be the cause, and the P2.2a banner said the connection was down too. If
+lost answers keep happening on one machine, try that browser without extensions (Incognito) before
+suspecting the app.
 
 ### 8.1 Migration conflicts between the two developers
 
@@ -935,6 +983,8 @@ STAGE 3 — during the client's 20-day trial
   P6.7  Folders and Staff khata tables on a phone     DONE 2026-09-26
   P6.8  Login footer · BrandLockup · dark mode gone   DONE 2026-09-26
   P2.2a PWA foundation (started early, at the user's request) DONE 2026-09-26
+  P3.15 A lost answer never leaves a bill in doubt        DONE 2026-09-28
+  P2.2b Catalog copy in IndexedDB                          IN PROGRESS — see STAGE 4
 
 STAGE 3b — before the trial starts, and none of it is code
   1. One restore, into a throwaway Neon branch (P3.7's missing half)
@@ -944,7 +994,9 @@ STAGE 3b — before the trial starts, and none of it is code
 
 STAGE 4 — after the trial
   P2.2  Offline PWA + sync (2–3 weeks) — split into P2.2a–f; P2.2a done.
-        P2.2b next (no migration). P2.2c needs the dev Neon branch first
+        P2.2b is half built and NOT pushed: it waited in a local `git stash` on this machine
+        while P3.15 went first. P2.2c's `bills.client_id` already exists (P3.15, `0018`).
+        P2.2c needs the dev Neon branch first
   P3    Bonus, special rates screen, staff receipt, printing, alerts
   P5.3  Move to a VPS + carry trial data over with pg_dump
 ```
