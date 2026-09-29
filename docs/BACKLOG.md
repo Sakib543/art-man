@@ -62,7 +62,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.8 | Only the developer sets passwords · the eye on every password field · the developer names their own account | ✅ | done 2026-09-23 |
 | P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
 | P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
-| P1.10 | A developer's edit in a closed month recalculates its report and the partners' shares (the client, 2026-09-29) | ⬜ | — |
+| P1.10 | A developer's edit in a closed month recalculates its report and the partners' shares (the client, 2026-09-29) | 🟡 | Sakib543, 2026-09-29 |
 | P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
 | P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
 | P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
@@ -728,7 +728,9 @@ hours the app must keep working, and when the connection returns the database up
 So **P2.2 is approved.** P2.1 still gets built first: it is a cheap stopgap until P2.2 ships, and
 it stays useful whenever the power is out.
 
-### ⬜ P1.10 — A developer's edit in a closed month recalculates the month
+### 🟡 P1.10 — A developer's edit in a closed month recalculates the month
+**Owner:** Sakib543, 2026-09-29
+
 **Client decision, 2026-09-29, through the user.** When the developer changes a bill in place (P1.6)
 in a month that is already closed, the month's saved report and the partners' shares are to be
 **worked out again**, not left as they were closed. Today they are left (HANDOFF section 9, question 0
