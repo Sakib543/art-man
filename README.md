@@ -42,7 +42,7 @@
 - [Deployment and backups](#deployment-and-backups)
 - [Documentation](#documentation)
 - [Project status](#project-status)
-- [Author](#author)
+- [Authors](#authors)
 
 ---
 
@@ -422,9 +422,18 @@ with scheduled off-site backups.
 
 ---
 
-## Author
+## Authors
 
-Built by [**@Sakib543**](https://github.com/Sakib543) for a client — a men's salon in Karachi — from the
-approved specification and prototype to a production system.
+Built for a client — a men's salon in Karachi — from an approved specification and prototype.
+
+- **Moin Khan ([@msdevs6600](https://github.com/msdevs6600))** built the first version: the project setup,
+  the database schema and append-only triggers, the accounting module, and the core screens — billing,
+  daily folders, day close with its security code, the daily report and register, staff khata, overview,
+  monthly report, partners and month close.
+- **[@Sakib543](https://github.com/Sakib543)** took it to production: the developer role and its tools,
+  users and account management, reopening days and correcting closed days, bill corrections, discounts,
+  price ranges, customers and special rates, receipt printing, bonuses, salary slips, closed-month
+  adjustments and recalculation, the complete offline mode, exactly-once saving, the design system and
+  responsive layout, CI, indexing, backups and deployment.
 
 The code is shared here as a portfolio piece. No license is granted for reuse.
