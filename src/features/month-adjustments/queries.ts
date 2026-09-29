@@ -1,11 +1,35 @@
-import { asc, desc, eq, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
-import { monthAdjustments, monthCloses, staff } from "@/db/schema";
+import { auditLog, monthAdjustments, monthCloses, staff, user } from "@/db/schema";
 import { adjustmentEffect } from "@/lib/accounting";
 import { monthOf, monthStart } from "@/lib/business-date";
-import { cancelBlocker, recordBlocker } from "./rules";
+import { cancelBlocker, recordBlocker, recordedBy } from "./rules";
 import type { AdjustmentRow, AdjustmentsData, StaffChoice } from "./types";
+
+/**
+ * Every name a developer account has recorded anything under, lower case: the
+ * username it has now and, from `username.change` in the audit log, each one
+ * it had before (P1.8 lets the developer rename their own account).
+ */
+async function developerNames(): Promise<Set<string>> {
+  const accounts = await db
+    .select({ id: user.id, username: user.username, displayUsername: user.displayUsername })
+    .from(user)
+    .where(eq(user.role, "developer"));
+  if (accounts.length === 0) return new Set();
+
+  const renames = await db
+    .select({ before: auditLog.before })
+    .from(auditLog)
+    .where(and(eq(auditLog.action, "username.change"), inArray(auditLog.target, accounts.map((account) => account.id))));
+
+  const names = [
+    ...accounts.flatMap((account) => [account.username, account.displayUsername]),
+    ...renames.map((row) => (row.before as { username?: string } | null)?.username),
+  ];
+  return new Set(names.flatMap((name) => (name ? [name.trim().toLowerCase()] : [])));
+}
 
 /**
  * The adjustments the Monthly report of `month` shows (backlog P3.4): those
@@ -15,7 +39,7 @@ import type { AdjustmentRow, AdjustmentsData, StaffChoice } from "./types";
 export async function getAdjustmentsData(month: string): Promise<AdjustmentsData> {
   const start = monthStart(month);
 
-  const [rows, closedRows, latest, staffRows] = await Promise.all([
+  const [rows, closedRows, latest, staffRows, developers] = await Promise.all([
     db
       .select({
         id: monthAdjustments.id,
@@ -39,6 +63,7 @@ export async function getAdjustmentsData(month: string): Promise<AdjustmentsData
     db.select({ month: monthCloses.month }).from(monthCloses),
     getLatestBusinessDay(),
     db.select({ id: staff.id, name: staff.name, active: staff.active }).from(staff).orderBy(asc(staff.createdAt), asc(staff.name)),
+    developerNames(),
   ]);
 
   const closed = new Set(closedRows.map((row) => monthOf(row.month)));
@@ -52,7 +77,7 @@ export async function getAdjustmentsData(month: string): Promise<AdjustmentsData
     return {
       id: row.id,
       createdAt: row.createdAt.toISOString(),
-      createdBy: row.createdBy,
+      createdBy: recordedBy(row.createdBy, developers),
       countsIn,
       corrects: monthOf(row.correctsMonth),
       kind: row.kind,

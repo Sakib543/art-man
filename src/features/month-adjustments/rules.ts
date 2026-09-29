@@ -131,3 +131,20 @@ export function directionQuestion(kind: AdjustmentKind, staffName: string | null
 
 /** Is it about a staff member's pay, and so written into their khata too? */
 export const isStaffKind = (kind: AdjustmentKind): boolean => kind === "staff_earning" || kind === "staff_taken";
+
+/** What an adjustment recorded by a developer account is shown as recorded by. */
+export const SYSTEM = "System";
+
+/**
+ * Who the Monthly report says recorded an adjustment. A developer's account is
+ * shown as "System": the Owner and the Manager are not shown that the role
+ * exists (HANDOFF section 6, the user's decision of 2026-09-30). Never another
+ * person's name — that would put a money entry on someone who did not make it.
+ * The real name stays in the row and in the audit log.
+ *
+ * `developerNames` holds every name a developer account has signed with, lower
+ * case: a renamed account's old adjustments carry its old name.
+ */
+export function recordedBy(createdBy: string, developerNames: ReadonlySet<string>): string {
+  return developerNames.has(createdBy.trim().toLowerCase()) ? SYSTEM : createdBy;
+}

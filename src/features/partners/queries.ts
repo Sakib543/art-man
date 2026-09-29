@@ -99,7 +99,6 @@ export async function getPartnersData(requestedMonth?: string, selectedId?: stri
     month: monthly.month,
     monthLabel: monthly.monthLabel,
     closed: monthly.closed,
-    recalculations: monthly.recalculations,
     months: monthly.months,
     netProfit,
     partners: partnerList,

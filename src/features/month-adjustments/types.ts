@@ -4,6 +4,7 @@ import type { AdjustmentKind, PaidFrom, Rupees } from "@/lib/accounting";
 export interface AdjustmentRow {
   id: string;
   createdAt: string;
+  /** Who recorded it; "System" for a developer account (`recordedBy`). */
   createdBy: string;
   /** The month it counts in, "2026-10". */
   countsIn: string;

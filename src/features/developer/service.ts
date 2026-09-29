@@ -257,8 +257,9 @@ export async function editBillRow(dev: SessionUser, input: EditBillRowInput): Pr
  * `recalculateShares`). `month_closes` is append-only like every financial
  * table, so the row is changed through the same hatch as the bill, opened for
  * this one statement. Its old report and shares go to `audit_log` as `before`,
- * and that `month.recalculate` entry is what the Monthly report's note is
- * read from — it says when and after which bill, never by whom.
+ * in a `month.recalculate` entry. Only the developer reads it: the Owner's
+ * screens show the new figures and no sign that the month was worked out
+ * again (the user's decision of 2026-09-30, HANDOFF section 6).
  *
  * Nothing is written when nothing moved: a line's name, a book number, or work
  * moved between two staff on the same rate leave the month's figures alone.

@@ -154,9 +154,9 @@ export default async function EditBillPage({ searchParams }: { searchParams: Pro
                   <Warning>
                     {formatMonth(monthOf(lookup.bill.businessDate))} is closed. Saving works its report
                     and the partners&apos; shares out again from the corrected days; the salaries and
-                    the share percentages stay as the month closed with them. The Owner sees a note
-                    on its Monthly report that it was recalculated after this bill was corrected — not
-                    who corrected it.
+                    the share percentages stay as the month closed with them. The Owner sees only the
+                    new figures: none of their screens says the month was worked out again, or by
+                    whom. The audit log keeps both versions.
                   </Warning>
                   <ClosedMonthAdjustments
                     monthName={formatMonth(monthOf(lookup.bill.businessDate))}

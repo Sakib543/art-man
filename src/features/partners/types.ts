@@ -1,4 +1,3 @@
-import type { MonthRecalculation } from "@/db/queries/month-report";
 import type { PartnerAccount, Rupees } from "@/lib/accounting";
 
 export interface PartnerRow {
@@ -35,8 +34,6 @@ export interface PartnersData {
   monthLabel: string;
   /** A closed month shows the shares as they were when it closed. */
   closed: boolean;
-  /** Each time a closed month's shares were worked out again after a bill was corrected (P1.10). */
-  recalculations: MonthRecalculation[];
   months: { month: string; label: string; closed: boolean }[];
   netProfit: Rupees;
   /** The current partners and their share %, for editing. */

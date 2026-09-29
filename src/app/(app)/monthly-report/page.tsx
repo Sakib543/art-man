@@ -1,5 +1,4 @@
 import { Lock, TrendingUp, User, Wallet, ChartColumn } from "lucide-react";
-import { MonthRecalculatedNote } from "@/components/month-recalculated-note";
 import { MonthSelect } from "@/components/month-select";
 import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
@@ -57,8 +56,6 @@ export default async function MonthlyReportPage({ searchParams }: { searchParams
           {"countsIn" in record ? <RecordAdjustment month={data.month} countsIn={record.countsIn} staff={record.staff} /> : null}
         </div>
       ) : null}
-
-      <MonthRecalculatedNote recalculations={data.recalculations} className="mb-3.5" />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={TrendingUp} label="Total sales" value={rs(report.sales)} hint={`${report.closedDays} closed day${report.closedDays === 1 ? "" : "s"}`} />

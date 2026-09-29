@@ -8,6 +8,7 @@ import {
   khataCancelLabel,
   khataLabel,
   recordBlocker,
+  recordedBy,
   signedAmount,
   type CancelContext,
   type RecordContext,
@@ -117,5 +118,24 @@ describe("the form's words", () => {
 
   it("knows which kinds belong in the khata", () => {
     expect(KIND_CHOICES.map((choice) => choice.value).filter(isStaffKind)).toEqual(["staff_earning", "staff_taken"]);
+  });
+});
+
+describe("recordedBy", () => {
+  // The developer, under the name they have now and one they had before.
+  const developers = new Set(["sakib", "developer"]);
+
+  it("shows a developer's account as System, never as a person", () => {
+    expect(recordedBy("sakib", developers)).toBe("System");
+    expect(recordedBy("developer", developers)).toBe("System");
+  });
+
+  it("matches the name however it was written", () => {
+    expect(recordedBy("Sakib", developers)).toBe("System");
+  });
+
+  it("leaves the Owner and the Manager as they are", () => {
+    expect(recordedBy("owner", developers)).toBe("owner");
+    expect(recordedBy("manager", new Set())).toBe("manager");
   });
 });
