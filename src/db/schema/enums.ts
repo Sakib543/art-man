@@ -20,3 +20,9 @@ export const khataKindEnum = pgEnum("khata_kind", [
 ]);
 
 export const monthlyExpenseKindEnum = pgEnum("monthly_expense_kind", ["fixed", "other"]);
+
+/**
+ * What an adjustment for a closed month puts right (backlog P3.4): a sale, an
+ * expense, what a staff member earned, or what a staff member took.
+ */
+export const monthAdjustmentKindEnum = pgEnum("month_adjustment_kind", ["sale", "expense", "staff_earning", "staff_taken"]);

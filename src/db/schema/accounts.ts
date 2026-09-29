@@ -1,7 +1,8 @@
 import { AnyPgColumn, boolean, date, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, rupees } from "./_shared";
-import { monthlyExpenseKindEnum, paidFromEnum } from "./enums";
-import { partners } from "./config";
+import { khataEntries } from "./cash";
+import { monthAdjustmentKindEnum, monthlyExpenseKindEnum, paidFromEnum } from "./enums";
+import { partners, staff } from "./config";
 
 /**
  * The recurring monthly bills the Owner tracks (rent, electricity...). This is
@@ -103,4 +104,48 @@ export const monthCloses = pgTable("month_closes", {
   report: jsonb("report"),
   /** Each partner's share % and rupee share as it was when closed. */
   shares: jsonb("shares"),
+});
+
+/**
+ * A correction to a month that is already closed (backlog P3.4, spec §7.4).
+ * The closed month is never touched: its report and the partners' shares were
+ * saved when it closed, and may already have been paid out. The correction
+ * counts in `month` instead — the month that was open when it was recorded —
+ * in its profit, and so in its partners' shares, and in a staff member's khata
+ * when it is about their pay.
+ *
+ * Append-only. A mistake is cancelled with a row of the opposite sign that
+ * points back at it, and only while `month` is open. Few rows a month, so no
+ * index, like `monthly_expenses`.
+ */
+export const monthAdjustments = pgTable("month_adjustments", {
+  id: id(),
+  /** First day of the month it counts in, e.g. 2026-10-01. */
+  month: date("month", { mode: "string" }).notNull(),
+  /** First day of the closed month it corrects, e.g. 2026-09-01. */
+  correctsMonth: date("corrects_month", { mode: "string" }).notNull(),
+  kind: monthAdjustmentKindEnum("kind").notNull(),
+  /**
+   * How the closed month's figure should have read: + more than recorded,
+   * - less. What that does to the profit and the khata is `adjustmentEffect`.
+   */
+  amount: rupees("amount").notNull(),
+  /** A sale only: was it paid online, into the Owner's bank? */
+  online: boolean("online"),
+  /** An expense only: did the business pay it, or the Owner himself? */
+  paidFrom: paidFromEnum("paid_from"),
+  /** A staff member's pay only: whose. */
+  staffId: uuid("staff_id").references(() => staff.id),
+  /** A staff member's pay only: the khata line written with it. */
+  khataEntryId: uuid("khata_entry_id").references(() => khataEntries.id),
+  reason: text("reason").notNull(),
+  /**
+   * Set on a cancellation row: the adjustment it cancels. Unique, so the same
+   * adjustment cannot be cancelled twice, even by two requests at once.
+   */
+  voidsId: uuid("voids_id")
+    .unique()
+    .references((): AnyPgColumn => monthAdjustments.id),
+  createdBy: text("created_by").notNull(),
+  createdAt: createdAt(),
 });
