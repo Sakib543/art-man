@@ -3,7 +3,7 @@
 The work queue. Higher sections come first. Each item records why it matters, how big it is, and
 what it depends on.
 
-**Status:** ⬜ open · 🟡 in progress · ✅ done
+**Status:** ⬜ open · 🟡 in progress · ✅ done · ✖ removed (the client does not want it)
 
 **Two developers share this repo and both work on `main`.** Before starting an item, put your name
 and the date in its **Owner** line and push that change first, so the other person sees it. See
@@ -39,7 +39,8 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2f | Day Close offline, the security code on sync (no migration) | ✅ | done 2026-09-29 |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
-| P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
+| P3.3 | Staff monthly salary slip — a PDF to download, nothing sent (redefined by the client 2026-09-29) | 🟡 | Sakib543, 2026-09-29 |
+| P3.5 | Real alert to the Owner on 3+ cancellations | ✖ | **removed** 2026-09-29 — the client does not want it, nor anything sent on WhatsApp or SMS |
 | P3.4 | Next-month adjustment for a closed month (migration `0020`) | ✅ | done 2026-09-29 |
 | P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
 | P3.11 | Price ranges: pick the amount at billing | ✅ | done 2026-09-23 |
@@ -1375,13 +1376,21 @@ deleted afterwards.
 |---|---|---|
 | ✅ P3.1 | **Give a bonus** — done 2026-09-23. See below | small |
 | ✅ P3.2 | **Customers screen** — details and special rates. Done 2026-09-23. See below | medium |
-| ⬜ P3.3 | **Staff monthly receipt** (spec §6.4) — print + WhatsApp | medium |
+| 🟡 P3.3 | **Staff monthly salary slip** (spec §6.4) — redefined 2026-09-29: a PDF to download, nothing sent. In progress, see below | medium |
 | ✅ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — done 2026-09-29 (migration `0020`). See below | medium |
-| ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
+| ✖ P3.5 | **Real alert to the Owner on 3+ cancellations** — removed 2026-09-29: the client does not want it. The note on screen stays | — |
 | ✅ P3.6 | **Receipt printing / thermal printer** — done 2026-09-22. See below | small |
 | ✅ P3.7 | **Backup and restore** — done 2026-09-29: the backup since 2026-09-23, restored twice into a local copy, which the user accepted; no restore into Neon. A schedule moved to P5.3. See below | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
+
+### 🟡 P3.3 — Staff monthly salary slip
+**Owner:** Sakib543, 2026-09-29
+
+**Redefined by the client, 2026-09-29, through the user:** at month end, one slip per karigar with
+the month's whole account — commission and the rest, totals and what is left to pay — as **a file
+to download, and nothing else**: no WhatsApp, no SMS, nothing sent. It is the karigar's proof. With
+the same answer the client removed P3.5 and every plan to send anything on WhatsApp or SMS.
 
 ### ✅ P3.4 — Next-month adjustment for a closed month
 **Done:** 2026-09-29 · migration `0020`
