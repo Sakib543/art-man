@@ -326,5 +326,6 @@ Behtar hai ke pehle `neon branches create --name friend` se alag branch banayen,
 | Staff ki monthly receipt, bonus dena | Nahi bana |
 | Band mahine ki galti agle mahine adjustment se sudharna | **Ban gaya** (P3.4, 2026-09-29) |
 | Owner ko 3+ cancel ka alert bhejna | Sirf screen par note |
-| Backup/restore ka pukka intezam, offline mode | Phase 4 |
+| Backup/restore | **Ban gaya**: `pnpm db:backup`, aur restore do dafa local copy par aazmaya (2026-09-29, P3.7). Neon par restore nahi kiya (aap ka faisla). Khud-ba-khud backup VPS ke saath (P5.3) |
+| Offline mode | **Ban gaya** (P2.2, 2026-09-29) |
 | Customer ke special rates ki edit screen | Nahi bana |

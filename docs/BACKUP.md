@@ -19,9 +19,10 @@ pnpm db:backup
 
 It writes `backups/art-man-<timestamp>.dump` — one file, `pg_dump`'s custom
 format, which `pg_restore` reads. It contains the schema, the data, the enums,
-every index and constraint, the three trigger functions, all 14 append-only
-triggers, **and** `drizzle.__drizzle_migrations`, so a restored database knows
-which migrations it has and `pnpm db:migrate` carries on from the right place.
+every index and constraint, the three trigger functions, all 15 append-only
+triggers (14 before migration `0020` added `month_adjustments`'s), **and**
+`drizzle.__drizzle_migrations`, so a restored database knows which migrations it
+has and `pnpm db:migrate` carries on from the right place.
 
 It backs up the database `.env.local` points at — **today that is the live one**
 (`docs/HANDOFF.md` section 9a). To back up a different database:
@@ -46,7 +47,9 @@ pg_dump 18.4 against Neon's PostgreSQL 18.6 — fine.
 
 ### How often, and who
 
-Nobody is doing this automatically yet. Until that is set up, whoever closes the
+Nobody is doing this automatically yet — a schedule comes with the move to a VPS
+(backlog P5.3), which is also where the files can live off this laptop. Until
+that is set up, whoever closes the
 month should take one, and one should be taken **before** anything unusual:
 running a migration against live, editing a bill as the developer, or moving to
 a new host.
@@ -64,8 +67,8 @@ This is how the file was checked on 2026-09-23, and it is worth doing after any
 backup you actually care about:
 
 ```bash
-pg_restore --list backups/art-man-<timestamp>.dump        # 182 entries, 31 tables with data
-pg_restore --schema-only -f - backups/<file> | grep "CREATE TRIGGER"   # expect 14
+pg_restore --list backups/art-man-<timestamp>.dump        # 2026-09-23's file: 182 entries, 31 tables with data
+pg_restore --schema-only -f - backups/<file> | grep "CREATE TRIGGER"   # expect 15 (14 before migration 0020)
 pg_restore --data-only --table=bills -f - backups/<file>  # the COPY block, one line per bill
 ```
 
@@ -79,9 +82,10 @@ corrupt.
 **Never restore over a database that has anything in it.** Restore into an empty
 one and point the app at it.
 
-1. Make somewhere to restore into — a **new Neon branch** (Neon console →
-   Branches → New branch → *from the current state*, empty schema) or a fresh
-   database on the VPS.
+1. Make somewhere to restore into: an empty database on the VPS, a **new Neon
+   branch** (Neon console → Branches → New branch, then a new empty database on
+   it), or — to test a backup — a throwaway PostgreSQL on this machine, which is
+   how both restores so far were done (below).
 2. Restore:
 
    ```bash
@@ -100,18 +104,35 @@ one and point the app at it.
 4. Point the app at it: `DATABASE_URL` in `.env.local` locally, or in the Vercel
    project for the live site, then redeploy.
 
-**The append-only triggers do not get in the way of a restore.** All 14 are
+**The append-only triggers do not get in the way of a restore.** All 15 are
 `BEFORE UPDATE OR DELETE` — none of them fires on `INSERT`, which is what a
 restore does. This was measured, not assumed (`docs/HANDOFF.md` section 7).
 
-### Not yet done: an actual restore
+### Restores that have been run
 
-**No restore has ever been run**, because there is no second database to run it
-into — `.env.local` is the live one and nothing else is available from here. The
-file has been checked from the outside (above) and its contents match the
-database it came from: 19 bills, 31 khata lines, 14 triggers, 3 functions, 31
-tables with data.
+Two, both on 2026-09-29, each from a fresh `pnpm db:backup` of the live database,
+into a throwaway PostgreSQL 18.4 made in a scratch folder — no password, and the
+machine's own PostgreSQL service untouched:
 
-**That is not the same as a verified restore, and the spec asks for one.** Do it
-once, on a throwaway Neon branch, before the trial starts. Until then, treat the
-backup as untested.
+```bash
+PG="C:/Program Files/PostgreSQL/18/bin"; DATA="<scratch folder>/pgdata"
+"$PG/initdb.exe" -D "$DATA" -U postgres --auth=trust -E UTF8 --locale=C
+"$PG/pg_ctl.exe" -D "$DATA" -l "<scratch folder>/pg.log" -o "-p 5544 -c listen_addresses=127.0.0.1" start
+"$PG/createdb.exe" -h 127.0.0.1 -p 5544 -U postgres artman_test
+"$PG/pg_restore.exe" -h 127.0.0.1 -p 5544 -U postgres -d artman_test --no-owner --no-privileges <the dump>
+```
+
+| When | Result |
+|---|---|
+| For P2.2f's testing | no errors; 30 tables, 14 triggers, 20 migrations, 42 bills, 24 Sep open — as live. The app ran on it for the whole session (sign-in, billing, folders, four days closed), and `verifyDayCode` recomputed every closed day's security code from the restored rows |
+| For P3.4's testing | no errors; 30 tables, 14 triggers, 20 migrations, 43 bills. Migration `0020` then applied on top (21 migrations, 15 triggers) and the app ran on it: days and two months closed, adjustments recorded |
+
+Both copies were deleted afterwards, with their dumps: a dump is the salon's
+whole book. The steps for pointing the app at a copy, and for cleaning up after
+it, are `docs/HANDOFF.md` trap 8.20.
+
+**The user accepted these as spec phase 4's "restore from backup verified"
+(2026-09-29)**, rather than also restoring into a throwaway Neon branch. So no
+restore has been run into Neon itself. The first real one — the move to a VPS,
+or an incident — is where anything particular to a managed server (its roles,
+its ownership rules) would show; `--no-owner --no-privileges` is there for that.

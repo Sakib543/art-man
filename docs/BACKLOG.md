@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-29 (**P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-29 (**P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -43,7 +43,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.4 | Next-month adjustment for a closed month (migration `0020`) | ✅ | done 2026-09-29 |
 | P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
 | P3.11 | Price ranges: pick the amount at billing | ✅ | done 2026-09-23 |
-| P3.7 | Backup and restore | 🟡 | Sakib543, 2026-09-29 — closing it: the user accepted the local restore |
+| P3.7 | Backup and restore | ✅ | done 2026-09-29 — restored twice into a local copy; the user accepted it, no Neon restore |
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
@@ -1379,7 +1379,7 @@ deleted afterwards.
 | ✅ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — done 2026-09-29 (migration `0020`). See below | medium |
 | ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
 | ✅ P3.6 | **Receipt printing / thermal printer** — done 2026-09-22. See below | small |
-| 🟡 P3.7 | **Backup and restore** — the backup is built and checked (2026-09-23). **No restore has ever been run.** See below | medium |
+| ✅ P3.7 | **Backup and restore** — done 2026-09-29: the backup since 2026-09-23, restored twice into a local copy, which the user accepted; no restore into Neon. A schedule moved to P5.3. See below | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
 
@@ -1764,8 +1764,8 @@ fields and the Sign in button, after clearing `.next` (trap 8.0b).
 
 ---
 
-### 🟡 P3.7 — Backup and restore
-**Backup done:** 2026-09-23 · **Restore: not yet verified**
+### ✅ P3.7 — Backup and restore
+**Backup done:** 2026-09-23 · **Restore verified:** 2026-09-29, into a local copy (the user's call: enough)
 
 There was **no backup of any kind** — no script, no schedule, nothing to restore
 from, on a system whose whole job is to be the salon's book of accounts. Spec
@@ -1810,9 +1810,22 @@ cluster was deleted afterwards (HANDOFF trap 8.20). Still not done: a restore
 into Neon itself, and `docs/BACKUP.md` has not been changed. Whether this is
 enough for spec phase 4's "restore from backup verified" is the user's call.
 
+**2026-09-29, closed — the user's decision.** A second restore of a fresh
+backup ran the same day, for P3.4's testing: again clean, 30 tables, 14 triggers,
+20 migrations and 43 bills; migration `0020` then applied on top of it, and the
+app ran against it for the whole session. Asked whether to restore into a
+throwaway Neon branch as well — which needs access to the Neon account, by a
+`neonctl` sign-in or a branch made by hand — the user answered **"rehne dein"**:
+the local restores are enough for spec phase 4's "restore from backup
+verified". `docs/BACKUP.md` now records both restores and how they were done.
+
+**Not done, deliberately:** a restore into Neon itself. The first real one — the
+move to a VPS, or an incident — is where anything particular to a managed
+server (its roles, its ownership rules) would show, so watch that one.
+
 **Not automated either.** Somebody has to run `pnpm db:backup`. A schedule needs
 somewhere to put the files that is not this laptop — worth settling together
-with the Vercel/VPS question.
+with the Vercel/VPS question. **Moved to P5.3 (2026-09-29).**
 
 **Size:** medium · **Value:** high
 
@@ -2334,7 +2347,7 @@ is a fork. Here they were already on. If a run never appears, that is the first 
 |---|---|
 | 🟡 P5.1 | **Go live on Vercel** — env vars, then migrate + seed on the Neon `live` branch. The build itself already passes (verified). **Blocked on access, not on code:** the Vercel project exists and is connected to this same repo, but it lives in the **other developer's** Vercel account (answered 2026-09-22). Nobody here can open Settings to set the environment variables. First step is to be added to that project, or to have it transferred |
 | ✅ P5.2 | **`docs/DEPLOY_VERCEL.md` rewritten** — done 2026-09-22. It now has the two steps it never had (`db:migrate` and `db:seed` against the live branch, with the commands), in both bash and PowerShell. Fixed as well: the stale "staff with PINs" line (P1.0 removed it), a warning never to run `db:seed:sample` on live, that a push to `main` deploys by itself so a migration must reach live first, that a green build means nothing because the build passes with no env vars at all, and a measured table of which variable is read where. `.env.example` also said `DATABASE_URL_UNPOOLED` was used by the seed scripts — it is not, they read `DATABASE_URL`, and seeding the wrong database is exactly the mistake that comment invites |
-| ⬜ P5.3 | **Move to a VPS** — after the client signs off. Postgres on the same VPS; carry the trial data over with `pg_dump` |
+| ⬜ P5.3 | **Move to a VPS** — after the client signs off. Postgres on the same VPS; carry the trial data over with `pg_dump`. With it, **a scheduled backup** kept somewhere that is not this laptop (moved from P3.7, 2026-09-29) |
 
 ---
 
