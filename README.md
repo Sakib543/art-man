@@ -27,6 +27,7 @@
 ## Contents
 
 - [Overview](#overview)
+- [Screenshots](#screenshots)
 - [Highlights](#highlights)
 - [Features](#features)
 - [Roles and permissions](#roles-and-permissions)
@@ -68,6 +69,63 @@ so that training takes minutes.
 
 **By the numbers:** 18 feature modules · 37 routes · ~32,000 lines of TypeScript · 693 unit tests in 50
 files · 21 database migrations · 15 append-only triggers.
+
+---
+
+## Screenshots
+
+> Taken from a demo database with two months of generated activity. Every name and figure is fictional.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/billing.png" alt="Billing screen with a bill in progress for a returning customer" />
+      <p><b>Billing</b> — a bill in progress: a service priced inside its range, staff per line, and the returning customer's last visit.</p>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/overview.png" alt="Owner overview with today's figures, a seven-day sales chart and recent activity" />
+      <p><b>Overview</b> — the owner's live view: today's sales, the cash the drawer should hold, a seven-day chart and recent activity.</p>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <img src="docs/screenshots/day-close.png" alt="Day close wizard, attendance step" />
+      <p><b>Day close</b> — the five-step wizard that ends every business day.</p>
+    </td>
+    <td valign="top">
+      <img src="docs/screenshots/daily-report.png" alt="Daily report of a closed day with expected and counted cash and the security code" />
+      <p><b>Daily report</b> — a sealed day: expected and counted cash, the difference, and its security code.</p>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <img src="docs/screenshots/register.png" alt="Register view with a column per staff member" />
+      <p><b>Register</b> — the same day as a column per staff member, like the paper register it replaced.</p>
+    </td>
+    <td valign="top">
+      <img src="docs/screenshots/staff-khata.png" alt="Staff khata ledger with commissions, advances and payments" />
+      <p><b>Staff khata</b> — each staff member's running ledger, with a monthly salary slip as a PDF.</p>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <img src="docs/screenshots/monthly-report.png" alt="Monthly report of a closed month with profit and loss and the owner account" />
+      <p><b>Monthly report</b> — a closed month: profit and loss, the owner account, and every sealed day.</p>
+    </td>
+    <td valign="top">
+      <img src="docs/screenshots/partners.png" alt="Partner accounts with profit shares, capital and drawings" />
+      <p><b>Partners</b> — profit shares frozen at month close, capital injected and repaid, drawings, net position.</p>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/mobile-overview.png" alt="Overview on a phone" width="260" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-report.png" alt="Daily report on a phone, bills shown as cards" width="260" />
+  <br />
+  <sub><b>On a phone</b> — a top bar, a bottom bar for the counter's four screens, and tables that turn into cards.</sub>
+</p>
 
 ---
 
