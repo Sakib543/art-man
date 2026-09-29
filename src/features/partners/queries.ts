@@ -2,16 +2,9 @@ import { asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { getMonthlyReport } from "@/db/queries/month-report";
 import { capitalContributions, capitalItems, capitalRepayments, monthCloses, partnerDrawings, partners } from "@/db/schema";
-import { checkShares, partnerAccount, partnerShares } from "@/lib/accounting";
+import { checkShares, partnerAccount, partnerShares, type ClosedShare } from "@/lib/accounting";
 import { monthStart } from "@/lib/business-date";
 import type { AccountRow, CapitalLine, DrawingRow, PartnersData } from "./types";
-
-interface SavedShare {
-  partnerId: string;
-  name: string;
-  sharePct: number;
-  amount: number;
-}
 
 /**
  * The Partners screen for one month. Profit shares come from that month's net
@@ -34,7 +27,7 @@ export async function getPartnersData(requestedMonth?: string, selectedId?: stri
   const netProfit = monthly.report.netProfit;
 
   // A closed month uses the shares saved at close; an open one uses today's percentages.
-  const saved = (closeRow?.shares as SavedShare[] | null | undefined) ?? null;
+  const saved = (closeRow?.shares as ClosedShare[] | null | undefined) ?? null;
   // Shares are only split when they add up to 100%; otherwise nobody is credited until the Owner fixes them.
   const sharesValid = checkShares(partnerRows.map((p) => p.sharePct)).ok;
   const live: Record<string, number> =
@@ -106,6 +99,7 @@ export async function getPartnersData(requestedMonth?: string, selectedId?: stri
     month: monthly.month,
     monthLabel: monthly.monthLabel,
     closed: monthly.closed,
+    recalculations: monthly.recalculations,
     months: monthly.months,
     netProfit,
     partners: partnerList,

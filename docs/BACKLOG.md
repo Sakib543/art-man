@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-29 (**P3.3 done — the staff salary slip: a PDF per karigar per month, downloaded from Staff khata, with the month's totals, day by day, and room to sign; final once the month is closed, provisional before. P3.5 removed, and with it every plan to send anything on WhatsApp or SMS: the Day close "WhatsApp summary" preview is gone. The client's other answers the same day: the Customers screen stays the Owner's alone; a developer's edit in a closed month is to recalculate the month — P1.10, not built yet.** **P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-30 (**P1.10 done — a developer's change to a bill in a closed month now works the month's saved report and the partners' shares out again: only the days move, the salaries and share percentages stay as closed; `month.recalculate` in the audit log; a note on the Monthly report and Partners that says when and after which bill, never who; the developer's screen lists the month's adjustments so nothing is counted twice. No migration. Found and fixed with it: such a change on a month's last day took the month's salaries out of the khata, and its khata label named the developer.** Verified against a restored copy of live. 2026-09-29: **P3.3 done — the staff salary slip: a PDF per karigar per month, downloaded from Staff khata, with the month's totals, day by day, and room to sign; final once the month is closed, provisional before. P3.5 removed, and with it every plan to send anything on WhatsApp or SMS: the Day close "WhatsApp summary" preview is gone. The client's other answers the same day: the Customers screen stays the Owner's alone; a developer's edit in a closed month is to recalculate the month — P1.10, not built yet.** **P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -62,7 +62,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.8 | Only the developer sets passwords · the eye on every password field · the developer names their own account | ✅ | done 2026-09-23 |
 | P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
 | P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
-| P1.10 | A developer's edit in a closed month recalculates its report and the partners' shares (the client, 2026-09-29) | 🟡 | Sakib543, 2026-09-29 |
+| P1.10 | A developer's edit in a closed month recalculates its report and the partners' shares (the client, 2026-09-29) | ✅ | done 2026-09-30 |
 | P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
 | P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
 | P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
@@ -714,7 +714,8 @@ Then through the app, as the developer:
 in `month_closes.report` when the month closed and are not recalculated, so after an edit they no
 longer match the bills. The screen says so in red and the audit entry records `monthClosed: true`.
 Recalculating them would rewrite a record the partners have already been paid against, which is a
-bigger decision than this task — raise it with the client if it ever comes up.
+bigger decision than this task — raise it with the client if it ever comes up. **The client decided
+on 2026-09-29 to recalculate; built as P1.10 (2026-09-30).**
 
 **Size:** large · **Depended on:** P1.1 (done)
 
@@ -728,15 +729,90 @@ hours the app must keep working, and when the connection returns the database up
 So **P2.2 is approved.** P2.1 still gets built first: it is a cheap stopgap until P2.2 ships, and
 it stays useful whenever the power is out.
 
-### 🟡 P1.10 — A developer's edit in a closed month recalculates the month
-**Owner:** Sakib543, 2026-09-29
+### ✅ P1.10 — A developer's edit in a closed month recalculates the month
+**Done:** 2026-09-30 · no migration
 
 **Client decision, 2026-09-29, through the user.** When the developer changes a bill in place (P1.6)
 in a month that is already closed, the month's saved report and the partners' shares are to be
-**worked out again**, not left as they were closed. Today they are left (HANDOFF section 9, question 0
-until now), and the developer's screen warns that they no longer match the bills.
+**worked out again**, not left as they were closed. Until P1.10 they were left (HANDOFF section 9,
+question 0), and the developer's screen warned that they no longer matched the bills.
 
-What building it has to get right:
+**The user said "haan P1.10 bana do" and left the choices to Claude**; the recommended ones were
+taken, and are below.
+
+**What was built:**
+
+- **`recalculateMonthReport(closed, days)`** (`lib/accounting/month-report.ts`). The days' figures
+  are read again; the net profit and the Owner account move by what the days moved; everything else
+  — the salaries above all — stays as the month closed with it. Decision: a difference on top of the
+  saved report, not a rebuild that reads the other inputs again (the plan below allowed either). The
+  result is the same wherever those inputs cannot change in a closed month, and nothing but the days
+  can move it where they could. Tested against `buildMonthReport` on the corrected days for six
+  shapes of month (a bonus, rent the Owner paid, Owner-paid daily expenses, capital repaid, a P3.4
+  adjustment) times three corrections (a cash sale lower with its commission, online that was cash,
+  a sale higher paid online) — equal every time — plus four named cases.
+- **`recalculateShares(closed, netProfit)`** (`lib/accounting/month.ts`): the percentages saved at
+  close, in the saved order (a leftover rupee goes by position on a tie). `ClosedShare` is now the
+  one type for `month_closes.shares` — Month close writes it, Partners reads it.
+- **`editBillRow`** claims the month's `month_closes` row `FOR UPDATE` before anything else, so two
+  corrections in one month are worked out one after the other. After `resettleDay`,
+  `recalculateClosedMonth` reads the month's snapshots inside the transaction, works the report and
+  shares out again and — only if anything moved — updates the row through the hatch, opened for that
+  one statement, and writes **`month.recalculate`** to `audit_log` (target the month, `before` the old
+  net profit, report and shares, `after` the new ones with the bill's number and day). The bill's own
+  `bill.developer-edit` entry gains `monthRecalculated`. A line's name or a book number moves nothing,
+  and nothing is written for the month.
+- **The note** (`components/month-recalculated-note.tsx`), on the Monthly report and on Partners for a
+  closed month: when, which bill of which day, and the net profit before → after — or that it did not
+  change and what reached the Owner did. Never who. `getMonthlyReport` reads it from the
+  `month.recalculate` entries (`recalculations`), through the audit log's `(action, target,
+  created_at)` index.
+- **The developer's screen**: the red "not recalculated" warning is replaced by what saving now does,
+  and the month's P3.4 adjustments are listed — cancelled ones and their cancellations left out — with
+  the warning not to change a bill whose mistake one of them already put right. With none, it says so.
+
+**Found and fixed with it:**
+
+1. **A change to a bill on the last day of a closed month took that month's salaries out of the khata
+   for good.** Month close dates the "Monthly salary" lines on the month's last business day;
+   `resettleDay` reversed every unreversed `earning` line of the day and posted back only commission
+   and daily wage. Confirmed on the copy by running the pre-P1.10 `resettleDay` inside a transaction
+   that was rolled back: it reversed both salary lines (Rs 40,000 each). It now leaves them alone —
+   `isMonthlySalaryLabel` (`lib/accounting/staff-pay.ts`), shared by Month close (which writes the
+   label), `resettleDay` and the salary slip.
+2. **The khata label named the developer.** The resettle reason was "bill #N edited by the developer",
+   which the Staff khata shows the Owner and the Manager as "Corrected: bill #N edited by the
+   developer" — against HANDOFF section 6. It is now "Corrected: bill #N changed". Lines already
+   written stay (append-only): the live database has them from P1.6's own check of bill #13 on
+   2026-09-22, sample data that goes with the fresh database at go-live.
+
+**Verified against a restored copy of live** (HANDOFF trap 8.20) — nothing written to live; its only
+contact was the read-only `pnpm db:backup`. The server was proved to be on the copy before the first
+write (8.22).
+
+| Check | Result |
+|---|---|
+| Setup, by script | 24–30 Sep closed, with #44 (25 Sep, Facial Rs 1,800 online, Sherry) and #45 (30 Sep, Haircut Rs 500 Arshad + Hair wash Rs 300 Hamid, cash); September closed — net profit −59,560, shares −29,780 each, salaries 80,000; 1 Oct opened. Then Arshad's salary 40,000 → 45,000, so today's settings disagree with the closed month |
+| Developer's screen | "Month closed", the new warning, "No adjustment has been recorded for September 2026" |
+| An adjustment for September (sale Rs 100 less, cash) | listed there with the double-count warning; cancelled from October's report, neither row listed any more |
+| #45 in the browser: Haircut 500 → 400, cash 800 → 700 | sales 31,600 → 31,500, staff earned 10,360 → 10,350, net profit −59,560 → −59,650, balance with business −61,910 → −62,000, **salaries 80,000** (today's settings say 85,000), shares −29,825 each |
+| Khata on 30 Sep | Arshad's commission 50 → 40, the others reversed and posted back the same, **both salary lines untouched**, labels "Corrected: bill #45 changed" |
+| Audit | `month.recalculate` for 2026-09, −59,560 → −59,650, bill 45; `bill.developer-edit` with `monthClosed` and `monthRecalculated` true |
+| Monthly report and Partners, September | the note, with no name; the new figures and shares; at 375 px nothing overflows |
+| #44 by script: online → cash | net profit unchanged; online 2,650 → 850, cash 28,850 → 30,650, reached the Owner 2,650 → 850, balance −62,000 → −60,200; shares unchanged; the note says the profit did not change |
+| #44, book number only | nothing written for the month (`monthRecalculated: false`) |
+| Stored against a full rebuild (`getMonthlyReport`'s `live`) | they differ only in the salaries, the net profit and the Owner account — by exactly the 5,000 salary change |
+| Two edits in September at once | one after the other: −59,650 → −59,740 → −59,695; stored equals rebuilt |
+| Security codes, 25 and 30 Sep | recomputed equal to stored (`verifyDayCode`) |
+| `update month_closes` outside the transaction | refused — the hatch is shut |
+
+690 tests pass (was 662), lint clean, build passes (37 routes).
+
+**Seen, not changed:** the P3.4 adjustments card prints "by <username>", so an adjustment recorded by
+the developer would show the Owner that username. The Owner is the one who records adjustments, so it
+was left alone; it would be its own item.
+
+What building it had to get right (the plan, as written before it was built):
 
 - `month_closes` is append-only through `forbid_change()`. The update belongs inside the
   developer's hatch (`src/db/financial-edit.ts`, the only place that may open it), in the same

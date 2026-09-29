@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkShares, partnerAccount, partnerShares } from "./index";
+import { checkShares, partnerAccount, partnerShares, recalculateShares, type ClosedShare } from "./index";
 
 describe("checkShares", () => {
   it("accepts shares that add up to 100", () => {
@@ -34,5 +34,42 @@ describe("partnerAccount", () => {
       { id: "b", sharePct: 50 },
     ]);
     expect(shares.a + shares.b).toBe(250001);
+  });
+});
+
+describe("recalculateShares (P1.10)", () => {
+  // As Month close saved them for a net profit of Rs 23,000.
+  const closed: ClosedShare[] = [
+    { partnerId: "a", name: "Asif", sharePct: 60, amount: 13800 },
+    { partnerId: "b", name: "Bilal", sharePct: 40, amount: 9200 },
+  ];
+
+  it("splits the corrected profit with the percentages the month closed with", () => {
+    expect(recalculateShares(closed, 22100)).toEqual([
+      { partnerId: "a", name: "Asif", sharePct: 60, amount: 13260 },
+      { partnerId: "b", name: "Bilal", sharePct: 40, amount: 8840 },
+    ]);
+  });
+
+  it("is the split the close itself would have made", () => {
+    const atClose = partnerShares(22101, [
+      { id: "a", sharePct: 60 },
+      { id: "b", sharePct: 40 },
+    ]);
+    expect(recalculateShares(closed, 22101).map((share) => share.amount)).toEqual([atClose.a, atClose.b]);
+  });
+
+  it("the saved order settles who gets a leftover rupee, as it did at close", () => {
+    const halves: ClosedShare[] = [
+      { partnerId: "c", name: "C", sharePct: 50, amount: 0 },
+      { partnerId: "d", name: "D", sharePct: 50, amount: 0 },
+    ];
+    const pairs = (shares: ClosedShare[]) => shares.map((share) => [share.partnerId, share.amount]);
+    expect(pairs(recalculateShares(halves, 1001))).toEqual([["c", 501], ["d", 500]]);
+    expect(pairs(recalculateShares([...halves].reverse(), 1001))).toEqual([["d", 501], ["c", 500]]);
+  });
+
+  it("a loss is shared the same way", () => {
+    expect(recalculateShares(closed, -1000).map((share) => share.amount)).toEqual([-600, -400]);
   });
 });

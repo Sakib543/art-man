@@ -136,7 +136,8 @@ drizzle/              Generated migrations. Never edited by hand.
    call `actions.ts`.
 4. **Financial rows are never edited or deleted.** A mistake is voided and
    re-entered (spec section 11). The one exception is the developer's edit
-   screen, which goes through `db/financial-edit.ts` and audits both sides.
+   screen — a bill, and with it a closed month's saved report and shares
+   (P1.10) — which goes through `db/financial-edit.ts` and audits both sides.
 5. **A feature imports from `lib`, `db`, `components`, never from another
    feature.** Shared pieces move up. Measured 2026-09-22: 0 violations.
 6. **Every accounting change comes with a test.** `pnpm test`

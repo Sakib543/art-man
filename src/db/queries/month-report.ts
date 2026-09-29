@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { getMonthChoices, type MonthChoice } from "@/db/queries/months";
 import {
+  auditLog,
   capitalRepayments,
   cashEntries,
   daySnapshots,
@@ -12,11 +13,27 @@ import {
   monthlyExpenses,
   staff,
 } from "@/db/schema";
-import { adjustmentTotals, buildMonthReport, type MonthDay, type MonthReport } from "@/lib/accounting";
+import { adjustmentTotals, buildMonthReport, type MonthDay, type MonthReport, type Rupees } from "@/lib/accounting";
 import { formatMonth, monthOf, monthStart, nextMonth } from "@/lib/business-date";
 
 export interface ClosedDayRow extends MonthDay {
   businessDate: string;
+}
+
+/**
+ * A closed month worked out again after one of its bills was changed in place
+ * (backlog P1.10), from its `month.recalculate` audit entry. When, and after
+ * which bill — never who: the Owner and the Manager are not shown the
+ * developer role (HANDOFF section 6).
+ */
+export interface MonthRecalculation {
+  /** ISO time. */
+  at: string;
+  billNo: number | null;
+  /** The business day the bill is on. */
+  billDate: string | null;
+  netProfitBefore: Rupees;
+  netProfitAfter: Rupees;
 }
 
 export interface MonthlyReportData {
@@ -31,6 +48,8 @@ export interface MonthlyReportData {
   days: ClosedDayRow[];
   /** The day still open in this month. It is added to the report when it is closed. */
   openDay: string | null;
+  /** Each time the closed month's saved report was worked out again, oldest first. */
+  recalculations: MonthRecalculation[];
 }
 
 /**
@@ -46,7 +65,7 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
   const start = monthStart(month);
   const end = monthStart(nextMonth(month));
 
-  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest, [bonusRow], adjustmentRows] = await Promise.all([
+  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest, [bonusRow], adjustmentRows, recalculationRows] = await Promise.all([
     db.select().from(daySnapshots).where(and(gte(daySnapshots.businessDate, start), lt(daySnapshots.businessDate, end))).orderBy(asc(daySnapshots.businessDate)),
     db.select().from(monthlyExpenses).where(eq(monthlyExpenses.month, start)),
     db.select({ amount: capitalRepayments.amount }).from(capitalRepayments).where(and(gte(capitalRepayments.paidOn, start), lt(capitalRepayments.paidOn, end))),
@@ -66,6 +85,13 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
       .select({ kind: monthAdjustments.kind, amount: monthAdjustments.amount, online: monthAdjustments.online, paidFrom: monthAdjustments.paidFrom })
       .from(monthAdjustments)
       .where(eq(monthAdjustments.month, start)),
+    // Only a closed month has any (P1.10). Found through the audit log's
+    // (action, target, created_at) index.
+    db
+      .select({ createdAt: auditLog.createdAt, before: auditLog.before, after: auditLog.after })
+      .from(auditLog)
+      .where(and(eq(auditLog.action, "month.recalculate"), eq(auditLog.target, month)))
+      .orderBy(asc(auditLog.createdAt)),
   ]);
 
   // Owner cash and owner-paid expenses come from the entries of the closed days only,
@@ -115,5 +141,18 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
 
   const openDay = latest && latest.closedAt === null && monthOf(latest.businessDate) === month ? latest.businessDate : null;
 
-  return { month, monthLabel: formatMonth(month), closed, months: choices.choices, report, live, days, openDay };
+  // Written by the developer's bill edit (`recalculateClosedMonth`) in this shape.
+  const recalculations = recalculationRows.map((row): MonthRecalculation => {
+    const before = (row.before ?? {}) as { netProfit?: number };
+    const after = (row.after ?? {}) as { netProfit?: number; billNo?: number; businessDate?: string };
+    return {
+      at: row.createdAt.toISOString(),
+      billNo: after.billNo ?? null,
+      billDate: after.businessDate ?? null,
+      netProfitBefore: before.netProfit ?? 0,
+      netProfitAfter: after.netProfit ?? 0,
+    };
+  });
+
+  return { month, monthLabel: formatMonth(month), closed, months: choices.choices, report, live, days, openDay, recalculations };
 }

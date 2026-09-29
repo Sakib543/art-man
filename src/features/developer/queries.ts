@@ -7,10 +7,12 @@ import {
   billLines,
   bills as billsTable,
   businessDays,
+  monthAdjustments,
   monthCloses,
   staff,
   user as userTable,
 } from "@/db/schema";
+import type { AdjustmentKind, PaidFrom } from "@/lib/accounting";
 import { isRole, type Role } from "@/lib/auth/roles";
 import { monthOf, monthStart } from "@/lib/business-date";
 
@@ -132,8 +134,27 @@ export interface EditableBill {
   lines: EditableBillLine[];
   /** The day's close has already been written, so an edit must settle it again. */
   dayClosed: boolean;
-  /** The month's closing report was frozen and will no longer match. */
+  /** The month's saved report and shares are worked out again by an edit (P1.10). */
   monthClosed: boolean;
+  /**
+   * Adjustments recorded for this bill's month since it closed (P3.4), the
+   * cancelled ones left out. A mistake one of them already put right must not
+   * be changed here as well, or it counts twice.
+   */
+  adjustments: MonthAdjustmentLine[];
+}
+
+export interface MonthAdjustmentLine {
+  id: string;
+  kind: AdjustmentKind;
+  /** How the closed month's figure should have read: + more than recorded, - less. */
+  amount: number;
+  online: boolean | null;
+  paidFrom: PaidFrom | null;
+  staffName: string | null;
+  /** The month it counts in, "2026-10". */
+  countsIn: string;
+  reason: string;
 }
 
 /** Why a bill cannot be edited, or null when it can. */
@@ -164,11 +185,44 @@ export async function findBillForEdit(billNo: number): Promise<BillLookup> {
     .limit(1);
   if (cancelled) return { bill: null, block: "cancelled" };
 
-  const [lines, [day], [monthClose]] = await Promise.all([
+  const month = monthStart(monthOf(bill.businessDate));
+  const [lines, [day], [monthClose], adjustmentRows] = await Promise.all([
     db.select().from(billLines).where(eq(billLines.billId, bill.id)).orderBy(asc(billLines.name)),
     db.select({ closedAt: businessDays.closedAt }).from(businessDays).where(eq(businessDays.businessDate, bill.businessDate)).limit(1),
-    db.select({ month: monthCloses.month }).from(monthCloses).where(eq(monthCloses.month, monthStart(monthOf(bill.businessDate)))).limit(1),
+    db.select({ month: monthCloses.month }).from(monthCloses).where(eq(monthCloses.month, month)).limit(1),
+    // Only a closed month can have any: one is recorded for a month once it has closed.
+    db
+      .select({
+        id: monthAdjustments.id,
+        kind: monthAdjustments.kind,
+        amount: monthAdjustments.amount,
+        online: monthAdjustments.online,
+        paidFrom: monthAdjustments.paidFrom,
+        staffName: staff.name,
+        countsIn: monthAdjustments.month,
+        reason: monthAdjustments.reason,
+        voidsId: monthAdjustments.voidsId,
+      })
+      .from(monthAdjustments)
+      .leftJoin(staff, eq(monthAdjustments.staffId, staff.id))
+      .where(eq(monthAdjustments.correctsMonth, month))
+      .orderBy(asc(monthAdjustments.createdAt)),
   ]);
+
+  // A cancellation and the adjustment it cancels come to nothing, so neither is listed.
+  const voided = new Set(adjustmentRows.flatMap((row) => (row.voidsId ? [row.voidsId] : [])));
+  const adjustments: MonthAdjustmentLine[] = adjustmentRows
+    .filter((row) => row.voidsId === null && !voided.has(row.id))
+    .map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      amount: row.amount,
+      online: row.online,
+      paidFrom: row.paidFrom,
+      staffName: row.staffName,
+      countsIn: monthOf(row.countsIn),
+      reason: row.reason,
+    }));
 
   return {
     bill: {
@@ -184,6 +238,7 @@ export async function findBillForEdit(billNo: number): Promise<BillLookup> {
       lines: lines.map((line) => ({ id: line.id, name: line.name, amount: line.amount, staffId: line.staffId })),
       dayClosed: Boolean(day?.closedAt),
       monthClosed: Boolean(monthClose),
+      adjustments,
     },
     block: null,
   };

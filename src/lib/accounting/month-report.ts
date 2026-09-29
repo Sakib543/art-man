@@ -148,3 +148,50 @@ export function buildMonthReport(input: MonthReportInput): MonthReport {
     adjustmentsToOwner,
   };
 }
+
+/**
+ * A closed month's report, worked out again after one of its closed days was
+ * settled again — a bill the developer changed in place (backlog P1.10, the
+ * client's decision of 2026-09-29).
+ *
+ * Only what such a change can move is read again: the days' snapshots, which
+ * settling the day has just rewritten. Everything else stays as the month
+ * closed with it — the salaries above all, since the staff settings they came
+ * from may have changed since, and with them the monthly expenses, bonuses,
+ * the Owner's cash, capital repaid and adjustments. The net profit and the
+ * Owner account move by what the days moved, so the result is what the close
+ * would have saved had the days read this way then.
+ */
+export function recalculateMonthReport(closed: MonthReport, days: MonthDay[]): MonthReport {
+  const sales = sum(days.map((d) => d.sale));
+  const online = sum(days.map((d) => d.online));
+  const dailyExpenses = sum(days.map((d) => d.expenses));
+  const staffEarned = sum(days.map((d) => d.staffEarned));
+
+  // Of everything the net profit is made of, only these three are the days'.
+  const profitMoved = sales - closed.sales - (dailyExpenses - closed.dailyExpenses) - (staffEarned - closed.staffEarned);
+  // Online money went to the Owner's bank; cash stayed with the business.
+  const onlineMoved = online - closed.online;
+
+  return {
+    ...closed,
+    closedDays: days.length,
+    sales,
+    cash: sum(days.map((d) => d.cash)),
+    online,
+    dailyExpenses,
+    staffEarned,
+    staffPaid: sum(days.map((d) => d.staffPaid)),
+    dayProfitTotal: sum(days.map((d) => d.dayProfit)),
+    netProfit: closed.netProfit + profitMoved,
+    owner: {
+      reachedOwner: closed.owner.reachedOwner + onlineMoved,
+      netReachedOwner: closed.owner.netReachedOwner + onlineMoved,
+      heldByBusiness: closed.owner.heldByBusiness + profitMoved - onlineMoved,
+    },
+    // A report frozen before P3.1 or P3.4 has none of these; there were none.
+    bonuses: closed.bonuses ?? 0,
+    adjustments: closed.adjustments ?? 0,
+    adjustmentsToOwner: closed.adjustmentsToOwner ?? 0,
+  };
+}

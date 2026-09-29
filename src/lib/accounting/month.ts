@@ -73,3 +73,22 @@ export function partnerShares(profit: Rupees, partners: Partner[]): Record<strin
   const parts = allocate(profit, partners.map((p) => p.sharePct));
   return Object.fromEntries(partners.map((p, i) => [p.id, parts[i]]));
 }
+
+/** A partner's share of a closed month, as Month close saved it in `month_closes.shares`. */
+export interface ClosedShare {
+  partnerId: string;
+  name: string;
+  sharePct: number;
+  amount: Rupees;
+}
+
+/**
+ * A closed month's shares for its corrected net profit (backlog P1.10). Each
+ * partner keeps the percentage saved at close, not today's, and so does the
+ * order: a leftover rupee goes by position on a tie, so the saved order is what
+ * makes this the split the close itself would have made.
+ */
+export function recalculateShares(closed: ClosedShare[], netProfit: Rupees): ClosedShare[] {
+  const amounts = partnerShares(netProfit, closed.map((share) => ({ id: share.partnerId, sharePct: share.sharePct })));
+  return closed.map((share) => ({ ...share, amount: amounts[share.partnerId] }));
+}

@@ -1,4 +1,4 @@
-import type { KhataKind, Rupees } from "@/lib/accounting";
+import { isMonthlySalaryLabel, type KhataKind, type Rupees } from "@/lib/accounting";
 import { monthStart, nextMonth } from "@/lib/business-date";
 
 /**
@@ -49,7 +49,7 @@ export function categoryOf(line: SlipLine, byId: ReadonlyMap<string, SlipLine>, 
     case "earning":
       if (line.label.startsWith("Commission")) return "commission";
       if (line.label.startsWith("Daily wage")) return "wage";
-      if (line.label.startsWith("Monthly salary")) return "salary";
+      if (isMonthlySalaryLabel(line.label)) return "salary";
       return "adjustment";
     case "bonus":
       return "bonus";

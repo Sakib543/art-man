@@ -1,12 +1,15 @@
-import { eq } from "drizzle-orm";
+import { isDeepStrictEqual } from "node:util";
+import { and, asc, eq, gte, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
-import { resettleDay } from "@/db/day-settlement";
+import { resettleDay, type Tx } from "@/db/day-settlement";
 import { allowFinancialEdit, denyFinancialEdit } from "@/db/financial-edit";
-import { billLines, bills as billsTable, user as userTable } from "@/db/schema";
+import { billLines, bills as billsTable, daySnapshots, monthCloses, user as userTable } from "@/db/schema";
 import { setUserPassword } from "@/db/user-account";
+import { recalculateMonthReport, recalculateShares, type ClosedShare, type MonthReport } from "@/lib/accounting";
 import { checkNewPassword } from "@/lib/auth/password-rules";
 import type { SessionUser } from "@/lib/auth/session";
+import { monthOf, monthStart, nextMonth } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
 import { hashPin } from "@/lib/pin";
 import { checkBillEdit } from "./bill-edit-rules";
@@ -155,11 +158,9 @@ export async function resetPin(dev: SessionUser, userId: string, newPin: string)
  *   transaction and dies with it;
  * - `before` and `after` go to `audit_log`, which the hatch cannot touch;
  * - a closed day is settled again, so its figures follow the edit and its
- *   security code changes — the old one is kept in `day_snapshot_history`.
- *
- * What it does NOT put right: a closed month's report was frozen when the
- * month closed and is not recomputed. The screen says so, and the audit entry
- * records that the month was closed.
+ *   security code changes — the old one is kept in `day_snapshot_history`;
+ * - a closed month's saved report and partners' shares are worked out again
+ *   from the corrected days (P1.10, `recalculateClosedMonth`).
  */
 export async function editBillRow(dev: SessionUser, input: EditBillRowInput): Promise<void> {
   const { bill, block } = await findBillForEdit(input.billNo);
@@ -189,6 +190,14 @@ export async function editBillRow(dev: SessionUser, input: EditBillRowInput): Pr
   };
 
   await db.transaction(async (tx) => {
+    // A closed month is claimed before anything else and held to the end, so
+    // two corrections in it cannot each work it out from the other's old days.
+    const [closedMonth] = await tx
+      .select()
+      .from(monthCloses)
+      .where(eq(monthCloses.month, monthStart(monthOf(bill.businessDate))))
+      .for("update");
+
     await allowFinancialEdit(tx);
 
     await tx
@@ -203,24 +212,89 @@ export async function editBillRow(dev: SessionUser, input: EditBillRowInput): Pr
         .where(eq(billLines.id, line.id));
     }
 
-    // Shut the hatch again here, not at the end of the transaction. Nothing
-    // below this line is supposed to change a financial row, so nothing below
-    // it is allowed to.
+    // Shut the hatch again here, not at the end of the transaction. Settling
+    // the day and writing the audit entry are not supposed to change a
+    // financial row, so they are not allowed to; a closed month's own row
+    // opens it again for its one statement.
     await denyFinancialEdit(tx);
 
     // A closed day already wrote its commissions and its closing record from
     // the old figures. Settling again reverses those and writes a new snapshot
     // with a new security code, keeping the old one in day_snapshot_history.
+    // The reason becomes a khata label the Owner and the Manager read, so it
+    // says what changed and not who changed it (HANDOFF section 6).
     if (bill.dayClosed) {
-      await resettleDay(tx, bill.businessDate, actor, `bill #${bill.billNo} edited by the developer`);
+      await resettleDay(tx, bill.businessDate, actor, `bill #${bill.billNo} changed`);
     }
+
+    const monthRecalculated = closedMonth ? await recalculateClosedMonth(tx, closedMonth, actor, bill) : false;
 
     await writeAudit(tx, {
       actor,
       action: "bill.developer-edit",
       target: `bill #${bill.billNo}`,
       before,
-      after: { ...after, reason: input.reason, businessDate: bill.businessDate, monthClosed: bill.monthClosed },
+      after: {
+        ...after,
+        reason: input.reason,
+        businessDate: bill.businessDate,
+        monthClosed: Boolean(closedMonth),
+        monthRecalculated,
+      },
     });
   });
+}
+
+/**
+ * Work a closed month out again after one of its bills was changed in place —
+ * the client's decision of 2026-09-29 (backlog P1.10). Before it, the month's
+ * saved report and the partners' shares stayed as closed and no longer matched
+ * the bills.
+ *
+ * Only the days' snapshots are read again: settling the bill's day has just
+ * rewritten one of them. The salaries, the share percentages and everything
+ * else stay as the month closed with them (`recalculateMonthReport`,
+ * `recalculateShares`). `month_closes` is append-only like every financial
+ * table, so the row is changed through the same hatch as the bill, opened for
+ * this one statement. Its old report and shares go to `audit_log` as `before`,
+ * and that `month.recalculate` entry is what the Monthly report's note is
+ * read from — it says when and after which bill, never by whom.
+ *
+ * Nothing is written when nothing moved: a line's name, a book number, or work
+ * moved between two staff on the same rate leave the month's figures alone.
+ */
+async function recalculateClosedMonth(
+  tx: Tx,
+  closed: typeof monthCloses.$inferSelect,
+  actor: string,
+  bill: { billNo: number; businessDate: string },
+): Promise<boolean> {
+  const report = closed.report as MonthReport | null;
+  const shares = closed.shares as ClosedShare[] | null;
+  // Closed before migration 0006 saved a report: its screen works it out live anyway.
+  if (!report) return false;
+
+  const month = monthOf(closed.month);
+  const days = await tx
+    .select()
+    .from(daySnapshots)
+    .where(and(gte(daySnapshots.businessDate, closed.month), lt(daySnapshots.businessDate, monthStart(nextMonth(month)))))
+    .orderBy(asc(daySnapshots.businessDate));
+
+  const nextReport = recalculateMonthReport(report, days);
+  const nextShares = shares ? recalculateShares(shares, nextReport.netProfit) : null;
+  if (isDeepStrictEqual(nextReport, report) && isDeepStrictEqual(nextShares, shares)) return false;
+
+  await allowFinancialEdit(tx);
+  await tx.update(monthCloses).set({ report: nextReport, shares: nextShares }).where(eq(monthCloses.month, closed.month));
+  await denyFinancialEdit(tx);
+
+  await writeAudit(tx, {
+    actor,
+    action: "month.recalculate",
+    target: month,
+    before: { netProfit: report.netProfit, report, shares },
+    after: { netProfit: nextReport.netProfit, report: nextReport, shares: nextShares, billNo: bill.billNo, businessDate: bill.businessDate },
+  });
+  return true;
 }

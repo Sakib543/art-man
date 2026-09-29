@@ -8,6 +8,15 @@ export const PAY_TYPE_LABEL: Record<PayType, string> = {
   3: "Daily wage + commission",
 };
 
+/**
+ * The khata label Month close gives a monthly salary, e.g. "Monthly salary
+ * (September 2026)". It is dated on the month's last business day, beside that
+ * day's own commission and wage, so settling that day again must be able to
+ * tell it from them: no bill moves a salary (backlog P1.10).
+ */
+export const monthlySalaryLabel = (monthName: string): string => `Monthly salary (${monthName})`;
+export const isMonthlySalaryLabel = (label: string): boolean => label.startsWith("Monthly salary");
+
 export const paysSalary = (type: PayType): boolean => type === 1 || type === 2;
 export const paysDailyWage = (type: PayType): boolean => type === 3;
 export const paysCommission = (type: PayType): boolean => type === 2 || type === 3;

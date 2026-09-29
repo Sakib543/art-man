@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeStaffPay, paysCommission, paysDailyWage, paysSalary } from "./index";
+import { isMonthlySalaryLabel, monthlySalaryLabel, normalizeStaffPay, paysCommission, paysDailyWage, paysSalary } from "./index";
 
 const messy = { salary: 40000, dailyWage: 800, commissionRate: 10 };
 
@@ -37,5 +37,17 @@ describe("which fields a pay type uses", () => {
     expect([1, 2, 3].map((t) => paysSalary(t as 1 | 2 | 3))).toEqual([true, true, false]);
     expect([1, 2, 3].map((t) => paysDailyWage(t as 1 | 2 | 3))).toEqual([false, false, true]);
     expect([1, 2, 3].map((t) => paysCommission(t as 1 | 2 | 3))).toEqual([false, true, true]);
+  });
+});
+
+describe("the monthly salary's khata label (P1.10)", () => {
+  it("names the month", () => {
+    expect(monthlySalaryLabel("September 2026")).toBe("Monthly salary (September 2026)");
+  });
+
+  it("is told apart from the earnings a day's close posts on the same date", () => {
+    expect(isMonthlySalaryLabel(monthlySalaryLabel("September 2026"))).toBe(true);
+    expect(isMonthlySalaryLabel("Commission (on work of 4000)")).toBe(false);
+    expect(isMonthlySalaryLabel("Daily wage")).toBe(false);
   });
 });

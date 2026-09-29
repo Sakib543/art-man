@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { computeDayCode, type DayFigures } from "@/db/day-code";
 import { loadDay, type LoadedDay } from "@/db/queries/day-data";
 import { attendance, daySnapshotHistory, daySnapshots, khataEntries, monthCloses } from "@/db/schema";
-import { summarizeDay, type DayCloseSummary } from "@/lib/accounting";
+import { isMonthlySalaryLabel, summarizeDay, type DayCloseSummary } from "@/lib/accounting";
 import { atLeastOwner } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/session";
 import { formatMonth, monthOf, monthStart } from "@/lib/business-date";
@@ -100,6 +100,11 @@ export async function resettleDay(tx: Tx, businessDate: string, actor: string, r
 
   for (const line of lines) {
     if (line.kind !== "earning" || reversed.has(line.id)) continue;
+    // A month's salaries are dated on its last day, beside that day's own
+    // earnings. No bill moves them, and postEarnings would not write them
+    // again, so reversing them would take a month's pay out of the khata for
+    // good — which a change to a bill in a closed month did until P1.10.
+    if (isMonthlySalaryLabel(line.label)) continue;
     await tx.insert(khataEntries).values({
       staffId: line.staffId,
       businessDate,

@@ -1,6 +1,7 @@
 import { Panel, PanelHeader, panelClass } from "@/components/panel";
 import { Banknote, ChartColumn, Landmark, PieChart, Wallet } from "lucide-react";
 import Link from "next/link";
+import { MonthRecalculatedNote } from "@/components/month-recalculated-note";
 import { MonthSelect } from "@/components/month-select";
 import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
@@ -63,9 +64,13 @@ export default async function PartnersPage({ searchParams }: PageProps) {
       {!selected ? (
         <div className="space-y-4">
           {data.closed ? (
-            <p className="rounded-lg border border-brass-line bg-brass-soft px-3.5 py-3 text-sm text-brass-strong">
-              {data.monthLabel} is closed. These are the shares it closed with.
-            </p>
+            <>
+              <p className="rounded-lg border border-brass-line bg-brass-soft px-3.5 py-3 text-sm text-brass-strong">
+                {data.monthLabel} is closed. These are the shares it closed with
+                {data.recalculations.length > 0 ? ", worked out again after a bill was corrected" : ""}.
+              </p>
+              <MonthRecalculatedNote recalculations={data.recalculations} />
+            </>
           ) : (
             <SharesCard key={data.partners.map((p) => `${p.id}${p.sharePct}${p.name}`).join()} partners={data.partners} netProfit={data.netProfit} monthLabel={data.monthLabel} />
           )}
@@ -73,6 +78,7 @@ export default async function PartnersPage({ searchParams }: PageProps) {
         </div>
       ) : (
         <>
+          {data.closed ? <MonthRecalculatedNote recalculations={data.recalculations} className="mb-3.5" /> : null}
           <p className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-brass-line bg-brass-soft px-3.5 py-3 text-sm text-brass-strong">
             Profit share = <b className="tabular-nums">{selected.partner.sharePct}%</b> of {rs(data.netProfit)} →{" "}
             <b className="tabular-nums">{rs(selected.account.profitShare)}</b>

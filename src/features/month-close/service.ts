@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getMonthlyReport } from "@/db/queries/month-report";
 import { khataEntries, monthCloses, partners } from "@/db/schema";
-import { checkShares, partnerShares } from "@/lib/accounting";
+import { checkShares, monthlySalaryLabel, partnerShares, type ClosedShare } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
 import { formatMonth, monthStart } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
@@ -28,10 +28,10 @@ export async function closeMonth(user: SessionUser, month: string): Promise<void
   const partnerRows = await db.select().from(partners).where(eq(partners.active, true));
   if (!checkShares(partnerRows.map((p) => p.sharePct)).ok) throw new UserError("The partners' shares must add up to 100%.");
   const amounts = partnerShares(report.netProfit, partnerRows.map((p) => ({ id: p.id, sharePct: p.sharePct })));
-  const shares = partnerRows.map((p) => ({ partnerId: p.id, name: p.name, sharePct: p.sharePct, amount: amounts[p.id] }));
+  const shares: ClosedShare[] = partnerRows.map((p) => ({ partnerId: p.id, name: p.name, sharePct: p.sharePct, amount: amounts[p.id] }));
 
   const actor = user.username || user.name;
-  const label = `Monthly salary (${formatMonth(month)})`;
+  const label = monthlySalaryLabel(formatMonth(month));
 
   await db.transaction(async (tx) => {
     // The month is saved first: the primary key stops two people closing it at once.

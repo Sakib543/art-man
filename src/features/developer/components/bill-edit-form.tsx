@@ -46,9 +46,11 @@ export function BillEditForm({ bill, staff }: Props) {
 
     run(
       () => editBillRowAction({ billNo: bill.billNo, ...edit, bookNo, reason }),
-      bill.dayClosed
-        ? `Bill #${bill.billNo} changed. The day was settled again and its security code has changed.`
-        : `Bill #${bill.billNo} changed.`,
+      bill.monthClosed
+        ? `Bill #${bill.billNo} changed. The day was settled again, and the month's report and the partners' shares were worked out again.`
+        : bill.dayClosed
+          ? `Bill #${bill.billNo} changed. The day was settled again and its security code has changed.`
+          : `Bill #${bill.billNo} changed.`,
       () => {
         setReason("");
         router.refresh();
