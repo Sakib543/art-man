@@ -43,7 +43,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.4 | Next-month adjustment for a closed month (migration `0020`) | ✅ | done 2026-09-29 |
 | P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
 | P3.11 | Price ranges: pick the amount at billing | ✅ | done 2026-09-23 |
-| P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore into a local copy worked 2026-09-29 (P2.2f), none into Neon yet |
+| P3.7 | Backup and restore | 🟡 | Sakib543, 2026-09-29 — closing it: the user accepted the local restore |
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
