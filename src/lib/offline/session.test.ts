@@ -38,4 +38,15 @@ describe("trustRefusal", () => {
   it("names when the server last confirmed the sign-in, in Karachi time", () => {
     expect(trustRefusal({ ok: false, reason: "expired", since: savedAt })).toContain("29 Sep 2026, 09:00");
   });
+
+  it("sends a folder entry to be written down instead — it has no paper book (P2.2e)", () => {
+    const messages = [
+      trustRefusal({ ok: false, reason: "no-copy" }, "entry"),
+      trustRefusal({ ok: false, reason: "expired", since: savedAt }, "entry"),
+      trustRefusal({ ok: false, reason: "clock", since: savedAt }, "entry"),
+    ];
+    expect(messages.every((message) => message.includes("Write the entry down"))).toBe(true);
+    expect(messages.some((message) => message.includes("paper bill book"))).toBe(false);
+    expect(messages[1]).toContain("29 Sep 2026, 09:00");
+  });
 });

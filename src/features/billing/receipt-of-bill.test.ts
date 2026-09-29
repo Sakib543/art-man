@@ -5,6 +5,7 @@ import { receiptOfBill } from "./receipt-of-bill";
 const bill = (over: Partial<DayBill> = {}): DayBill => ({
   id: "b1",
   billNo: 12,
+  clientId: null,
   createdAt: "2026-09-24T09:30:00.000Z",
   customerName: "Ashfaq Bhai",
   total: 1100,

@@ -1,5 +1,6 @@
 import { isCatalogCopy, type CatalogCopy } from "./catalog";
-import { isOutboxEntry, type OutboxEntry } from "./outbox";
+import { isDayCopy, type DayCopy } from "./day";
+import { isOutboxEntry, isOutboxItem, type OutboxEntry, type OutboxFolderEntry, type OutboxItem } from "./outbox";
 
 /**
  * The browser's own database for working offline (backlog P2.2): IndexedDB,
@@ -18,9 +19,15 @@ const NAME = "art-man-offline";
 /** 1: the catalog copy (P2.2b). 2: the outbox (P2.2c). 3: counters, for `T-` numbers (P2.2d). */
 const VERSION = 3;
 
-/** One record, under `CURRENT`: the whole copy, replaced in one write so it is never half old, half new. */
+/**
+ * What the server last told this browser, each record replaced whole in one
+ * write so it is never half old, half new: the catalog copy under `CURRENT`
+ * (P2.2b), and the open day's bills and entries under `DAY` (P2.2e) — in the
+ * same store, so the day needed no new version of the database.
+ */
 const CATALOG = "catalog";
 const CURRENT = "current";
+const DAY = "day";
 
 /**
  * Plain numbers under string keys (P2.2d): today, the last `T-` number given
@@ -145,15 +152,49 @@ export async function nextTempNo(businessDate: string): Promise<number> {
 }
 
 /**
- * On sign-out: the copy belongs to a signed-in session, and holds customers'
- * numbers. With it goes offline billing, until the next sign-in fetches one.
+ * On sign-out: the copies belong to a signed-in session, and hold customers'
+ * numbers and the day's money. With them goes working offline, until the next
+ * sign-in fetches them again.
  */
 export async function clearCatalog(): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(CATALOG, "readwrite");
   tx.objectStore(CATALOG).delete(CURRENT);
+  tx.objectStore(CATALOG).delete(DAY);
   await finished(tx);
   catalogListeners.forEach((listener) => listener());
+  dayListeners.forEach((listener) => listener());
+}
+
+/**
+ * The open day as this browser keeps it (P2.2e): with the moment it was
+ * saved, by this device's clock.
+ */
+export type StoredDay = DayCopy & { savedAt: number };
+
+export async function saveDay(copy: DayCopy): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(CATALOG, "readwrite");
+  tx.objectStore(CATALOG).put({ ...copy, savedAt: Date.now() } satisfies StoredDay, DAY);
+  await finished(tx);
+  dayListeners.forEach((listener) => listener());
+}
+
+/** The day, or null when there is none — or when what is stored is not a day copy any more. */
+export async function readDay(): Promise<StoredDay | null> {
+  const db = await openDb();
+  const value = await resultOf(db.transaction(CATALOG, "readonly").objectStore(CATALOG).get(DAY));
+  return isDayCopy(value) && typeof (value as Partial<StoredDay>).savedAt === "number" ? (value as StoredDay) : null;
+}
+
+/** This tab is told when a new day copy is saved (the offline screens). */
+const dayListeners = new Set<() => void>();
+
+export function onDaySaved(listener: () => void): () => void {
+  dayListeners.add(listener);
+  return () => {
+    dayListeners.delete(listener);
+  };
 }
 
 /*
@@ -196,13 +237,13 @@ export function onOutboxChange(listener: () => void): () => void {
 }
 
 /**
- * Queue a bill for the server. A bill that is already queued — the same id —
+ * Queue something for the server. Anything already queued under the same id
  * is left as it is: queueing it again is not an error.
  */
-export async function queueBill(entry: OutboxEntry): Promise<void> {
+async function queue(item: OutboxItem): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(OUTBOX, "readwrite");
-  const request = tx.objectStore(OUTBOX).add(entry);
+  const request = tx.objectStore(OUTBOX).add(item);
   request.onerror = (event) => {
     // The unique index refusing a second copy must not abort the transaction.
     if (request.error?.name === "ConstraintError") event.preventDefault();
@@ -211,23 +252,29 @@ export async function queueBill(entry: OutboxEntry): Promise<void> {
   announce();
 }
 
-/** Every bill in the outbox, in the order it was queued. */
-export async function readOutbox(): Promise<OutboxEntry[]> {
+/** Queue a bill (P2.2c). */
+export const queueBill = (entry: OutboxEntry): Promise<void> => queue(entry);
+
+/** Queue a folder entry (P2.2e), in the same line as the bills: they are sent in the order they were made. */
+export const queueEntry = (item: OutboxFolderEntry): Promise<void> => queue(item);
+
+/** Everything in the outbox — bills and folder entries — in the order it was queued. */
+export async function readOutbox(): Promise<OutboxItem[]> {
   const db = await openDb();
   const rows = await resultOf(db.transaction(OUTBOX, "readonly").objectStore(OUTBOX).getAll());
   // A row this build cannot read (a newer build wrote it) is left in place,
   // untouched, for the build that can.
-  return rows.filter(isOutboxEntry);
+  return rows.filter(isOutboxItem);
 }
 
-/** One bill, by its id, or null when it is not in the outbox (sent, or removed). */
+/** One bill, by its id, or null when it is not in the outbox (sent, or removed) — or is not a bill. */
 export async function readOutboxEntry(clientId: string): Promise<OutboxEntry | null> {
   const db = await openDb();
   const value = await resultOf(db.transaction(OUTBOX, "readonly").objectStore(OUTBOX).index(BY_CLIENT_ID).get(clientId));
   return isOutboxEntry(value) ? value : null;
 }
 
-/** The bill has reached the server, or a person removed it: it leaves the outbox. */
+/** It has reached the server, or a person removed it: it leaves the outbox. A bill or a folder entry alike. */
 export async function removeFromOutbox(clientId: string): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(OUTBOX, "readwrite");
@@ -241,10 +288,11 @@ export async function removeFromOutbox(clientId: string): Promise<void> {
 }
 
 /**
- * Record the server's refusal of a bill — or, with null, put it back in line
- * to be sent again ("Send again", once whatever was wrong has been put right).
+ * Record the server's refusal of a bill or a folder entry — or, with null,
+ * put it back in line to be sent again ("Send again", once whatever was wrong
+ * has been put right).
  */
-export async function setRejected(clientId: string, rejected: OutboxEntry["rejected"]): Promise<void> {
+export async function setRejected(clientId: string, rejected: OutboxItem["rejected"]): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(OUTBOX, "readwrite");
   const store = tx.objectStore(OUTBOX);

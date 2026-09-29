@@ -96,27 +96,31 @@
       <h1>No internet connection</h1>
       <p>The salon's system cannot be reached right now, so this page cannot be opened.</p>
       <p class="note" id="offline-note" hidden>
-        Bills can still be made in offline billing: they are kept on this computer and sent by themselves when
-        the internet is back.
+        Billing, the day's folders and the register still work offline: what is made there is kept on this
+        computer and sent by itself when the internet is back.
       </p>
       <p class="note" id="paper-note">
         Keep writing bills in the paper bill book. When the internet is back, enter each one on the Billing
         screen with its book number, before Day Close.
       </p>
-      <a class="button" id="offline-billing" href="/offline-billing" hidden>Open offline billing</a>
+      <a class="button" data-offline-page href="/offline-billing" hidden>Open offline billing</a>
+      <a class="button secondary" data-offline-page href="/offline-folders" hidden>Daily folders</a>
+      <a class="button secondary" data-offline-page href="/offline-register" hidden>Register</a>
       <button type="button" id="try-again" onclick="location.reload()">Try again</button>
     </main>
     <script>
-      // Offline billing (backlog P2.2d), when the worker has kept its page on
-      // this computer. Whether it may run (12 hours from the last sign-in the
-      // server confirmed) that page decides for itself.
+      // The offline pages (backlog P2.2d, P2.2e) the worker has kept on this
+      // computer. Whether they may run (12 hours from the last sign-in the
+      // server confirmed) each page decides for itself.
       if ("caches" in self) {
-        caches.match("/offline-billing").then(function (kept) {
-          if (!kept) return;
-          document.getElementById("offline-billing").hidden = false;
-          document.getElementById("offline-note").hidden = false;
-          document.getElementById("paper-note").hidden = true;
-          document.getElementById("try-again").className = "secondary";
+        document.querySelectorAll("[data-offline-page]").forEach(function (link) {
+          caches.match(link.getAttribute("href")).then(function (kept) {
+            if (!kept) return;
+            link.hidden = false;
+            document.getElementById("offline-note").hidden = false;
+            document.getElementById("paper-note").hidden = true;
+            document.getElementById("try-again").className = "secondary";
+          });
         });
       }
 

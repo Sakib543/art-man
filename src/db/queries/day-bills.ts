@@ -13,6 +13,13 @@ export interface DayBillLine {
 export interface DayBill {
   id: string;
   billNo: number;
+  /**
+   * The id the billing screen gave it (P3.15), null on reversals and older
+   * bills. A bill made offline keeps its id, so a screen that shows the
+   * outbox's bills beside these can tell one already here from one still
+   * waiting (P2.2e).
+   */
+  clientId: string | null;
   createdAt: string;
   customerName: string | null;
   /** Cash plus online. Negative on a reversal bill. */
@@ -45,6 +52,7 @@ export async function getDayBills(businessDate: string): Promise<DayBill[]> {
     .select({
       id: bills.id,
       billNo: bills.billNo,
+      clientId: bills.clientId,
       createdAt: bills.createdAt,
       cash: bills.cash,
       online: bills.online,
@@ -81,6 +89,7 @@ export async function getDayBills(businessDate: string): Promise<DayBill[]> {
   return rows.map((row) => ({
     id: row.id,
     billNo: row.billNo,
+    clientId: row.clientId,
     createdAt: row.createdAt.toISOString(),
     customerName: row.customerName,
     total: row.cash + row.online,

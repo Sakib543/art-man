@@ -1,22 +1,14 @@
-import { asc } from "drizzle-orm";
-import { db } from "@/db";
-import { getDayBills } from "@/db/queries/day-bills";
-import { staff } from "@/db/schema";
-import { buildSheet, type Sheet } from "./grid";
+import { getAllStaff } from "@/db/queries/day-copy";
+import { getDayBills, type DayBill } from "@/db/queries/day-bills";
+import type { SheetStaff } from "./grid";
 
 /**
- * Any business day as a register — the Daily report's Register view (P6.4).
- * It used to be the latest day only, on a screen of its own.
+ * Any business day as a register — the Daily report's Register view (P6.4) —
+ * as its two ingredients: the day's bills and every staff member. The screen
+ * lays them out itself (`RegisterView`), because since P2.2e it adds the bills
+ * still on this computer before it does.
  */
-export async function getSheet(businessDate: string): Promise<Sheet> {
-  const [dayBills, staffRows] = await Promise.all([
-    getDayBills(businessDate),
-    db.select({ id: staff.id, name: staff.name, active: staff.active }).from(staff).orderBy(asc(staff.createdAt), asc(staff.name)),
-  ]);
-
-  // A column for every active staff member, and for anyone inactive who still has bills on this day.
-  const worked = new Set(dayBills.flatMap((bill) => bill.lines.map((line) => line.staffId)));
-  const columns = staffRows.filter((member) => member.active || worked.has(member.id));
-
-  return buildSheet(dayBills, columns);
+export async function getRegister(businessDate: string): Promise<{ bills: DayBill[]; staff: SheetStaff[] }> {
+  const [bills, staff] = await Promise.all([getDayBills(businessDate), getAllStaff()]);
+  return { bills, staff };
 }

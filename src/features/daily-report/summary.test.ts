@@ -5,6 +5,7 @@ import { summarizeBills } from "./summary";
 const bill = (status: DayBill["status"], cash: number, online = 0, discount = 0): DayBill => ({
   id: `${status}-${cash}`,
   billNo: 1,
+  clientId: null,
   createdAt: "2026-09-21T08:00:00.000Z",
   customerName: null,
   total: cash + online,

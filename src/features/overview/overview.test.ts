@@ -6,6 +6,7 @@ import { buildFeed, type FeedEntry } from "./feed";
 const bill = (billNo: number, at: string, over: Partial<DayBill>): DayBill => ({
   id: `b${billNo}`,
   billNo,
+  clientId: null,
   createdAt: at,
   customerName: null,
   total: 800,

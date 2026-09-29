@@ -10,7 +10,7 @@ const cellClass = "min-w-32 border-l px-3.5 py-2.5 align-top first:border-l-0";
 function Cell({ cell }: { cell?: SheetCell }) {
   if (!cell) return null;
   return (
-    <div className="text-right">
+    <div className={cn("text-right", cell.pending && "rounded-md border border-dashed border-warning-line px-1.5 py-0.5")}>
       <p
         className={cn(
           "font-medium tabular-nums",
@@ -21,8 +21,9 @@ function Cell({ cell }: { cell?: SheetCell }) {
         {num(cell.amount)}
       </p>
       <p className="text-xs text-muted-foreground">
-        #{cell.billNo} {cell.label}
+        {cell.ref} {cell.label}
       </p>
+      {cell.pending ? <p className="text-xs text-warning">Not sent yet</p> : null}
     </div>
   );
 }
@@ -36,10 +37,12 @@ function Cell({ cell }: { cell?: SheetCell }) {
  * ring up a sale beside Billing, and one a counter used to the paper register
  * could use to enter the same sale twice. Bills are made on Billing only.
  *
- * It sits under the Daily report's summary cards, which already carry the
- * day's total, cash and online, so it does not repeat them.
+ * On the Daily report it sits under the summary cards, which already carry the
+ * day's total, cash and online, so it does not repeat them. `standalone` is the
+ * offline register (P2.2e), which has no cards above it.
  */
-export function WorksheetGrid({ sheet }: { sheet: Sheet }) {
+export function WorksheetGrid({ sheet, standalone = false }: { sheet: Sheet; standalone?: boolean }) {
+  const { pending } = sheet;
   return (
     <Panel>
       <div className="overflow-x-auto">
@@ -79,10 +82,29 @@ export function WorksheetGrid({ sheet }: { sheet: Sheet }) {
         </table>
       </div>
 
-      <p className="border-t px-card py-3 text-xs text-muted-foreground">
-        The staff columns add up to Total sales above. Owner / Account is the online part of that total, not extra.
-        Cancelled amounts are struck through and their reversal shows in red.
-      </p>
+      <div className="space-y-1 border-t px-card py-3 text-xs text-muted-foreground">
+        {standalone ? (
+          <p>
+            The staff columns add up to {rs(sheet.grandTotal)} of sales: {rs(sheet.cashSales)} cash and{" "}
+            {rs(sheet.onlineSales)} online. Owner / Account is the online part of that, not extra.
+          </p>
+        ) : (
+          <p>
+            The staff columns add up to Total sales above. Owner / Account is the online part of that total, not
+            extra.
+          </p>
+        )}
+        <p>Cancelled amounts are struck through and their reversal shows in red.</p>
+        {pending.count > 0 ? (
+          <p className="text-warning">
+            {pending.count === 1 ? "1 bill" : `${pending.count} bills`} made offline, {rs(pending.total)},{" "}
+            {pending.count === 1 ? "is" : "are"} still on this computer and marked &ldquo;Not sent yet&rdquo;.{" "}
+            {standalone
+              ? "The columns include them."
+              : "The columns include them; Total sales above does not until they reach the server."}
+          </p>
+        ) : null}
+      </div>
     </Panel>
   );
 }

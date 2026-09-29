@@ -1,19 +1,20 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { OutboxEntry } from "@/lib/offline/outbox";
+import type { OutboxItem } from "@/lib/offline/outbox";
 import { onOutboxChange, readOutbox } from "@/lib/offline/store";
 
 /**
- * The outbox as the screens see it (P2.2c): every bill in it, oldest first,
- * read again whenever it changes — in this tab or another. One store for the
- * page, started by the first component that listens and stopped when the last
- * one leaves, like the connectivity store beside it.
+ * The outbox as the screens see it (P2.2c): everything in it — bills, and
+ * since P2.2e folder entries — oldest first, read again whenever it changes,
+ * in this tab or another. One store for the page, started by the first
+ * component that listens and stopped when the last one leaves, like the
+ * connectivity store beside it.
  */
 
-const NONE: OutboxEntry[] = [];
+const NONE: OutboxItem[] = [];
 
-let entries: OutboxEntry[] = NONE;
+let entries: OutboxItem[] = NONE;
 const listeners = new Set<() => void>();
 let stopWatching: (() => void) | null = null;
 let reading = false;
@@ -54,8 +55,11 @@ function subscribe(listener: () => void) {
   };
 }
 
-/** Every bill in the outbox. Empty on the server and until the first read. */
-export function useOutbox(): OutboxEntry[] {
+/**
+ * Everything in the outbox. Empty on the server and until the first read.
+ * `isBillItem` / `isFolderItem` (`lib/offline/outbox.ts`) pick one kind.
+ */
+export function useOutbox(): OutboxItem[] {
   return useSyncExternalStore(
     subscribe,
     () => entries,

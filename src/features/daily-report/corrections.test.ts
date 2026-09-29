@@ -4,6 +4,7 @@ import { editReason, foldCorrections } from "./corrections";
 import { summarizeBills } from "./summary";
 
 const bill = (over: Partial<DayBill> & { id: string; billNo: number }): DayBill => ({
+  clientId: null,
   createdAt: "2026-09-23T08:00:00.000Z",
   customerName: null,
   total: 0,

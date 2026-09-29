@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-29 (P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-29 (P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -35,7 +35,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2b | Catalog copy in IndexedDB | ✅ | done 2026-09-28 |
 | P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | ✅ | done 2026-09-28 |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ✅ | done 2026-09-29 |
-| P2.2e | Folders / cash entries offline | 🟡 | Sakib543, 2026-09-29 |
+| P2.2e | Folders / cash entries offline, the Register with local bills (migration `0019`) | ✅ | done 2026-09-29 |
 | P2.2f | Day Close offline | ⬜ | — |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
@@ -823,7 +823,7 @@ not whose request was lost — would save the bill twice. The outbox (P2.2c) is 
 | P2.2b | Catalog copy in IndexedDB — services, deals, ranges, staff, customers, special rates — refreshed when online, stamped with a version | no | P2.2a |
 | P2.2c | Outbox + sync endpoint: a client UUID per bill, replayed through the existing `createBill`, deduplicated, rejects kept in a "Needs attention" list | `bills.client_id` — done early, in P3.15 (`0018`) | ~~a separate dev Neon branch~~ nothing: the user chose to build against this database until the VPS move (2026-09-28; HANDOFF section 9) |
 | P2.2d | Billing offline: `priceCart()` in the browser, `T-` number on the receipt, "pending sync" in Today's bills; the 12-hour sign-in window | no | P2.2b, P2.2c |
-| P2.2e | Folders / cash entries offline (no Owner entries), Register view shows local bills | maybe | P2.2c |
+| P2.2e | Folders / cash entries offline (no Owner entries), Register view shows local bills | `cash_entries.client_id` (`0019`) — done | P2.2c |
 | P2.2f | Day Close offline, security code on sync | maybe | P2.2c |
 
 ### ✅ P2.2a — PWA foundation
@@ -1101,14 +1101,152 @@ counts its own `T-` numbers).
 
 **Test data left in the database:** bills #38, #39, #40 on 24 Sep (T-1, T-2, T-3).
 
-### 🟡 P2.2e — Folders / cash entries offline
-**Owner:** Sakib543, 2026-09-29
+### ✅ P2.2e — Folders / cash entries offline
+**Done:** 2026-09-29 · migration `0019` (`cash_entries.client_id`, applied to the live database
+before the code was pushed, and read back)
 
-The counter records the day's folder entries — staff payments, expenses and the rest — with no
-internet, kept in the outbox and sent through the existing service when the connection returns;
-the Owner's own entries stay online only (no PIN offline, the client's answer). The Register view
-shows the bills and entries still waiting on this computer. The user left the choices to Claude
-(2026-09-29): the recommended ones are taken and recorded here when done.
+The counter records expenses and staff advances with no internet: kept in the outbox beside the
+bills, in the order they were made, and saved through the same `addEntry` when the connection
+returns — once, however often they are sent. Daily folders and the Register work offline on pages
+of their own, drawn from a new copy of the open day in the browser plus what is still in the
+outbox; online, both screens show what is still on this computer too, marked "Not sent yet".
+
+**Decisions** — the user left them to Claude ("jo tumhe sahi lagy karo mujhe app ready kr k do",
+2026-09-29), so the recommended option was taken each time:
+
+- **One outbox, one line.** A folder entry waits in the same IndexedDB store as the bills and is
+  sent in the order it was made. P2.2f's offline close can then queue behind the day's bills and
+  entries instead of racing them.
+- **`cash_entries.client_id`, the proper fix** (as P3.15 did for bills). A unique id per entry is
+  what makes a re-send harmless. The online Folders form sends one too, so a Save whose answer is
+  lost can never add the same expense twice.
+- **Offline: an expense or a staff advance, nothing else.** The Owner's own cash needs the Owner's
+  PIN, which only the server checks (the client's answer, 2026-09-26); offline those two choices
+  are disabled and say why. Cancelling an entry needs the internet. An entry still on this
+  computer has no Cancel: once sent it is an ordinary entry and is cancelled like one — the
+  mistake stays on the record (spec §11).
+- **A copy of the open day in the browser** — its bills, folder entries and staff — fetched from
+  `/api/offline/day` after every save, every 5 minutes and on every return to online. Without it
+  an offline screen could only show what was made offline, and the register would tell the
+  counter that Arshad had done Rs 800 when he had done Rs 5,000. P2.2f needs the same data for an
+  offline close.
+- **Separate static pages**, `/offline-folders` and `/offline-register`, beside `/offline-billing`,
+  in one frame with tabs between them (`components/offline-page.tsx`). Each page belongs to one
+  feature, as `ARCHITECTURE.md` wants; the service worker keeps all three and opens each for its
+  own screen.
+- **What the screens count.** Daily folders' four totals include what is still on this computer,
+  and a line under them says so. The register draws pending bills in their columns, after the
+  server's, dashed and "Not sent yet", and the note under the grid says the Daily report's Total
+  sales above does not include them yet. The Daily report's bill list and summary cards stay the
+  server's figures.
+- **A refused entry: Send again, or Remove with a reason** (audited once). No "open it here" as a
+  refused bill has: an entry is one line, and entering it again is quicker than putting it right.
+- **A Save whose answer is lost** (online): an expense or advance goes straight to the outbox under
+  the same id — no "ask the server" loop as a bill has, because an entry has no receipt to wait
+  for. The Owner's cash cannot be kept, so the form stays as it was, under the same id: pressing
+  Save again can never make a second one.
+
+**What was built:**
+
+- **Migration `0019`** — `cash_entries.client_id uuid unique`. `addEntry(user, input, offline?)`
+  answers an id it has already saved with `{ alreadySaved: true }` before anything else (so an
+  entry that did arrive is answered even after its day closed), refuses an offline entry whose day
+  is not the open day, audits `offline: { madeAt, madeBy }`, and settles two simultaneous sends
+  with the unique index. `syncOfflineEntry` records every refusal as `folder.offline-refuse`;
+  `discardOfflineEntry` writes `folder.offline-discard` once per entry, or finds it was saved.
+- **`app/api/offline/folders/route.ts`** — POST, the bill route's twin: Origin check, `checkUser`,
+  `syncEntrySchema` (only an expense or an advance), 200 `{ alreadySaved }`, 422 `{ reason }`.
+- **`app/api/offline/day/route.ts`** + `db/queries/day-copy.ts` — the open day's bills
+  (`getDayBills`, now with `clientId`), entries (`db/queries/day-entries.ts`, moved out of
+  `folders/queries.ts`) and every staff member (`getAllStaff`). `no-store`.
+- **`lib/offline/outbox.ts`** — `OutboxFolderEntry` (`type: "folder"`; a bill has no `type`),
+  `OutboxItem`, `syncOf` (URL, body and how to read the answer, per kind), `outcomeOf(…, kind)`,
+  `outboxTally`, `describeCounts` ("2 bills and 1 folder entry"), `waitingBills` /
+  `waitingFolderEntries` (a day's waiting ones, minus what the server already lists — so a send
+  whose answer was lost is never counted twice). `lib/offline/day.ts` — the day copy's shape,
+  `isDayCopy`, `dayFor` (another day's copy is never shown as today's), `knownIds`.
+  `lib/offline/pages.ts` — the offline pages and what each stands in for; its test reads
+  `public/sw.js` and fails if the worker's list drifts from it.
+- **`lib/offline/store.ts`** — `readOutbox()` returns every item; `queueEntry`; the day copy under
+  key `day` in the existing `catalog` store (no new IndexedDB version); sign-out clears it with the
+  catalog.
+- **`components/`** — `DaySync` + `requestDayRefresh()` (called after every Save, cancellation and
+  outbox send); `OutboxSync` sends each kind to its route and refreshes the screen after a pass
+  that saved anything; `OutboxStatus` and the sign-out dialog count bills and entries apart;
+  `OfflinePage` is the frame of all three offline pages; `OfflineWayOut` offers the offline page of
+  the screen that could not load.
+- **Daily folders** — `FoldersScreen` (client) draws the server's rows plus the outbox's and works
+  the totals out with the same `folderTotals`; `EntryForm` keeps offline entries and lost answers;
+  `EntriesTable` marks "Not sent yet" and turns Cancel off offline; `EntryAttention` is the
+  entries' Needs attention. `rows.ts` (pure, tested) turns the outbox into rows and checks an entry
+  before it is kept, as `entrySchema` would.
+- **Register** — `buildSheet(bills, staff, pending)`, `columnsFor`, `pendingBillsOf` (pure,
+  tested); `RegisterView` (client) for the Daily report and the offline register;
+  `getRegister` replaces `getSheet`.
+- **`public/sw.js`** — keeps `/offline-billing`, `/offline-folders` and `/offline-register`; with no
+  network `/` and `/billing` open offline billing, `/folders` offline folders, `/daily-report` and
+  `/worksheet` the offline register. It answers both `cache-offline-pages` and the old
+  `cache-offline-billing`. `offline.html` offers every offline page it finds kept.
+
+**Verified, 2026-09-29** — `pnpm build` + `pnpm start` in the Browser pane, signed in as the
+manager, "offline" = the server stopped:
+
+| Test | Result |
+|---|---|
+| Online, before anything | the worker kept all three offline pages, each identical to this build's and with all its files; the day copy in IndexedDB (24 Sep: 28 bills, 2 entries, 3 staff) |
+| A Save whose answer is lost (the action's `fetch` patched to throw after the real call) | "The connection dropped…": kept under the same id; the outbox's send answered `{"alreadySaved":true}`; **one** row and one `folder.expense` audit row |
+| Server stopped, `/folders` open | banner "No internet — bills and entries are kept on this computer…"; "New entry · Offline"; Owner's cash "(needs the internet)", disabled; Cancel disabled |
+| An expense saved offline | "Not sent yet" row; drawer expenses Rs 10 → 20; a waiting bill paid Rs 50 online counted in Online payments; "1 bill and 2 folder entries waiting to be sent" |
+| `/folders` reloaded offline | the worker redirected to `/offline-folders`: "Daily folders — offline", the day as of 05:49, the same totals |
+| The Register tab | `/offline-register`: the waiting bill `T-9` in Arshad's column after #42, dashed, "Not sent yet" |
+| Server started | the expense saved (`client_id`, audit `offline: { madeAt, madeBy }`); a made-up short bill and a closed-day entry refused, both in the audit log |
+| The full Folders screen | the saved expense as a server row; Needs attention: "This entry was made on 23 Sep 2026, but the open day is 24 Sep 2026…" |
+| Send again · Remove | refused again, back on the list · removed, `folder.offline-discard` written, the outbox empty of it |
+| Online register, the bill route unreachable | `T-9` in the Daily report's register, and "…Total sales above does not until they reach the server" |
+| Removing the refused bill on Billing | `bill.offline-discard`; the outbox empty |
+| Offline, `/staff-khata` · `/daily-report?date=…` | `offline.html` with Billing, Folders and Register · the offline register |
+| 375 px | the three offline pages, `/folders` and the register: no horizontal scroll |
+
+`pnpm test` 562 (63 new), lint clean, build passes (34 routes — `/offline-folders` and
+`/offline-register` static, `/api/offline/day` and `/api/offline/folders` new).
+
+**Found and fixed while verifying:** an entry sent by the outbox vanished from an open Daily folders
+screen until the next page load — the outbox let go of it before the server's rows had it; the
+outbox now refreshes the screen after a pass that saved anything. The register's note counted a
+waiting bill by what was paid rather than by its lines, which is what the columns add up. An
+online Save whose answer was lost could keep an entry the server would refuse; the form now checks
+it first (`offlineEntryProblem`), offline or not.
+
+**Not verified:** a real internet outage (the server was stopped instead); a staff advance sent
+through the outbox (the path is the expense's, with the khata line `addEntry` always wrote);
+signing out with entries waiting — Claude does not sign a person out of their session; two
+browsers on one counter.
+
+**Left for P2.2f, found on the way:**
+
+- **The online Day Close does not look at the outbox.** Closing the day while this computer still
+  holds that day's bills or entries — waiting to be sent, or refused and not yet dealt with —
+  leaves them to be refused afterwards ("made on 24 Sep, but the open day is 25 Sep"). P2.2d
+  already allowed this for bills. The close screen should hold back until the outbox has nothing
+  of that day, and say why.
+- **The day's copy is ready for an offline close**: bills, entries and staff. An offline close will
+  also need the opening cash, each staff member's pay and the khata balances in it.
+- **Changing the business day refreshes neither copy at once.** After a close and a new day, the
+  catalog copy says the old date for up to 15 minutes and the day copy for up to 5; work made
+  offline in that gap is refused as the old day's. Asking both to refresh after a close or a new
+  day (`requestDayRefresh()`, and the same for the catalog) closes the gap.
+
+**Test data left in the database:** on 24 Sep, two Rs 10 expenses — "P2.2e test (answer lost)"
+and "P2.2e test (offline)" — each cancelled ("P2.2e verification entry, not a real expense"), so
+the day's figures are unchanged (their net is 0, read back); audit rows `folder.expense` ×2,
+`folder.cancel` ×2, `bill.offline-refuse` ×2 and `bill.offline-discard` ×1 for a made-up bill that
+was never saved (still 42 bills), `folder.offline-refuse` ×2 and `folder.offline-discard` ×1 for a
+made-up closed-day entry.
+
+**Seen in the data, not caused here:** bills #41 and #42 (24 Sep, made 29 Sep 04:41 and 04:43) carry
+`T-1` and `T-2` — the same slip numbers as #38 and #39. They came from another browser, whose
+IndexedDB counts its own `T-` numbers: the limit P2.2d wrote down under "two browsers on one
+counter". The slips still differ by their bill number once synced.
 
 ---
 
@@ -2716,15 +2854,16 @@ offers a toggle, so nothing reaches it. It is a task of its own. **Removed entir
 1. **Which Vercel account owns the project?** It exists, and it is connected to this same repo —
    but it sits in the other developer's Vercel account. Somebody has to be given access before
    P5.1 can move. (The "does it exist" half was answered 2026-09-22.)
-2. **Can Day Close happen offline?** If there is no internet at closing time, may the manager close
-   the day offline, or must they wait? Needed for P2.2 — the security code needs the full day's
-   data in order.
-3. **What bill number goes on an offline receipt?** The plan is a temporary number (`T-5`) that
-   becomes real (`#127`) on sync. Acceptable, or must the customer's copy always carry the final
-   number? Needed for P2.2.
-Questions 2 and 3 are not needed until offline work starts.
+2. **A bill edited in a closed month** leaves that month's frozen report as it was — leave it, or
+   recalculate it? And **may the Manager use the Customers screen?** Both are written up in
+   `docs/HANDOFF.md` section 9, "Questions blocking work"; neither is urgent.
 
 ## Answered
+
+- **Can Day Close happen offline?** Yes (2026-09-26) — the security code is computed on sync
+  (P2.2f).
+- **What bill number goes on an offline receipt?** A temporary `T-5` is fine (2026-09-26); the real
+  number comes on sync (P2.2d).
 
 - **Each developer has their own database** (2026-09-22). A migration or seed run by one does not
   touch the other's data. The migration conflict described in `docs/HANDOFF.md` section 8.1 still

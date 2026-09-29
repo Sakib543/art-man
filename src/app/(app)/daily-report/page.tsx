@@ -7,8 +7,8 @@ import { ReportTable } from "@/features/daily-report/components/report-table";
 import { ViewSwitch } from "@/features/daily-report/components/view-switch";
 import { getDailyReport } from "@/features/daily-report/queries";
 import { readView } from "@/features/daily-report/view";
-import { WorksheetGrid } from "@/features/worksheet/components/worksheet-grid";
-import { getSheet } from "@/features/worksheet/queries";
+import { RegisterView } from "@/features/worksheet/components/register-view";
+import { getRegister } from "@/features/worksheet/queries";
 import { CANCELLATION_ALERT_AT } from "@/lib/alerts";
 import { atLeastOwner } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
@@ -39,11 +39,11 @@ export default async function DailyReportPage({
 
   const { days, selected, bills, summary, closing } = report;
   // The register (P6.4) is the old Daily worksheet, for whichever day is chosen.
-  const sheet = view === "register" ? await getSheet(selected.businessDate) : null;
+  const register = view === "register" ? await getRegister(selected.businessDate) : null;
 
   return (
     <>
-      <PageHeader title="Daily report" subtitle={sheet ? REGISTER_SUBTITLE : SUBTITLE}>
+      <PageHeader title="Daily report" subtitle={register ? REGISTER_SUBTITLE : SUBTITLE}>
         <div className="flex flex-wrap items-center gap-2.5">
           <ViewSwitch date={selected.businessDate} view={view} />
           {/* The picker already says "(open)" or "(closed)", so the business-day
@@ -61,8 +61,9 @@ export default async function DailyReportPage({
 
       <DaySummary summary={summary} closing={closing} />
 
-      {sheet ? (
-        <WorksheetGrid sheet={sheet} />
+      {register ? (
+        // With the bills made offline that are still on this computer (P2.2e).
+        <RegisterView bills={register.bills} staff={register.staff} businessDate={selected.businessDate} />
       ) : (
         <ReportTable bills={bills} canCancel={atLeastOwner(user.role) && selected.closed} />
       )}

@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { nextToSend, outcomeOf, SYNC_URL, syncRequestOf, type OutboxEntry, type SyncOutcome } from "@/lib/offline/outbox";
+import { useRouter } from "next/navigation";
+import { useEffect, useEffectEvent } from "react";
+import { nextToSend, outcomeOf, syncOf, type OutboxItem, type SyncOutcome } from "@/lib/offline/outbox";
 import { onOutboxChange, readOutbox, removeFromOutbox, setRejected } from "@/lib/offline/store";
+import { requestDayRefresh } from "./day-sync";
 import { useConnectivity } from "./use-connectivity";
 import { setSyncSignedOut } from "./use-outbox";
 
@@ -10,23 +12,25 @@ import { setSyncSignedOut } from "./use-outbox";
 const RETRY_EVERY_MS = 30_000;
 
 /**
- * A send that takes longer than this is given up on. The bill may have been
- * saved all the same; sending it again is safe, because the server saves one
- * id once (P3.15).
+ * A send that takes longer than this is given up on. It may have been saved
+ * all the same; sending it again is safe, because the server saves one id
+ * once (P3.15, P2.2e).
  */
 const SEND_TIMEOUT_MS = 30_000;
 
 /** One tab sends at a time. */
 const LOCK = "art-man-outbox";
 
-async function send(entry: OutboxEntry): Promise<SyncOutcome> {
+/** A bill to the bill route, a folder entry to the folder route (P2.2e). */
+async function send(item: OutboxItem): Promise<SyncOutcome> {
+  const { url, body: request, kind } = syncOf(item);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
   try {
-    const response = await fetch(SYNC_URL, {
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(syncRequestOf(entry)),
+      body: JSON.stringify(request),
       cache: "no-store",
       // With no session cookie the proxy redirects to /login; `outcomeOf`
       // reads the unfollowed redirect as "signed out".
@@ -34,17 +38,20 @@ async function send(entry: OutboxEntry): Promise<SyncOutcome> {
       signal: controller.signal,
     });
     const body: unknown = await response.json().catch(() => null);
-    return outcomeOf(response, body);
+    return outcomeOf(response, body, kind);
   } catch {
-    // The network, or the timeout: nothing is known about the bill.
+    // The network, or the timeout: nothing is known about what was sent.
     return { kind: "later" };
   } finally {
     clearTimeout(timer);
   }
 }
 
-/** Send every waiting bill, oldest first, until the outbox is empty or one cannot be sent now. */
-async function sendAll(stopped: () => boolean) {
+/**
+ * Send everything waiting, oldest first — bills and folder entries in the
+ * order they were made — until the outbox is empty or one cannot be sent now.
+ */
+async function sendAll(stopped: () => boolean, onSaved: () => void) {
   for (;;) {
     if (stopped()) return;
     const next = nextToSend(await readOutbox());
@@ -55,6 +62,10 @@ async function sendAll(stopped: () => boolean) {
       case "saved":
         setSyncSignedOut(false);
         await removeFromOutbox(next.clientId);
+        // The day's copy now lacks it on both sides — out of the outbox, not
+        // yet in the copy — until it is fetched again (P2.2e).
+        requestDayRefresh();
+        onSaved();
         continue;
       case "rejected":
         // A refusal is an answer from a signed-in session, too.
@@ -84,17 +95,29 @@ async function exclusively(work: () => Promise<void>): Promise<void> {
 }
 
 /**
- * Sends the outbox (backlog P2.2c) to the server. Renders nothing. Mounted in
- * the signed-in shell, so it runs on every screen.
+ * Sends the outbox (backlog P2.2c, P2.2e) to the server. Renders nothing.
+ * Mounted in the signed-in shell and on the offline pages, so it runs on every
+ * screen.
  *
  * It sends while the server can be reached: when the shell loads, when the
- * connection comes back, whenever a bill is queued (in any tab), and every
- * `RETRY_EVERY_MS` while bills are waiting. Each bill's answer decides what
- * happens to it (`outcomeOf`): saved bills leave the outbox, refused ones wait
- * for a person, and everything else is simply tried again later.
+ * connection comes back, whenever something is queued (in any tab), and every
+ * `RETRY_EVERY_MS` while anything is waiting. Each answer decides what happens
+ * to what was sent (`outcomeOf`): saved ones leave the outbox, refused ones
+ * wait for a person, and everything else is simply tried again later.
+ *
+ * Whatever reaches the server leaves the screen's "not sent yet" lists at
+ * once, while the screen's own rows come from the server and do not have it
+ * yet — so after a pass that saved anything the screen is refreshed (P2.2e),
+ * or it would seem to vanish until the next page load. The offline pages pass
+ * `refreshScreen={false}`: they are drawn from the copy of the day, which is
+ * fetched again instead.
  */
-export function OutboxSync() {
+export function OutboxSync({ refreshScreen = true }: { refreshScreen?: boolean }) {
   const online = useConnectivity();
+  const router = useRouter();
+  const onSavedSome = useEffectEvent(() => {
+    if (refreshScreen) router.refresh();
+  });
 
   useEffect(() => {
     if (!online) return;
@@ -112,8 +135,16 @@ export function OutboxSync() {
         return;
       }
       running = true;
+      let savedSome = false;
       try {
-        await exclusively(() => sendAll(() => stopped));
+        await exclusively(() =>
+          sendAll(
+            () => stopped,
+            () => {
+              savedSome = true;
+            },
+          ),
+        );
       } catch (error) {
         // IndexedDB refusing is the likely cause, and it would say so every
         // turn; once is enough.
@@ -122,6 +153,7 @@ export function OutboxSync() {
       } finally {
         running = false;
       }
+      if (savedSome && !stopped) onSavedSome();
       if (again && !stopped) {
         again = false;
         void pass();

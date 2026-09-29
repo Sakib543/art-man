@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { CATALOG_URL, isCatalogCopy, REFRESH_EVERY_MS } from "@/lib/offline/catalog";
 import { saveCatalog } from "@/lib/offline/store";
-import { keepOfflineBilling } from "./pwa-setup";
+import { keepOfflinePages } from "./pwa-setup";
 import { useConnectivity } from "./use-connectivity";
 
 /** How often to ask "is the copy too old?" — the answer is usually no. */
@@ -49,8 +49,8 @@ export function CatalogSync() {
         await saveCatalog(copy);
         lastSaved.current = Date.now();
         // The session is proven; now the worker can be given the offline
-        // billing page too (P2.2d).
-        keepOfflineBilling();
+        // pages too (P2.2d, P2.2e).
+        keepOfflinePages();
       } catch (error) {
         if (!controller.signal.aborted) console.warn("Could not refresh the offline catalog", error);
       } finally {

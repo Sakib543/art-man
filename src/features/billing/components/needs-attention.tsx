@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { useOutbox } from "@/components/use-outbox";
 import { formatDate, formatDateTime, paidBy, rs } from "@/lib/format";
-import type { OutboxEntry } from "@/lib/offline/outbox";
+import { isBillItem, type OutboxEntry } from "@/lib/offline/outbox";
 import { removeFromOutbox, setRejected } from "@/lib/offline/store";
 import { discardOfflineBillAction } from "../actions";
 
@@ -32,7 +32,8 @@ const OUTDATED = "The app was updated while this screen was open. Reload the pag
  */
 export function NeedsAttention({ fixing }: { fixing: string | null }) {
   const router = useRouter();
-  const refused = useOutbox().filter((entry) => entry.rejected !== null);
+  // A refused folder entry waits on Daily folders instead (P2.2e).
+  const refused = useOutbox().filter(isBillItem).filter((entry) => entry.rejected !== null);
 
   // Kept after closing, so the dialog does not go blank while it animates out.
   const [target, setTarget] = useState<OutboxEntry | null>(null);

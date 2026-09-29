@@ -4,6 +4,7 @@ import { Panel, PanelHeader } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
 import { useOutbox } from "@/components/use-outbox";
 import { formatDate, formatTime, paidBy, rs } from "@/lib/format";
+import { isBillItem } from "@/lib/offline/outbox";
 
 /**
  * Bills made with no internet that have not reached the server yet (backlog
@@ -14,7 +15,8 @@ import { formatDate, formatTime, paidBy, rs } from "@/lib/format";
  * The refused ones are not here: they wait in "Needs attention" (P2.2c).
  */
 export function PendingBills({ className }: { className?: string }) {
-  const waiting = useOutbox().filter((entry) => entry.rejected === null);
+  // Folder entries made offline are listed on Daily folders (P2.2e).
+  const waiting = useOutbox().filter(isBillItem).filter((entry) => entry.rejected === null);
   if (waiting.length === 0) return null;
 
   return (

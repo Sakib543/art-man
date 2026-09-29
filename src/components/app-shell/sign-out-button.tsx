@@ -7,14 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
+import { describeCounts, isFolderItem, type KindCounts } from "@/lib/offline/outbox";
 import { clearCatalog, readOutbox } from "@/lib/offline/store";
 
-/** Bills in the outbox (P2.2c); none when this browser cannot say. */
-async function unsentBills(): Promise<number> {
+const NOTHING: KindCounts = { bills: 0, entries: 0 };
+
+/** Bills and folder entries in the outbox (P2.2c, P2.2e); none when this browser cannot say. */
+async function readUnsent(): Promise<KindCounts> {
   try {
-    return (await readOutbox()).length;
+    const items = await readOutbox();
+    const entries = items.filter(isFolderItem).length;
+    return { bills: items.length - entries, entries };
   } catch {
-    return 0;
+    return NOTHING;
   }
 }
 
@@ -22,27 +27,29 @@ async function unsentBills(): Promise<number> {
 export function SignOutButton({ onDark = false }: { onDark?: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  // Bills not yet on the server, when signing out would leave them waiting.
-  const [unsent, setUnsent] = useState(0);
+  // Bills and entries not yet on the server, when signing out would leave them waiting.
+  const [unsent, setUnsent] = useState<KindCounts>(NOTHING);
   const [warning, setWarning] = useState(false);
+  const one = unsent.bills + unsent.entries === 1;
 
   function signOut(anyway = false) {
     startTransition(async () => {
-      // Signing out never deletes the outbox (P2.2c) — but its bills then wait
-      // for the next sign-in on this computer, which the counter should know
-      // before walking away.
+      // Signing out never deletes the outbox (P2.2c) — but what is in it then
+      // waits for the next sign-in on this computer, which the counter should
+      // know before walking away.
       if (!anyway) {
-        const count = await unsentBills();
-        if (count > 0) {
-          setUnsent(count);
+        const counts = await readUnsent();
+        if (counts.bills + counts.entries > 0) {
+          setUnsent(counts);
           setWarning(true);
           return;
         }
       }
       setWarning(false);
       await authClient.signOut();
-      // The offline copy holds customers' numbers and belongs to a signed-in
-      // session (P2.2b). The next sign-in fetches a fresh one.
+      // The offline copies hold customers' numbers and the day's money, and
+      // belong to a signed-in session (P2.2b, P2.2e). The next sign-in fetches
+      // fresh ones.
       await clearCatalog().catch(() => undefined);
       router.push("/login");
       router.refresh();
@@ -70,12 +77,11 @@ export function SignOutButton({ onDark = false }: { onDark?: boolean }) {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>
-              {unsent === 1 ? "1 bill has" : `${unsent} bills have`} not reached the server yet
+              {describeCounts(unsent)} {one ? "has" : "have"} not reached the server yet
             </DialogTitle>
             <DialogDescription>
-              Signing out does not delete {unsent === 1 ? "it" : "them"}. {unsent === 1 ? "It stays" : "They stay"} in
-              this browser on this computer and {unsent === 1 ? "is" : "are"} sent after the next sign-in here —
-              nowhere else.
+              Signing out does not delete {one ? "it" : "them"}. {one ? "It stays" : "They stay"} in this browser on
+              this computer and {one ? "is" : "are"} sent after the next sign-in here — nowhere else.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

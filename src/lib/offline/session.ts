@@ -35,8 +35,24 @@ export function offlineTrust(savedAt: number | null, now: number): OfflineTrust 
   return now < until ? { ok: true, until } : { ok: false, reason: "expired", since: savedAt };
 }
 
-/** What the counter is told when offline billing cannot run — and what to do instead. */
-export function trustRefusal(trust: Exclude<OfflineTrust, { ok: true }>): string {
+/**
+ * What the counter is told when offline billing cannot run — and what to do
+ * instead. `"entry"` is for a folder entry (P2.2e), which has no paper book:
+ * it is written down and entered when the internet is back.
+ */
+export function trustRefusal(trust: Exclude<OfflineTrust, { ok: true }>, what: "bill" | "entry" = "bill"): string {
+  if (what === "entry") {
+    const instead = "Write the entry down and enter it on Daily folders when the internet is back.";
+    switch (trust.reason) {
+      case "no-copy":
+        return `Entries cannot be kept offline on this computer yet: it needs one sign-in here while the internet is on. ${instead}`;
+      case "expired":
+        return `Working offline has ended: the server last confirmed this sign-in on ${formatDateTime(new Date(trust.since))}, more than 12 hours ago. ${instead}`;
+      case "clock":
+        return `This computer's clock has been set back, so nothing can be kept offline. ${instead}`;
+    }
+  }
+
   switch (trust.reason) {
     case "no-copy":
       return "Offline billing is not ready on this computer: it needs one sign-in here while the internet is on. Use the paper bill book.";

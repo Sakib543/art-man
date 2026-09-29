@@ -3,10 +3,12 @@
 import { Panel } from "@/components/panel";
 import { AlertCircle } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
+import { requestDayRefresh } from "@/components/day-sync";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useConnectivity } from "@/components/use-connectivity";
 import { formatTime, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { voidEntryAction } from "../actions";
@@ -47,7 +49,15 @@ interface Row {
   online?: OnlineRow;
 }
 
+/**
+ * The day's folders, newest first. Since P2.2e it also lists what was made
+ * offline and is still on this computer — "Not sent yet" — which has no Cancel
+ * of its own: once it reaches the server it is an ordinary entry, and is
+ * cancelled like one.
+ */
 export function EntriesTable({ entries, online }: { entries: EntryRow[]; online: OnlineRow[] }) {
+  // Cancelling changes the server's books, so it waits for the internet (P2.2e).
+  const connected = useConnectivity();
   const [filter, setFilter] = useState<Filter>("all");
   // `target` is kept after closing so the dialog does not go blank while it animates out.
   const [target, setTarget] = useState<EntryRow | null>(null);
@@ -59,7 +69,7 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
   const rows = useMemo(() => {
     const all: Row[] = [
       ...entries.map<Row>((entry) => ({ key: entry.id, createdAt: entry.createdAt, group: groupOf(entry), entry })),
-      ...online.map<Row>((row) => ({ key: `bill-${row.billNo}`, createdAt: row.createdAt, group: "online", online: row })),
+      ...online.map<Row>((row) => ({ key: `bill-${row.key}`, createdAt: row.createdAt, group: "online", online: row })),
     ];
     return all
       .filter((row) => filter === "all" || row.group === filter)
@@ -76,8 +86,18 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
   function confirm() {
     if (!target) return;
     startTransition(async () => {
-      const result = await voidEntryAction({ entryId: target.id, reason });
+      let result;
+      try {
+        result = await voidEntryAction({ entryId: target.id, reason });
+      } catch {
+        // Uncaught, a dropped connection took the whole screen down. Nothing
+        // was cancelled that the server did not say so about.
+        return setError(
+          "The server could not be reached, so it is not known whether the entry was cancelled. Check the list when the internet is back.",
+        );
+      }
       if (!result.ok) return setError(result.error);
+      requestDayRefresh();
       setOpen(false);
     });
   }
@@ -121,6 +141,7 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
           <tbody>
             {rows.map(({ key, createdAt, entry, online: bill }) => {
               const muted = entry && (entry.voided || entry.isVoid);
+              const notSent = entry?.pending || bill?.pending;
               return (
                 <tr key={key} className={cn("border-b last:border-b-0", muted && "text-muted-foreground")}>
                   <td className={cn(td, "tabular-nums")} data-label="Time">
@@ -135,7 +156,7 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
                   <td className={cn(td, entry?.voided && "line-through")} data-row-title="">
                     {bill ? (
                       <>
-                        Bill #{bill.billNo}, {bill.customerName ?? "Walk-in"}{" "}
+                        Bill {bill.ref}, {bill.customerName ?? "Walk-in"}{" "}
                         <span className="text-xs text-muted-foreground">(to Owner&apos;s bank)</span>
                       </>
                     ) : entry ? (
@@ -148,6 +169,11 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
                     ) : null}
                   </td>
                   <td className={cn(td, "max-md:empty:hidden")}>
+                    {notSent ? (
+                      <span title="Made with no internet. It goes to the server by itself.">
+                        <Badge variant="warning">Not sent yet</Badge>
+                      </span>
+                    ) : null}
                     {entry?.pinConfirmed ? <Badge variant="success">PIN confirmed</Badge> : null}
                     {entry?.voided ? <Badge variant="destructive">Cancelled</Badge> : null}
                     {entry?.isVoid ? <Badge variant="secondary">Cancellation</Badge> : null}
@@ -156,8 +182,15 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
                     {rs(bill ? bill.amount : entry!.amount)}
                   </td>
                   <td className={cn(td, "text-right max-md:mt-1 max-md:border-t max-md:pt-2 max-md:empty:hidden")}>
-                    {entry && !entry.voided && !entry.isVoid ? (
-                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => openFor(entry)}>
+                    {entry && !entry.pending && !entry.voided && !entry.isVoid ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        disabled={!connected}
+                        title={connected ? undefined : "Needs the internet"}
+                        onClick={() => openFor(entry)}
+                      >
                         Cancel
                       </Button>
                     ) : null}
@@ -202,7 +235,7 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
             <Button variant="outline" onClick={() => setOpen(false)}>
               Keep entry
             </Button>
-            <Button variant="destructive" onClick={confirm} disabled={pending}>
+            <Button variant="destructive" onClick={confirm} disabled={pending || !connected}>
               {pending ? "Cancelling..." : "Cancel entry"}
             </Button>
           </DialogFooter>

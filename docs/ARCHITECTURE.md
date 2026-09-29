@@ -13,13 +13,16 @@ src/
     (app)/<route>/    A signed-in page. Thin: it calls a feature's queries.ts
                       and renders that feature's components. No business logic.
     (auth)/login/     The only page reachable signed out.
-    offline-billing/  Billing with no internet (P2.2d). Static, outside (app), so the
-                      service worker can keep it and open it when Billing cannot load;
-                      it fills itself from this browser's IndexedDB.
+    offline-billing/  The offline pages (P2.2d, P2.2e): Billing, Daily folders and the
+    offline-folders/  Register with no internet. Static, outside (app), so the service
+    offline-register/ worker can keep them and open each when its screen cannot load;
+                      they fill themselves from this browser's IndexedDB. Each renders
+                      one feature's offline component inside components/offline-page.
     api/auth/         Better Auth's route.
-    api/offline/      The counter's offline catalog copy (P2.2b, catalog/ — a GET)
-                      and the outbox's sync (P2.2c, sync/ — a POST that saves a
-                      bill made offline through billing's service). Route
+    api/offline/      The counter's offline copies — catalog/ (P2.2b) and day/ (P2.2e),
+                      both GETs — and the outbox's syncs, sync/ (P2.2c, a bill,
+                      through billing's service) and folders/ (P2.2e, a folder
+                      entry, through folders' service), both POSTs. Route
                       Handlers, because Next runs Server Actions one at a time
                       per client and background work must not hold up "Save
                       bill". With api/auth these are the only API routes;
@@ -52,11 +55,14 @@ src/
                       form-dialog, form-feedback, use-form-action, app-shell.
                       The offline pieces (P2.2) live here too, because every
                       signed-in screen carries them: pwa-setup, offline-banner,
-                      use-connectivity, catalog-sync, and the outbox's
-                      outbox-sync (sends it), use-outbox (reads it) and
-                      outbox-status (the line at the top of every screen);
-                      offline-way-out, the link to offline billing on the
-                      loading and error screens.
+                      use-connectivity, catalog-sync, day-sync (the copy of the
+                      open day, P2.2e), and the outbox's outbox-sync (sends it),
+                      use-outbox (reads it) and outbox-status (the line at the
+                      top of every screen); offline-way-out, the link to a
+                      screen's offline page on the loading and error screens;
+                      offline-page, the frame the three offline pages share —
+                      shared because each of them belongs to a different
+                      feature.
     ui/                 shadcn/ui primitives. Generic, no salon knowledge.
 
   lib/
@@ -79,10 +85,13 @@ src/
     catalog.ts        The catalog's shapes and offeredDeals(), shared by the
                       billing screen and the offline copy.
     offline/          Working offline (P2.2): catalog.ts, the copy's shape and
-                      version; outbox.ts, the outbox's entries and what the
-                      server's answers mean; session.ts, the 12 hours per
-                      sign-in; slip.ts, `T-` numbers (all pure); store.ts, the
-                      browser's IndexedDB that holds them — browser only.
+                      version; day.ts, the open day's copy (P2.2e); outbox.ts,
+                      what waits in the outbox — bills and folder entries — and
+                      what the server's answers mean; pages.ts, the offline pages
+                      and what each stands in for (its test holds public/sw.js to
+                      the same list); session.ts, the 12 hours per sign-in;
+                      slip.ts, `T-` numbers (all pure); store.ts, the browser's
+                      IndexedDB that holds them — browser only.
     same-origin.ts    Next's Server Action Origin check, for a Route Handler.
     security-code.ts · format.ts · chart.ts · alerts.ts · pin.ts · utils.ts
 
@@ -90,10 +99,13 @@ src/
     index.ts          The pool and the Drizzle instance.
     schema/           Drizzle tables, split by area (auth, billing, cash, days,
                       accounts, audit, config) and re-exported from index.ts.
-    queries/          Reads used by three or more features — and catalog.ts, the
-                      one exception: the billing screen and the offline copy's
-                      route read it, so the two cannot disagree about what is on
-                      sale. Check before adding another.
+    queries/          Reads used by three or more features — and the offline
+                      copies' reads, the exceptions: catalog.ts (the billing
+                      screen and the catalog copy read it, so the two cannot
+                      disagree about what is on sale), day-entries.ts (Daily
+                      folders and the day copy) and day-copy.ts (the day copy,
+                      and the register's staff), P2.2e. Check before adding
+                      another.
     audit.ts          writeAudit(). Every important action goes through it.
     bill-cancel.ts    cancelBill + writeCancellation, shared by billing,
                       the daily report and the developer's edit.

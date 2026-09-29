@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { MobileNav } from "@/components/app-shell/mobile-nav";
 import { CatalogSync } from "@/components/catalog-sync";
+import { DaySync } from "@/components/day-sync";
 import { OutboxStatus } from "@/components/outbox-status";
 import { OutboxSync } from "@/components/outbox-sync";
 import { Sidebar } from "@/components/app-shell/sidebar";
@@ -22,7 +23,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-[16.5rem_minmax(0,1fr)]">
       <CatalogSync />
-      {/* Bills made offline, sent to the server (P2.2c). */}
+      {/* The open day's bills and entries, for the offline screens (P2.2e). */}
+      <DaySync />
+      {/* Bills and folder entries made offline, sent to the server (P2.2c, P2.2e). */}
       <OutboxSync />
       <Sidebar user={user} />
       <MobileNav user={{ name: user.name, role: user.role }} />

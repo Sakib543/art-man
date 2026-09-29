@@ -11,8 +11,9 @@ import { useConnectivity } from "./use-connectivity";
  * (P2.2a). It says plainly what the counter can do — the counter should not
  * find out by losing a bill:
  *
- * - with offline billing ready (P2.2d: a copy on this computer, confirmed by
- *   the server within 12 hours), bills are kept and sent later;
+ * - with working offline ready (P2.2d: a copy on this computer, confirmed by
+ *   the server within 12 hours), bills and folder entries (P2.2e) are kept
+ *   and sent later;
  * - otherwise, the paper bill book (P2.1).
  *
  * It marks `<html data-offline>` while shown. `globals.css` turns that into
@@ -50,7 +51,7 @@ export function OfflineBanner() {
       <WifiOff aria-hidden className="size-4 shrink-0" />
       {canKeep ? (
         <span className="truncate">
-          No internet — bills are kept on this computer
+          No internet — bills and entries are kept on this computer
           <span className="hidden sm:inline"> and sent when it is back</span>.
         </span>
       ) : (

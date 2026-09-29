@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { requestDayRefresh } from "@/components/day-sync";
 import { useConnectivity } from "@/components/use-connectivity";
 import { formatTime, num, paidBy } from "@/lib/format";
 import { slipLabel } from "@/lib/offline/slip";
@@ -71,6 +72,7 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
         return setError("The server could not be reached, so the bill was not cancelled. Try again when the internet is back.");
       }
       if (!result.ok) return setError(result.error);
+      requestDayRefresh();
       close();
     });
   }

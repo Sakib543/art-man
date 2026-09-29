@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { requestDayRefresh } from "@/components/day-sync";
 import { useConnectivity } from "@/components/use-connectivity";
 import { checkPayment, paymentAmounts, priceCart, PricingError, type PayMode, type PricedLine } from "@/lib/accounting";
 import { formatDate, formatDateTime, paidBy, rs } from "@/lib/format";
@@ -230,6 +231,8 @@ export function BillingScreen({
   function afterSave({ receipt: saved, alreadySaved }: SavedBill, note?: string) {
     setClientId(crypto.randomUUID());
     setDoubtful(null);
+    // The offline copy of the day should have this bill if the internet goes next (P2.2e).
+    requestDayRefresh();
     if (editing) {
       // The bill just edited is now cancelled, so this screen has nothing
       // left to show. Go back to a fresh bill; the correction is at the top
