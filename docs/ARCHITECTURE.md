@@ -36,7 +36,7 @@ src/
     global-error.tsx  touches the database. global-error replaces the root
                       layout, so it has no Tailwind and its styles are inline.
 
-  features/<name>/    One folder per feature. 16 of them today.
+  features/<name>/    One folder per feature. 18 of them today.
     components/         UI for this feature only.
     actions.ts          "use server". The entry point: requireUser/requireRole
                         FIRST and outside the try, then Zod, then service.ts,

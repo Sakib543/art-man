@@ -11,7 +11,9 @@ import type { AddOtherInput, SetFixedInput } from "./schemas";
 const actorOf = (user: SessionUser) => user.username || user.name;
 
 async function requireOpenMonth(month: string) {
-  if (await isMonthClosed(month)) throw new UserError("This month is closed and frozen. Corrections go into next month.");
+  if (await isMonthClosed(month)) {
+    throw new UserError("This month is closed and frozen. A mistake in it is put right with an adjustment, from the Monthly report.");
+  }
 }
 
 /**

@@ -58,7 +58,8 @@ RAAT (Manager) ─► Day close, 5 qadam
 MAHINA (Owner)
   Monthly expenses (rent, bijli, others) ─► Capital (solar jaisi investment)
   ─► Monthly report (net profit, Owner account) ─► Partners (hissa, drawings)
-  ─► Month close (mahina freeze, salaries khata mein)
+  ─► Month close (mahina freeze, salaries khata mein; sirf aakhri din band hone ke baad)
+  ─► Band mahine mein galti mile to Adjustment: agle khule mahine mein ginti hoti hai (P3.4)
 ```
 
 ---
@@ -80,7 +81,7 @@ MAHINA (Owner)
 | Screen | Kaam |
 |---|---|
 | Overview | Live sales, drawer cash, 7 din ka chart, alerts, recent activity |
-| Monthly report | Profit and loss, Owner account, band dinon ki list, Month close |
+| Monthly report | Profit and loss, Owner account, band dinon ki list, Month close. Band mahine par **"Record an adjustment"**: galti ka hisaab khule mahine mein (P3.4) |
 | Monthly expenses | Fixed lines (rent...) aur others (reason ke saath) |
 | Capital / Outstanding | Partner ki investment aur kiston mein wapsi |
 | Partners | Profit share %, partner accounts, profit drawn |
@@ -203,7 +204,7 @@ Purani migration files kabhi edit na karein, hamesha nayi banayein.
 | Audit log | Har zaroori kaam: kisne, kab, kya (secret kabhi nahi likha jata) |
 | Security code | Har din band hone par ek code banta hai jo **kal ke code + aaj ki saari bills/entries** se hash hota hai. Purani entry badle to code match nahi karega |
 | Din lock | Band din mein entry nahi ho sakti |
-| Mahina freeze | Month close par report aur partners ke shares **save** ho jate hain. Baad mein salary ya share % badle to purana mahina nahi badalta. Har screen band mahine mein badlaav se inkaar karti hai |
+| Mahina freeze | Month close par report aur partners ke shares **save** ho jate hain. Baad mein salary ya share % badle to purana mahina nahi badalta. Har screen band mahine mein badlaav se inkaar karti hai. Galti ho to Owner **adjustment** likhta hai, jo khule mahine ke profit (aur staff khata) mein aati hai; band mahina waisa hi rehta hai (P3.4) |
 | Secrets | `.env.local` git mein nahi jata |
 
 ---
@@ -323,7 +324,7 @@ Behtar hai ke pehle `neon branches create --name friend` se alag branch banayen,
 | WhatsApp par summary/receipt bhejna | Abhi sirf preview |
 | Band din ki bill cancel (sirf Owner), din dobara kholna | Nahi bana |
 | Staff ki monthly receipt, bonus dena | Nahi bana |
-| Band mahine ki galti agle mahine adjustment se sudharna | Nahi bana (abhi sirf rok hai) |
+| Band mahine ki galti agle mahine adjustment se sudharna | **Ban gaya** (P3.4, 2026-09-29) |
 | Owner ko 3+ cancel ka alert bhejna | Sirf screen par note |
 | Backup/restore ka pukka intezam, offline mode | Phase 4 |
 | Customer ke special rates ki edit screen | Nahi bana |

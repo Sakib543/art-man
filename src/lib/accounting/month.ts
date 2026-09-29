@@ -12,6 +12,12 @@ export interface MonthInput {
    * Advances are NOT included: counting them would subtract the same money twice.
    */
   staffEarnings: Rupees;
+  /**
+   * What adjustments for earlier, closed months do to this month's profit
+   * (backlog P3.4). A closed month is never recalculated, so a mistake found in
+   * it later is put right here, in the month that is open.
+   */
+  adjustments?: Rupees;
 }
 
 /**
@@ -19,7 +25,7 @@ export interface MonthInput {
  * expense, so it never appears here.
  */
 export function netProfit(m: MonthInput): Rupees {
-  return m.totalSales - m.dailyExpenses - m.monthlyExpenses - m.staffEarnings;
+  return m.totalSales - m.dailyExpenses - m.monthlyExpenses - m.staffEarnings + (m.adjustments ?? 0);
 }
 
 export interface OwnerAccountInput {
@@ -33,6 +39,14 @@ export interface OwnerAccountInput {
    * left, so less is held by the business, but it is not an expense.
    */
   capitalRepaid?: Rupees;
+  /**
+   * The part of this month's adjustments (backlog P3.4) that changes what
+   * reached the Owner: online money a corrected sale did or did not bring into
+   * his bank, less a corrected cost he paid himself. Their effect on the profit
+   * is already in `netProfit`; without this, putting right an online sale would
+   * move the balance with the business, though no money in the business moved.
+   */
+  adjustments?: Rupees;
 }
 
 export interface OwnerAccount {
@@ -47,7 +61,7 @@ export function ownerAccount(i: OwnerAccountInput): OwnerAccount {
   return {
     reachedOwner,
     netReachedOwner,
-    heldByBusiness: i.netProfit - netReachedOwner - (i.capitalRepaid ?? 0),
+    heldByBusiness: i.netProfit - netReachedOwner - (i.capitalRepaid ?? 0) - (i.adjustments ?? 0),
   };
 }
 

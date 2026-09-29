@@ -1,3 +1,4 @@
+import type { AdjustmentTotals } from "./adjustments";
 import { netProfit, ownerAccount, type OwnerAccount } from "./month";
 import type { PaidFrom } from "./folders";
 import type { Rupees } from "./types";
@@ -62,6 +63,11 @@ export interface MonthReportInput {
   /** Daily expenses the Owner paid from his own account. */
   dailyExpensesPaidByOwner: Rupees;
   capitalRepaid: Rupees;
+  /**
+   * Adjustments for earlier, closed months recorded in this one (backlog
+   * P3.4), added up by `adjustmentTotals`. None when left out.
+   */
+  adjustments?: AdjustmentTotals;
 }
 
 export interface MonthReport {
@@ -81,6 +87,19 @@ export interface MonthReport {
   netProfit: Rupees;
   owner: OwnerAccount;
   capitalRepaid: Rupees;
+  /**
+   * What adjustments for earlier, closed months did to this month's profit
+   * (backlog P3.4). A month closed before P3.4 has no such field in its
+   * frozen report, so read it with `?? 0`.
+   */
+  adjustments: Rupees;
+  /**
+   * What those adjustments changed in the money that reached the Owner: online
+   * a corrected sale did or did not bring, less a corrected cost he paid
+   * himself. Already inside `owner.heldByBusiness`; kept apart so the Owner
+   * account can show it as a line of its own. `?? 0` too.
+   */
+  adjustmentsToOwner: Rupees;
 }
 
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
@@ -91,12 +110,15 @@ export function buildMonthReport(input: MonthReportInput): MonthReport {
   const dailyExpenses = sum(input.days.map((d) => d.expenses));
   const staffEarned = sum(input.days.map((d) => d.staffEarned));
   const expenses = monthlyExpenseTotals(input.monthlyExpenses);
+  const adjustments = input.adjustments ?? { profit: 0, online: 0, paidByOwner: 0 };
+  const adjustmentsToOwner = adjustments.online - adjustments.paidByOwner;
 
   const profit = netProfit({
     totalSales: sales,
     dailyExpenses,
     monthlyExpenses: expenses.total,
     staffEarnings: staffEarned + input.salaries + input.bonuses,
+    adjustments: adjustments.profit,
   });
 
   return {
@@ -119,7 +141,10 @@ export function buildMonthReport(input: MonthReportInput): MonthReport {
       cashTaken: input.ownerTookCash,
       paidFromOwnPocket: input.dailyExpensesPaidByOwner + expenses.paidByOwner,
       capitalRepaid: input.capitalRepaid,
+      adjustments: adjustmentsToOwner,
     }),
     capitalRepaid: input.capitalRepaid,
+    adjustments: adjustments.profit,
+    adjustmentsToOwner,
   };
 }

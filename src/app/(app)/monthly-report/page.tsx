@@ -4,10 +4,14 @@ import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { getMonthlyReport } from "@/db/queries/month-report";
+import { AdjustmentsCard } from "@/features/month-adjustments/components/adjustments-card";
+import { RecordAdjustment } from "@/features/month-adjustments/components/record-adjustment";
+import { getAdjustmentsData } from "@/features/month-adjustments/queries";
 import { CloseMonthCard } from "@/features/month-close/components/close-month-card";
 import { getCloseState } from "@/features/month-close/queries";
 import { ClosedDaysTable, OwnerAccountCard, ProfitAndLoss } from "@/features/monthly-report/components/report-tables";
 import { requireRole } from "@/lib/auth/session";
+import { formatMonth } from "@/lib/business-date";
 import { rs } from "@/lib/format";
 
 export const metadata = { title: "Monthly report | Art Men's Salon" };
@@ -27,7 +31,11 @@ export default async function MonthlyReportPage({ searchParams }: { searchParams
   }
 
   const { report } = data;
-  const closeState = data.closed ? null : await getCloseState(data.month);
+  const [closeState, adjustments] = await Promise.all([
+    data.closed ? null : getCloseState(data.month),
+    getAdjustmentsData(data.month),
+  ]);
+  const { record } = adjustments;
 
   return (
     <>
@@ -36,9 +44,16 @@ export default async function MonthlyReportPage({ searchParams }: { searchParams
       </PageHeader>
 
       {data.closed ? (
-        <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-brass-line bg-brass-soft px-3.5 py-3 text-sm text-brass-strong">
-          <Lock className="mt-0.5 size-4.5 shrink-0" aria-hidden />
-          <p>{data.monthLabel} is closed and frozen. Any correction found later is added as an adjustment next month.</p>
+        <div className="mb-3.5 flex flex-wrap items-center gap-x-2.5 gap-y-3 rounded-lg border border-brass-line bg-brass-soft px-3.5 py-3 text-sm text-brass-strong">
+          <Lock className="size-4.5 shrink-0 self-start max-sm:mt-0.5 sm:self-center" aria-hidden />
+          <div className="min-w-0 flex-1 basis-60 space-y-1">
+            <p>
+              {data.monthLabel} is closed and frozen. A mistake found in it now is put right with an adjustment, which
+              counts in the month that is open{"countsIn" in record ? ` (${formatMonth(record.countsIn)})` : ""}.
+            </p>
+            {"blocked" in record ? <p className="text-xs">{record.blocked}</p> : null}
+          </div>
+          {"countsIn" in record ? <RecordAdjustment month={data.month} countsIn={record.countsIn} staff={record.staff} /> : null}
         </div>
       ) : null}
 
@@ -60,6 +75,24 @@ export default async function MonthlyReportPage({ searchParams }: { searchParams
       </div>
 
       {closeState ? <CloseMonthCard state={closeState} monthLabel={data.monthLabel} /> : null}
+
+      {adjustments.countedHere.length > 0 ? (
+        <AdjustmentsCard
+          title="Adjustments for earlier months"
+          description={`Mistakes found in a closed month, put right in ${data.monthLabel}.`}
+          rows={adjustments.countedHere}
+          show="corrects"
+        />
+      ) : null}
+
+      {adjustments.forThisMonth.length > 0 ? (
+        <AdjustmentsCard
+          title="Adjustments recorded later"
+          description={`Mistakes found in ${data.monthLabel} after it closed. Each counts in the month named, not in this report.`}
+          rows={adjustments.forThisMonth}
+          show="countsIn"
+        />
+      ) : null}
 
       <ClosedDaysTable days={data.days} report={report} openDay={data.openDay} />
     </>

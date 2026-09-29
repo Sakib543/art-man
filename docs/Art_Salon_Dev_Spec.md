@@ -246,6 +246,8 @@ Owner reviews the monthly report, then **Month Close**:
 - The month **freezes** — no entry can be cancelled. Later corrections become an **adjustment entry in the next month**.
 - Staff monthly slips finalise (drop the "Provisional" marker).
 
+> **Built 2026-09-29 (backlog P3.4).** The Owner records an adjustment from the closed month's Monthly report. It counts in the month that is open then — in its profit, and so in its partners' shares, and in a staff member's khata when it is about their pay — while the closed month stays exactly as it was closed. It puts right a sale (cash or online), an expense (paid by the business or by the Owner), what a staff member earned, or what a staff member took; no cash moves with it. A month can be closed only once its last day has been closed.
+
 ---
 
 ## 8. Monthly expenses, capital & outstanding (Owner only)

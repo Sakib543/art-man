@@ -35,7 +35,7 @@ export function CloseMonthCard({ state, monthLabel }: { state: CloseState; month
           <h2 className="text-md font-semibold">Close {monthLabel}</h2>
           <p className="text-sm text-muted-foreground">
             Closing freezes the month, adds the monthly salaries to the staff khata and saves the partners&apos; shares. A
-            correction found later goes in next month as an adjustment.
+            mistake found later is put right with an adjustment, which counts in the month that is open then.
           </p>
         </div>
         <Button onClick={() => setOpen(true)} disabled={blocked}>

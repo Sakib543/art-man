@@ -1,4 +1,5 @@
 import { Lock, ReceiptText, Wallet } from "lucide-react";
+import Link from "next/link";
 import { MonthSelect } from "@/components/month-select";
 import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
@@ -36,7 +37,13 @@ export default async function MonthlyExpensesPage({ searchParams }: { searchPara
       {data.closed ? (
         <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-brass-line bg-brass-soft px-3.5 py-3 text-sm text-brass-strong">
           <Lock className="mt-0.5 size-4.5 shrink-0" aria-hidden />
-          <p>{data.monthLabel} is closed. Expenses are frozen.</p>
+          <p>
+            {data.monthLabel} is closed. Expenses are frozen: a mistake in them is put right with an adjustment, from the{" "}
+            <Link href={`/monthly-report?month=${data.month}`} className="font-medium underline underline-offset-2">
+              Monthly report
+            </Link>
+            .
+          </p>
         </div>
       ) : null}
 

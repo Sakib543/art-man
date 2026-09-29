@@ -8,6 +8,7 @@ const ready: CloseCheckInput = {
   openDays: [],
   earlierOpenMonths: [],
   sharesValid: true,
+  latestDay: "2026-09-30",
 };
 
 describe("closeBlockers", () => {
@@ -35,6 +36,17 @@ describe("closeBlockers", () => {
 
   it("wants the partners' shares to add up to 100%", () => {
     expect(closeBlockers({ ...ready, sharesValid: false })[0]).toContain("100%");
+  });
+
+  it("waits for the month to be over: its last day closed, not merely every day so far", () => {
+    // 24 Sep is closed and the month has no open day, but the next day to be
+    // started would be 25 Sep -- inside a month that would already be frozen.
+    const blockers = closeBlockers({ ...ready, latestDay: "2026-09-24" });
+    expect(blockers).toEqual(["September 2026 is not over yet: it can be closed once 30 Sep is closed."]);
+  });
+
+  it("counts the month as over once a later month has begun", () => {
+    expect(closeBlockers({ ...ready, latestDay: "2026-10-03" })).toEqual([]);
   });
 
   it("lists every problem at once", () => {

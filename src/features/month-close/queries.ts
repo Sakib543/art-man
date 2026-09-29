@@ -45,6 +45,7 @@ export async function getCloseState(month: string): Promise<CloseState> {
     openDays: inMonth.filter((day) => day.closedAt === null).map((day) => day.date),
     earlierOpenMonths,
     sharesValid: checkShares(partnerRows.map((p) => p.sharePct)).ok,
+    latestDay: days.at(-1)?.date ?? null,
   });
 
   return {

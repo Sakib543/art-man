@@ -1,4 +1,5 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Lock } from "lucide-react";
+import Link from "next/link";
 import { NoOpenDay } from "@/components/no-open-day";
 import { PageHeader } from "@/components/page-header";
 import { DaySelect } from "@/features/daily-report/components/day-select";
@@ -12,6 +13,7 @@ import { getRegister } from "@/features/worksheet/queries";
 import { CANCELLATION_ALERT_AT } from "@/lib/alerts";
 import { atLeastOwner } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
+import { formatMonth, monthOf } from "@/lib/business-date";
 
 export const metadata = { title: "Daily report | Art Men's Salon" };
 
@@ -37,7 +39,8 @@ export default async function DailyReportPage({
     );
   }
 
-  const { days, selected, bills, summary, closing } = report;
+  const { days, selected, bills, summary, closing, monthClosed } = report;
+  const owner = atLeastOwner(user.role);
   // The register (P6.4) is the old Daily worksheet, for whichever day is chosen.
   const register = view === "register" ? await getRegister(selected.businessDate) : null;
 
@@ -59,13 +62,30 @@ export default async function DailyReportPage({
         </div>
       ) : null}
 
+      {/* The Owner cancels a closed day's bill from here, until the month is
+          closed (P0.3). After that the way is an adjustment (P3.4) — said here,
+          where the mistake is found, rather than by a refusal. */}
+      {owner && monthClosed ? (
+        <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-brass-line bg-brass-soft px-3.5 py-3 text-sm text-brass-strong">
+          <Lock className="mt-0.5 size-4.5 shrink-0" aria-hidden />
+          <p>
+            {formatMonth(monthOf(selected.businessDate))} is closed, so its bills can no longer be cancelled. A mistake
+            here is put right with an adjustment, from the{" "}
+            <Link href={`/monthly-report?month=${monthOf(selected.businessDate)}`} className="font-medium underline underline-offset-2">
+              Monthly report
+            </Link>
+            .
+          </p>
+        </div>
+      ) : null}
+
       <DaySummary summary={summary} closing={closing} />
 
       {register ? (
         // With the bills made offline that are still on this computer (P2.2e).
         <RegisterView bills={register.bills} staff={register.staff} businessDate={selected.businessDate} />
       ) : (
-        <ReportTable bills={bills} canCancel={atLeastOwner(user.role) && selected.closed} />
+        <ReportTable bills={bills} canCancel={owner && selected.closed && !monthClosed} />
       )}
     </>
   );

@@ -102,6 +102,41 @@ describe("buildMonthReport", () => {
     expect(withRepay.owner.heldByBusiness).toBe(without.owner.heldByBusiness - 5000);
   });
 
+  it("without adjustments the report says so, rather than leaving the fields out (P3.4)", () => {
+    const r = buildMonthReport(base);
+    expect(r.adjustments).toBe(0);
+    expect(r.adjustmentsToOwner).toBe(0);
+  });
+
+  it("an adjustment for a closed month counts in this month's profit, beside the days, not inside them (P3.4)", () => {
+    const r = buildMonthReport({ ...base, adjustments: { profit: -1000, online: 0, paidByOwner: 0 } });
+    expect(r.netProfit).toBe(23000 - 1000);
+    expect(r.adjustments).toBe(-1000);
+    // "Total sales" stays the sum of this month's closed days.
+    expect(r.sales).toBe(50000);
+    expect(r.dayProfitTotal).toBe(50000 - 3000 - 8000);
+  });
+
+  it("a cash sale that never came in lowers what the business holds as well", () => {
+    const r = buildMonthReport({ ...base, adjustments: { profit: -1000, online: 0, paidByOwner: 0 } });
+    expect(r.owner.heldByBusiness).toBe(buildMonthReport(base).owner.heldByBusiness - 1000);
+  });
+
+  it("an online sale that never came in leaves the business's balance alone: it was the Owner's bank that was short", () => {
+    const r = buildMonthReport({ ...base, adjustments: { profit: -1000, online: -1000, paidByOwner: 0 } });
+    expect(r.adjustmentsToOwner).toBe(-1000);
+    expect(r.owner.heldByBusiness).toBe(buildMonthReport(base).owner.heldByBusiness);
+    // What reached the Owner this month is this month's own money only.
+    expect(r.owner.reachedOwner).toBe(22000);
+  });
+
+  it("a cost the Owner paid himself, corrected later, leaves the business's balance alone too", () => {
+    const r = buildMonthReport({ ...base, adjustments: { profit: -500, online: 0, paidByOwner: 500 } });
+    expect(r.netProfit).toBe(23000 - 500);
+    expect(r.adjustmentsToOwner).toBe(-500);
+    expect(r.owner.heldByBusiness).toBe(buildMonthReport(base).owner.heldByBusiness);
+  });
+
   it("an empty month has no profit and nothing held", () => {
     const r = buildMonthReport({ ...base, days: [], monthlyExpenses: [], salaries: 0, bonuses: 0, ownerTookCash: 0 });
     expect(r).toMatchObject({ closedDays: 0, sales: 0, netProfit: 0 });

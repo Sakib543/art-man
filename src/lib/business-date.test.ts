@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { formatMonth, karachiDate, monthOf, monthStart, nextDate, nextMonth, todayInKarachi } from "./business-date";
+import {
+  formatMonth,
+  karachiDate,
+  lastDateOfMonth,
+  monthOf,
+  monthStart,
+  nextDate,
+  nextMonth,
+  todayInKarachi,
+} from "./business-date";
 
 describe("karachiDate", () => {
   it("is the next day in Karachi for a late-evening UTC time", () => {
@@ -28,6 +37,13 @@ describe("months", () => {
 
   it("names a month", () => {
     expect(formatMonth("2026-09")).toBe("September 2026");
+  });
+
+  it("finds a month's last day, leap years included", () => {
+    expect(lastDateOfMonth("2026-09")).toBe("2026-09-30");
+    expect(lastDateOfMonth("2026-12")).toBe("2026-12-31");
+    expect(lastDateOfMonth("2026-02")).toBe("2026-02-28");
+    expect(lastDateOfMonth("2028-02")).toBe("2028-02-29");
   });
 });
 

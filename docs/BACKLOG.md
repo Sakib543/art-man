@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-29 (**P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-29 (**P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -40,7 +40,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
 | P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
-| P3.4 | Next-month adjustment for a closed month | 🟡 | Sakib543, 2026-09-29 |
+| P3.4 | Next-month adjustment for a closed month (migration `0020`) | ✅ | done 2026-09-29 |
 | P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
 | P3.11 | Price ranges: pick the amount at billing | ✅ | done 2026-09-23 |
 | P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore into a local copy worked 2026-09-29 (P2.2f), none into Neon yet |
@@ -1376,23 +1376,116 @@ deleted afterwards.
 | ✅ P3.1 | **Give a bonus** — done 2026-09-23. See below | small |
 | ✅ P3.2 | **Customers screen** — details and special rates. Done 2026-09-23. See below | medium |
 | ⬜ P3.3 | **Staff monthly receipt** (spec §6.4) — print + WhatsApp | medium |
-| 🟡 P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — today it is only blocked. In progress, see below | medium |
+| ✅ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — done 2026-09-29 (migration `0020`). See below | medium |
 | ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
 | ✅ P3.6 | **Receipt printing / thermal printer** — done 2026-09-22. See below | small |
 | 🟡 P3.7 | **Backup and restore** — the backup is built and checked (2026-09-23). **No restore has ever been run.** See below | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
 
-### 🟡 P3.4 — Next-month adjustment for a closed month
-**Owner:** Sakib543, 2026-09-29
+### ✅ P3.4 — Next-month adjustment for a closed month
+**Done:** 2026-09-29 · migration `0020`
 
 Spec §7.4 and §11: once a month is closed nothing in it can be cancelled, and a mistake found later
-becomes an **adjustment entry in the next month**. Today the app only refuses ("Correct it with an
-entry in the next month") and offers no such entry. The plan: the Owner records an adjustment from
-the closed month's Monthly report; it counts in the month that is open now (its profit, and so the
-partners' shares), goes into the staff khata when it is about a staff member's pay, and the closed
-month stays exactly as it was closed. One new append-only table, so one migration. The user said to
-start (2026-09-29); the recommended choices are taken and recorded here when done.
+becomes an **adjustment entry in the next month**. Until now the app only refused ("Correct it with
+an entry in the next month") and offered no such entry, so a wrong bill, expense or staff line in a
+closed month could not be put right anywhere.
+
+**The user said "P3.4 shuru karo" (2026-09-29) and left the choices to Claude.** The recommended
+ones were taken:
+
+| Question | Chosen |
+|---|---|
+| Where does it count? | In **the month of the latest business day**, which must be open — never in the closed month. The closed month's report and the partners' shares were frozen at close and may have been paid out, so they are not touched. Between a month's close and the next month's first day there is no open month, and the screen says to start the next day first |
+| What can be put right? | Four things, in the Owner's words: **a sale** (a bill charged or entered wrong: cash or online), **an expense** (daily or monthly, entered wrong or left out: paid by the business or by the Owner), **what a staff member earned** (commission, wage, salary, bonus: the profit *and* their khata), **what a staff member took** (an advance or a payment recorded wrong: the khata only — money taken is not a cost, spec §7.1) |
+| How is the amount given? | "**More** than recorded" or "**Less** than recorded", plus the rupees, stored signed. Neither is chosen to start with: it is the one answer that turns the whole entry round. The dialog shows what it will do before saving: "October 2026's profit: -Rs 1,000", "Arshad khata: -Rs 100" |
+| Who, and from where? | **The Owner** (and the developer, as everywhere), from the **closed month's Monthly report** — a "Record an adjustment" button in its "closed and frozen" banner. The Daily report of a closed month's day says so and links there, instead of offering a Cancel the server would refuse |
+| Does cash move? | **No.** It puts the books right. Money that changes hands now — a refund, a payment to a staff member — goes through Daily folders as usual |
+| The khata | A staff adjustment writes an `adjustment` line into that person's khata, **dated with the latest business day**, as a bonus is (P3.1), labelled "Adjustment for September 2026: <reason>". Khata lines are in no day's security code, so dating one on a closed day breaks nothing |
+| A mistake in an adjustment | **Cancel** it while the month it counts in is open: a row of the opposite sign pointing back at it (`voids_id`, **unique**, so two cancels at once cannot both save), and a khata line reversing its khata line (`reverses_entry_id`). Once that month is closed the adjustment is frozen with it; another adjustment puts it right |
+| The Owner account | A corrected **online** sale changes what reached the Owner's bank, and a corrected cost **the Owner paid himself** changes what is credited back to him. Both are carried as their own line, "Adjustments for earlier months: online money, costs the Owner paid", so "Balance with business" does not move for money that never passed through the business |
+
+**Found while building it, and fixed here because P3.4 depends on it: a month could be closed
+before it was over.** `closeBlockers` only asked that every day *so far* be closed. Business days
+follow one another a calendar day at a time (`startNextDay` is `nextDate`), so closing September on
+24 Sep would have opened 25 Sep **inside the frozen month** — its bills counted in no month's report,
+and no month open to count an adjustment in. Month close is now refused until the month's last
+calendar day has been closed ("September 2026 is not over yet: it can be closed once 30 Sep is
+closed"). No month has been closed on the live database, so nothing already saved is affected.
+
+**What was built:**
+
+- **Migration `0020`** — enum `month_adjustment_kind` and table `month_adjustments`: the month it
+  counts in, the closed month it corrects, the kind, the signed amount, `online` (a sale),
+  `paid_from` (an expense), `staff_id` and `khata_entry_id` (staff pay), the reason, `voids_id`
+  (unique) and who and when. Append-only: `month_adjustments_append_only` on `forbid_change()`, the
+  15th trigger. Applied to a restored local copy first, then to live **before** the code was pushed
+  (`284d6a6`).
+- `lib/accounting/adjustments.ts` — pure: `adjustmentEffect` (what one adjustment does to the profit,
+  the online money, the Owner-paid costs and the khata) and `adjustmentTotals`. 9 tests.
+- `lib/accounting/month.ts`, `month-report.ts` — `netProfit` takes the adjustments' profit;
+  `ownerAccount` takes their Owner part; `MonthReport` gains `adjustments` and `adjustmentsToOwner`.
+  A month closed before P3.4 has neither in its frozen report, so both are read with `?? 0`.
+- `db/queries/month-report.ts` — the month's adjustments, cancellations included, added up.
+- `features/month-adjustments/` — `schemas`, `rules` (when one may be recorded or cancelled, the
+  khata labels, the one-line description, the form's words; 17 tests), `queries` (the rows a month
+  shows, and where a new one would count or why none can be recorded), `service`
+  (`recordAdjustment`, `cancelAdjustment`, one transaction each with the khata line and the audit
+  entry: `month.adjust`, `month.adjust-cancel`), `actions` (`requireRole("owner")`), and two
+  components: the dialog and the list with Cancel.
+- Monthly report — the banner's button; a P&L line "Adjustments for earlier months" and the Owner
+  account line, both only when non-zero; the footnote's sum; a list of the adjustments that count in
+  the month, and on a closed month a list of those recorded later that correct it.
+- `month-close/rules.ts` — the month-end blocker above (`lastDateOfMonth` in `lib/business-date.ts`).
+- The refusals that used to say "correct it in the next month" (a closed day's cancel or reopen,
+  Monthly expenses) now point at the adjustment; the Daily report and Monthly expenses of a closed
+  month say so on the screen, with a link.
+
+**Verified, 2026-09-29, against a restored copy of the live database in a throwaway local
+PostgreSQL — nothing written to live** (HANDOFF trap 8.20; the Browser pane signed in as a
+throwaway Owner that existed only in the copy). The copy's days were closed up to 30 Sep by a script
+through `closeDay` and `startNextDay`, September was closed from the screen, and 1 Oct started:
+
+| Check | Result |
+|---|---|
+| Month close with 24 Sep the last closed day | refused: "September 2026 is not over yet: it can be closed once 30 Sep is closed"; after 30 Sep, no blocker; closed from the screen, net profit -61,900 frozen |
+| Between September's close and 1 Oct | banner: "The next business day has not been started yet…", no button |
+| After 1 Oct | "Record an adjustment", counting in October 2026 |
+| The dialog | no direction → "Choose more or less"; a staff kind with no one chosen → "Choose a staff member"; the effect shown before saving |
+| Four recorded from the screen | sale Rs 1,000 less (cash); Arshad earned Rs 100 less; expense Rs 500 more (paid by the Owner); Sherry took Rs 2,000 less |
+| October's report | "Adjustments for earlier months -1,400"; net profit -81,400 (salaries -80,000); Owner account line +500; balance -80,900; the footnote adds up. September's report unchanged, listing the four as "Counts in October 2026" |
+| The khata | Arshad -100 and Sherry +2,000 on 1 Oct, labelled "Adjustment for September 2026: …" |
+| Cancel from the screen (Arshad) | a +100 row pointing back, a +100 khata line with `reverses_entry_id`; Arshad's 1 Oct lines sum to 0; `month.adjust-cancel` in the audit log |
+| Refused by the service | an adjustment already cancelled; a cancellation; the open month (October); a month with no days (August) |
+| Two cancels at the same moment | one saved, one "This adjustment is already cancelled"; one cancellation row. A second cancellation row inserted by hand is refused by `month_adjustments_voids_id_unique` |
+| Partners, October | net profit -81,000 → -40,500 each |
+| October closed (31 days by script) | frozen report `adjustments: -1000`, `adjustmentsToOwner: 0`, shares -52,900 each; 0 of 6 adjustments cancellable; a cancel refused: "October 2026 is closed, and this adjustment with it" |
+| Daily report, 24 Sep | the note with a link to September's Monthly report; no Cancel buttons |
+| 375 px | the banner, the list as stacked cards, the dialog; the page does not scroll sideways |
+| The trigger | UPDATE and DELETE on `month_adjustments` refused |
+
+No server errors and no console errors during the run. The copy, its dump, the throwaway account and
+the scripts were deleted afterwards, and the pane's IndexedDB copies, outbox (empty), worker and
+caches checked clean.
+
+`pnpm test` **638** (38 new), `pnpm lint` clean, `pnpm build` passes (36 routes).
+
+**Not verified:** anything on the live database beyond the migration — `pnpm db:check` reads 21 of
+21 applied. A direct read-back of live's new columns was refused by this session's permission mode,
+so it rests on `db:check` and on the same SQL read back from the local copy.
+
+**Not covered, deliberately:**
+
+- **Owner cash** (cash the Owner took or added, recorded wrong) has no adjustment kind: it moves only
+  the Owner account, and it is confirmed with the Owner's PIN when entered. **Partner drawings** and
+  **capital repayments** are entered in the open month as usual.
+- **A developer edit in a closed month (P1.6)** settles that day's khata again by itself. A staff
+  adjustment on top of it would count the same commission twice; only the sale's difference belongs
+  in an adjustment. HANDOFF section 9, question 0, still stands.
+- A bill's commission is not worked out for the Owner: a wrong bill whose karigar earned commission
+  on it is two adjustments, the sale and what they earned. The dialog's hint says so.
+
+**Size:** medium · **Value:** high (spec §7.4; before it a closed month's mistake had no way out)
 
 ### ✅ P3.15 — A dropped connection never leaves a bill in doubt
 **Done:** 2026-09-28

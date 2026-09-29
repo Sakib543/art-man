@@ -7,6 +7,9 @@ import type { ClosedDayRow } from "@/db/queries/month-report";
 /** "-3,000" for a cost, "0" when there is none. */
 const minus = (amount: number) => (amount ? `-${num(amount)}` : "0");
 
+/** "+1,000" or "-1,000": an adjustment can go either way, so its sign always shows. */
+const signed = (amount: number) => (amount > 0 ? `+${num(amount)}` : `-${num(-amount)}`);
+
 function Row({ label, value, total }: { label: string; value: string; total?: boolean }) {
   return (
     <tr className={cn("border-b last:border-b-0", total && "bg-brass-tint font-semibold")}>
@@ -30,6 +33,10 @@ export function ProfitAndLoss({ report }: { report: MonthReport }) {
           <Row label="Monthly salaries (staff on a salary)" value={minus(report.salaries)} />
           {/* A month closed before P3.1 has no `bonuses` in its frozen report. */}
           <Row label="Bonuses given (Owner)" value={minus(report.bonuses ?? 0)} />
+          {/* Only a month that has any (P3.4); a month closed before P3.4 has no such field. */}
+          {report.adjustments ? (
+            <Row label="Adjustments for earlier months (listed below)" value={signed(report.adjustments)} />
+          ) : null}
           <Row label="Net profit" value={rs(report.netProfit)} total />
         </tbody>
       </table>
@@ -55,6 +62,12 @@ export function OwnerAccountCard({ report }: { report: MonthReport }) {
           <Row label="Cash taken from drawer" value={minus(owner.reachedOwner - report.online)} />
           {ownerPaid ? <Row label="Business costs the Owner paid himself (credited back)" value={`+${num(ownerPaid)}`} /> : null}
           <Row label="Capital repaid to partners (not an expense)" value={minus(report.capitalRepaid)} />
+          {/* The online money and Owner-paid costs inside this month's adjustments (P3.4):
+              their profit is in the net profit above, so without this line the balance
+              would move for money that never passed through the business. */}
+          {report.adjustmentsToOwner ? (
+            <Row label="Adjustments for earlier months: online money, costs the Owner paid" value={signed(-report.adjustmentsToOwner)} />
+          ) : null}
           <Row label="Balance with business" value={rs(owner.heldByBusiness)} total />
         </tbody>
       </table>
@@ -122,7 +135,9 @@ export function ClosedDaysTable({ days, report, openDay }: { days: ClosedDayRow[
       <p className="border-t px-card py-3 text-xs text-muted-foreground">
         Sum of day profits {rs(report.dayProfitTotal)} − fixed {num(report.fixed)} − others {num(report.others)} − salaries{" "}
         {num(report.salaries)}
-        {report.bonuses ? ` − bonuses ${num(report.bonuses)}` : ""} = net profit {rs(report.netProfit)}.
+        {report.bonuses ? ` − bonuses ${num(report.bonuses)}` : ""}
+        {report.adjustments ? ` ${report.adjustments > 0 ? "+" : "−"} adjustments ${num(Math.abs(report.adjustments))}` : ""} = net
+        profit {rs(report.netProfit)}.
         {openDay ? ` Today (${formatDayMonth(openDay)}) is added when the day is closed.` : ""}
       </p>
     </Panel>

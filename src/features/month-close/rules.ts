@@ -1,5 +1,5 @@
 import { formatDayMonth } from "@/lib/format";
-import { formatMonth } from "@/lib/business-date";
+import { formatMonth, lastDateOfMonth } from "@/lib/business-date";
 
 export interface CloseCheckInput {
   month: string;
@@ -12,6 +12,8 @@ export interface CloseCheckInput {
   earlierOpenMonths: string[];
   /** Do the partners' shares add up to 100%? They are saved with the month. */
   sharesValid: boolean;
+  /** The latest business day there is, in any month. Null before the first one. */
+  latestDay: string | null;
 }
 
 /**
@@ -27,6 +29,14 @@ export function closeBlockers(input: CloseCheckInput): string[] {
   }
   if (input.openDays.length > 0) {
     blockers.push(`Close the open business day (${formatDayMonth(input.openDays[0])}) in Day close first.`);
+  }
+  // Business days follow one another, a calendar day at a time. Until the
+  // month's last day has been one, the next day to be started still belongs to
+  // this month — and a day opened in a frozen month would count in no month's
+  // report at all (found in P3.4).
+  const lastDate = lastDateOfMonth(input.month);
+  if (input.latestDay !== null && input.latestDay < lastDate) {
+    blockers.push(`${formatMonth(input.month)} is not over yet: it can be closed once ${formatDayMonth(lastDate)} is closed.`);
   }
   if (input.closedDays === 0 && input.openDays.length === 0) {
     blockers.push("This month has no closed days yet.");

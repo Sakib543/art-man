@@ -2,8 +2,17 @@ import { and, asc, eq, gte, inArray, lt, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { getMonthChoices, type MonthChoice } from "@/db/queries/months";
-import { capitalRepayments, cashEntries, daySnapshots, khataEntries, monthCloses, monthlyExpenses, staff } from "@/db/schema";
-import { buildMonthReport, type MonthDay, type MonthReport } from "@/lib/accounting";
+import {
+  capitalRepayments,
+  cashEntries,
+  daySnapshots,
+  khataEntries,
+  monthAdjustments,
+  monthCloses,
+  monthlyExpenses,
+  staff,
+} from "@/db/schema";
+import { adjustmentTotals, buildMonthReport, type MonthDay, type MonthReport } from "@/lib/accounting";
 import { formatMonth, monthOf, monthStart, nextMonth } from "@/lib/business-date";
 
 export interface ClosedDayRow extends MonthDay {
@@ -37,7 +46,7 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
   const start = monthStart(month);
   const end = monthStart(nextMonth(month));
 
-  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest, [bonusRow]] = await Promise.all([
+  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest, [bonusRow], adjustmentRows] = await Promise.all([
     db.select().from(daySnapshots).where(and(gte(daySnapshots.businessDate, start), lt(daySnapshots.businessDate, end))).orderBy(asc(daySnapshots.businessDate)),
     db.select().from(monthlyExpenses).where(eq(monthlyExpenses.month, start)),
     db.select({ amount: capitalRepayments.amount }).from(capitalRepayments).where(and(gte(capitalRepayments.paidOn, start), lt(capitalRepayments.paidOn, end))),
@@ -51,6 +60,12 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
       .select({ total: sum(khataEntries.amount).mapWith(Number) })
       .from(khataEntries)
       .where(and(eq(khataEntries.kind, "bonus"), gte(khataEntries.businessDate, start), lt(khataEntries.businessDate, end))),
+    // Adjustments for earlier, closed months counted in this one (backlog P3.4),
+    // cancellations included: each is its adjustment with the sign turned.
+    db
+      .select({ kind: monthAdjustments.kind, amount: monthAdjustments.amount, online: monthAdjustments.online, paidFrom: monthAdjustments.paidFrom })
+      .from(monthAdjustments)
+      .where(eq(monthAdjustments.month, start)),
   ]);
 
   // Owner cash and owner-paid expenses come from the entries of the closed days only,
@@ -90,6 +105,7 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
     ownerTookCash,
     dailyExpensesPaidByOwner,
     capitalRepaid: repayments.reduce((sum, r) => sum + r.amount, 0),
+    adjustments: adjustmentTotals(adjustmentRows),
   });
 
   // A closed month shows the report saved at the moment it was closed, not a fresh

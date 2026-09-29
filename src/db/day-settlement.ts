@@ -65,11 +65,11 @@ export function summarize(
   });
 }
 
-/** A closed month is frozen. Corrections to it belong in the next month. */
+/** A closed month is frozen. A correction to it is an adjustment in the open month (P3.4). */
 export async function requireOpenMonth(businessDate: string): Promise<void> {
   const month = monthOf(businessDate);
   const [closed] = await db.select().from(monthCloses).where(eq(monthCloses.month, monthStart(month))).limit(1);
-  if (closed) throw new UserError(`${formatMonth(month)} is closed. Correct it with an entry in the next month.`);
+  if (closed) throw new UserError(`${formatMonth(month)} is closed. A mistake in it is put right with an adjustment, from the Monthly report.`);
 }
 
 /** Changing anything in a day that is already closed is the Owner's alone (spec 11). */

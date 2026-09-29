@@ -12,6 +12,13 @@ export function nextMonth(month: string): string {
   return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
 }
 
+/** "2026-09" -> "2026-09-30": the last calendar day of a month. */
+export function lastDateOfMonth(month: string): BusinessDate {
+  const [y, m] = month.split("-").map(Number);
+  // Day 0 of the next month is the last day of this one. UTC, as in nextDate.
+  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+}
+
 /** "2026-09" -> "September 2026". */
 export function formatMonth(month: string): string {
   const [y, m] = month.split("-").map(Number);
