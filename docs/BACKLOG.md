@@ -40,7 +40,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
 | P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
-| P3.4 | Next-month adjustment for a closed month | ⬜ | — |
+| P3.4 | Next-month adjustment for a closed month | 🟡 | Sakib543, 2026-09-29 |
 | P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
 | P3.11 | Price ranges: pick the amount at billing | ✅ | done 2026-09-23 |
 | P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore into a local copy worked 2026-09-29 (P2.2f), none into Neon yet |
@@ -1376,12 +1376,23 @@ deleted afterwards.
 | ✅ P3.1 | **Give a bonus** — done 2026-09-23. See below | small |
 | ✅ P3.2 | **Customers screen** — details and special rates. Done 2026-09-23. See below | medium |
 | ⬜ P3.3 | **Staff monthly receipt** (spec §6.4) — print + WhatsApp | medium |
-| ⬜ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — today it is only blocked | medium |
+| 🟡 P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — today it is only blocked. In progress, see below | medium |
 | ⬜ P3.5 | **Real alert to the Owner on 3+ cancellations** — today it is only a note on screen | small |
 | ✅ P3.6 | **Receipt printing / thermal printer** — done 2026-09-22. See below | small |
 | 🟡 P3.7 | **Backup and restore** — the backup is built and checked (2026-09-23). **No restore has ever been run.** See below | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
+
+### 🟡 P3.4 — Next-month adjustment for a closed month
+**Owner:** Sakib543, 2026-09-29
+
+Spec §7.4 and §11: once a month is closed nothing in it can be cancelled, and a mistake found later
+becomes an **adjustment entry in the next month**. Today the app only refuses ("Correct it with an
+entry in the next month") and offers no such entry. The plan: the Owner records an adjustment from
+the closed month's Monthly report; it counts in the month that is open now (its profit, and so the
+partners' shares), goes into the staff khata when it is about a staff member's pay, and the closed
+month stays exactly as it was closed. One new append-only table, so one migration. The user said to
+start (2026-09-29); the recommended choices are taken and recorded here when done.
 
 ### ✅ P3.15 — A dropped connection never leaves a bill in doubt
 **Done:** 2026-09-28
