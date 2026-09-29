@@ -96,8 +96,8 @@
       <h1>No internet connection</h1>
       <p>The salon's system cannot be reached right now, so this page cannot be opened.</p>
       <p class="note" id="offline-note" hidden>
-        Billing, the day's folders and the register still work offline: what is made there is kept on this
-        computer and sent by itself when the internet is back.
+        Billing, the day's folders, the register and Day close still work offline: what is made there is kept
+        on this computer and sent by itself when the internet is back.
       </p>
       <p class="note" id="paper-note">
         Keep writing bills in the paper bill book. When the internet is back, enter each one on the Billing
@@ -106,10 +106,11 @@
       <a class="button" data-offline-page href="/offline-billing" hidden>Open offline billing</a>
       <a class="button secondary" data-offline-page href="/offline-folders" hidden>Daily folders</a>
       <a class="button secondary" data-offline-page href="/offline-register" hidden>Register</a>
+      <a class="button secondary" data-offline-page href="/offline-day-close" hidden>Day close</a>
       <button type="button" id="try-again" onclick="location.reload()">Try again</button>
     </main>
     <script>
-      // The offline pages (backlog P2.2d, P2.2e) the worker has kept on this
+      // The offline pages (backlog P2.2d, P2.2e, P2.2f) the worker has kept on this
       // computer. Whether they may run (12 hours from the last sign-in the
       // server confirmed) each page decides for itself.
       if ("caches" in self) {

@@ -49,3 +49,10 @@ export interface CloseReview {
   breakdown: BreakdownRow[];
   onlineSales: Rupees;
 }
+
+/** A close's answer (P2.2f): the day's security code, and whether this id had closed it before. */
+export interface ClosedDay {
+  securityCode: string;
+  /** True when this close had already closed the day — sent again after its answer was lost. */
+  alreadySaved: boolean;
+}

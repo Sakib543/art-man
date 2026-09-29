@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ClosedHereNote, closedHereText } from "@/components/closed-here-note";
 import { requestDayRefresh } from "@/components/day-sync";
 import { useConnectivity } from "@/components/use-connectivity";
+import { useOutbox } from "@/components/use-outbox";
 import { checkPayment, paymentAmounts, priceCart, PricingError, type PayMode, type PricedLine } from "@/lib/accounting";
 import { formatDate, formatDateTime, paidBy, rs } from "@/lib/format";
-import type { OutboxBill, OutboxEntry } from "@/lib/offline/outbox";
+import { closeOf, type OutboxBill, type OutboxEntry } from "@/lib/offline/outbox";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
 import { tempNo } from "@/lib/offline/slip";
 import { nextTempNo, queueBill, readCatalog, readOutboxEntry, removeFromOutbox } from "@/lib/offline/store";
@@ -162,6 +164,12 @@ export function BillingScreen({
   }, [fixing]);
 
   const fixed = fix === "gone" ? null : fix;
+
+  // A day closed on this computer, its close not on the server yet, takes no
+  // more bills (P2.2f) — except a refused one of that day being put right,
+  // which was made before the close and is in its count.
+  const closedHere = closeOf(useOutbox(), data.businessDate);
+  const closedToThis = closedHere !== null && !fixed;
 
   const specialRates = customer.status === "found" ? customer.info.specialRates : NO_RATES;
 
@@ -370,6 +378,7 @@ export function BillingScreen({
   function submit() {
     setError("");
     setNotice("");
+    if (closedHere && closedToThis) return setError(closedHereText(closedHere, "bill"));
     if (cart.length === 0) return setError("Add a service or deal to start the bill");
     if (cart.some((line) => !line.staffId)) return setError("Choose a staff member for every service");
     // Priced as 0 while blank so the total stays live; not saved that way (P3.12).
@@ -454,6 +463,8 @@ export function BillingScreen({
 
   return (
     <>
+      {closedHere && closedToThis ? <ClosedHereNote close={closedHere} what="bill" /> : null}
+
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
         <ServicePicker
           services={data.services}
@@ -696,7 +707,12 @@ export function BillingScreen({
               </div>
             ) : null}
 
-            <Button size="lg" className="mt-3.5 w-full" onClick={submit} disabled={pending || doubtful !== null}>
+            <Button
+              size="lg"
+              className="mt-3.5 w-full"
+              onClick={submit}
+              disabled={pending || doubtful !== null || closedToThis}
+            >
               <ReceiptIcon aria-hidden />
               {pending
                 ? offline

@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
+  CLOSE_SYNC_URL,
+  closeOf,
+  countOf,
   describeCounts,
   FOLDER_SYNC_URL,
+  heldBack,
   isBillItem,
+  isCloseItem,
   isFolderItem,
+  isOutboxCloseEntry,
   isOutboxEntry,
   isOutboxFolderEntry,
   isOutboxItem,
   nextToSend,
+  NO_COUNTS,
   outboxCounts,
   outboxTally,
   outcomeOf,
@@ -16,6 +23,8 @@ import {
   syncRequestOf,
   waitingBills,
   waitingFolderEntries,
+  workOfDay,
+  type OutboxCloseEntry,
   type OutboxEntry,
   type OutboxFolderEntry,
   type OutboxItem,
@@ -212,18 +221,135 @@ describe("folder entries in the outbox (P2.2e)", () => {
 });
 
 describe("outboxTally and describeCounts", () => {
-  const items: OutboxItem[] = [entry("b1"), entry("b2", refused), folder("f1"), folder("f2"), folder("f3", { rejected: refused })];
+  const items: OutboxItem[] = [
+    entry("b1"),
+    entry("b2", refused),
+    folder("f1"),
+    folder("f2"),
+    folder("f3", { rejected: refused }),
+    close("c1"),
+  ];
 
-  it("counts waiting and refused, bills and entries, apart", () => {
-    expect(outboxTally(items)).toEqual({ waiting: { bills: 1, entries: 2 }, refused: { bills: 1, entries: 1 } });
-    expect(outboxTally([])).toEqual({ waiting: { bills: 0, entries: 0 }, refused: { bills: 0, entries: 0 } });
+  it("counts waiting and refused, bills, entries and closes, apart", () => {
+    expect(outboxTally(items)).toEqual({
+      waiting: { bills: 1, entries: 2, closes: 1 },
+      refused: { bills: 1, entries: 1, closes: 0 },
+    });
+    expect(outboxTally([])).toEqual({ waiting: NO_COUNTS, refused: NO_COUNTS });
+    expect(countOf({ bills: 1, entries: 2, closes: 1 })).toBe(4);
   });
 
   it("says it in words", () => {
-    expect(describeCounts({ bills: 1, entries: 0 })).toBe("1 bill");
-    expect(describeCounts({ bills: 0, entries: 2 })).toBe("2 folder entries");
-    expect(describeCounts({ bills: 2, entries: 1 })).toBe("2 bills and 1 folder entry");
-    expect(describeCounts({ bills: 0, entries: 0 })).toBe("");
+    expect(describeCounts({ bills: 1, entries: 0, closes: 0 })).toBe("1 bill");
+    expect(describeCounts({ bills: 0, entries: 2, closes: 0 })).toBe("2 folder entries");
+    expect(describeCounts({ bills: 2, entries: 1, closes: 0 })).toBe("2 bills and 1 folder entry");
+    expect(describeCounts({ bills: 0, entries: 0, closes: 1 })).toBe("1 day close");
+    expect(describeCounts({ bills: 3, entries: 1, closes: 1 })).toBe("3 bills, 1 folder entry and 1 day close");
+    expect(describeCounts(NO_COUNTS)).toBe("");
+  });
+});
+
+/* A day's close, which waits in the same outbox since P2.2f. */
+
+function close(clientId: string, over: Partial<OutboxCloseEntry> = {}): OutboxCloseEntry {
+  return {
+    v: 1,
+    type: "close",
+    clientId,
+    businessDate: "2026-09-24",
+    madeAt: "2026-09-24T23:10:00.000Z",
+    madeBy: "manager",
+    close: { attendance: { "st-arshad": true }, payouts: { "st-arshad": 500 }, counted: 5000, reason: null, expected: 5000 },
+    preview: {
+      breakdown: [{ label: "Opening cash (from yesterday)", amount: 5000 }],
+      onlineSales: 0,
+      payouts: [{ name: "Arshad", amount: 500 }],
+    },
+    rejected: null,
+    ...over,
+  };
+}
+
+describe("a day's close in the outbox (P2.2f)", () => {
+  it("is told from a bill and a folder entry", () => {
+    expect(isCloseItem(close("c"))).toBe(true);
+    expect(isBillItem(close("c"))).toBe(false);
+    expect(isFolderItem(close("c"))).toBe(false);
+    expect(isCloseItem(entry("b"))).toBe(false);
+    expect(isCloseItem(folder("f"))).toBe(false);
+  });
+
+  it("is read back from the store, and never mistaken for a bill or an entry", () => {
+    expect(isOutboxCloseEntry(close("c"))).toBe(true);
+    expect(isOutboxCloseEntry({ ...close("c"), seq: 9 })).toBe(true);
+    expect(isOutboxCloseEntry(close("c", { rejected: refused }))).toBe(true);
+    expect(isOutboxItem(close("c"))).toBe(true);
+    expect(isOutboxEntry(close("c"))).toBe(false);
+    expect(isOutboxFolderEntry(close("c"))).toBe(false);
+    expect(isOutboxCloseEntry(entry("b"))).toBe(false);
+    expect(isOutboxCloseEntry(folder("f"))).toBe(false);
+  });
+
+  it.each([
+    ["no count", { close: { ...close("c").close, counted: undefined } }],
+    ["no expected cash", { close: { ...close("c").close, expected: "5000" } }],
+    ["a payout that is not a number", { close: { ...close("c").close, payouts: { st: "500" } } }],
+    ["attendance that is not yes or no", { close: { ...close("c").close, attendance: { st: 1 } } }],
+    ["no preview", { preview: undefined }],
+    ["another version", { v: 2 }],
+    ["a refusal with no reason", { rejected: { at: "2026-09-24T10:00:00.000Z" } }],
+  ])("refuses one with %s", (_, over) => {
+    expect(isOutboxCloseEntry({ ...close("c"), ...over })).toBe(false);
+  });
+
+  it("goes to its own route, without what only this browser needs", () => {
+    const { url, body, kind } = syncOf(close("c", { rejected: refused }));
+    expect(url).toBe(CLOSE_SYNC_URL);
+    expect(kind).toBe("close");
+    expect(Object.keys(body).sort()).toEqual(["businessDate", "clientId", "close", "madeAt", "madeBy", "type", "v"]);
+  });
+
+  it("is saved on a 200 that carries the server's security code", () => {
+    expect(outcomeOf({ status: 200 }, { securityCode: "A3F9-7C21-0B8E", alreadySaved: false }, "close")).toEqual({
+      kind: "saved",
+      securityCode: "A3F9-7C21-0B8E",
+      alreadySaved: false,
+    });
+    expect(outcomeOf({ status: 200 }, { alreadySaved: true }, "close")).toEqual({ kind: "later" });
+    expect(outcomeOf({ status: 200 }, { securityCode: "", alreadySaved: true }, "close")).toEqual({ kind: "later" });
+    expect(outcomeOf({ status: 422 }, { reason: "The day's cash changed" }, "close")).toEqual({
+      kind: "rejected",
+      reason: "The day's cash changed",
+    });
+  });
+
+  it("waits behind its day's bills and entries, waiting or refused, and only its own day's", () => {
+    const day = close("c");
+    expect(heldBack(day, [entry("b1"), day])).toBe(true);
+    expect(heldBack(day, [folder("f1", { rejected: refused }), day])).toBe(true);
+    expect(heldBack(day, [{ ...entry("b2"), businessDate: "2026-09-25" }, day])).toBe(false);
+    expect(heldBack(day, [day])).toBe(false);
+    // Bills are never held back by a close.
+    expect(heldBack(entry("b1"), [day, entry("b1")])).toBe(false);
+  });
+
+  it("is sent once nothing of its day is left, and a refused bill of the day keeps it waiting", () => {
+    expect(nextToSend([entry("b1"), close("c")])?.clientId).toBe("b1");
+    expect(nextToSend([close("c"), entry("b1")])?.clientId).toBe("b1");
+    expect(nextToSend([close("c")])?.clientId).toBe("c");
+    expect(nextToSend([entry("b1", refused), close("c")])).toBeNull();
+    // Another day's work goes ahead meanwhile.
+    expect(nextToSend([entry("b1", refused), close("c"), { ...entry("b2"), businessDate: "2026-09-25" }])?.clientId).toBe(
+      "b2",
+    );
+  });
+
+  it("is found for its day, waiting or refused, with the work that holds it back", () => {
+    const items: OutboxItem[] = [entry("b1"), folder("f1", { rejected: refused }), close("c", { rejected: refused })];
+    expect(closeOf(items, "2026-09-24")?.clientId).toBe("c");
+    expect(closeOf(items, "2026-09-25")).toBeNull();
+    expect(workOfDay(items, "2026-09-24").map((item) => item.clientId)).toEqual(["b1", "f1"]);
+    expect(workOfDay(items, "2026-09-25")).toEqual([]);
   });
 });
 

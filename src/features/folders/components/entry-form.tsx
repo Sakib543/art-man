@@ -5,6 +5,7 @@ import { PasswordInput } from "@/components/password-input";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { unstable_isUnrecognizedActionError } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
+import { ClosedHereNote, closedHereText } from "@/components/closed-here-note";
 import { Field } from "@/components/field";
 import { requestDayRefresh } from "@/components/day-sync";
 import { Segmented } from "@/components/segmented";
@@ -13,9 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { useConnectivity } from "@/components/use-connectivity";
+import { useOutbox } from "@/components/use-outbox";
 import type { PaidFrom } from "@/lib/accounting";
 import { rs } from "@/lib/format";
-import type { OutboxFolder } from "@/lib/offline/outbox";
+import { closeOf, type OutboxFolder } from "@/lib/offline/outbox";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
 import { queueEntry, readCatalog } from "@/lib/offline/store";
 import { addEntryAction } from "../actions";
@@ -76,6 +78,9 @@ export function EntryForm({
 
   const needsPin = isOwnerKind(kind);
   const ownerOffline = offline && needsPin;
+  // A day closed on this computer, its close not on the server yet, takes no
+  // more entries (P2.2f): the drawer has been counted.
+  const closedHere = closeOf(useOutbox(), businessDate);
 
   /** The entry is safe — on the server, or kept here for it: clear the form for the next one. */
   function startNext() {
@@ -127,6 +132,7 @@ export function EntryForm({
     event.preventDefault();
     setError("");
     setNotice("");
+    if (closedHere) return setError(closedHereText(closedHere, "entry"));
 
     const value = Number(amount) || 0;
     // What the outbox can keep: never the Owner's own cash.
@@ -273,7 +279,9 @@ export function EntryForm({
         ) : null}
 
         {/* The internet went while the Owner's cash was chosen: say so rather than let it fail on Save. */}
-        {ownerOffline ? (
+        {closedHere ? (
+          <ClosedHereNote close={closedHere} what="entry" className="mb-0 rounded-md px-3 py-2 text-xs" />
+        ) : ownerOffline ? (
           <p role="note" className="rounded-md border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning">
             The Owner&apos;s cash needs the internet: their PIN is checked by the server. Choose an expense or a staff
             advance, or enter this when the internet is back.
@@ -298,7 +306,7 @@ export function EntryForm({
           </p>
         ) : null}
 
-        <Button type="submit" size="lg" className="w-full" disabled={pending || ownerOffline}>
+        <Button type="submit" size="lg" className="w-full" disabled={pending || ownerOffline || closedHere !== null}>
           {pending ? (offline ? "Keeping..." : "Saving...") : offline ? "Save offline" : "Save entry"}
         </Button>
       </form>

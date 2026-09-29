@@ -10,5 +10,6 @@ import type { SheetStaff } from "./grid";
  */
 export async function getRegister(businessDate: string): Promise<{ bills: DayBill[]; staff: SheetStaff[] }> {
   const [bills, staff] = await Promise.all([getDayBills(businessDate), getAllStaff()]);
-  return { bills, staff };
+  // The columns need names, not pay (which `getAllStaff` reads for Day Close).
+  return { bills, staff: staff.map(({ id, name, active }) => ({ id, name, active })) };
 }

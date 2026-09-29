@@ -38,9 +38,26 @@ export function offlineTrust(savedAt: number | null, now: number): OfflineTrust 
 /**
  * What the counter is told when offline billing cannot run — and what to do
  * instead. `"entry"` is for a folder entry (P2.2e), which has no paper book:
- * it is written down and entered when the internet is back.
+ * it is written down and entered when the internet is back. `"close"` is for
+ * Day Close (P2.2f): the drawer can still be counted, and the count written
+ * down for the close once the internet is back.
  */
-export function trustRefusal(trust: Exclude<OfflineTrust, { ok: true }>, what: "bill" | "entry" = "bill"): string {
+export function trustRefusal(
+  trust: Exclude<OfflineTrust, { ok: true }>,
+  what: "bill" | "entry" | "close" = "bill",
+): string {
+  if (what === "close") {
+    const instead = "Count the drawer, write the count down, and close the day when the internet is back.";
+    switch (trust.reason) {
+      case "no-copy":
+        return `The day cannot be closed offline on this computer yet: it needs one sign-in here while the internet is on. ${instead}`;
+      case "expired":
+        return `Working offline has ended: the server last confirmed this sign-in on ${formatDateTime(new Date(trust.since))}, more than 12 hours ago. ${instead}`;
+      case "clock":
+        return `This computer's clock has been set back, so the day cannot be closed offline. ${instead}`;
+    }
+  }
+
   if (what === "entry") {
     const instead = "Write the entry down and enter it on Daily folders when the internet is back.";
     switch (trust.reason) {

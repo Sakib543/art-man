@@ -1,4 +1,4 @@
-import type { PaidFrom, Rupees } from "@/lib/accounting";
+import type { BreakdownRow, PaidFrom, Rupees } from "@/lib/accounting";
 
 /**
  * The counter's outbox (backlog P2.2c): what the server has not received
@@ -6,16 +6,19 @@ import type { PaidFrom, Rupees } from "@/lib/accounting";
  * first, by `components/outbox-sync.tsx`, which saves each through the same
  * service the screen itself uses.
  *
- * Two kinds of thing wait in it, in the order they were made:
+ * Three kinds of thing wait in it, in the order they were made:
  *
  * - a bill (`OutboxEntry`, P2.2c), sent to `SYNC_URL` and saved by
  *   `createBill`. It carries no `type`: until P2.2e it was the only kind;
  * - a folder entry (`OutboxFolderEntry`, P2.2e) — an expense or a staff
- *   advance — sent to `FOLDER_SYNC_URL` and saved by `addEntry`.
+ *   advance — sent to `FOLDER_SYNC_URL` and saved by `addEntry`;
+ * - a day's close (`OutboxCloseEntry`, P2.2f), sent to `CLOSE_SYNC_URL` and
+ *   saved by `closeDay` — but only once nothing else of its day is left in
+ *   the outbox (`heldBack`).
  *
- * A machine never drops either. One leaves the outbox when the server says it
- * has it, or when a person removes it with a reason; one the server refuses
- * waits in "Needs attention" until someone does one or the other.
+ * A machine never drops any of them. One leaves the outbox when the server
+ * says it has it, or when a person removes it with a reason; one the server
+ * refuses waits in "Needs attention" until someone does one or the other.
  *
  * Pure: shapes and decisions only — no React, no IndexedDB, no `fetch`.
  */
@@ -25,6 +28,9 @@ export const SYNC_URL = "/api/offline/sync";
 
 /** Where the sync sends a folder entry (P2.2e). */
 export const FOLDER_SYNC_URL = "/api/offline/folders";
+
+/** Where the sync sends a day's close (P2.2f). */
+export const CLOSE_SYNC_URL = "/api/offline/close";
 
 /** The shape entries are written in. A change old entries cannot be read in needs a new number. */
 export const ENTRY_VERSION = 1;
@@ -113,13 +119,66 @@ export interface OutboxFolderEntry {
   rejected: { reason: string; at: string } | null;
 }
 
+/**
+ * A day's close as the server's `closeDay` takes it (P2.2f): what the manager
+ * entered in the five steps, and the expected cash they were shown. The server
+ * works the day out again from its own books and closes it only if it comes
+ * to the same expected cash — otherwise the count was compared with a figure
+ * that is no longer the day's, and the day has to be closed again.
+ */
+export interface OutboxClose {
+  /** Who was present, by staff id. Only daily-wage staff are paid for it. */
+  attendance: Record<string, boolean>;
+  /** Cash handed to staff at close, by staff id — only those paid something. */
+  payouts: Record<string, Rupees>;
+  /** The cash counted in the drawer. */
+  counted: Rupees;
+  /** Why the count was short or over, when it was. */
+  reason: string | null;
+  /** The expected cash the count was compared with. */
+  expected: Rupees;
+}
+
+/**
+ * A business day closed on this computer that the server has not received
+ * yet (P2.2f). The security code is not in it: the server makes it, from the
+ * day's bills in bill-number order, and offline bills have no number yet.
+ */
+export interface OutboxCloseEntry {
+  v: typeof ENTRY_VERSION;
+  /** What tells it from a bill or a folder entry. */
+  type: "close";
+  /** The close's id: the server's `day.close` audit entry carries it, and one id closes a day once. */
+  clientId: string;
+  /** The day it closes — the only day the server will close with it. */
+  businessDate: string;
+  /** When it was closed, by this device's clock, ISO. */
+  madeAt: string;
+  /** Who was signed in. It goes to the audit log; whoever is signed in at sync time saves it. */
+  madeBy: string;
+  close: OutboxClose;
+  /** What the manager saw, so it can be shown without the server: how expected cash was made up, and who was paid. */
+  preview: {
+    breakdown: BreakdownRow[];
+    onlineSales: Rupees;
+    payouts: { name: string; amount: Rupees }[];
+  };
+  /** Why the server refused it, once it has. Null while it waits to be sent. */
+  rejected: { reason: string; at: string } | null;
+}
+
 /** Anything in the outbox. */
-export type OutboxItem = OutboxEntry | OutboxFolderEntry;
+export type OutboxItem = OutboxEntry | OutboxFolderEntry | OutboxCloseEntry;
 
-export const isFolderItem = (item: OutboxItem): item is OutboxFolderEntry =>
-  (item as Partial<OutboxFolderEntry>).type === "folder";
+const typeOf = (item: OutboxItem): unknown => (item as { type?: unknown }).type;
 
-export const isBillItem = (item: OutboxItem): item is OutboxEntry => !isFolderItem(item);
+export const isFolderItem = (item: OutboxItem): item is OutboxFolderEntry => typeOf(item) === "folder";
+
+/** A day's close (P2.2f). */
+export const isCloseItem = (item: OutboxItem): item is OutboxCloseEntry => typeOf(item) === "close";
+
+/** A bill: the one kind with no `type`. */
+export const isBillItem = (item: OutboxItem): item is OutboxEntry => typeOf(item) === undefined;
 
 /** What the sync sends: the entry without what only this browser needs. */
 export type SyncRequest = Pick<
@@ -143,14 +202,30 @@ export function folderSyncRequestOf(item: OutboxFolderEntry): FolderSyncRequest 
   return { v, type, clientId, businessDate, madeAt, madeBy, entry };
 }
 
+/** What the sync sends for a day's close (P2.2f): the close without its preview. */
+export type CloseSyncRequest = Pick<
+  OutboxCloseEntry,
+  "v" | "type" | "clientId" | "businessDate" | "madeAt" | "madeBy" | "close"
+>;
+
+export function closeSyncRequestOf(item: OutboxCloseEntry): CloseSyncRequest {
+  const { v, type, clientId, businessDate, madeAt, madeBy, close } = item;
+  return { v, type, clientId, businessDate, madeAt, madeBy, close };
+}
+
 /** Where an item is sent, what is sent, and how the answer is read (`outcomeOf`). */
-export function syncOf(item: OutboxItem): { url: string; body: SyncRequest | FolderSyncRequest; kind: SyncKind } {
+export function syncOf(item: OutboxItem): {
+  url: string;
+  body: SyncRequest | FolderSyncRequest | CloseSyncRequest;
+  kind: SyncKind;
+} {
+  if (isCloseItem(item)) return { url: CLOSE_SYNC_URL, body: closeSyncRequestOf(item), kind: "close" };
   return isFolderItem(item)
     ? { url: FOLDER_SYNC_URL, body: folderSyncRequestOf(item), kind: "folder" }
     : { url: SYNC_URL, body: syncRequestOf(item), kind: "bill" };
 }
 
-export type SyncKind = "bill" | "folder";
+export type SyncKind = "bill" | "folder" | "close";
 
 /** The bill route's answer when it has the bill (200). */
 export interface SyncSaved {
@@ -164,13 +239,20 @@ export interface FolderSyncSaved {
   alreadySaved: boolean;
 }
 
-/** Either route's answer when it looked at what was sent and said no (422). */
+/** The close route's answer when the day is closed (200, P2.2f): the code the server made for it. */
+export interface CloseSyncSaved {
+  securityCode: string;
+  /** True when this close had closed the day before — a send whose answer was lost. */
+  alreadySaved: boolean;
+}
+
+/** Any route's answer when it looked at what was sent and said no (422). */
 export interface SyncRefused {
   reason: string;
 }
 
 export type SyncOutcome =
-  | { kind: "saved"; alreadySaved: boolean; billNo?: number }
+  | { kind: "saved"; alreadySaved: boolean; billNo?: number; securityCode?: string }
   | ({ kind: "rejected" } & SyncRefused)
   | { kind: "signed-out" }
   | { kind: "later" };
@@ -185,6 +267,12 @@ function isFolderSaved(body: unknown): body is FolderSyncSaved {
   return typeof body === "object" && body !== null && typeof (body as Partial<FolderSyncSaved>).alreadySaved === "boolean";
 }
 
+function isCloseSaved(body: unknown): body is CloseSyncSaved {
+  if (!isFolderSaved(body)) return false;
+  const code = (body as Partial<CloseSyncSaved>).securityCode;
+  return typeof code === "string" && code.length > 0;
+}
+
 function isRefused(body: unknown): body is SyncRefused {
   if (typeof body !== "object" || body === null) return false;
   const reason = (body as Partial<SyncRefused>).reason;
@@ -192,16 +280,16 @@ function isRefused(body: unknown): body is SyncRefused {
 }
 
 /**
- * What an answer from `SYNC_URL` — or, for a folder entry, `FOLDER_SYNC_URL`
- * — means for what was sent.
+ * What an answer from `SYNC_URL` — or, for a folder entry, `FOLDER_SYNC_URL`,
+ * for a close `CLOSE_SYNC_URL` — means for what was sent.
  *
  * Only two answers are final: the server has it (200), or it looked at it and
  * said no (422, with the reason). Anything else — a network error, a timeout,
  * a 500, maintenance, a page that is not JSON — says nothing about it, so it
  * stays where it is and is sent again later; sending twice is safe, because
- * the server saves one id once (P3.15, P2.2e). A 401, or the proxy's redirect
- * to /login (which `redirect: "manual"` turns into an `opaqueredirect`), means
- * nobody is signed in: it waits for the next sign-in.
+ * the server saves one id once (P3.15, P2.2e, P2.2f). A 401, or the proxy's
+ * redirect to /login (which `redirect: "manual"` turns into an
+ * `opaqueredirect`), means nobody is signed in: it waits for the next sign-in.
  */
 export function outcomeOf(
   response: { status: number; type?: string },
@@ -212,18 +300,34 @@ export function outcomeOf(
   if (response.status === 200) {
     if (kind === "bill" && isSaved(body)) return { kind: "saved", billNo: body.billNo, alreadySaved: body.alreadySaved };
     if (kind === "folder" && isFolderSaved(body)) return { kind: "saved", alreadySaved: body.alreadySaved };
+    if (kind === "close" && isCloseSaved(body)) {
+      return { kind: "saved", securityCode: body.securityCode, alreadySaved: body.alreadySaved };
+    }
   }
   if (response.status === 422 && isRefused(body)) return { kind: "rejected", reason: body.reason };
   return { kind: "later" };
 }
 
 /**
- * The next thing to send: the oldest one not waiting for a person. `entries`
- * come in the order they were queued, which is the order they were made.
- * A refused one does not hold up the ones behind it.
+ * A day's close is held back while anything else of its day is still in the
+ * outbox — waiting to be sent, or refused and waiting for a person (P2.2f).
+ * Once the server has closed the day it takes none of them any more: each is
+ * saved only into the day it was made on. So the day's bills and entries go
+ * first, and a refused one keeps the close waiting until someone has put it
+ * right or removed it.
  */
-export function nextToSend<T extends { rejected: unknown }>(entries: readonly T[]): T | null {
-  return entries.find((entry) => entry.rejected === null) ?? null;
+export function heldBack(item: OutboxItem, items: readonly OutboxItem[]): boolean {
+  return isCloseItem(item) && items.some((other) => !isCloseItem(other) && other.businessDate === item.businessDate);
+}
+
+/**
+ * The next thing to send: the oldest one not waiting for a person, nor held
+ * back behind its day's work (`heldBack`). `items` come in the order they
+ * were queued, which is the order they were made. A refused one does not hold
+ * up the ones behind it — except its own day's close.
+ */
+export function nextToSend<T extends OutboxItem>(items: readonly T[]): T | null {
+  return items.find((item) => item.rejected === null && !heldBack(item, items)) ?? null;
 }
 
 /** Waiting to be sent, and refused by the server. */
@@ -232,18 +336,26 @@ export function outboxCounts(entries: readonly { rejected: unknown }[]): { waiti
   return { waiting: entries.length - refused, refused };
 }
 
-/** How many bills and how many folder entries. */
+/** How many bills, folder entries and day closes. */
 export interface KindCounts {
   bills: number;
   entries: number;
+  /** Days closed on this computer (P2.2f). */
+  closes: number;
 }
 
-/** The outbox counted both ways: waiting or refused, bill or folder entry (P2.2e). */
+export const NO_COUNTS: KindCounts = { bills: 0, entries: 0, closes: 0 };
+
+/** Everything counted together. */
+export const countOf = ({ bills, entries, closes }: KindCounts): number => bills + entries + closes;
+
+/** The outbox counted both ways: waiting or refused, and by kind (P2.2e, P2.2f). */
 export function outboxTally(items: readonly OutboxItem[]): { waiting: KindCounts; refused: KindCounts } {
-  const tally = { waiting: { bills: 0, entries: 0 }, refused: { bills: 0, entries: 0 } };
+  const tally = { waiting: { ...NO_COUNTS }, refused: { ...NO_COUNTS } };
   for (const item of items) {
     const side = item.rejected === null ? tally.waiting : tally.refused;
     if (isFolderItem(item)) side.entries += 1;
+    else if (isCloseItem(item)) side.closes += 1;
     else side.bills += 1;
   }
   return tally;
@@ -251,13 +363,34 @@ export function outboxTally(items: readonly OutboxItem[]): { waiting: KindCounts
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
-/** "1 bill", "2 folder entries", "2 bills and 1 folder entry" — nothing when both are 0. */
-export function describeCounts({ bills, entries }: KindCounts): string {
+/**
+ * "1 bill", "2 folder entries", "2 bills and 1 folder entry", "1 bill, 1
+ * folder entry and 1 day close" — nothing when all are 0.
+ */
+export function describeCounts({ bills, entries, closes }: KindCounts): string {
   const parts = [
     bills > 0 ? plural(bills, "bill", "bills") : null,
     entries > 0 ? plural(entries, "folder entry", "folder entries") : null,
-  ].filter(Boolean);
-  return parts.join(" and ");
+    closes > 0 ? plural(closes, "day close", "day closes") : null,
+  ].filter((part): part is string => part !== null);
+  return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}` : (parts[0] ?? "");
+}
+
+/**
+ * The close of `businessDate` made on this computer and not on the server
+ * yet — waiting to be sent, or refused (P2.2f) — or null. While there is one,
+ * nothing more goes into that day from this computer: the drawer has been
+ * counted.
+ */
+export function closeOf(items: readonly OutboxItem[], businessDate: string): OutboxCloseEntry | null {
+  return items.find((item): item is OutboxCloseEntry => isCloseItem(item) && item.businessDate === businessDate) ?? null;
+}
+
+/** The bills and folder entries of `businessDate` still in the outbox, waiting or refused — what holds its close back. */
+export function workOfDay(items: readonly OutboxItem[], businessDate: string): (OutboxEntry | OutboxFolderEntry)[] {
+  return items.filter(
+    (item): item is OutboxEntry | OutboxFolderEntry => !isCloseItem(item) && item.businessDate === businessDate,
+  );
 }
 
 /**
@@ -346,8 +479,43 @@ export function isOutboxFolderEntry(value: unknown): value is OutboxFolderEntry 
   );
 }
 
+const isAmounts = (value: unknown, check: (amount: unknown) => boolean) =>
+  typeof value === "object" && value !== null && !Array.isArray(value) && Object.values(value).every(check);
+
+/** The same light check for a day's close (P2.2f). */
+export function isOutboxCloseEntry(value: unknown): value is OutboxCloseEntry {
+  if (typeof value !== "object" || value === null) return false;
+  const item = value as Partial<OutboxCloseEntry>;
+  const { close, preview } = item;
+  const closeOk =
+    typeof close === "object" &&
+    close !== null &&
+    isAmounts(close.attendance, (present) => typeof present === "boolean") &&
+    isAmounts(close.payouts, (amount) => typeof amount === "number") &&
+    typeof close.counted === "number" &&
+    typeof close.expected === "number" &&
+    (close.reason === null || typeof close.reason === "string");
+  return (
+    item.v === ENTRY_VERSION &&
+    item.type === "close" &&
+    typeof item.clientId === "string" &&
+    typeof item.businessDate === "string" &&
+    typeof item.madeAt === "string" &&
+    typeof item.madeBy === "string" &&
+    closeOk &&
+    typeof preview === "object" &&
+    preview !== null &&
+    Array.isArray(preview.breakdown) &&
+    typeof preview.onlineSales === "number" &&
+    Array.isArray(preview.payouts) &&
+    isRejection(item.rejected)
+  );
+}
+
 /**
  * Anything this build can read. A row it cannot — one a newer build wrote —
- * is left in the store untouched, for the build that can.
+ * is left in the store untouched, for the build that can. (A build from
+ * before P2.2f reads no close, so it leaves one alone and never sends it.)
  */
-export const isOutboxItem = (value: unknown): value is OutboxItem => isOutboxEntry(value) || isOutboxFolderEntry(value);
+export const isOutboxItem = (value: unknown): value is OutboxItem =>
+  isOutboxEntry(value) || isOutboxFolderEntry(value) || isOutboxCloseEntry(value);

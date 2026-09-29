@@ -3,6 +3,8 @@
 import { AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
+import { requestCatalogRefresh } from "@/components/catalog-sync";
+import { requestDayRefresh } from "@/components/day-sync";
 import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +26,9 @@ export function OpenFirstDay({ today }: { today: string }) {
     startTransition(async () => {
       const result = await openFirstDayAction({ businessDate, openingCash: Number(openingCash) || 0 });
       if (!result.ok) return setError(result.error);
+      // The offline copies should have the new day at once (P2.2f).
+      requestDayRefresh();
+      requestCatalogRefresh();
       router.push("/billing");
       router.refresh();
     });

@@ -4,6 +4,8 @@ import { Panel, PanelHeader } from "@/components/panel";
 import { AlertCircle, ArrowRight, Banknote, ChartColumn, Clock, LockOpen, MessageCircle, ShieldCheck, TrendingUp, Users, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { requestCatalogRefresh } from "@/components/catalog-sync";
+import { requestDayRefresh } from "@/components/day-sync";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,11 +29,22 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
   const [reopenPending, startReopen] = useTransition();
   const { difference } = snapshot;
 
+  /**
+   * The open day changed. Both offline copies carry it, and work made offline
+   * goes into the day they name — so they are fetched again at once, not in
+   * 5 or 15 minutes (P2.2f).
+   */
+  function dayChanged() {
+    requestDayRefresh();
+    requestCatalogRefresh();
+  }
+
   function nextDay() {
     setError("");
     startTransition(async () => {
       const result = await startNextDayAction();
       if (!result.ok) return setError(result.error);
+      dayChanged();
       router.push("/billing");
       router.refresh();
     });
@@ -42,6 +55,7 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
     startReopen(async () => {
       const result = await reopenDayAction({ reason });
       if (!result.ok) return setReopenError(result.error);
+      dayChanged();
       setReopening(false);
       router.refresh();
     });

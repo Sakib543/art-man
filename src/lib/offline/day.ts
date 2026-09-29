@@ -1,5 +1,6 @@
 import type { DayBill } from "@/db/queries/day-bills";
 import type { DayEntry } from "@/db/queries/day-entries";
+import type { Rupees, StaffPay } from "@/lib/accounting";
 
 /**
  * The counter's copy of the open business day (backlog P2.2e): its bills and
@@ -8,7 +9,8 @@ import type { DayEntry } from "@/db/queries/day-entries";
  * refreshed by `components/day-sync.tsx` — far more often than the catalog,
  * after every save — so that with no internet the counter still sees the
  * whole day, not only what was made offline. Day Close offline (P2.2f) is
- * meant to build on it.
+ * worked out from it, with what `close` adds: the opening cash, each staff
+ * member's pay and the khata balances.
  *
  * Pure: the server builds it (`db/queries/day-copy.ts`), the browser keeps it.
  */
@@ -29,6 +31,19 @@ export interface DayStaff {
   active: boolean;
 }
 
+/**
+ * What closing the day needs besides its bills and entries (P2.2f): what
+ * Day Close reads from the server before the count.
+ */
+export interface DayCloseCopy {
+  /** The day's opening cash: the last day's count, carried over. */
+  openingCash: Rupees;
+  /** Each staff member's pay, by id — what the close works earnings out from. */
+  pay: Record<string, StaffPay>;
+  /** Each staff member's khata balance as the server had it, by id: the day's advances included. */
+  khata: Record<string, Rupees>;
+}
+
 /** Plain JSON: it crosses the network and is stored as it arrives. */
 export interface DayCopy {
   /** The open day, or null when none was open. */
@@ -41,6 +56,12 @@ export interface DayCopy {
   staff: DayStaff[];
   /** The server's clock when it read the day, ISO: "as of". */
   servedAt: string;
+  /**
+   * For closing the day offline (P2.2f); null when no day was open. A copy
+   * kept before P2.2f has none, and then the day cannot be closed offline
+   * until the next fresh copy — `closeCopyOf` says which.
+   */
+  close?: DayCloseCopy | null;
 }
 
 /**
@@ -66,6 +87,35 @@ export function isDayCopy(value: unknown): value is DayCopy {
  */
 export function dayFor<T extends DayCopy>(copy: T | null, businessDate: string): T | null {
   return copy && copy.businessDate === businessDate ? copy : null;
+}
+
+const isRecordOf = (value: unknown, check: (item: unknown) => boolean) =>
+  typeof value === "object" && value !== null && !Array.isArray(value) && Object.values(value).every(check);
+
+const isPay = (value: unknown) => {
+  if (typeof value !== "object" || value === null) return false;
+  const pay = value as Partial<StaffPay>;
+  return (
+    (pay.payType === 1 || pay.payType === 2 || pay.payType === 3) &&
+    typeof pay.salary === "number" &&
+    typeof pay.dailyWage === "number" &&
+    typeof pay.commissionRate === "number"
+  );
+};
+
+/**
+ * What a copy holds for closing the day offline (P2.2f), or null when it
+ * holds nothing usable — a copy kept before P2.2f, or one read when no day
+ * was open.
+ */
+export function closeCopyOf(copy: DayCopy): DayCloseCopy | null {
+  const close = copy.close;
+  if (typeof close !== "object" || close === null) return null;
+  return typeof close.openingCash === "number" &&
+    isRecordOf(close.pay, isPay) &&
+    isRecordOf(close.khata, (balance) => typeof balance === "number")
+    ? close
+    : null;
 }
 
 /** The ids of what the server already has, to tell it from what is still in the outbox. */

@@ -1,7 +1,7 @@
 /**
  * The screens that still work with no internet, and the page each is served
- * from then (backlog P2.2d, P2.2e): static pages outside the signed-in shell,
- * kept by the service worker and filled from this browser's IndexedDB.
+ * from then (backlog P2.2d, P2.2e, P2.2f): static pages outside the signed-in
+ * shell, kept by the service worker and filled from this browser's IndexedDB.
  *
  * `public/sw.js` cannot import this file, so it names the same pages and the
  * same stand-ins itself; `pages.test.ts` reads it and fails if the two part.
@@ -9,7 +9,7 @@
  * Pure.
  */
 
-export type OfflineView = "billing" | "folders" | "register";
+export type OfflineView = "billing" | "folders" | "register" | "day-close";
 
 export interface OfflinePage {
   view: OfflineView;
@@ -34,6 +34,7 @@ export const OFFLINE_PAGES: readonly OfflinePage[] = [
     // The register is the Daily report's second view (P6.4); `/worksheet` redirects to it.
     standsInFor: ["/daily-report", "/worksheet"],
   },
+  { view: "day-close", href: "/offline-day-close", label: "Day close", online: "/day-close", standsInFor: ["/day-close"] },
 ];
 
 export const offlinePage = (view: OfflineView): OfflinePage => OFFLINE_PAGES.find((page) => page.view === view)!;

@@ -7,19 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
-import { describeCounts, isFolderItem, type KindCounts } from "@/lib/offline/outbox";
+import { countOf, describeCounts, NO_COUNTS, outboxTally, type KindCounts } from "@/lib/offline/outbox";
 import { clearCatalog, readOutbox } from "@/lib/offline/store";
 
-const NOTHING: KindCounts = { bills: 0, entries: 0 };
-
-/** Bills and folder entries in the outbox (P2.2c, P2.2e); none when this browser cannot say. */
+/** Bills, folder entries and day closes in the outbox (P2.2c, P2.2e, P2.2f); none when this browser cannot say. */
 async function readUnsent(): Promise<KindCounts> {
   try {
-    const items = await readOutbox();
-    const entries = items.filter(isFolderItem).length;
-    return { bills: items.length - entries, entries };
+    const { waiting, refused } = outboxTally(await readOutbox());
+    return {
+      bills: waiting.bills + refused.bills,
+      entries: waiting.entries + refused.entries,
+      closes: waiting.closes + refused.closes,
+    };
   } catch {
-    return NOTHING;
+    return NO_COUNTS;
   }
 }
 
@@ -27,10 +28,10 @@ async function readUnsent(): Promise<KindCounts> {
 export function SignOutButton({ onDark = false }: { onDark?: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  // Bills and entries not yet on the server, when signing out would leave them waiting.
-  const [unsent, setUnsent] = useState<KindCounts>(NOTHING);
+  // What is not yet on the server, when signing out would leave it waiting.
+  const [unsent, setUnsent] = useState<KindCounts>(NO_COUNTS);
   const [warning, setWarning] = useState(false);
-  const one = unsent.bills + unsent.entries === 1;
+  const one = countOf(unsent) === 1;
 
   function signOut(anyway = false) {
     startTransition(async () => {
@@ -39,7 +40,7 @@ export function SignOutButton({ onDark = false }: { onDark?: boolean }) {
       // know before walking away.
       if (!anyway) {
         const counts = await readUnsent();
-        if (counts.bills + counts.entries > 0) {
+        if (countOf(counts) > 0) {
           setUnsent(counts);
           setWarning(true);
           return;

@@ -13,16 +13,18 @@ src/
     (app)/<route>/    A signed-in page. Thin: it calls a feature's queries.ts
                       and renders that feature's components. No business logic.
     (auth)/login/     The only page reachable signed out.
-    offline-billing/  The offline pages (P2.2d, P2.2e): Billing, Daily folders and the
-    offline-folders/  Register with no internet. Static, outside (app), so the service
-    offline-register/ worker can keep them and open each when its screen cannot load;
-                      they fill themselves from this browser's IndexedDB. Each renders
-                      one feature's offline component inside components/offline-page.
+    offline-billing/  The offline pages (P2.2d, P2.2e, P2.2f): Billing, Daily folders,
+    offline-folders/  the Register and Day close with no internet. Static, outside
+    offline-register/ (app), so the service worker can keep them and open each when
+    offline-day-close/ its screen cannot load; they fill themselves from this browser's
+                      IndexedDB. Each renders one feature's offline component inside
+                      components/offline-page.
     api/auth/         Better Auth's route.
     api/offline/      The counter's offline copies — catalog/ (P2.2b) and day/ (P2.2e),
                       both GETs — and the outbox's syncs, sync/ (P2.2c, a bill,
-                      through billing's service) and folders/ (P2.2e, a folder
-                      entry, through folders' service), both POSTs. Route
+                      through billing's service), folders/ (P2.2e, a folder
+                      entry, through folders' service) and close/ (P2.2f, a
+                      day's close, through day-close's service), all POSTs. Route
                       Handlers, because Next runs Server Actions one at a time
                       per client and background work must not hold up "Save
                       bill". With api/auth these are the only API routes;
@@ -60,9 +62,10 @@ src/
                       use-outbox (reads it) and outbox-status (the line at the
                       top of every screen); offline-way-out, the link to a
                       screen's offline page on the loading and error screens;
-                      offline-page, the frame the three offline pages share —
+                      offline-page, the frame the four offline pages share —
                       shared because each of them belongs to a different
-                      feature.
+                      feature; closed-here-note, what Billing and Daily
+                      folders say about a day closed on this computer (P2.2f).
     ui/                 shadcn/ui primitives. Generic, no salon knowledge.
 
   lib/
@@ -85,9 +88,11 @@ src/
     catalog.ts        The catalog's shapes and offeredDeals(), shared by the
                       billing screen and the offline copy.
     offline/          Working offline (P2.2): catalog.ts, the copy's shape and
-                      version; day.ts, the open day's copy (P2.2e); outbox.ts,
-                      what waits in the outbox — bills and folder entries — and
-                      what the server's answers mean; pages.ts, the offline pages
+                      version; day.ts, the open day's copy (P2.2e, with what a
+                      close needs since P2.2f); outbox.ts, what waits in the
+                      outbox — bills, folder entries and day closes, in what
+                      order they go — and what the server's answers mean;
+                      pages.ts, the offline pages
                       and what each stands in for (its test holds public/sw.js to
                       the same list); session.ts, the 12 hours per sign-in;
                       slip.ts, `T-` numbers (all pure); store.ts, the browser's

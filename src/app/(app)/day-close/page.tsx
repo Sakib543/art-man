@@ -1,7 +1,8 @@
 import { BusinessDayPill } from "@/components/business-day-pill";
 import { PageHeader } from "@/components/page-header";
+import { CloseAttention } from "@/features/day-close/components/close-attention";
 import { ClosedView } from "@/features/day-close/components/closed-view";
-import { CloseWizard } from "@/features/day-close/components/close-wizard";
+import { DayCloseScreen } from "@/features/day-close/components/day-close-screen";
 import { OpenFirstDay } from "@/features/day-close/components/open-first-day";
 import { getDayCloseData } from "@/features/day-close/queries";
 import { atLeastOwner } from "@/lib/auth/roles";
@@ -35,6 +36,8 @@ export default async function DayClosePage() {
         <PageHeader title="Day close" subtitle={SUBTITLE}>
           <BusinessDayPill businessDate={data.snapshot.businessDate} closed />
         </PageHeader>
+        {/* A close made offline and refused, for a day the server has closed already (P2.2f). */}
+        <CloseAttention openDate={null} />
         <ClosedView snapshot={data.snapshot} canReopen={atLeastOwner(user.role)} />
         {user.role === "manager" ? (
           <p className="mt-3 text-xs text-muted-foreground">
@@ -50,7 +53,8 @@ export default async function DayClosePage() {
       <PageHeader title="Day close" subtitle={SUBTITLE}>
         <BusinessDayPill businessDate={data.businessDate} />
       </PageHeader>
-      <CloseWizard staff={data.staff} />
+      {/* The five steps, unless this computer already closed the day or still holds some of it (P2.2f). */}
+      <DayCloseScreen businessDate={data.businessDate} staff={data.staff} />
     </>
   );
 }

@@ -9,8 +9,10 @@ import { OutboxSync } from "@/components/outbox-sync";
 import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { useConnectivity } from "@/components/use-connectivity";
+import { useOutbox } from "@/components/use-outbox";
 import { formatTime } from "@/lib/format";
 import { dayFor } from "@/lib/offline/day";
+import { closeOf } from "@/lib/offline/outbox";
 import { OFFLINE_PAGES, offlinePage, type OfflineView } from "@/lib/offline/pages";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
 import { onCatalogSaved, onDaySaved, readCatalog, readDay, type StoredCatalog, type StoredDay } from "@/lib/offline/store";
@@ -27,30 +29,43 @@ export interface OfflineReady {
   day: StoredDay | null;
 }
 
-type Loaded = { status: "loading" } | ({ status: "ready" } & OfflineReady) | { status: "refused"; message: string };
+type Loaded =
+  | { status: "loading" }
+  | ({ status: "ready" } & OfflineReady)
+  | { status: "refused"; title?: string; message: string };
+
+const REFUSED_TITLE = "Working offline is not available";
 
 /** Read the copies, and decide whether this computer may work offline on them. */
 async function load(view: OfflineView): Promise<Loaded> {
   const [copy, day] = await Promise.all([readCatalog().catch(() => null), readDay().catch(() => null)]);
-  const what = view === "folders" ? "entry" : "bill";
+  const what = view === "folders" ? "entry" : view === "day-close" ? "close" : "bill";
   const trust = offlineTrust(copy?.savedAt ?? null, Date.now());
   if (!trust.ok) return { status: "refused", message: trustRefusal(trust, what) };
   if (!copy) return { status: "refused", message: trustRefusal({ ok: false, reason: "no-copy" }, what) };
   const businessDate = copy.catalog.businessDate;
   if (!businessDate) {
-    return {
-      status: "refused",
-      message:
-        "No business day was open when this computer last had the internet, so there is no day to work in. Use the paper bill book.",
-    };
+    return view === "day-close"
+      ? {
+          status: "refused",
+          title: "No business day is open",
+          // Also what this page says just after a close made here reached the server (P2.2f).
+          message:
+            "The last business day has been closed, and the next one has not been started. It is started on the full Day close screen, which needs the internet.",
+        }
+      : {
+          status: "refused",
+          message:
+            "No business day was open when this computer last had the internet, so there is no day to work in. Use the paper bill book.",
+        };
   }
   return { status: "ready", copy, until: trust.until, businessDate, day: dayFor(day, businessDate) };
 }
 
 /**
- * The frame of every offline page (backlog P2.2d, P2.2e) — offline billing,
- * Daily folders and the Register: the pages the service worker keeps and
- * opens when the full screens cannot load.
+ * The frame of every offline page (backlog P2.2d, P2.2e, P2.2f) — offline
+ * billing, Daily folders, the Register and Day close: the pages the service
+ * worker keeps and opens when the full screens cannot load.
  *
  * Everything on them comes from this browser: the catalog copy (P2.2b), the
  * copy of the day (P2.2e) and the outbox (P2.2c). They are static and outside
@@ -76,6 +91,7 @@ export function OfflinePage({
   children: (ready: OfflineReady) => ReactNode;
 }) {
   const online = useConnectivity();
+  const outbox = useOutbox();
   const [loaded, setLoaded] = useState<Loaded>({ status: "loading" });
   const page = offlinePage(view);
 
@@ -109,7 +125,7 @@ export function OfflinePage({
         <DaySync />
         <Panel className="w-full p-6 text-center">
           <WifiOff className="mx-auto size-8 text-warning" aria-hidden />
-          <h1 className="mt-3 text-lg font-semibold">Working offline is not available</h1>
+          <h1 className="mt-3 text-lg font-semibold">{loaded.title ?? REFUSED_TITLE}</h1>
           <p className="mt-2 text-sm text-muted-foreground text-pretty">{loaded.message}</p>
           <a href={page.online} className="mt-4 inline-block text-sm font-medium underline underline-offset-2">
             Try the full {page.label} screen
@@ -150,7 +166,8 @@ export function OfflinePage({
         title={`${page.label} — offline`}
         subtitle={`On ${copy.user.name}'s sign-in, until ${formatTime(new Date(until).toISOString())}. ${subtitle}`}
       >
-        <BusinessDayPill businessDate={loaded.businessDate} />
+        {/* Closed on this computer (P2.2f): the server still has it open until the close arrives. */}
+        <BusinessDayPill businessDate={loaded.businessDate} closed={closeOf(outbox, loaded.businessDate) !== null} />
       </PageHeader>
 
       {online ? (

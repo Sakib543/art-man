@@ -6,7 +6,7 @@ import { onOutboxChange, readOutbox } from "@/lib/offline/store";
 
 /**
  * The outbox as the screens see it (P2.2c): everything in it — bills, and
- * since P2.2e folder entries — oldest first, read again whenever it changes,
+ * since P2.2e folder entries, since P2.2f day closes — oldest first, read again whenever it changes,
  * in this tab or another. One store for the page, started by the first
  * component that listens and stopped when the last one leaves, like the
  * connectivity store beside it.
@@ -15,6 +15,8 @@ import { onOutboxChange, readOutbox } from "@/lib/offline/store";
 const NONE: OutboxItem[] = [];
 
 let entries: OutboxItem[] = NONE;
+/** Whether the outbox has been read at least once on this page (P2.2f). */
+let ready = false;
 const listeners = new Set<() => void>();
 let stopWatching: (() => void) | null = null;
 let reading = false;
@@ -33,6 +35,7 @@ async function refresh() {
     entries = NONE;
   } finally {
     reading = false;
+    ready = true;
   }
   listeners.forEach((listener) => listener());
   if (readAgain) {
@@ -64,6 +67,19 @@ export function useOutbox(): OutboxItem[] {
     subscribe,
     () => entries,
     () => NONE,
+  );
+}
+
+/**
+ * False until the outbox has been read (P2.2f): an empty `useOutbox()` before
+ * then means "not read yet", not "empty". A screen that must not offer
+ * something while the outbox might forbid it — Day close — waits for this.
+ */
+export function useOutboxReady(): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => ready,
+    () => false,
   );
 }
 

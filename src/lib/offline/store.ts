@@ -1,6 +1,13 @@
 import { isCatalogCopy, type CatalogCopy } from "./catalog";
 import { isDayCopy, type DayCopy } from "./day";
-import { isOutboxEntry, isOutboxItem, type OutboxEntry, type OutboxFolderEntry, type OutboxItem } from "./outbox";
+import {
+  isOutboxEntry,
+  isOutboxItem,
+  type OutboxCloseEntry,
+  type OutboxEntry,
+  type OutboxFolderEntry,
+  type OutboxItem,
+} from "./outbox";
 
 /**
  * The browser's own database for working offline (backlog P2.2): IndexedDB,
@@ -258,7 +265,30 @@ export const queueBill = (entry: OutboxEntry): Promise<void> => queue(entry);
 /** Queue a folder entry (P2.2e), in the same line as the bills: they are sent in the order they were made. */
 export const queueEntry = (item: OutboxFolderEntry): Promise<void> => queue(item);
 
-/** Everything in the outbox — bills and folder entries — in the order it was queued. */
+/**
+ * Keep a day's close (P2.2f), behind the day's bills and entries: it is sent
+ * only once none of them is left (`heldBack` in `./outbox.ts`).
+ *
+ * A close the server refused and the manager closed again keeps its id, so
+ * the day is still closed once whichever of the two reaches the server — and
+ * it takes the refused one's place in the line rather than joining it: one
+ * close per day waits here, never two.
+ */
+export async function queueClose(item: OutboxCloseEntry): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(OUTBOX, "readwrite");
+  const store = tx.objectStore(OUTBOX);
+  const found = store.index(BY_CLIENT_ID).get(item.clientId);
+  found.onsuccess = () => {
+    const seq = (found.result as { seq?: unknown } | undefined)?.seq;
+    if (typeof seq === "number") store.put({ ...item, seq });
+    else store.add(item);
+  };
+  await finished(tx);
+  announce();
+}
+
+/** Everything in the outbox — bills, folder entries and closes — in the order it was queued. */
 export async function readOutbox(): Promise<OutboxItem[]> {
   const db = await openDb();
   const rows = await resultOf(db.transaction(OUTBOX, "readonly").objectStore(OUTBOX).getAll());
@@ -274,7 +304,7 @@ export async function readOutboxEntry(clientId: string): Promise<OutboxEntry | n
   return isOutboxEntry(value) ? value : null;
 }
 
-/** It has reached the server, or a person removed it: it leaves the outbox. A bill or a folder entry alike. */
+/** It has reached the server, or a person removed it: it leaves the outbox. A bill, a folder entry or a close alike. */
 export async function removeFromOutbox(clientId: string): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(OUTBOX, "readwrite");
@@ -288,7 +318,7 @@ export async function removeFromOutbox(clientId: string): Promise<void> {
 }
 
 /**
- * Record the server's refusal of a bill or a folder entry — or, with null,
+ * Record the server's refusal of a bill, a folder entry or a close — or, with null,
  * put it back in line to be sent again ("Send again", once whatever was wrong
  * has been put right).
  */

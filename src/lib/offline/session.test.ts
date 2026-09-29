@@ -49,4 +49,15 @@ describe("trustRefusal", () => {
     expect(messages.some((message) => message.includes("paper bill book"))).toBe(false);
     expect(messages[1]).toContain("29 Sep 2026, 09:00");
   });
+
+  it("tells a close to count the drawer and write the count down for later (P2.2f)", () => {
+    const messages = [
+      trustRefusal({ ok: false, reason: "no-copy" }, "close"),
+      trustRefusal({ ok: false, reason: "expired", since: savedAt }, "close"),
+      trustRefusal({ ok: false, reason: "clock", since: savedAt }, "close"),
+    ];
+    expect(messages.every((message) => message.includes("write the count down"))).toBe(true);
+    expect(messages.some((message) => message.includes("paper bill book"))).toBe(false);
+    expect(messages[1]).toContain("29 Sep 2026, 09:00");
+  });
 });

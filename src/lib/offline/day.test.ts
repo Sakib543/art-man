@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayFor, isDayCopy, knownIds, type DayCopy } from "./day";
+import { closeCopyOf, dayFor, isDayCopy, knownIds, type DayCopy } from "./day";
 
 const copy: DayCopy = {
   businessDate: "2026-09-24",
@@ -37,6 +37,33 @@ describe("dayFor", () => {
     expect(dayFor(copy, "2026-09-25")).toBeNull();
     expect(dayFor({ ...copy, businessDate: null }, "2026-09-24")).toBeNull();
     expect(dayFor(null, "2026-09-24")).toBeNull();
+  });
+});
+
+describe("closeCopyOf (P2.2f)", () => {
+  const close = {
+    openingCash: 5000,
+    pay: { "st-arshad": { payType: 3, salary: 0, dailyWage: 500, commissionRate: 10 } },
+    khata: { "st-arshad": 30 },
+  } as const;
+
+  it("gives what closing the day needs", () => {
+    expect(closeCopyOf({ ...copy, close })).toEqual(close);
+    expect(isDayCopy({ ...copy, close })).toBe(true);
+  });
+
+  it("gives nothing for a copy kept before P2.2f, or read when no day was open", () => {
+    expect(closeCopyOf(copy)).toBeNull();
+    expect(closeCopyOf({ ...copy, close: null })).toBeNull();
+  });
+
+  it.each([
+    ["no opening cash", { ...close, openingCash: undefined }],
+    ["a pay type that does not exist", { ...close, pay: { st: { ...close.pay["st-arshad"], payType: 4 } } }],
+    ["a pay without its wage", { ...close, pay: { st: { payType: 3, salary: 0, commissionRate: 10 } } }],
+    ["a khata balance that is not a number", { ...close, khata: { st: "30" } }],
+  ])("refuses one with %s", (_, broken) => {
+    expect(closeCopyOf({ ...copy, close: broken as unknown as DayCopy["close"] })).toBeNull();
   });
 });
 

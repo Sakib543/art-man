@@ -1,19 +1,48 @@
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay, getOpenBusinessDay } from "@/db/queries/business-day";
-import { attendance, businessDays, cashEntries, daySnapshotHistory, daySnapshots, khataEntries } from "@/db/schema";
+import { attendance, auditLog, businessDays, cashEntries, daySnapshotHistory, daySnapshots, khataEntries } from "@/db/schema";
 import { cashDifference, expectedCashBreakdown } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
 import { nextDate } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
+import { formatDate, rs } from "@/lib/format";
 import { loadDay } from "@/db/queries/day-data";
 import { postEarnings, requireOpenMonth, summarize } from "@/db/day-settlement";
-import type { CloseInput, ReviewInput } from "./schemas";
+import type { CloseInput, DiscardOfflineCloseInput, OfflineCloseOrigin, ReviewInput, SyncCloseInput } from "./schemas";
 import { computeDayCode, type DayFigures } from "@/db/day-code";
-import type { CloseReview } from "./types";
+import type { ClosedDay, CloseReview } from "./types";
 
 const actorOf = (user: SessionUser) => user.username || user.name;
+
+/** Anything that can run selects: the db itself or a transaction. */
+type Reader = Pick<typeof db, "select">;
+
+/**
+ * The close this id already made, when it made one (P2.2f). Its `day.close`
+ * audit entry carries the id, and that entry is append-only: so a close whose
+ * answer was lost, sent again, gets that close back — even after the Owner has
+ * reopened the day since — and never closes a day a second time.
+ */
+async function closedEarlier(reader: Reader, clientId: string | null): Promise<ClosedDay | null> {
+  if (!clientId) return null;
+  // `audit_log_action_target_created_at_idx` narrows it to the day closes.
+  const [row] = await reader
+    .select({ after: auditLog.after })
+    .from(auditLog)
+    .where(and(eq(auditLog.action, "day.close"), sql`${auditLog.after} ->> 'clientId' = ${clientId}`))
+    .limit(1);
+  if (!row) return null;
+  const code = (row.after as { securityCode?: unknown } | null)?.securityCode;
+  return { securityCode: typeof code === "string" ? code : "", alreadySaved: true };
+}
+
+/** Why a close made offline cannot close the day the server has open now. */
+function offlineDayGone(madeOn: string, openNow: string | null): string {
+  const now = openNow ? ` The open day is ${formatDate(openNow)}.` : "";
+  return `${formatDate(madeOn)} has already been closed on the server, so the close made on this computer was not used.${now}`;
+}
 
 async function requireOpenDay() {
   const day = await getOpenBusinessDay();
@@ -40,9 +69,28 @@ export async function reviewClose(input: ReviewInput): Promise<CloseReview> {
  * Close the day in one transaction: attendance, staff earnings into the khata,
  * payments made now, the day's snapshot with its security code, then lock.
  * If anything fails, none of it is saved.
+ *
+ * Once per `clientId` (P2.2f): a close sent again gets the one it made.
+ *
+ * `offline` is set when the counter closed the day with no server and the
+ * outbox sent the close later. It closes the day it was made on or nothing,
+ * and only if the server works out the same expected cash the count was
+ * compared with. The counted cash is a fact of that moment; if the day's
+ * books have moved since — a bill refused and removed, something done from
+ * another device — the difference and its reason no longer describe them, so
+ * the close is refused and the day is closed again on the screen. Everything
+ * else — earnings, the snapshot, the security code — the server works out from
+ * its own books, as it always does; nothing the browser worked out is trusted.
  */
-export async function closeDay(user: SessionUser, input: CloseInput): Promise<{ securityCode: string }> {
-  const day = await requireOpenDay();
+export async function closeDay(user: SessionUser, input: CloseInput, offline?: OfflineCloseOrigin): Promise<ClosedDay> {
+  const earlier = await closedEarlier(db, input.clientId);
+  if (earlier) return earlier;
+
+  const day = await getOpenBusinessDay();
+  if (offline && day?.businessDate !== offline.businessDate) {
+    throw new UserError(offlineDayGone(offline.businessDate, day?.businessDate ?? null));
+  }
+  if (!day) throw new UserError("There is no open business day to close.");
   const actor = actorOf(user);
   const payouts = input.payouts;
 
@@ -53,10 +101,22 @@ export async function closeDay(user: SessionUser, input: CloseInput): Promise<{ 
       .set({ closedAt: new Date() })
       .where(and(eq(businessDays.businessDate, day.businessDate), isNull(businessDays.closedAt)))
       .returning({ businessDate: businessDays.businessDate });
-    if (claimed.length === 0) throw new UserError("This day has already been closed.");
+    if (claimed.length === 0) {
+      // Two sends of one close at the same instant: the other one closed it,
+      // and has committed by now — the claim above waited for it.
+      const other = await closedEarlier(tx, input.clientId);
+      if (other) return other;
+      throw new UserError(offline ? offlineDayGone(offline.businessDate, null) : "This day has already been closed.");
+    }
 
     const loaded = await loadDay(tx, day.businessDate);
     const summary = summarize(loaded, day.openingCash, input.attendance, payouts);
+
+    if (offline && summary.expectedCash !== offline.expected) {
+      throw new UserError(
+        `The day's cash changed after it was closed on this computer: the count was compared with an expected ${rs(offline.expected)}, and the server's books now expect ${rs(summary.expectedCash)}. Close the day again on the Day close screen.`,
+      );
+    }
 
     const { difference, reasonRequired } = cashDifference(input.counted, summary.expectedCash);
     const reason = input.reason?.trim() || null;
@@ -129,11 +189,91 @@ export async function closeDay(user: SessionUser, input: CloseInput): Promise<{ 
       actor,
       action: "day.close",
       target: day.businessDate,
-      after: { ...figures, securityCode },
+      after: {
+        ...figures,
+        securityCode,
+        // What makes a close sent again answerable with this one (P2.2f).
+        ...(input.clientId ? { clientId: input.clientId } : {}),
+        // Closed with no server (P2.2f): when and by whom, as the browser
+        // tells it. The close's own time is when it reached the server.
+        ...(offline ? { offline: { madeAt: offline.madeAt, madeBy: offline.madeBy } } : {}),
+      },
     });
 
-    return { securityCode };
+    return { securityCode, alreadySaved: false };
   });
+}
+
+/** How much of what the browser sent a refusal keeps, at most. */
+const REFUSAL_RECORD_LIMIT = 20_000;
+
+/**
+ * A close made offline that the server refused goes to the audit log
+ * (P2.2f), as a refused bill or entry does: the drawer was counted and staff
+ * may have been paid, so the server keeps a note of it even though the books
+ * do not have it. The close it may later become shares its id.
+ */
+export async function recordOfflineCloseRefusal(user: SessionUser, clientId: string | null, reason: string, sent: unknown) {
+  const text = JSON.stringify(sent) ?? "";
+  await writeAudit(db, {
+    actor: actorOf(user),
+    action: "day.offline-close-refuse",
+    target: clientId ? `offline close ${clientId}` : "offline close",
+    after: { reason, sent: text.length <= REFUSAL_RECORD_LIMIT ? sent : `(${text.length} characters, not kept)` },
+    success: false,
+  });
+}
+
+/**
+ * Close a day the counter closed offline, sent by the outbox (P2.2f) —
+ * through `closeDay`, with where it came from. A refusal is recorded before it
+ * is passed on.
+ */
+export async function syncOfflineClose(user: SessionUser, input: SyncCloseInput): Promise<ClosedDay> {
+  const { clientId, businessDate, madeAt, madeBy, close } = input;
+  try {
+    return await closeDay(
+      user,
+      {
+        attendance: close.attendance,
+        payouts: close.payouts,
+        counted: close.counted,
+        reason: close.reason ?? undefined,
+        clientId,
+      },
+      { businessDate, madeAt, madeBy, expected: close.expected },
+    );
+  } catch (error) {
+    if (error instanceof UserError) await recordOfflineCloseRefusal(user, clientId, error.message, input);
+    throw error;
+  }
+}
+
+/**
+ * A close made offline that the server refused, taken off the counter's list
+ * by a person, with a reason (P2.2f). Nothing reaches the books — the close
+ * never did — but it goes to the audit log as the counter kept it, count and
+ * all.
+ *
+ * If a send whose answer was lost had closed the day after all, there is
+ * nothing to discard: `saved` says so, and nothing is written. Written once
+ * per close, however often it is asked (P2.2c found why).
+ */
+export async function discardOfflineClose(user: SessionUser, input: DiscardOfflineCloseInput): Promise<{ saved: boolean }> {
+  if (await closedEarlier(db, input.clientId)) return { saved: true };
+
+  const action = "day.offline-close-discard";
+  const target = `offline close ${input.clientId}`;
+  // `audit_log_action_target_created_at_idx` answers this.
+  const [already] = await db
+    .select({ id: auditLog.id })
+    .from(auditLog)
+    .where(and(eq(auditLog.action, action), eq(auditLog.target, target)))
+    .limit(1);
+  if (already) return { saved: false };
+
+  await writeAudit(db, { actor: actorOf(user), action, target, after: { reason: input.reason, close: input.close } });
+  return { saved: false };
 }
 
 /** Open the day after the last closed one. The drawer's leftover carries over automatically. */

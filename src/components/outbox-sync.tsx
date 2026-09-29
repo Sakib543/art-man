@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent } from "react";
-import { nextToSend, outcomeOf, syncOf, type OutboxItem, type SyncOutcome } from "@/lib/offline/outbox";
+import { isCloseItem, nextToSend, outcomeOf, syncOf, type OutboxItem, type SyncOutcome } from "@/lib/offline/outbox";
 import { onOutboxChange, readOutbox, removeFromOutbox, setRejected } from "@/lib/offline/store";
+import { requestCatalogRefresh } from "./catalog-sync";
 import { requestDayRefresh } from "./day-sync";
 import { useConnectivity } from "./use-connectivity";
 import { setSyncSignedOut } from "./use-outbox";
@@ -21,7 +22,7 @@ const SEND_TIMEOUT_MS = 30_000;
 /** One tab sends at a time. */
 const LOCK = "art-man-outbox";
 
-/** A bill to the bill route, a folder entry to the folder route (P2.2e). */
+/** A bill to the bill route, a folder entry to the folder route (P2.2e), a close to the close route (P2.2f). */
 async function send(item: OutboxItem): Promise<SyncOutcome> {
   const { url, body: request, kind } = syncOf(item);
   const controller = new AbortController();
@@ -49,7 +50,8 @@ async function send(item: OutboxItem): Promise<SyncOutcome> {
 
 /**
  * Send everything waiting, oldest first — bills and folder entries in the
- * order they were made — until the outbox is empty or one cannot be sent now.
+ * order they were made, a day's close once its day's work has gone
+ * (`nextToSend`) — until the outbox is empty or one cannot be sent now.
  */
 async function sendAll(stopped: () => boolean, onSaved: () => void) {
   for (;;) {
@@ -65,6 +67,8 @@ async function sendAll(stopped: () => boolean, onSaved: () => void) {
         // The day's copy now lacks it on both sides — out of the outbox, not
         // yet in the copy — until it is fetched again (P2.2e).
         requestDayRefresh();
+        // A close changed the open day, which the catalog copy carries (P2.2f).
+        if (isCloseItem(next)) requestCatalogRefresh();
         onSaved();
         continue;
       case "rejected":
@@ -95,7 +99,7 @@ async function exclusively(work: () => Promise<void>): Promise<void> {
 }
 
 /**
- * Sends the outbox (backlog P2.2c, P2.2e) to the server. Renders nothing.
+ * Sends the outbox (backlog P2.2c, P2.2e, P2.2f) to the server. Renders nothing.
  * Mounted in the signed-in shell and on the offline pages, so it runs on every
  * screen.
  *

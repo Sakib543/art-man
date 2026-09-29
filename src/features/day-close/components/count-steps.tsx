@@ -1,13 +1,13 @@
 "use client";
 
 import { Panel, PanelHeader, panelClass } from "@/components/panel";
-import { AlertCircle, ArrowLeft, Check, Lock } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Lock, WifiOff } from "lucide-react";
 import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { num, rs } from "@/lib/format";
+import { formatTime, num, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CloseReview } from "../types";
 
@@ -84,6 +84,11 @@ export function CountStep({ counted, onCounted, error, pending, onBack, onNext }
 
 interface ReviewStepProps {
   review: CloseReview;
+  /**
+   * When expected cash was worked out on this computer, with no server
+   * (P2.2f): the "as of" of its copy of the day. Null when the server did.
+   */
+  here: string | null;
   reason: string;
   onReason: (value: string) => void;
   error: string;
@@ -93,13 +98,27 @@ interface ReviewStepProps {
 }
 
 /** Step 5: expected against counted, then lock the day. */
-export function ReviewStep({ review, reason, onReason, error, pending, onRecount, onClose }: ReviewStepProps) {
+export function ReviewStep({ review, here, reason, onReason, error, pending, onRecount, onClose }: ReviewStepProps) {
   const { expected, counted, difference, breakdown, onlineSales } = review;
   const short = difference < 0;
   const extra = difference > 0;
 
   return (
     <>
+      {here !== null ? (
+        <p
+          role="note"
+          className="mb-4 flex items-start gap-2 rounded-lg border border-warning-line bg-warning-soft px-3.5 py-2.5 text-sm text-warning"
+        >
+          <WifiOff className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            No internet: expected cash was worked out on this computer, from the day as it had it at {formatTime(here)}{" "}
+            and what was made here since. The close is kept here and sent when the internet is back; the server then
+            makes the security code, and closes the day only if its own books come to the same expected cash.
+          </span>
+        </p>
+      ) : null}
+
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Result label="Expected" value={rs(expected)} />
         <Result label="Counted" value={rs(counted)} />
@@ -163,7 +182,10 @@ export function ReviewStep({ review, reason, onReason, error, pending, onRecount
               </p>
             ) : null}
             <p className="text-xs text-muted-foreground">
-              After closing, no entries can be added to today. Tomorrow&apos;s opening cash will be {rs(counted)}.
+              {here !== null
+                ? "After closing, nothing more can be added to this day on this computer; only the Owner can reopen it, once the close has reached the server."
+                : "After closing, no entries can be added to today."}{" "}
+              Tomorrow&apos;s opening cash will be {rs(counted)}.
             </p>
           </div>
           <div className="flex items-center justify-between border-t px-card py-3.5">
@@ -173,7 +195,7 @@ export function ReviewStep({ review, reason, onReason, error, pending, onRecount
             </Button>
             <Button onClick={onClose} disabled={pending}>
               <Lock aria-hidden />
-              {pending ? "Closing..." : "Close day"}
+              {pending ? "Closing..." : here !== null ? "Close day offline" : "Close day"}
             </Button>
           </div>
         </Panel>

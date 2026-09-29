@@ -1,5 +1,5 @@
 /*
- * Service worker (backlog P2.2a, P2.2d, P2.2e).
+ * Service worker (backlog P2.2a, P2.2d, P2.2e, P2.2f).
  *
  * What it does, and nothing more:
  *
@@ -7,8 +7,8 @@
  *   fetched. Their names carry a content hash, so a cached copy can never be
  *   stale — a new deploy simply asks for new names;
  * - keeps the offline pages — Billing (P2.2d), Daily folders and the Register
- *   (P2.2e) — and every built file each names, refreshed whenever a signed-in
- *   page asks (`components/pwa-setup.tsx`);
+ *   (P2.2e), Day close (P2.2f) — and every built file each names, refreshed
+ *   whenever a signed-in page asks (`components/pwa-setup.tsx`);
  * - when the network is down: a screen that has an offline page opens it
  *   instead, if it is kept; any other page shows `/offline.html` instead of
  *   the browser's own error screen.
@@ -37,7 +37,7 @@ const OFFLINE_FILES = [OFFLINE_URL, "/logo.png"];
  * The offline pages. `src/lib/offline/pages.ts` names the same ones, and its
  * test reads this file: keep the two together.
  */
-const SHELL_URLS = ["/offline-billing", "/offline-folders", "/offline-register"];
+const SHELL_URLS = ["/offline-billing", "/offline-folders", "/offline-register", "/offline-day-close"];
 
 /** With no network, these screens open their offline page (when it is kept). */
 const OFFLINE_FOR = new Map([
@@ -46,6 +46,7 @@ const OFFLINE_FOR = new Map([
   ["/folders", "/offline-folders"],
   ["/daily-report", "/offline-register"],
   ["/worksheet", "/offline-register"],
+  ["/day-close", "/offline-day-close"],
 ]);
 
 /** Enough for a few deploys' worth of chunks; the oldest go first. */

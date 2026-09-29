@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-29 (P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-29 (**P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -30,20 +30,20 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.6 | Developer edits a financial entry | ✅ | done 2026-09-22 |
 | P1.3 | Manager's limit | ✅ | no change needed |
 | P2.1 | Paper bill-book number | ✅ | done 2026-09-22 |
-| P2.2 | Offline PWA + sync — split into P2.2a–f below | 🟡 | — |
+| P2.2 | Offline PWA + sync — split into P2.2a–f below | ✅ | done 2026-09-29 (all six) |
 | P2.2a | PWA foundation: manifest, service worker, offline banner, persistent storage | ✅ | done 2026-09-26 |
 | P2.2b | Catalog copy in IndexedDB | ✅ | done 2026-09-28 |
 | P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | ✅ | done 2026-09-28 |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ✅ | done 2026-09-29 |
 | P2.2e | Folders / cash entries offline, the Register with local bills (migration `0019`) | ✅ | done 2026-09-29 |
-| P2.2f | Day Close offline | 🟡 | Sakib543, 2026-09-29 |
+| P2.2f | Day Close offline, the security code on sync (no migration) | ✅ | done 2026-09-29 |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
 | P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
 | P3.4 | Next-month adjustment for a closed month | ⬜ | — |
 | P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
 | P3.11 | Price ranges: pick the amount at billing | ✅ | done 2026-09-23 |
-| P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore has never been run |
+| P3.7 | Backup and restore | 🟡 | backup done 2026-09-23; a restore into a local copy worked 2026-09-29 (P2.2f), none into Neon yet |
 | P3.9 | Audit failed logins (spec §11) | ✅ | done 2026-09-23 |
 | P3.6 | Receipt printing | ✅ | done 2026-09-22 |
 | P3.8 | Customer's last visit on the billing screen | ✅ | done 2026-09-22 |
@@ -768,8 +768,8 @@ Day totals unchanged at Rs 1,100.
 
 ---
 
-### 🟡 P2.2 — Real offline PWA + sync *(client approved)*
-**Owner:** —
+### ✅ P2.2 — Real offline PWA + sync *(client approved)*
+**Done:** 2026-09-29 — all six parts, P2.2a–f. Billing, Daily folders, the register and Day close work with no internet.
 
 The app keeps working for 6–8 hours with no internet, then syncs when the connection returns.
 
@@ -824,7 +824,7 @@ not whose request was lost — would save the bill twice. The outbox (P2.2c) is 
 | P2.2c | Outbox + sync endpoint: a client UUID per bill, replayed through the existing `createBill`, deduplicated, rejects kept in a "Needs attention" list | `bills.client_id` — done early, in P3.15 (`0018`) | ~~a separate dev Neon branch~~ nothing: the user chose to build against this database until the VPS move (2026-09-28; HANDOFF section 9) |
 | P2.2d | Billing offline: `priceCart()` in the browser, `T-` number on the receipt, "pending sync" in Today's bills; the 12-hour sign-in window | no | P2.2b, P2.2c |
 | P2.2e | Folders / cash entries offline (no Owner entries), Register view shows local bills | `cash_entries.client_id` (`0019`) — done | P2.2c |
-| P2.2f | Day Close offline, security code on sync | maybe | P2.2c |
+| P2.2f | Day Close offline, security code on sync | no — done without one | P2.2c |
 
 ### ✅ P2.2a — PWA foundation
 **Done:** 2026-09-26
@@ -1222,7 +1222,7 @@ through the outbox (the path is the expense's, with the khata line `addEntry` al
 signing out with entries waiting — Claude does not sign a person out of their session; two
 browsers on one counter.
 
-**Left for P2.2f, found on the way:**
+**Left for P2.2f, found on the way:** *(all three done in P2.2f, 2026-09-29)*
 
 - **The online Day Close does not look at the outbox.** Closing the day while this computer still
   holds that day's bills or entries — waiting to be sent, or refused and not yet dealt with —
@@ -1248,15 +1248,124 @@ made-up closed-day entry.
 IndexedDB counts its own `T-` numbers: the limit P2.2d wrote down under "two browsers on one
 counter". The slips still differ by their bill number once synced.
 
-### 🟡 P2.2f — Day Close offline
-**Owner:** Sakib543, 2026-09-29
+### ✅ P2.2f — Day Close offline
+**Done:** 2026-09-29 · no migration
 
-The manager closes the day with no internet: the five steps worked out in the browser from the copy
-of the day (P2.2e) and what is still in the outbox, the close kept in the outbox behind the day's
-bills and entries, and the security code made by the server when the close reaches it (the client's
-answer, 2026-09-26). With it, what P2.2e left: the online close holds back while the outbox still
-has that day's work, and both offline copies are refreshed right after a close or a new day. The
-user said to start (2026-09-29); the recommended choices are taken and recorded here when done.
+The manager closes the day with no internet: the same five steps, worked out in the browser from
+the copy of the day (P2.2e) plus what is still in the outbox, and the close kept in the outbox behind
+the day's bills and entries. The server closes the day when the close reaches it — making the
+security code then, as the client asked (2026-09-26) — and only if its own books come to the same
+expected cash the count was compared with. With it, what P2.2e left: the online close holds back
+while this computer still has any of the day, and both offline copies are fetched again the moment
+the business day changes. **P2.2 is complete.**
+
+**Decisions** — the user said to start ("haan P2.2f shuru karo", 2026-09-29) and, as for P2.2c–e,
+left the technical choices to Claude; the recommended option was taken each time:
+
+- **The close waits behind its day's work** (`heldBack` in `lib/offline/outbox.ts`). A day's close
+  is not sent while anything else of that day is in the outbox — waiting, or refused and waiting for
+  a person — because once the server has closed a day it takes none of it (an offline bill or entry
+  goes only into the day it was made on). A refused bill of the day keeps the close waiting until it
+  is put right or removed on Billing.
+- **The server closes the day only if its expected cash matches.** The count is a fact of that
+  moment; if the day's books moved since (a refused bill removed, something done from another
+  device, a copy of the day older than the last save), the difference and its reason would describe
+  a different day. So the close is refused, saying both figures, and the day is closed again on the
+  full screen — the steps start from what was entered offline, under the same id. Earnings, the
+  snapshot and the security code are always the server's own.
+- **Everything of the day still on this computer is counted in the offline close — waiting or
+  refused.** A refused bill's money was taken and is in the drawer; it is meant to be put right and
+  saved (then the close matches), and if it is removed instead, the close is refused and redone with
+  an honest difference. The offline screen says which ones are refused.
+- **One close per id, recorded in the `day.close` audit entry** (`after.clientId`), which is
+  append-only — no migration. A close whose answer was lost, sent again, is answered with the close
+  it made (`alreadySaved`), even after a reopen. The online screen sends an id too, and a close whose
+  answer is lost goes to the outbox under it, as a folder entry does (P2.2e).
+- **Closed here means closed here.** Once the outbox holds a close for the day — waiting or refused
+  — Billing and Daily folders take nothing more for it, online or offline (`closeOf`; a refused bill
+  of that day can still be put right). The pill on the offline pages says Closed.
+- **No undo on the device, and no next day offline.** A close made here cannot be taken back here;
+  once it reaches the server the Owner can reopen the day, as always. The next business day is
+  started on the full screen, with the internet: until then the paper bill book. (The 12-hour
+  sign-in window means the morning after an evening outage is mostly past it anyway, and one open
+  day per device keeps the outbox's order simple.)
+- **A refused close: close again, or Remove with a reason** (audited once, as for bills and entries).
+  For a day the server has open, the steps below start from the refused close; for a day already
+  closed on the server, only Remove.
+
+**What was built:**
+
+- `lib/offline/outbox.ts` — `OutboxCloseEntry` (`type: "close"`: attendance, payouts, counted,
+  reason, the expected cash shown, and a preview of the breakdown and payouts); `isCloseItem`,
+  `isOutboxCloseEntry`, `closeSyncRequestOf`, `CLOSE_SYNC_URL`; `outcomeOf(…, "close")` wants a
+  security code; `heldBack` / `nextToSend`; `KindCounts.closes`, `NO_COUNTS`, `countOf`,
+  `describeCounts` ("1 bill, 1 folder entry and 1 day close"); `closeOf`, `workOfDay`. A pre-P2.2f
+  build does not read a close and never sends one.
+- `lib/offline/day.ts` + `db/queries/day-copy.ts` — the day copy's `close`: opening cash, everyone's
+  pay (`getAllStaff` now reads it; the register maps it away) and the khata balances
+  (`loadKhataBalances`, the close's own query). `closeCopyOf` refuses a copy kept before P2.2f.
+- `lib/offline/store.ts` — `queueClose`: a refused close closed again takes its own place in line
+  instead of joining it. `lib/offline/session.ts` — `trustRefusal(…, "close")`: count the drawer,
+  write the count down.
+- `features/day-close/offline-close.ts` (+ test) — `localDayOf` (the server's day plus this
+  computer's, the server's staff rule, khata less advances still here), `reviewLocally`
+  (`summarizeDay` + `expectedCashBreakdown`, as `reviewClose`), `closeProblem`, `closeEntryOf`.
+- `features/day-close/service.ts` — `closeDay(user, input, offline?)`: the id first
+  (`closedEarlier`, which also settles two sends at once), the open-day check, the expected-cash
+  check inside the transaction, `after.clientId` and `after.offline`. `syncOfflineClose`,
+  `recordOfflineCloseRefusal` (`day.offline-close-refuse`), `discardOfflineClose`
+  (`day.offline-close-discard`, once). `discardOfflineCloseAction`.
+- `app/api/offline/close/route.ts` — POST, the bill and folder routes' twin: Origin, `checkUser`,
+  `syncCloseSchema`, 200 `{ securityCode, alreadySaved }`, 422 `{ reason }`.
+- **The screens:** `CloseWizard` works both ways (`local` on the offline page; on the full screen a
+  review that cannot reach the server is worked out here from the copies); `ReviewStep` says when it
+  was worked out on this computer and offers "Close day offline"; `DayCloseScreen` (the online gate:
+  the close kept here / hold back / the steps, from a refused close when there is one);
+  `ClosedHere`; `CloseAttention`; `/offline-day-close` (`OfflineDayClose`, a fourth tab in
+  `OfflinePage`); `components/closed-here-note.tsx` on Billing and Daily folders.
+- **Copies refreshed at once** — `requestCatalogRefresh()` beside `requestDayRefresh()`, after a
+  close (online, or sent by the outbox), Start next business day, a reopen and the first day.
+- `public/sw.js` keeps `/offline-day-close` and opens it for `/day-close`; `offline.html` offers it;
+  the outbox line and the sign-out dialog count closes; `useOutboxReady()`.
+
+**Verified, 2026-09-29 — against a copy of the live database, not the live one.** `pnpm db:backup`,
+restored into a throwaway PostgreSQL 18.4 cluster made with `initdb` in the session's scratchpad
+(port 5544), and `pnpm build` + `next start` pointed at it (HANDOFF trap 8.20). Which database the
+server used was proved twice: its connections in that cluster's `pg_stat_activity`, and a marker
+customer that exists only there appearing in the catalog copy. **Nothing was written to live.**
+Browser pane, signed in as the manager, "offline" = the server stopped:
+
+| Test | Result |
+|---|---|
+| The same inputs online and offline (24 Sep, Sherry paid 1,178, counted 20,000) | the server's review and the offline one: Expected **Rs 26,272**, every breakdown line the same; staff work, khata and earnings the same on every step |
+| `/day-close` with the server stopped | the worker opened `/offline-day-close`; four tabs |
+| An offline bill (T-4, Rs 300) and expense (Rs 100), then the offline close | Hamid's work 10,321 → 10,621; Expected **Rs 26,472**; short Rs 72 refused without a reason, then kept: "Waiting to be sent, after the day's 1 bill and 1 folder entry" |
+| Billing and Daily folders offline after it | "24 Sep 2026 was closed on this computer…", Save disabled on both |
+| Server started | sent in order: bill **#43**, the expense, then `day.close` with the close's id and `offline`; snapshot expected 26,472, counted 26,400, −72 with the reason; code **0AB1-DCC9-B5F6**, which `verifyDayCode` recomputes from the rows (and 23 Sep's before it) |
+| Start next business day | both copies on 25 Sep within 3 s (opening cash 26,400) |
+| 25 Sep closed offline, then a Rs 100 expense added on the server only | refused: "…compared with an expected Rs 25,600, and the server's books now expect Rs 25,500…"; day still open; `day.offline-close-refuse`; Billing: the note with "The server refused that close", Save disabled |
+| Close again on the full screen | the steps pre-filled (Sherry 800, 25,600); server review: extra Rs 100; closed under the same id (`day.close` without `offline`), code **50E9-A756-AE64**; off the outbox |
+| An online close whose answer was lost (fetch patched: sent, then thrown) | kept under the same id; the outbox's send answered `{"securityCode":"B1AE-4E4A-B2CF","alreadySaved":true}`; one `day.close`, one snapshot, one payment |
+| A refused bill of the day in the outbox | no steps: "Some of the day is still on this computer … refused by the server. Put it right or remove it on Billing"; with its route cut and the bill back in line: "being sent … moves on by itself"; offline: the link to Day close offline; removed on Billing → the steps |
+| A made-up close for 24 Sep, already closed | refused ("24 Sep 2026 has already been closed on the server…"); Needs attention with Remove only; reason required; `day.offline-close-discard` |
+| The internet gone between step 3 and the count, on the full screen | expected worked out on this computer (Rs 24,000), "Close day offline", kept, sent when the server came back (27 Sep, code **29EA-584D-F77B**) |
+| `/offline-day-close` with no open day | "No business day is open … started on the full Day close screen" |
+| 375 px, the offline close | no horizontal scroll |
+
+`verifyDayCode` recomputed all four test days' codes from the rows (24–27 Sep). `pnpm test` 600 (38
+new), lint clean, build passes (36 routes — `/offline-day-close` static, `/api/offline/close` new).
+
+**Found and fixed while verifying:** the offline pages' day pill still said Open on a day closed
+there; it says Closed now. A lint failure (`react-hooks/purity` on a `Date.now()` in an event
+handler) appeared when a helper's text was rendered inline; rendering it through a component cleared
+it (HANDOFF trap 8.21).
+
+**Not verified:** a real internet outage; the Owner's reopen and the first day refreshing the copies
+(the same `dayChanged` as Start next business day, which was seen); sign-out with a close waiting
+(Claude does not sign a person out); two browsers on one counter.
+
+**Test data left in the live database:** none — every write went to the throwaway copy, which was
+deleted afterwards.
 
 ---
 
@@ -1582,6 +1691,20 @@ restored it. There is no second database to restore into — `.env.local` is the
 live one, and a local PostgreSQL is running here but its password is not known.
 **Do one restore into a throwaway Neon branch before the trial starts.** Until
 then the backup is untested, and `docs/BACKUP.md` says so in those words.
+
+**2026-09-29, while verifying P2.2f (not this item's work, recorded because it
+changes the paragraph above):** a fresh `pnpm db:backup` of live **was
+restored** — into a throwaway cluster made with `initdb` in the session's
+scratchpad (PostgreSQL 18.4, trust sign-in, port 5544, so no password was
+needed; the machine's own PostgreSQL service was not touched). `pg_restore
+--no-owner --no-privileges` finished without an error, and the copy held **30
+tables, the 14 triggers, 20 migrations, 42 bills** and 24 Sep open, as live did.
+The built app then ran against it for a whole P2.2f session — sign-in with the
+existing session, billing, folders, four days closed — and `verifyDayCode`
+recomputed every closed day's security code from the restored rows. The
+cluster was deleted afterwards (HANDOFF trap 8.20). Still not done: a restore
+into Neon itself, and `docs/BACKUP.md` has not been changed. Whether this is
+enough for spec phase 4's "restore from backup verified" is the user's call.
 
 **Not automated either.** Somebody has to run `pnpm db:backup`. A schedule needs
 somewhere to put the files that is not this laptop — worth settling together
