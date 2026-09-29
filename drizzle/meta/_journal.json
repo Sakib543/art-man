@@ -134,6 +134,13 @@
       "when": 1790443814404,
       "tag": "0018_smart_maelstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790640505494,
+      "tag": "0019_kind_spot",
+      "breakpoints": true
     }
   ]
 }

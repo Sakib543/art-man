@@ -24,6 +24,15 @@ export const cashEntries = pgTable(
     pinConfirmed: boolean("pin_confirmed").notNull().default(false),
     /** Set on a reversal row: the entry it voids. */
     voidsEntryId: uuid("voids_entry_id"),
+    /**
+     * The id the Daily folders screen gave this entry before sending it
+     * (P2.2e), as `bills.client_id` is for a bill (P3.15). The server never
+     * saves one id twice, so an entry kept offline and sent by the outbox — or
+     * sent again after its answer was lost — is saved exactly once. Null on
+     * cancellations, on the staff payments Day Close writes, and on every entry
+     * saved before P2.2e.
+     */
+    clientId: uuid("client_id").unique(),
     createdBy: text("created_by").notNull(),
     createdAt: createdAt(),
   },
