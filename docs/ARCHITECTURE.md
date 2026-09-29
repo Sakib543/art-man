@@ -27,8 +27,10 @@ src/
                       day's close, through day-close's service), all POSTs. Route
                       Handlers, because Next runs Server Actions one at a time
                       per client and background work must not hold up "Save
-                      bill". With api/auth these are the only API routes;
-                      everything else is a Server Action. An API route checks
+                      bill".
+    api/staff-slip/   A staff member's salary slip for a month, as a PDF (P3.3),
+                      a GET. With api/auth and api/offline these are the only
+                      API routes; everything else is a Server Action. An API route checks
                       the session itself (checkUser), and one that writes checks
                       the Origin itself too (lib/same-origin.ts) — Next does
                       that only for Server Actions.

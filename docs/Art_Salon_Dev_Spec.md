@@ -123,6 +123,8 @@ Runs in this order:
 5. **Difference** — short → reason **required**; extra → recorded too.
 6. **Lock** — day locks; no further entries. A **daily summary + security code** goes to the owner on WhatsApp.
 
+> **Changed 2026-09-29 (client decision):** nothing is sent on WhatsApp or SMS. The day's security code is shown on the Day close screen and in the Daily report.
+
 **Expected-cash formula:**
 ```
 Opening cash (yesterday's leftover, auto-carried)
@@ -196,6 +198,8 @@ At month end (and provisionally mid-month), generate a per-staff printable state
 - Dated **earnings** (commission / wage / bonus) and dated **takings** (payments / advances), then **payable now**.
 - Mid-month copies are marked **"Provisional — may change at month end."** After Month Close they are **final**.
 - Deliverable via print + WhatsApp.
+
+> **Changed 2026-09-29 (client decision, backlog P3.3):** the slip is **a PDF downloaded** from the Staff khata screen, per staff member and month — the karigar's proof, sent nowhere. It is final once the month is closed and provisional before.
 
 ### 6.5 Rate-change rule
 Changing a staff member's rate/salary affects **future** calculations only; past records never change.
@@ -283,7 +287,7 @@ Each phase must be independently usable — never ship a half-finished flow live
 | 1. Daily operations | Billing, daily worksheet, 4 folders, void/cancel, Day Close (+ per-day snapshot), staff daily earning & payments, security code, Manager reports | Register + system run in parallel; 7 straight days difference = 0 |
 | 2. Customers & staff | Customer history, special rates, staff monthly settlement + monthly receipts, Staff & Rates CRUD | One month of staff accounts matches manual 100% |
 | 3. Monthly accounts | Monthly expenses, capital/outstanding, net profit, Owner account, Partners, Month Close, owner mobile dashboard | One month's full accounts match manual 100% |
-| 4. Reliability | Backup/restore, WhatsApp receipts, automatic nightly summary, offline mode (PWA) | Restore from backup verified |
+| 4. Reliability | Backup/restore, ~~WhatsApp receipts, automatic nightly summary~~ (removed 2026-09-29, client decision), offline mode (PWA) | Restore from backup verified |
 
 **Future enhancements (after core is stable):** lapsed-customer list, which deals are loss-making, material-theft detection, alerts on unusual entries.
 
@@ -312,10 +316,10 @@ Each phase must be independently usable — never ship a half-finished flow live
   #103  Haircut — Ashfaq Bhai    1,500   Active
   Report sums: 500 − 500 + 1,500 = 1,500 (correct, and the mistake is still visible)
   ```
-- **≥3 cancellations in one day → instant alert to the Owner.**
+- **≥3 cancellations in one day → instant alert to the Owner.** *(Changed 2026-09-29, client decision: no alert is sent. The Overview and the Daily report say so on screen.)*
 - Every Day Close emits a **security code** to the Owner; if historical data is later tampered with, the code won't match and it's detected.
 - **Audit log:** who / when / what for every important action, **including failed attempts**.
-- Only a **customer's name and phone** may be edited (with a record).
+- Only a **customer's name and phone** may be edited (with a record) — by the **Owner** alone (client decision, 2026-09-29).
 - Cancellation authority:
   - Today's bill (before Day Close): **Manager** (reason required).
   - A closed day's bill (before Month Close): **Owner only**.

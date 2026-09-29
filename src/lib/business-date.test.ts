@@ -7,6 +7,7 @@ import {
   monthStart,
   nextDate,
   nextMonth,
+  previousMonth,
   todayInKarachi,
 } from "./business-date";
 
@@ -37,6 +38,11 @@ describe("months", () => {
 
   it("names a month", () => {
     expect(formatMonth("2026-09")).toBe("September 2026");
+  });
+
+  it("finds the month before, across a year start", () => {
+    expect(previousMonth("2026-09")).toBe("2026-08");
+    expect(previousMonth("2027-01")).toBe("2026-12");
   });
 
   it("finds a month's last day, leap years included", () => {

@@ -1,10 +1,11 @@
-import { asc, eq, sum } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull, lt, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { isMonthClosed } from "@/db/queries/months";
-import { khataEntries, staff } from "@/db/schema";
+import { billLines, bills, businessDays, khataEntries, monthCloses, staff } from "@/db/schema";
 import { withRunningBalance, type PayType, type Rupees } from "@/lib/accounting";
-import { monthOf } from "@/lib/business-date";
+import { monthOf, monthStart, nextMonth } from "@/lib/business-date";
+import type { SlipLine } from "./slip";
 
 export interface KhataStaff {
   id: string;
@@ -116,4 +117,75 @@ export async function getKhataData(requestedId?: string): Promise<KhataData | nu
   );
 
   return { staff: list, selected, ledger, monthClosed };
+}
+
+export interface SlipData {
+  staff: { name: string; payType: PayType; commissionRate: number };
+  /** Every khata line the person has: the ones before the month make the balance brought forward. */
+  lines: SlipLine[];
+  /** When the month was closed; null while it is open. */
+  closedAt: Date | null;
+  /** Work done on the month's closed days — what the commission was worked out on. */
+  work: Rupees;
+}
+
+/**
+ * What one staff member's salary slip for `month` needs (backlog P3.3). Null
+ * for someone who does not exist, or a month with no business day.
+ *
+ * The work is the person's bill lines on the month's **closed** days, the same
+ * days their commission was posted for. A cancelled bill and its reversal add
+ * up to nothing, and a line's amount is already net of any discount (P3.10),
+ * so the sum is what the commission was worked out on.
+ */
+export async function getSlipData(staffId: string, month: string): Promise<SlipData | null> {
+  const start = monthStart(month);
+  const end = monthStart(nextMonth(month));
+
+  const [[member], lines, [closeRow], [workRow], [anyDay]] = await Promise.all([
+    db
+      .select({ name: staff.name, payType: staff.payType, commissionRate: staff.commissionRate })
+      .from(staff)
+      .where(eq(staff.id, staffId))
+      .limit(1),
+    db
+      .select({
+        id: khataEntries.id,
+        businessDate: khataEntries.businessDate,
+        kind: khataEntries.kind,
+        label: khataEntries.label,
+        amount: khataEntries.amount,
+        reversesEntryId: khataEntries.reversesEntryId,
+        cashEntryId: khataEntries.cashEntryId,
+      })
+      .from(khataEntries)
+      .where(eq(khataEntries.staffId, staffId)),
+    db.select({ closedAt: monthCloses.closedAt }).from(monthCloses).where(eq(monthCloses.month, start)).limit(1),
+    db
+      .select({ total: sum(billLines.amount).mapWith(Number) })
+      .from(billLines)
+      .innerJoin(bills, eq(billLines.billId, bills.id))
+      .innerJoin(businessDays, eq(businessDays.businessDate, bills.businessDate))
+      .where(
+        and(
+          eq(billLines.staffId, staffId),
+          gte(bills.businessDate, start),
+          lt(bills.businessDate, end),
+          isNotNull(businessDays.closedAt),
+        ),
+      ),
+    db
+      .select({ date: businessDays.businessDate })
+      .from(businessDays)
+      .where(and(gte(businessDays.businessDate, start), lt(businessDays.businessDate, end)))
+      .limit(1),
+  ]);
+  if (!member || !anyDay) return null;
+
+  return {
+    staff: { name: member.name, payType: member.payType as PayType, commissionRate: member.commissionRate },
+    lines,
+    closedAt: closeRow?.closedAt ?? null,
+    work: workRow?.total ?? 0,
+  };
 }

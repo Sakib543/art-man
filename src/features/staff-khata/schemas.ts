@@ -11,3 +11,9 @@ export const bonusSchema = z.object({
 });
 
 export type BonusInput = z.infer<typeof bonusSchema>;
+
+/** Which salary slip to make (backlog P3.3): whose, and for which month ("2026-09"). */
+export const slipQuerySchema = z.object({
+  staff: z.uuid("Choose a staff member"),
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Choose a month"),
+});

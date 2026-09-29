@@ -32,7 +32,6 @@ export interface SnapshotRow {
   securityCode: string;
   closedBy: string;
   closedAt: string;
-  cancelledBills: number;
 }
 
 export type DayCloseData =

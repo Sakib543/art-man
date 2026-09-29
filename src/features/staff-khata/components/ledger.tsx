@@ -1,9 +1,11 @@
 import { Panel, PanelHeader } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
+import type { MonthChoice } from "@/db/queries/months";
 import { rs, formatDate, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { KhataStaff, LedgerRow } from "../queries";
 import { GiveBonus } from "./give-bonus";
+import { SalarySlip } from "./salary-slip";
 
 const th = "px-3.5 py-2 text-left text-xs font-medium text-muted-foreground";
 // Padding from `md` up only; below it `.table-stacked` spaces each card
@@ -16,12 +18,15 @@ export function Ledger({
   rows,
   monthClosed,
   canGiveBonus,
+  months,
 }: {
   member: KhataStaff;
   rows: LedgerRow[];
   monthClosed: boolean;
   /** Only the Owner gives bonuses (spec §10.10), so only the Owner sees the button. */
   canGiveBonus: boolean;
+  /** The months a salary slip can be made for (P3.3), newest first. */
+  months: MonthChoice[];
 }) {
   return (
     <Panel>
@@ -34,6 +39,7 @@ export function Ledger({
             ) : (
               <Badge variant="warning">Provisional until month close</Badge>
             )}
+            <SalarySlip staffId={member.id} staffName={member.name} months={months} />
             {canGiveBonus && !monthClosed ? <GiveBonus staffId={member.id} staffName={member.name} /> : null}
           </div>
         }

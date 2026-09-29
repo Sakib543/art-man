@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-29 (**P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-29 (**P3.3 done — the staff salary slip: a PDF per karigar per month, downloaded from Staff khata, with the month's totals, day by day, and room to sign; final once the month is closed, provisional before. P3.5 removed, and with it every plan to send anything on WhatsApp or SMS: the Day close "WhatsApp summary" preview is gone. The client's other answers the same day: the Customers screen stays the Owner's alone; a developer's edit in a closed month is to recalculate the month — P1.10, not built yet.** **P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -39,7 +39,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2f | Day Close offline, the security code on sync (no migration) | ✅ | done 2026-09-29 |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
-| P3.3 | Staff monthly salary slip — a PDF to download, nothing sent (redefined by the client 2026-09-29) | 🟡 | Sakib543, 2026-09-29 |
+| P3.3 | Staff monthly salary slip — a PDF to download, nothing sent (redefined by the client 2026-09-29) | ✅ | done 2026-09-29 |
 | P3.5 | Real alert to the Owner on 3+ cancellations | ✖ | **removed** 2026-09-29 — the client does not want it, nor anything sent on WhatsApp or SMS |
 | P3.4 | Next-month adjustment for a closed month (migration `0020`) | ✅ | done 2026-09-29 |
 | P3.10 | Discount on a bill | ✅ | done 2026-09-23 |
@@ -62,6 +62,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P1.8 | Only the developer sets passwords · the eye on every password field · the developer names their own account | ✅ | done 2026-09-23 |
 | P6.2 | The salon's real logo, everywhere | ✅ | done 2026-09-23 |
 | P1.9 | One seed script, and it creates only the developer | ✅ | done 2026-09-25 |
+| P1.10 | A developer's edit in a closed month recalculates its report and the partners' shares (the client, 2026-09-29) | ⬜ | — |
 | P6.3 | Tidy the login page after `5313fc3` | ✅ | done 2026-09-25 |
 | P4.11 | `db:check` counts migrations against the repo, not a hardcoded 16 | ✅ | done 2026-09-25 |
 | P6.4 | One way to ring up a bill, and the register inside the Daily report | ✅ | done 2026-09-25 |
@@ -727,6 +728,36 @@ hours the app must keep working, and when the connection returns the database up
 So **P2.2 is approved.** P2.1 still gets built first: it is a cheap stopgap until P2.2 ships, and
 it stays useful whenever the power is out.
 
+### ⬜ P1.10 — A developer's edit in a closed month recalculates the month
+**Client decision, 2026-09-29, through the user.** When the developer changes a bill in place (P1.6)
+in a month that is already closed, the month's saved report and the partners' shares are to be
+**worked out again**, not left as they were closed. Today they are left (HANDOFF section 9, question 0
+until now), and the developer's screen warns that they no longer match the bills.
+
+What building it has to get right:
+
+- `month_closes` is append-only through `forbid_change()`. The update belongs inside the
+  developer's hatch (`src/db/financial-edit.ts`, the only place that may open it), in the same
+  transaction as the bill, with the old report and shares written to `audit_log` as `before`.
+- Recompute **only what the edit moves**: the days' snapshots (which `resettleDay` has just
+  rewritten). The frozen **salaries** must stay as they were closed — `getMonthlyReport` reads
+  today's staff settings, which may have changed since. Bonuses, monthly expenses, Owner cash,
+  capital repayments and P3.4 adjustments cannot change in a closed month, so reading them again is
+  safe.
+- The partners' shares with the **percentages saved at close**, not today's.
+- The Owner and the Manager must see no sign of the developer role (HANDOFF section 6). A note on
+  the Monthly report can say the month was recalculated after a bill was corrected; it must not say
+  by whom.
+- A mistake already put right with a P3.4 adjustment must not also be edited in place, or it
+  counts twice. Say so on the developer's screen.
+
+Test it on a restored local copy (HANDOFF trap 8.20): close a month, edit one of its bills as the
+developer, and read back the month's report, the shares and the audit entry.
+
+**Size:** small to medium · **Value:** medium (rare, but it is money the partners are paid on)
+
+---
+
 ### ✅ P2.1 — Cheap fallback: the paper bill book (spec §5.5)
 **Done:** 2026-09-22
 
@@ -1376,7 +1407,7 @@ deleted afterwards.
 |---|---|---|
 | ✅ P3.1 | **Give a bonus** — done 2026-09-23. See below | small |
 | ✅ P3.2 | **Customers screen** — details and special rates. Done 2026-09-23. See below | medium |
-| 🟡 P3.3 | **Staff monthly salary slip** (spec §6.4) — redefined 2026-09-29: a PDF to download, nothing sent. In progress, see below | medium |
+| ✅ P3.3 | **Staff monthly salary slip** (spec §6.4) — done 2026-09-29: a PDF downloaded from Staff khata, nothing sent. See below | medium |
 | ✅ P3.4 | **Next-month adjustment for a closed month** (spec §7.4) — done 2026-09-29 (migration `0020`). See below | medium |
 | ✖ P3.5 | **Real alert to the Owner on 3+ cancellations** — removed 2026-09-29: the client does not want it. The note on screen stays | — |
 | ✅ P3.6 | **Receipt printing / thermal printer** — done 2026-09-22. See below | small |
@@ -1384,13 +1415,90 @@ deleted afterwards.
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
 
-### 🟡 P3.3 — Staff monthly salary slip
-**Owner:** Sakib543, 2026-09-29
+### ✅ P3.3 — Staff monthly salary slip
+**Done:** 2026-09-29 · no migration · new dependency `pdf-lib` (server only)
 
 **Redefined by the client, 2026-09-29, through the user:** at month end, one slip per karigar with
 the month's whole account — commission and the rest, totals and what is left to pay — as **a file
 to download, and nothing else**: no WhatsApp, no SMS, nothing sent. It is the karigar's proof. With
-the same answer the client removed P3.5 and every plan to send anything on WhatsApp or SMS.
+the same answer the client removed P3.5 and every plan to send anything on WhatsApp or SMS, so the
+Day close "Preview WhatsApp summary" went too.
+
+**What the Owner or the Manager does:** Staff khata → the person → **Salary slip** → the month
+(the last closed one is chosen to start with, marked *final*; the open one is *provisional*) →
+**Download PDF**. The file is `salary-slip-<name>-<month>.pdf`.
+
+**What is on the slip** (A4, one page for a month with a day off a week):
+
+- The salon, the month, and **FINAL** (the month is closed; "these figures will not change") or
+  **PROVISIONAL** ("may change at month end; a day's commission and wage are added when that day is
+  closed").
+- The person and how they are paid ("Daily wage + commission (10%)").
+- The totals, top to bottom so each line follows from the ones above: **brought forward** from the
+  month before; **earned** — commission (with the work it was worked out on), daily wage (with the
+  number of days), monthly salary (on a provisional slip: "added when the month is closed"), bonus;
+  **taken** — payments and advances; **adjustments and corrections** when there are any; and
+  **"Payable to <name>"**, or **"Advance to recover from <name>"** when more was taken than earned.
+- **Room to sign** — the karigar's and the Owner's or Manager's — right under the total.
+- **The month day by day:** commission, wage, other (salary, bonus, adjustments), taken, and the
+  balance at the end of each day. A long month carries over onto a second page with the headings
+  repeated; every page says when it was made and "Page n of N". The generator's name is **not**
+  printed: a slip made by the developer must not name the role (HANDOFF section 6).
+
+**Choices made while building it** (the client left the details open):
+
+| | Chosen |
+|---|---|
+| Which months | Every month with a business day, the open one included — spec §6.4 asks for provisional slips mid-month. Final once the month is closed |
+| Who | Any signed-in role. The Manager keeps the khata and hands the slip over, and the slip shows nothing the Staff khata screen does not |
+| The format | A PDF, made on the server with `pdf-lib` and the standard Helvetica — nothing embedded, 3–6 KB a slip. It writes a Western character set only; `pdfSafe` turns anything else (a name typed in Urdu script) into `?` rather than make no slip at all |
+| Where the figures come from | The khata alone, added up: nothing stored, so a slip can never disagree with the ledger. The work figure is the person's bill lines on the month's **closed** days — cancellations net out, discounts are already in the line amounts |
+| Corrections | A line that reverses another (a reopened day, a correction, a cancelled P3.4 adjustment) counts where that one did, so commission, wage and payments are each net of their corrections; an advance's cancellation nets against the advances |
+| An error | The screen fetches the file and then saves it, so "sign in again" or "no connection" is said in the dialog rather than saved as a broken file |
+
+**What was built:**
+
+- `features/staff-khata/slip.ts` — pure: `categoryOf`, `buildSlip`, `slipFileName`. 15 tests.
+- `features/staff-khata/slip-pdf.ts` — pure: `summaryRows`, `statusNote`, `pdfSafe`, and
+  `renderSlipPdf` (the layout, and pagination through a small `Sheet` writer). 11 tests, including
+  a PDF read back with `PDFDocument.load` and a 31-day month going onto a second page.
+- `features/staff-khata/queries.ts` — `getSlipData`: the person, every khata line of theirs, the
+  month's close, the work on its closed days.
+- `app/api/staff-slip/route.ts` — `GET ?staff=&month=`: the session checked (`checkUser`), the query
+  checked (`slipQuerySchema`), then the PDF, `no-store` and `attachment`. 401, 400, 404 and 503 come
+  back as plain words.
+- `features/staff-khata/components/salary-slip.tsx` — the button and the dialog; the Staff khata
+  page passes the months (`getMonthChoices`).
+- `lib/business-date.ts` — `previousMonth`.
+- **Removed:** the Day close "Preview WhatsApp summary" button and its text (`summary-text.ts`
+  and its test), `SnapshotRow.cancelledBills` and the query that counted them for it. The closed
+  day now says "The day's security code. If any of this day's entries is changed later, it will
+  no longer match." instead of "Security code sent with the daily summary", which nothing ever sent.
+
+**Verified, 2026-09-29, against a restored copy of the live database — nothing written to live**
+(HANDOFF trap 8.20; a throwaway Owner that existed only in the copy). The copy's days were closed
+to 30 Sep, September closed and 1 Oct started, by script:
+
+| Check | Result |
+|---|---|
+| The fresh backup, restored | 31 tables, 21 migrations, **15 triggers**, 43 bills — migration `0020` restores with the rest |
+| Sherry's September slip, rendered from the copy and read back | final; commission 564 on work of Rs 5,637; daily wage 7,200 (9 days); payments -1,770; **payable Rs 5,994** — equal to the sum of her khata lines to 30 Sep. Her 22 and 23 Sep reopen and correction lines landed in the right columns |
+| Arshad's September slip | commission 1,135 on Rs 11,350; salary 40,000; bonus 500; advances -2,000; **payable Rs 39,635** — equal to his khata |
+| October (open) | provisional, amber, brought forward 5,994, "Nothing in the khata this month" |
+| The screen | Staff khata → Salary slip → September (final) chosen to start with → Download PDF: `/api/staff-slip` 200, a 3,629-byte `application/pdf`, saved as `salary-slip-sherry-2026-09.pdf` (the save was caught in the page, not written to disk), dialog closed |
+| The refusals | a month with no business day → 404 in words; a staff id that is not one → 400 "Choose a staff member"; an unknown one → 404; no session cookie → the proxy's redirect, which the screen reads as "sign in again"; the request failing → "No connection…" in the dialog, which stays open |
+| 375 px | the ledger header's badge and buttons wrap; nothing scrolls sideways |
+| Day close, a closed day | no WhatsApp anywhere; "Reopen this day" and "Start next business day" only |
+
+No server errors. The copy, its dump, the throwaway account, the rendered PDFs and the scripts were
+deleted afterwards; the pane signed out, its copies cleared, the outbox empty.
+
+`pnpm test` **662** (27 new, 3 gone with the summary), `pnpm lint` clean, `pnpm build` passes (37 routes).
+
+**Not verified:** the file opened on a phone, and printed on paper. A real Manager session (the
+route and the button do not look at the role).
+
+**Size:** medium · **Value:** medium (the karigar's proof; asked for by the client)
 
 ### ✅ P3.4 — Next-month adjustment for a closed month
 **Done:** 2026-09-29 · migration `0020`

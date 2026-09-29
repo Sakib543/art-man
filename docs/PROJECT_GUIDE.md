@@ -74,7 +74,7 @@ MAHINA (Owner)
 | Daily folders | Expenses, staff advance, Owner cash, online payments |
 | Day close | Raat ka 5-qadam wizard, agla din shuru |
 | Daily report | Kisi bhi din ki saari bills (cancelled bhi). Upar `List \| Register` switch: Register purani Daily worksheet hai — har karigar ka column, Owner/Account column, neeche total. Sirf dekhne ke liye (P6.4) |
-| Staff khata | Har staff ka chalta hisaab (kamai jama, payment/advance kam) |
+| Staff khata | Har staff ka chalta hisaab (kamai jama, payment/advance kam). **"Salary slip"**: mahine ki PDF, karigar ke saboot ke liye (P3.3) |
 
 **Owner**
 
@@ -321,11 +321,11 @@ Behtar hai ke pehle `neon branches create --name friend` se alag branch banayen,
 | **Deployment (Vercel)** | Baad mein (plan mein hai) |
 | Asli data (staff, prices, partners ke naam) | Owner khud daalega |
 | Receipt print / thermal printer | Jaan-boojh kar chhoda |
-| WhatsApp par summary/receipt bhejna | Abhi sirf preview |
+| WhatsApp par summary/receipt bhejna | **Hata diya** (client ka faisla, 2026-09-29): kuch bhi WhatsApp ya SMS par nahi jata |
 | Band din ki bill cancel (sirf Owner), din dobara kholna | Nahi bana |
-| Staff ki monthly receipt, bonus dena | Nahi bana |
+| Staff ki monthly receipt, bonus dena | **Ban gaya**: Staff khata par "Salary slip" se har karigar ki mahine ki PDF download (P3.3, 2026-09-29); bonus P3.1 mein bana |
 | Band mahine ki galti agle mahine adjustment se sudharna | **Ban gaya** (P3.4, 2026-09-29) |
-| Owner ko 3+ cancel ka alert bhejna | Sirf screen par note |
+| Owner ko 3+ cancel ka alert bhejna | **Hata diya** (client ka faisla, 2026-09-29). Screen par note rehta hai |
 | Backup/restore | **Ban gaya**: `pnpm db:backup`, aur restore do dafa local copy par aazmaya (2026-09-29, P3.7). Neon par restore nahi kiya (aap ka faisla). Khud-ba-khud backup VPS ke saath (P5.3) |
 | Offline mode | **Ban gaya** (P2.2, 2026-09-29) |
 | Customer ke special rates ki edit screen | Nahi bana |

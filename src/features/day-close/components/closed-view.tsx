@@ -1,7 +1,7 @@
 "use client";
 
 import { Panel, PanelHeader } from "@/components/panel";
-import { AlertCircle, ArrowRight, Banknote, ChartColumn, Clock, LockOpen, MessageCircle, ShieldCheck, TrendingUp, Users, Wallet } from "lucide-react";
+import { AlertCircle, ArrowRight, Banknote, ChartColumn, Clock, LockOpen, ShieldCheck, TrendingUp, Users, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { requestCatalogRefresh } from "@/components/catalog-sync";
@@ -12,14 +12,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { formatTime, rs } from "@/lib/format";
 import { reopenDayAction, startNextDayAction } from "../actions";
-import { buildSummaryText } from "../summary-text";
 import type { SnapshotRow } from "../types";
 import { Badge } from "@/components/ui/badge";
 
 /** `canReopen` is true only for the Owner: reopening a closed day is theirs alone. */
 export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; canReopen: boolean }) {
   const router = useRouter();
-  const [showSummary, setShowSummary] = useState(false);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
   const [reopening, setReopening] = useState(false);
@@ -71,17 +69,13 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
           <div className="min-w-60 flex-1">
             <p className="text-base font-semibold">Day closed at {formatTime(snapshot.closedAt)}</p>
             <p className="text-muted-foreground">
-              Security code sent with the daily summary. If any old entry is changed later, this code will no longer match.
+              The day&apos;s security code. If any of this day&apos;s entries is changed later, it will no longer match.
             </p>
             <p className="mt-1.5 inline-block rounded-lg bg-secondary px-3 py-1.5 font-mono text-2xl font-medium tracking-[2px] text-primary">
               {snapshot.securityCode}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setShowSummary((value) => !value)}>
-              <MessageCircle aria-hidden />
-              {showSummary ? "Hide summary" : "Preview WhatsApp summary"}
-            </Button>
             {canReopen ? (
               <Button
                 variant="outline"
@@ -109,14 +103,6 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
           </p>
         ) : null}
 
-        {showSummary ? (
-          <div className="border-t px-card py-4">
-            <p className="mb-2 text-xs text-muted-foreground">Preview only: sending on WhatsApp is not connected yet.</p>
-            <pre className="max-w-md rounded-xl border border-success-line bg-success-soft px-4 py-3.5 font-sans text-sm whitespace-pre-line">
-              {buildSummaryText(snapshot)}
-            </pre>
-          </div>
-        ) : null}
       </Panel>
 
       <Panel className="mt-4">

@@ -1,5 +1,6 @@
 import { Info } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { getMonthChoices } from "@/db/queries/months";
 import { Ledger } from "@/features/staff-khata/components/ledger";
 import { StaffList } from "@/features/staff-khata/components/staff-list";
 import { getKhataData } from "@/features/staff-khata/queries";
@@ -13,7 +14,7 @@ const SUBTITLE = "Earnings are added, payments and advances are subtracted";
 export default async function StaffKhataPage({ searchParams }: { searchParams: Promise<{ staff?: string }> }) {
   const user = await requireUser();
   const { staff } = await searchParams;
-  const data = await getKhataData(staff);
+  const [data, months] = await Promise.all([getKhataData(staff), getMonthChoices()]);
 
   if (!data) {
     return (
@@ -40,6 +41,7 @@ export default async function StaffKhataPage({ searchParams }: { searchParams: P
           rows={data.ledger}
           monthClosed={data.monthClosed}
           canGiveBonus={atLeastOwner(user.role)}
+          months={months?.choices ?? []}
         />
       </div>
     </>

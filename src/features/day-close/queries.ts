@@ -1,7 +1,7 @@
-import { count, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
-import { billCancellations, bills, daySnapshots } from "@/db/schema";
+import { daySnapshots } from "@/db/schema";
 import { workByStaff } from "@/lib/accounting";
 import { loadDay, loadKhataBalances } from "@/db/queries/day-data";
 import type { DayCloseData } from "./types";
@@ -36,11 +36,6 @@ export async function getDayCloseData(): Promise<DayCloseData> {
   }
 
   const [snapshot] = await db.select().from(daySnapshots).where(eq(daySnapshots.businessDate, day.businessDate)).limit(1);
-  const [{ cancelled }] = await db
-    .select({ cancelled: count() })
-    .from(billCancellations)
-    .innerJoin(bills, eq(billCancellations.billId, bills.id))
-    .where(eq(bills.businessDate, day.businessDate));
 
   return {
     state: "closed",
@@ -61,7 +56,6 @@ export async function getDayCloseData(): Promise<DayCloseData> {
       securityCode: snapshot.securityCode,
       closedBy: snapshot.closedBy,
       closedAt: snapshot.createdAt.toISOString(),
-      cancelledBills: cancelled,
     },
   };
 }
