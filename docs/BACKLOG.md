@@ -36,7 +36,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P2.2c | Outbox + sync endpoint (built against this database — no dev branch, the user 2026-09-28) | ✅ | done 2026-09-28 |
 | P2.2d | Billing offline, `T-` numbers on the receipt | ✅ | done 2026-09-29 |
 | P2.2e | Folders / cash entries offline, the Register with local bills (migration `0019`) | ✅ | done 2026-09-29 |
-| P2.2f | Day Close offline | ⬜ | — |
+| P2.2f | Day Close offline | 🟡 | Sakib543, 2026-09-29 |
 | P3.1 | Give a bonus | ✅ | done 2026-09-23 |
 | P3.2 | Customers screen — edit, and set special rates | ✅ | done 2026-09-23 |
 | P3.3, P3.5 | Staff receipt · real alert | ⬜ | **dropped for now** — the client dropped the SMS/WhatsApp side 2026-09-23 |
@@ -1247,6 +1247,16 @@ made-up closed-day entry.
 `T-1` and `T-2` — the same slip numbers as #38 and #39. They came from another browser, whose
 IndexedDB counts its own `T-` numbers: the limit P2.2d wrote down under "two browsers on one
 counter". The slips still differ by their bill number once synced.
+
+### 🟡 P2.2f — Day Close offline
+**Owner:** Sakib543, 2026-09-29
+
+The manager closes the day with no internet: the five steps worked out in the browser from the copy
+of the day (P2.2e) and what is still in the outbox, the close kept in the outbox behind the day's
+bills and entries, and the security code made by the server when the close reaches it (the client's
+answer, 2026-09-26). With it, what P2.2e left: the online close holds back while the outbox still
+has that day's work, and both offline copies are refreshed right after a close or a new day. The
+user said to start (2026-09-29); the recommended choices are taken and recorded here when done.
 
 ---
 
