@@ -1,4 +1,4 @@
-import type { PayType, StaffPay } from "./types";
+import type { DayPay, PayType, StaffPay } from "./types";
 
 export const PAY_TYPES: readonly PayType[] = [1, 2, 3];
 
@@ -26,6 +26,20 @@ export function normalizeStaffPay(pay: StaffPay): StaffPay {
   return {
     payType: pay.payType,
     salary: paysSalary(pay.payType) ? pay.salary : 0,
+    dailyWage: paysDailyWage(pay.payType) ? pay.dailyWage : 0,
+    commissionRate: paysCommission(pay.payType) ? pay.commissionRate : 0,
+  };
+}
+
+/**
+ * The part of a staff member's pay a day's close works with (P7.13, QA-08):
+ * the pay type, and the wage and commission rate only where the type pays
+ * them. Never the salary, even when handed a whole `StaffPay`: this is what
+ * reaches the browser for Day close.
+ */
+export function dayPayOf(pay: DayPay): DayPay {
+  return {
+    payType: pay.payType,
     dailyWage: paysDailyWage(pay.payType) ? pay.dailyWage : 0,
     commissionRate: paysCommission(pay.payType) ? pay.commissionRate : 0,
   };

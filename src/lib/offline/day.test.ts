@@ -43,13 +43,18 @@ describe("dayFor", () => {
 describe("closeCopyOf (P2.2f)", () => {
   const close = {
     openingCash: 5000,
-    pay: { "st-arshad": { payType: 3, salary: 0, dailyWage: 500, commissionRate: 10 } },
+    pay: { "st-arshad": { payType: 3, dailyWage: 500, commissionRate: 10 } },
     khata: { "st-arshad": 30 },
   } as const;
 
   it("gives what closing the day needs", () => {
     expect(closeCopyOf({ ...copy, close })).toEqual(close);
     expect(isDayCopy({ ...copy, close })).toBe(true);
+  });
+
+  it("needs no salary, which no day earns (P7.13) — and still reads a copy kept before, which has one", () => {
+    const before = { ...close, pay: { "st-arshad": { ...close.pay["st-arshad"], salary: 0 } } };
+    expect(closeCopyOf({ ...copy, close: before })).toEqual(before);
   });
 
   it("gives nothing for a copy kept before P2.2f, or read when no day was open", () => {
@@ -60,7 +65,7 @@ describe("closeCopyOf (P2.2f)", () => {
   it.each([
     ["no opening cash", { ...close, openingCash: undefined }],
     ["a pay type that does not exist", { ...close, pay: { st: { ...close.pay["st-arshad"], payType: 4 } } }],
-    ["a pay without its wage", { ...close, pay: { st: { payType: 3, salary: 0, commissionRate: 10 } } }],
+    ["a pay without its wage", { ...close, pay: { st: { payType: 3, commissionRate: 10 } } }],
     ["a khata balance that is not a number", { ...close, khata: { st: "30" } }],
   ])("refuses one with %s", (_, broken) => {
     expect(closeCopyOf({ ...copy, close: broken as unknown as DayCopy["close"] })).toBeNull();

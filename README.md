@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-796_unit_%2B_115_integration-2E7D32?logo=vitest&logoColor=white" alt="796 unit and 115 integration tests" />
+  <img src="https://img.shields.io/badge/tests-801_unit_%2B_120_integration-2E7D32?logo=vitest&logoColor=white" alt="801 unit and 120 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,8 +67,8 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 39 routes · ~32,000 lines of TypeScript · 796 unit tests in 57
-files · 115 integration tests against PostgreSQL · 23 database migrations · 15 append-only triggers.
+**By the numbers:** 19 feature modules · 39 routes · ~32,000 lines of TypeScript · 801 unit tests in 57
+files · 120 integration tests against PostgreSQL · 23 database migrations · 15 append-only triggers.
 
 ---
 
@@ -290,7 +290,8 @@ sequenceDiagram
   today's.
 - **IndexedDB** holds a versioned copy of the catalog (services, deals, prices, staff, customers and their
   special rates), a copy of the open day, and the **outbox**, which nothing empties except the server
-  accepting an item or a person removing it with a reason.
+  accepting an item or a person removing it with a reason. The day's copy holds only what closing the day
+  needs: no salary, and pay and balances only for the staff the close lists.
 - **Ordering:** a day's close waits in the outbox behind that day's bills and entries, and the server closes
   the day only if its own expected cash matches the figure the cash was counted against.
 - **Sessions:** an offline sign-in lasts 12 hours from the last one the server confirmed. "Online" means the
@@ -450,14 +451,14 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **796 unit tests in 57 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **801 unit tests in 57 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
   session, sign-in error messages, the proxy's redirects, role rules and the salary slip.
 - **Property-style checks** where it matters: for example, recalculating a closed month from corrected days
   must equal building the report from scratch, across every shape of month.
-- **115 integration tests in 11 files** run the services, Server Actions, Route Handlers and triggers against a
+- **120 integration tests in 12 files** run the services, Server Actions, Route Handlers and triggers against a
   real PostgreSQL: the Owner-cash PIN and its lock under 20 guesses at once; the same cancellation, installment
   or save sent five times at once changing the books once; a closed day corrected after a pay change, reopened
   and closed again; every one of the 46 Server Actions called as each role, signed out and in maintenance

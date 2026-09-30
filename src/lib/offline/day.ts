@@ -1,6 +1,6 @@
 import type { DayBill } from "@/db/queries/day-bills";
 import type { DayEntry } from "@/db/queries/day-entries";
-import type { Rupees, StaffPay } from "@/lib/accounting";
+import type { DayPay, Rupees } from "@/lib/accounting";
 
 /**
  * The counter's copy of the open business day (backlog P2.2e): its bills and
@@ -9,8 +9,12 @@ import type { Rupees, StaffPay } from "@/lib/accounting";
  * refreshed by `components/day-sync.tsx` — far more often than the catalog,
  * after every save — so that with no internet the counter still sees the
  * whole day, not only what was made offline. Day Close offline (P2.2f) is
- * worked out from it, with what `close` adds: the opening cash, each staff
- * member's pay and the khata balances.
+ * worked out from it, with what `close` adds: the opening cash, and the pay
+ * and khata balance of each staff member the close lists.
+ *
+ * Only what a close needs (P7.13, QA-08): the copy reaches every role that
+ * signs in on the counter, so it carries no more than the online Day close
+ * gives the same person — no salary, and nobody the close would not list.
  *
  * Pure: the server builds it (`db/queries/day-copy.ts`), the browser keeps it.
  */
@@ -34,13 +38,22 @@ export interface DayStaff {
 /**
  * What closing the day needs besides its bills and entries (P2.2f): what
  * Day Close reads from the server before the count.
+ *
+ * The opening cash stays in it (P7.13): no expected cash can be worked out
+ * here without it. It is the last day's count, which the Daily report shows
+ * the same people as "Counted"; the honest count (spec §5.4(4)) is kept on the
+ * screen, which shows expected cash only after the count, offline as online.
  */
 export interface DayCloseCopy {
   /** The day's opening cash: the last day's count, carried over. */
   openingCash: Rupees;
-  /** Each staff member's pay, by id — what the close works earnings out from. */
-  pay: Record<string, StaffPay>;
-  /** Each staff member's khata balance as the server had it, by id: the day's advances included. */
+  /**
+   * The pay of each staff member the close lists, by id — the active ones, and
+   * anyone switched off with work on the day (`loadDay`'s rule). The day's
+   * part of it only (`dayPayOf`): no salary, which no day earns.
+   */
+  pay: Record<string, DayPay>;
+  /** The khata balance of the same staff, by id, as the server had it: the day's advances included. */
   khata: Record<string, Rupees>;
 }
 
@@ -92,12 +105,12 @@ export function dayFor<T extends DayCopy>(copy: T | null, businessDate: string):
 const isRecordOf = (value: unknown, check: (item: unknown) => boolean) =>
   typeof value === "object" && value !== null && !Array.isArray(value) && Object.values(value).every(check);
 
+/** A copy made before P7.13 also has a salary; nothing reads it. */
 const isPay = (value: unknown) => {
   if (typeof value !== "object" || value === null) return false;
-  const pay = value as Partial<StaffPay>;
+  const pay = value as Partial<DayPay>;
   return (
     (pay.payType === 1 || pay.payType === 2 || pay.payType === 3) &&
-    typeof pay.salary === "number" &&
     typeof pay.dailyWage === "number" &&
     typeof pay.commissionRate === "number"
   );

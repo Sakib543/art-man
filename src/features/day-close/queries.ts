@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { daySnapshots } from "@/db/schema";
-import { workByStaff } from "@/lib/accounting";
+import { dayPayOf, workByStaff } from "@/lib/accounting";
 import { loadDay, loadKhataBalances } from "@/db/queries/day-data";
 import type { DayCloseData } from "./types";
 
@@ -25,10 +25,7 @@ export async function getDayCloseData(): Promise<DayCloseData> {
       staff: loaded.staff.map(({ id, name, pay }) => ({
         id,
         name,
-        payType: pay.payType,
-        salary: pay.salary,
-        dailyWage: pay.dailyWage,
-        commissionRate: pay.commissionRate,
+        ...dayPayOf(pay),
         work: work[id] ?? 0,
         khataBalance: khata[id] ?? 0,
       })),

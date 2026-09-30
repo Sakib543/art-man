@@ -2,11 +2,15 @@ import type { BreakdownRow, PayType, Rupees } from "@/lib/accounting";
 
 /** Plain data passed from the server to the Day Close screen. */
 
+/**
+ * A staff member on the close's list, with the day's part of their pay
+ * (`dayPayOf`): no salary, which no day earns and the browser has no need of
+ * (P7.13, QA-08). It is a `DayPay` as it stands, for `dayEarning`.
+ */
 export interface CloseStaffRow {
   id: string;
   name: string;
   payType: PayType;
-  salary: Rupees;
   dailyWage: Rupees;
   commissionRate: number;
   /** Value of the work billed today, net of cancelled bills. */

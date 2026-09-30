@@ -1,4 +1,4 @@
-import type { Bill, Rupees, StaffPay } from "./types";
+import type { Bill, DayPay, Rupees, StaffPay } from "./types";
 
 /** Commission % a staff member earns. Monthly-salary staff (type 1) earn none. */
 export function commissionRateFor(pay: Pick<StaffPay, "payType" | "commissionRate">): number {
@@ -38,7 +38,7 @@ export interface DayEarning {
  *  Type 2: commission only (salary at month end).
  *  Type 3: daily wage (only if present) + commission.
  */
-export function dayEarning(pay: StaffPay, work: Rupees, present: boolean): DayEarning {
+export function dayEarning(pay: DayPay, work: Rupees, present: boolean): DayEarning {
   const commission = commissionOn(work, commissionRateFor(pay));
   const wage = pay.payType === 3 && present ? pay.dailyWage : 0;
   return { work, commission, wage, total: commission + wage };

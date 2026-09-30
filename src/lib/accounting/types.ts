@@ -25,6 +25,13 @@ export interface StaffPay {
   commissionRate: number;
 }
 
+/**
+ * What one day's earnings are worked out from (`dayEarning`): a salary is
+ * added at month end, so no day needs it. It is all of a staff member's pay
+ * that Day close — online, or offline from the day's copy — is given (P7.13).
+ */
+export type DayPay = Pick<StaffPay, "payType" | "dailyWage" | "commissionRate">;
+
 /** One line of a bill: what was actually charged, and who did the work. */
 export interface BillLine {
   staffId: string;

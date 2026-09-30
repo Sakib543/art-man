@@ -2,6 +2,7 @@ import type { DayBill } from "@/db/queries/day-bills";
 import type { DayEntry } from "@/db/queries/day-entries";
 import {
   cashDifference,
+  dayPayOf,
   expectedCashBreakdown,
   summarizeDay,
   workByStaff,
@@ -128,7 +129,8 @@ export function localDayOf(copy: DayCopy | null, items: readonly OutboxItem[], b
     .map<CloseStaffRow>((member) => ({
       id: member.id,
       name: member.name,
-      ...close.pay[member.id],
+      // By name: a copy kept before P7.13 still has a salary beside them.
+      ...dayPayOf(close.pay[member.id]),
       work: work[member.id] ?? 0,
       khataBalance: (close.khata[member.id] ?? 0) - (advances[member.id] ?? 0),
     }));
@@ -162,16 +164,7 @@ export function reviewLocally(day: LocalDay, { attendance, payouts, counted }: C
     openingCash: day.openingCash,
     bills: day.bills,
     entries: day.entries,
-    staff: day.staff.map((member) => ({
-      id: member.id,
-      pay: {
-        payType: member.payType,
-        salary: member.salary,
-        dailyWage: member.dailyWage,
-        commissionRate: member.commissionRate,
-      },
-      present: attendance[member.id] ?? true,
-    })),
+    staff: day.staff.map((member) => ({ id: member.id, pay: dayPayOf(member), present: attendance[member.id] ?? true })),
     payouts,
   });
   return {

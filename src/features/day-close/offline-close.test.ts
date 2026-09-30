@@ -73,9 +73,9 @@ const copy: DayCopy = {
   close: {
     openingCash: 5000,
     pay: {
-      arshad: { payType: 3, salary: 0, dailyWage: 500, commissionRate: 10 },
-      sherry: { payType: 2, salary: 20000, dailyWage: 0, commissionRate: 20 },
-      kamran: { payType: 1, salary: 15000, dailyWage: 0, commissionRate: 0 },
+      arshad: { payType: 3, dailyWage: 500, commissionRate: 10 },
+      sherry: { payType: 2, dailyWage: 0, commissionRate: 20 },
+      kamran: { payType: 1, dailyWage: 0, commissionRate: 0 },
     },
     // The server's balances already carry the advances it has (Arshad's 100).
     khata: { arshad: 30, sherry: -10 },
@@ -174,6 +174,17 @@ describe("localDayOf", () => {
     const withKamran = [...items, bill("t3", "kamran", 100)];
     const result = localDayOf(copy, withKamran, DATE);
     expect(result.ok && result.day.staff.map((member) => member.id)).toEqual(["arshad", "sherry", "kamran"]);
+  });
+
+  it("takes only the day's pay from a copy kept before P7.13, which still has a salary (QA-08)", () => {
+    const sherryThen = { payType: 2 as const, salary: 20000, dailyWage: 0, commissionRate: 20 };
+    const old: DayCopy = { ...copy, close: { ...copy.close!, pay: { ...copy.close!.pay, sherry: sherryThen } } };
+    const result = localDayOf(old, items, DATE);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.day.staff[1]).toMatchObject({ payType: 2, commissionRate: 20 });
+      expect(result.day.staff[1]).not.toHaveProperty("salary");
+    }
   });
 });
 

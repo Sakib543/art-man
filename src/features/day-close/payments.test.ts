@@ -7,7 +7,6 @@ const row = (id: string, over: Partial<CloseStaffRow>): CloseStaffRow => ({
   id,
   name: id,
   payType: 3,
-  salary: 0,
   dailyWage: 0,
   commissionRate: 0,
   work: 0,
@@ -16,7 +15,7 @@ const row = (id: string, over: Partial<CloseStaffRow>): CloseStaffRow => ({
 });
 
 const bilal = row("Bilal", { dailyWage: 1110 });
-const arshad = row("Arshad", { payType: 2, salary: 20000, commissionRate: 10, work: 5000, khataBalance: 300 });
+const arshad = row("Arshad", { payType: 2, commissionRate: 10, work: 5000, khataBalance: 300 });
 const staff = [bilal, arshad];
 const earnings = Object.fromEntries(staff.map((s) => [s.id, dayEarning(s, s.work, true)]));
 

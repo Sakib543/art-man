@@ -1,7 +1,7 @@
 import { dayEarning, workByStaff, type DayEarning } from "./commission";
 import { dayProfit, expectedCash, salesTotals } from "./day";
 import { folderTotals, type FolderEntry, type FolderTotals } from "./folders";
-import type { Bill, Rupees, StaffPay } from "./types";
+import type { Bill, DayPay, Rupees, StaffPay } from "./types";
 
 /**
  * Everything Day Close works out, in one pure function. The server calls it
@@ -10,7 +10,8 @@ import type { Bill, Rupees, StaffPay } from "./types";
 
 export interface CloseStaff {
   id: string;
-  pay: StaffPay;
+  /** No salary: none is earned by the day (P7.13). */
+  pay: DayPay;
   /** Marked at Day Close. Only daily-wage staff get paid for being present. */
   present: boolean;
 }
@@ -107,7 +108,7 @@ export function settledStaff(
   saved: readonly SettledMember[],
   current: readonly { id: string; pay: StaffPay }[],
   worked: ReadonlySet<string>,
-): CloseStaff[] {
+): (CloseStaff & { pay: StaffPay })[] {
   const onTheDay = new Map(saved.map((member) => [member.staffId, member]));
   return current.flatMap((member) => {
     const day = onTheDay.get(member.id);

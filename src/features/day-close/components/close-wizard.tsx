@@ -141,11 +141,7 @@ function Wizard({
   const earnings = useMemo(() => {
     const result: Record<string, DayEarning> = {};
     for (const row of staff) {
-      result[row.id] = dayEarning(
-        { payType: row.payType, salary: row.salary, dailyWage: row.dailyWage, commissionRate: row.commissionRate },
-        row.work,
-        present[row.id] ?? true,
-      );
+      result[row.id] = dayEarning(row, row.work, present[row.id] ?? true);
     }
     return result;
   }, [staff, present]);
