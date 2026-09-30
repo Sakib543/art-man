@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-729_passing-2E7D32?logo=vitest&logoColor=white" alt="729 tests" />
+  <img src="https://img.shields.io/badge/tests-742_passing-2E7D32?logo=vitest&logoColor=white" alt="742 tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,7 +67,7 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 18 feature modules · 37 routes · ~32,000 lines of TypeScript · 729 unit tests in 52
+**By the numbers:** 18 feature modules · 37 routes · ~32,000 lines of TypeScript · 742 unit tests in 53
 files · 23 database migrations · 15 append-only triggers.
 
 ---
@@ -395,15 +395,15 @@ git clone https://github.com/Sakib543/art-man.git
 cd art-man
 pnpm install
 cp .env.example .env.local        # fill in the values below
-pnpm db:migrate                   # create the tables, indexes and triggers
-pnpm db:seed:developer            # the first account — its password is printed once
+pnpm db:migrate                   # create the tables, indexes and triggers (--live for a database not on this computer)
+pnpm db:seed:developer            # the first account — its password is printed once (--live likewise)
 pnpm dev                          # http://localhost:3000
 ```
 
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | Connection string the app uses (Neon's pooled string; a plain one for local PostgreSQL, without `sslmode`) |
-| `DATABASE_URL_UNPOOLED` | Used by migrations only — Neon's direct string. Optional; falls back to `DATABASE_URL` |
+| `DATABASE_URL_UNPOOLED` | Used by migrations and backups — Neon's direct string. Optional; falls back to `DATABASE_URL`, and is ignored when `DATABASE_URL` alone is named on the command line |
 | `BETTER_AUTH_SECRET` | Signs sessions. Generate one: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
 | `BETTER_AUTH_URL` | The app's own URL, e.g. `http://localhost:3000` |
 
@@ -413,6 +413,9 @@ where they belong. The first business day is opened from Day close.
 
 > Always run migrations with `pnpm db:migrate`, never a schema push: the append-only triggers live in
 > hand-written SQL migrations, and a push would create the tables without them.
+>
+> `db:migrate` and `db:seed:developer` print the database they are about to write to, and refuse one that
+> is not on this computer unless the command ends in `--live` — a Neon database included.
 
 ---
 
@@ -425,9 +428,9 @@ where they belong. The first business day is opened from Day close.
 | `pnpm test` / `pnpm test:watch` | Unit tests |
 | `pnpm lint` | ESLint (Next.js core-web-vitals and TypeScript rules) |
 | `pnpm db:generate` | Generate a migration after changing `src/db/schema` |
-| `pnpm db:migrate` | Apply migrations |
+| `pnpm db:migrate` | Apply migrations; says which database, and wants `--live` for one not on this computer |
 | `pnpm db:studio` | Drizzle Studio |
-| `pnpm db:seed:developer` | Create the developer account (skips if one exists) |
+| `pnpm db:seed:developer` | Create the developer account (skips if one exists); `--live` as above |
 | `pnpm db:check` | Check the connection, the applied migrations against the repo, and the accounts |
 | `pnpm db:backup` | Full `pg_dump` backup to `backups/` (git-ignored) |
 
@@ -435,7 +438,7 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **729 tests in 52 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **742 tests in 53 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline

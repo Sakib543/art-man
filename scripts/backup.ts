@@ -1,8 +1,8 @@
 /**
  * A backup of the whole database, as one file (backlog P3.7).
  *
- *   pnpm db:backup                                  # the database in .env.local
- *   DATABASE_URL="<other>" pnpm db:backup           # any other database
+ *   pnpm db:backup                                  # the database in .env.local (live today)
+ *   DATABASE_URL="<other>" pnpm db:backup           # any other database — that one, whole (P7.6)
  *   PG_DUMP="C:\\path\\to\\pg_dump.exe" pnpm db:backup
  *
  * It shells out to `pg_dump` in its custom format (`-Fc`), which is what
@@ -13,19 +13,22 @@
  * The file is the salon's whole book of accounts in plain form. It goes to
  * `backups/`, which is git-ignored, and it must not be committed or emailed.
  */
-import "./load-env";
+import { outside } from "./load-env";
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { describeDatabase, directDatabaseUrl, isLocalDatabase } from "../src/lib/db-target";
 
 const OUT_DIR = "backups";
 
 /**
  * Neon's pooled connection goes through PgBouncer, which `pg_dump` cannot use
  * for everything it needs. The direct (unpooled) string is the right one, and
- * it is the same variable migrations already use.
+ * it is chosen as migrations choose it (`directDatabaseUrl`, P7.6): a
+ * `DATABASE_URL` named on the command line is backed up, not live's direct
+ * string from `.env.local`. Reading needs no `--live`; the target is printed.
  */
-const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+const url = directDatabaseUrl(outside, process.env);
 
 /** pg_dump is not on PATH on a standard Windows install, so look there too. */
 function findPgDump(): string {
@@ -41,30 +44,21 @@ function findPgDump(): string {
 /** "2026-09-23T19-40-06" — sorts by name, and is legal in a Windows filename. */
 const stamp = () => new Date().toISOString().replace(/:/g, "-").replace(/\..+$/, "");
 
-/** Never print the connection string itself (HANDOFF trap 8.6). */
-function describe(connectionString: string): string {
-  try {
-    const { host, pathname } = new URL(connectionString);
-    return `${host}${pathname}`;
-  } catch {
-    return "unreadable connection string";
-  }
-}
-
 function main() {
   if (!url) {
     console.error("No connection string. Set DATABASE_URL, or run through .env.local.");
     process.exit(1);
   }
-  if (!process.env.DATABASE_URL_UNPOOLED) {
-    console.warn("Note: DATABASE_URL_UNPOOLED is not set, so the pooled connection is being used.");
+  // pg_dump and PgBouncer: only Neon's pooled string is a problem, never a database on this computer.
+  if (url !== process.env.DATABASE_URL_UNPOOLED && !isLocalDatabase(url)) {
+    console.warn("Note: this is not a DATABASE_URL_UNPOOLED string, so a pooled connection may be in use.");
     console.warn("      If pg_dump fails, put the direct (unpooled) string in .env.local and run it again.");
   }
 
   mkdirSync(OUT_DIR, { recursive: true });
   const file = join(OUT_DIR, `art-man-${stamp()}.dump`);
 
-  console.log(`database  ${describe(url)}`);
+  console.log(`database  ${describeDatabase(url)}`);
   console.log(`writing   ${file}`);
 
   const child = spawn(

@@ -63,15 +63,18 @@ Run one of these from the repo root. The connection string is the live branch's 
 (non-pooled) one:
 
 ```bash
-DATABASE_URL_UNPOOLED="<live direct string>" pnpm db:migrate
+DATABASE_URL_UNPOOLED="<live direct string>" pnpm db:migrate --live
 ```
 
 PowerShell has no inline-variable syntax, so there it is two commands — and a third to put it back,
 which matters (see the warning below):
 
 ```powershell
-$env:DATABASE_URL_UNPOOLED="<live direct string>"; pnpm db:migrate; Remove-Item Env:\DATABASE_URL_UNPOOLED
+$env:DATABASE_URL_UNPOOLED="<live direct string>"; pnpm db:migrate --live; Remove-Item Env:\DATABASE_URL_UNPOOLED
 ```
+
+It prints the database it is about to migrate first. **`--live` is required** for any database that is
+not on this computer (backlog P7.6): without it the command stops before connecting.
 
 > **Close that terminal, or clear the variable, before running anything else.** In PowerShell the
 > variable stays set for the whole session, so the next `pnpm db:migrate` — or worse, a seed — would
@@ -86,11 +89,11 @@ Sign-up is disabled on the website, so the first account cannot be made from the
 against live, from your computer:
 
 ```bash
-DATABASE_URL="<live pooled string>" pnpm db:seed:developer
+DATABASE_URL="<live pooled string>" pnpm db:seed:developer --live
 ```
 
 ```powershell
-$env:DATABASE_URL="<live pooled string>"; pnpm db:seed:developer; Remove-Item Env:\DATABASE_URL
+$env:DATABASE_URL="<live pooled string>"; pnpm db:seed:developer --live; Remove-Item Env:\DATABASE_URL
 ```
 
 It creates `developer` and **prints its password once**. Write it down there and then — running it
@@ -143,11 +146,13 @@ Measured from the code, because guessing this is how the wrong database gets wri
 | Variable | Read by | Where |
 |---|---|---|
 | `DATABASE_URL` | the app **and the seed script** | `src/db/index.ts` |
-| `DATABASE_URL_UNPOOLED` | **migrations only** (`pnpm db:migrate`) | `drizzle.config.ts`, falling back to `DATABASE_URL` when it is empty |
+| `DATABASE_URL_UNPOOLED` | **migrations and backups** (`pnpm db:migrate`, `pnpm db:backup`) | `directDatabaseUrl` in `src/lib/db-target.ts`, from `scripts/migrate.ts`, `scripts/backup.ts` and `drizzle.config.ts`; falling back to `DATABASE_URL` when it is empty |
 
-A value set on the command line **wins over `.env.local`**: both `drizzle.config.ts`
-(`process.loadEnvFile`) and the scripts (`scripts/load-env.ts`, the same call) leave a variable alone if
-the environment already has it. Verified by testing it, so the commands above do go to live.
+A value set on the command line **wins over `.env.local`**: `scripts/load-env.ts` reads the file with
+`process.loadEnvFile`, which leaves a variable alone if the environment already has it. And since P7.6 a
+`DATABASE_URL` set on the command line on its own is used **whole** by migrations and backups: the
+file's `DATABASE_URL_UNPOOLED`, which belongs to the file's database, is not paired with it. Before, it
+was — so `DATABASE_URL=<local copy> pnpm db:migrate` migrated live (QA-01).
 
 ## Later changes to the database
 
@@ -160,7 +165,7 @@ pnpm db:generate          # writes the migration file — commit it
 Then, **before pushing the code that needs it**, apply it to live:
 
 ```bash
-DATABASE_URL_UNPOOLED="<live direct string>" pnpm db:migrate
+DATABASE_URL_UNPOOLED="<live direct string>" pnpm db:migrate --live
 ```
 
 Order matters because pushing to `main` deploys by itself (section 0.1). Migrate first, then push.

@@ -35,6 +35,10 @@ DATABASE_URL="postgres://..." pnpm db:backup
 $env:DATABASE_URL="postgres://..."; pnpm db:backup
 ```
 
+It prints the database it reads before it starts. Since P7.6 a `DATABASE_URL` named like this is the
+one backed up, whole — before, `.env.local`'s `DATABASE_URL_UNPOOLED` (live's) won, and this command
+backed up live. A backup only reads, so it needs no `--live`.
+
 **`pg_dump` must be installed.** The script looks for it on `PATH` and then in
 `C:\Program Files\PostgreSQL\{18,17,16}\bin`. Point `PG_DUMP` at it otherwise:
 

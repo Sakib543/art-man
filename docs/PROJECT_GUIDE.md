@@ -187,6 +187,10 @@ pnpm db:generate   # naya migration file banata hai (drizzle/ folder)
 pnpm db:migrate    # database par lagata hai
 ```
 
+`pnpm db:migrate` pehle batata hai ke kis database par ja raha hai. Jo database is computer par nahi
+(Neon, yaani live) us ke liye command ke aakhir mein `--live` likhna zaroori hai:
+`pnpm db:migrate --live`. Warna woh connect kiye baghair ruk jata hai (P7.6).
+
 Purani migration files kabhi edit na karein, hamesha nayi banayein.
 
 ---
@@ -253,8 +257,8 @@ pnpm dev               # chalana (http://localhost:3000)
 pnpm test              # 130 tests
 pnpm lint
 pnpm build             # production build
-pnpm db:migrate        # tables banana/update
-pnpm db:seed:developer # sirf developer ka account (password ek dafa screen par aata hai)
+pnpm db:migrate        # tables banana/update (live par: --live)
+pnpm db:seed:developer # sirf developer ka account (password ek dafa screen par aata hai; live par: --live)
 pnpm db:studio         # database dekhne ki screen
 ```
 

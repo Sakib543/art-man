@@ -4,6 +4,9 @@
  *
  *   pnpm db:seed:developer
  *
+ * Off this computer (Neon, a VPS — and `.env.local` is live today) it needs
+ * `--live`: `pnpm db:seed:developer --live` (P7.6).
+ *
  * The password comes from SEED_DEVELOPER_PASSWORD if set, otherwise a random
  * one is generated and printed ONCE. Write it down; it cannot be read back,
  * only reset.
@@ -22,6 +25,7 @@
 // Must come first: it puts DATABASE_URL in the environment before src/db reads it.
 import "./load-env";
 import { randomBytes } from "node:crypto";
+import { writeTarget } from "./target";
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { user } from "../src/db/schema";
@@ -30,6 +34,9 @@ import { auth } from "../src/lib/auth/server";
 const USERNAME = "developer";
 
 async function main() {
+  // It writes an account: said where, and refused off this computer without --live (P7.6).
+  writeTarget(process.env.DATABASE_URL, "create the developer account on");
+
   // By role, not by name: the developer can rename their own account (P1.8),
   // and a renamed one must not let a second developer in beside it.
   const [existing] = await db.select({ username: user.username }).from(user).where(eq(user.role, "developer")).limit(1);
