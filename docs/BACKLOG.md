@@ -81,7 +81,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ✅ | done 2026-09-30 |
 | P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | ✅ | done 2026-10-01 |
 | P7.6 | Scripts never reach live by accident (QA-01) | ✅ | done 2026-10-01 |
-| P7.7 | Next.js 16.3.6 (QA-36, critical advisory) | ⬜ | before the trial |
+| P7.7 | Next.js 16.3.6 (QA-36, critical advisory) | 🟡 | Sakib543, 2026-10-01 |
 | P7.8 | Security code: deterministic, survives corrections, actually checked (QA-05, QA-26, QA-27) | ⬜ | before the trial (part) |
 | P7.9 | Integration tests against a real database, and a CI gate (QA-43) | ⬜ | before the trial |
 | P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | ⬜ | next |
@@ -431,8 +431,8 @@ only, with no connection. **Fix:** when `DATABASE_URL` comes from the process en
 file's `DATABASE_URL_UNPOOLED` (or require an explicit `MIGRATE_DATABASE_URL`); print the target host and
 refuse a non-local one without `--live`. Until then: always override **both** variables.
 
-#### ⬜ P7.7 — Next.js 16.3.6
-**Owner:** — · **Findings:** QA-36 · no migration
+#### 🟡 P7.7 — Next.js 16.3.6
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-36 · no migration
 
 `pnpm audit`: critical GHSA-vcvr-r3jv-pc5j in next 16.3.5 (RCE in `next/og` ImageResponse; vulnerable
 >=16.2.0 <16.3.6). `next/og` is not imported today, so it is not reachable yet. Bump `next` and
