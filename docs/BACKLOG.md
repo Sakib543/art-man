@@ -79,7 +79,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration `0021` | ✅ | done 2026-09-30 |
 | P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration `0022` | ✅ | done 2026-09-30 |
 | P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ✅ | done 2026-09-30 |
-| P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | ⬜ | before the trial |
+| P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | 🟡 | Sakib543, 2026-09-30 |
 | P7.6 | Scripts never reach live by accident (QA-01) | ⬜ | before the trial |
 | P7.7 | Next.js 16.3.6 (QA-36, critical advisory) | ⬜ | before the trial |
 | P7.8 | Security code: deterministic, survives corrections, actually checked (QA-05, QA-26, QA-27) | ⬜ | before the trial (part) |
@@ -335,8 +335,8 @@ are edited, so the Owner cannot put it right in the app. Separately `saveSharesS
 = 99.99, then Month close refuses. **Fix:** one tolerance-based check (or basis points as integers);
 2 decimals in the schema. **Verify:** any shares the schema accepts render Partners and let Month close run.
 
-#### ⬜ P7.5 — Day close payouts and money fields: no silent typos
-**Owner:** — · **Findings:** QA-29 (Medium, P1), QA-14, QA-31 · no migration
+#### 🟡 P7.5 — Day close payouts and money fields: no silent typos
+**Owner:** Sakib543, 2026-09-30 · **Findings:** QA-29 (Medium, P1), QA-14, QA-31 · no migration
 
 - **QA-29.** A daily-wage karigar's "Paid today" is pre-filled with the day's earning; typing 1110
   into the pre-filled 1,110 made **Rs 11,101,110**. Review then showed expected cash −Rs 11,069,885 as
