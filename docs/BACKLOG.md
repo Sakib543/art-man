@@ -86,7 +86,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.8b | Security code: a copy outside the database, a key it does not hold (QA-26) — split from P7.8 | ⬜ | next; until then the Owner notes each code on paper |
 | P7.9 | Integration tests against a real database, and a CI gate (QA-43) | ✅ | done 2026-10-01; Deployment Checks wait for the Vercel project (P5.1) |
 | P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | ✅ | done 2026-10-01 |
-| P7.11 | The error screen stops blaming the database (QA-30) | ⬜ | next |
+| P7.11 | The error screen stops blaming the database (QA-30) | 🟡 | Sakib543, 2026-10-01 |
 | P7.12 | Sign-in rate limit that holds, and throttled attempts in the audit log (QA-34) | ⬜ | next |
 | P7.13 | The offline day copy gives the Manager only what a close needs (QA-08) | ⬜ | next |
 | P7.14 | Database hardening: TRUNCATE, the app's role, the hatch, day tables (QA-12, QA-23, QA-24) — migration | ⬜ | next |
@@ -665,8 +665,8 @@ counted. **Fix:** warn on a repeated book number; prefix `T-` with a device code
 offline items; tell the Owner when a second device works offline on the open day (the one-device
 assumption, spec §10.5, is nowhere enforced).
 
-#### ⬜ P7.11 — The error screen stops blaming the database
-**Findings:** QA-30. `components/error-card.tsx:40` always says "The system could not reach the database …
+#### 🟡 P7.11 — The error screen stops blaming the database
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-30. `components/error-card.tsx:40` always says "The system could not reach the database …
 use the paper bill book", even for a code bug (seen on Partners, P7.4). **Fix:** neutral wording;
 suggest paper only when the connectivity probe also fails.
 
