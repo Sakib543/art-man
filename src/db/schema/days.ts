@@ -1,4 +1,5 @@
-import { boolean, date, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { boolean, check, date, numeric, pgTable, primaryKey, smallint, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, rupees } from "./_shared";
 import { staff } from "./config";
 
@@ -11,7 +12,11 @@ export const businessDays = pgTable("business_days", {
   closedAt: timestamp("closed_at", { withTimezone: true }),
 });
 
-/** Daily-wage staff attendance, marked at Day Close. */
+/**
+ * The day's staff list, written at Day Close: one row for everyone on it,
+ * present or not, and the pay terms the day was settled on. Removed when the
+ * day is reopened, and written again at the next close.
+ */
 export const attendance = pgTable(
   "attendance",
   {
@@ -22,8 +27,22 @@ export const attendance = pgTable(
       .notNull()
       .references(() => staff.id),
     present: boolean("present").notNull(),
+    /**
+     * The staff member's pay when the day closed, copied from `staff` (P7.3).
+     * A closed day settled again after a correction is settled on these, not on
+     * whatever the rates are by then: a rate change applies forward only (spec
+     * §6.5). Null on days closed before P7.3, which are settled on the staff
+     * member's terms at the time, as they were before.
+     */
+    payType: smallint("pay_type"),
+    salary: rupees("salary"),
+    dailyWage: rupees("daily_wage"),
+    commissionRate: numeric("commission_rate", { precision: 5, scale: 2, mode: "number" }),
   },
-  (t) => [primaryKey({ columns: [t.businessDate, t.staffId] })],
+  (t) => [
+    primaryKey({ columns: [t.businessDate, t.staffId] }),
+    check("attendance_pay_type_chk", sql`${t.payType} in (1, 2, 3)`),
+  ],
 );
 
 /**

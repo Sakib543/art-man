@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { computeDayCode, type DayFigures } from "@/db/day-code";
-import { loadDay, type LoadedDay } from "@/db/queries/day-data";
-import { attendance, daySnapshotHistory, daySnapshots, khataEntries, monthCloses } from "@/db/schema";
+import { loadSettledDay, type LoadedDay } from "@/db/queries/day-data";
+import { daySnapshotHistory, daySnapshots, khataEntries, monthCloses } from "@/db/schema";
 import { isMonthlySalaryLabel, summarizeDay, type DayCloseSummary } from "@/lib/accounting";
 import { atLeastOwner } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/session";
@@ -84,16 +84,18 @@ export async function requireOwnerOnOpenMonth(user: SessionUser, businessDate: s
  * changes is the commission the work earned and the closing record derived from
  * it. Runs inside the caller's transaction, so the cancellation and the
  * correction are saved together or not at all.
+ *
+ * The day is settled on its own staff list and pay, as Day close saved them
+ * (P7.3, `loadSettledDay`) — never on the rates or the staff of the day the
+ * correction is made.
  */
 export async function resettleDay(tx: Tx, businessDate: string, actor: string, reason: string): Promise<void> {
   const [snapshot] = await tx.select().from(daySnapshots).where(eq(daySnapshots.businessDate, businessDate)).limit(1);
   if (!snapshot) throw new UserError("This day has no closing record to correct.");
 
-  const loaded = await loadDay(tx, businessDate);
-  const marked = await tx.select().from(attendance).where(eq(attendance.businessDate, businessDate));
-  const present = Object.fromEntries(marked.map((row) => [row.staffId, row.present]));
+  const loaded = await loadSettledDay(tx, businessDate);
   // The payments made at close are already among the day's cash entries.
-  const summary = summarize(loaded, snapshot.openingCash, present, {});
+  const summary = summarize(loaded, snapshot.openingCash, loaded.present, {});
 
   const lines = await tx.select().from(khataEntries).where(eq(khataEntries.businessDate, businessDate));
   const reversed = new Set(lines.flatMap((line) => (line.reversesEntryId ? [line.reversesEntryId] : [])));

@@ -122,12 +122,17 @@ export async function closeDay(user: SessionUser, input: CloseInput, offline?: O
     const reason = input.reason?.trim() || null;
     if (reasonRequired && !reason) throw new UserError("Write a reason for the shortage before closing.");
 
-    // 1. Attendance.
+    // 1. The day's staff list: attendance, and the pay the day is settled on,
+    //    so a correction to it later is settled on the same (P7.3).
     await tx.insert(attendance).values(
       loaded.staff.map((member) => ({
         businessDate: day.businessDate,
         staffId: member.id,
         present: input.attendance[member.id] ?? true,
+        payType: member.pay.payType,
+        salary: member.pay.salary,
+        dailyWage: member.pay.dailyWage,
+        commissionRate: member.pay.commissionRate,
       })),
     );
 

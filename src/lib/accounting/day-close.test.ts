@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expectedCashBreakdown, summarizeDay, type Bill, type DayCloseInput, type StaffPay } from "./index";
+import { expectedCashBreakdown, settledStaff, summarizeDay, type Bill, type DayCloseInput, type StaffPay } from "./index";
 
 const sherry: StaffPay = { payType: 3, salary: 0, dailyWage: 800, commissionRate: 10 };
 const hamid: StaffPay = { payType: 2, salary: 40000, dailyWage: 0, commissionRate: 10 };
@@ -94,5 +94,53 @@ describe("expectedCashBreakdown", () => {
     const s = summarizeDay(input);
     const rows = expectedCashBreakdown(input.openingCash, s);
     expect(rows.reduce((sum, r) => sum + r.amount, 0)).toBe(s.expectedCash);
+  });
+});
+
+describe("settledStaff", () => {
+  const wage = (dailyWage: number): StaffPay => ({ payType: 3, salary: 0, dailyWage, commissionRate: 0 });
+  const commission = (commissionRate: number): StaffPay => ({ payType: 2, salary: 20000, dailyWage: 0, commissionRate });
+  // Today's staff, after the day closed: Bilal's wage 700 → 900, Arshad 10% → 20%, Karim left, Newbie joined.
+  const now = [
+    { id: "bilal", pay: wage(900) },
+    { id: "arshad", pay: commission(20) },
+    { id: "karim", pay: wage(500) },
+    { id: "newbie", pay: wage(1000) },
+  ];
+  const saved = [
+    { staffId: "bilal", present: true, pay: wage(700) },
+    { staffId: "arshad", present: true, pay: commission(10) },
+    { staffId: "karim", present: true, pay: wage(500) },
+  ];
+
+  it("settles the day's own list on the day's own terms (the QA-04 scenario)", () => {
+    expect(settledStaff(saved, now, new Set(["arshad"]))).toEqual([
+      { id: "bilal", pay: wage(700), present: true },
+      { id: "arshad", pay: commission(10), present: true },
+      { id: "karim", pay: wage(500), present: true },
+    ]);
+  });
+
+  it("keeps who was marked absent absent", () => {
+    const absent = saved.map((member) => (member.staffId === "bilal" ? { ...member, present: false } : member));
+    expect(settledStaff(absent, now, new Set())[0]).toEqual({ id: "bilal", pay: wage(700), present: false });
+  });
+
+  it("falls back to today's terms for a day closed before P7.3, but still only for that day's list", () => {
+    const legacy = saved.map((member) => ({ ...member, pay: null }));
+    expect(settledStaff(legacy, now, new Set()).map((member) => [member.id, member.pay])).toEqual([
+      ["bilal", wage(900)],
+      ["arshad", commission(20)],
+      ["karim", wage(500)],
+    ]);
+  });
+
+  it("gives someone whose work was moved onto the day commission and no wage", () => {
+    expect(settledStaff(saved, now, new Set(["newbie"]))).toContainEqual({ id: "newbie", pay: wage(1000), present: false });
+  });
+
+  it("keeps the order of the staff list", () => {
+    const reversed = [...saved].reverse();
+    expect(settledStaff(reversed, now, new Set()).map((member) => member.id)).toEqual(["bilal", "arshad", "karim"]);
   });
 });

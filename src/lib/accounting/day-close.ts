@@ -82,6 +82,41 @@ export function summarizeDay(input: DayCloseInput): DayCloseSummary {
   };
 }
 
+/** One row of a closed day's staff list, as Day close saved it (P7.3). */
+export interface SettledMember {
+  staffId: string;
+  present: boolean;
+  /** The pay the day closed on. Null on a day closed before P7.3, which saved none. */
+  pay: StaffPay | null;
+}
+
+/**
+ * Who a closed day is settled again for, and on what pay, when something in
+ * it is corrected (P7.3, QA-04). The staff list Day close saved, on the terms
+ * it saved — not today's list on today's rates, since a rate change applies
+ * forward only (spec §6.5). Someone who joined since is not on it; someone who
+ * has left since still is, and keeps that day's wage.
+ *
+ * `current` is every staff row, in list order, with its pay now. It stands in
+ * for the saved terms of a day closed before P7.3, and for anyone whose work
+ * is on the day but who was not on its list (a developer moved a line to
+ * them): commission on their pay now, and no wage — they were not marked
+ * present.
+ */
+export function settledStaff(
+  saved: readonly SettledMember[],
+  current: readonly { id: string; pay: StaffPay }[],
+  worked: ReadonlySet<string>,
+): CloseStaff[] {
+  const onTheDay = new Map(saved.map((member) => [member.staffId, member]));
+  return current.flatMap((member) => {
+    const day = onTheDay.get(member.id);
+    if (day) return [{ id: member.id, pay: day.pay ?? member.pay, present: day.present }];
+    if (worked.has(member.id)) return [{ id: member.id, pay: member.pay, present: false }];
+    return [];
+  });
+}
+
 export interface BreakdownRow {
   label: string;
   /** Positive adds to the drawer, negative takes from it. */
