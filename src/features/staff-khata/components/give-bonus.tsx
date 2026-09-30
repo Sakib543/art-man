@@ -6,6 +6,7 @@ import { Field } from "@/components/field";
 import { FormDialog } from "@/components/form-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSaveId } from "@/components/use-save-id";
 import { giveBonusAction } from "../actions";
 
 /**
@@ -16,11 +17,14 @@ export function GiveBonus({ staffId, staffName }: { staffId: string; staffName: 
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
+  // The same until the bonus is saved or the dialog is closed (P7.2).
+  const [saveId, nextSaveId] = useSaveId();
 
   function close() {
     setOpen(false);
     setAmount("");
     setReason("");
+    nextSaveId();
   }
 
   return (
@@ -36,7 +40,8 @@ export function GiveBonus({ staffId, staffName }: { staffId: string; staffName: 
         description="It is added to the khata straight away. Handing the money over is a staff payment in today's folders, like any other."
         submitLabel="Give bonus"
         onClose={close}
-        onSubmit={() => giveBonusAction({ staffId, amount: Number(amount) || 0, reason })}
+        savesOnce
+        onSubmit={() => giveBonusAction({ staffId, amount: Number(amount) || 0, reason, clientId: saveId })}
       >
         <Field label="Amount (Rs)" htmlFor="bonus-amount">
           <Input

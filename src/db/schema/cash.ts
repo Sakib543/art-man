@@ -22,8 +22,11 @@ export const cashEntries = pgTable(
      * on the manager's word alone.
      */
     pinConfirmed: boolean("pin_confirmed").notNull().default(false),
-    /** Set on a reversal row: the entry it voids. */
-    voidsEntryId: uuid("voids_entry_id"),
+    /**
+     * Set on a reversal row: the entry it voids. Unique (P7.2), so one entry
+     * is never cancelled twice, even by two requests at the same moment.
+     */
+    voidsEntryId: uuid("voids_entry_id").unique(),
     /**
      * The id the Daily folders screen gave this entry before sending it
      * (P2.2e), as `bills.client_id` is for a bill (P3.15). The server never
@@ -58,6 +61,12 @@ export const khataEntries = pgTable(
     cashEntryId: uuid("cash_entry_id").references(() => cashEntries.id),
     /** Set on a reversal row: the khata line it cancels out (used when a day is reopened). */
     reversesEntryId: uuid("reverses_entry_id").references((): AnyPgColumn => khataEntries.id),
+    /**
+     * The id the Staff khata's Give bonus dialog sent this bonus under (P7.2): a Save sent again —
+     * a double press, or a retry after a lost answer — is answered "already saved" rather than
+     * saved twice, as a bill is (P3.15). Null before P7.2 and on every line that is not a bonus.
+     */
+    clientId: uuid("client_id").unique(),
     createdAt: createdAt(),
   },
   (t) => [

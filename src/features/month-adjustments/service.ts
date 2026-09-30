@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { isMonthClosed } from "@/db/queries/months";
+import { saveOnce, type SavedOnce } from "@/db/save-once";
 import { khataEntries, monthAdjustments, staff } from "@/db/schema";
 import { adjustmentEffect } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
@@ -25,8 +26,14 @@ const actorOf = (user: SessionUser) => user.username || user.name;
  *
  * No cash moves. It puts the books right; money that changes hands now —
  * a refund, a payment to a staff member — goes through Daily folders as usual.
+ *
+ * Once per client id (P7.2): the dialog sends the same id until it hears back.
  */
-export async function recordAdjustment(user: SessionUser, input: RecordAdjustmentInput): Promise<{ countsIn: string }> {
+export async function recordAdjustment(user: SessionUser, input: RecordAdjustmentInput): Promise<SavedOnce> {
+  return saveOnce(monthAdjustments, monthAdjustments.clientId, input.clientId, () => saveAdjustment(user, input));
+}
+
+async function saveAdjustment(user: SessionUser, input: RecordAdjustmentInput): Promise<void> {
   const latest = await getLatestBusinessDay();
   const current = latest ? monthOf(latest.businessDate) : null;
   const [correctsClosed, currentClosed] = await Promise.all([
@@ -79,6 +86,7 @@ export async function recordAdjustment(user: SessionUser, input: RecordAdjustmen
       staffId: member?.id ?? null,
       khataEntryId,
       reason: input.reason,
+      clientId: input.clientId,
       createdBy: actor,
     });
 
@@ -99,8 +107,6 @@ export async function recordAdjustment(user: SessionUser, input: RecordAdjustmen
       },
     });
   });
-
-  return { countsIn: current };
 }
 
 /**

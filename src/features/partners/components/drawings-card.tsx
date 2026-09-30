@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { thrownSaveMessage, useSaveId } from "@/components/use-save-id";
 import { karachiDate } from "@/lib/business-date";
 import { formatDate, num, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ export function DrawingsCard({ partnerId, month, rows, closed }: DrawingsCardPro
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  const [saveId, nextSaveId] = useSaveId();
 
   // `target` is kept after closing so the dialog does not go blank while it animates out.
   const [target, setTarget] = useState<DrawingRow | null>(null);
@@ -39,8 +41,14 @@ export function DrawingsCard({ partnerId, month, rows, closed }: DrawingsCardPro
     event.preventDefault();
     setError("");
     startTransition(async () => {
-      const result = await addDrawingAction({ partnerId, month, amount: Number(amount) || 0, note });
+      let result;
+      try {
+        result = await addDrawingAction({ partnerId, month, amount: Number(amount) || 0, note, clientId: saveId });
+      } catch (thrown) {
+        return setError(thrownSaveMessage(thrown, true));
+      }
       if (!result.ok) return setError(result.error);
+      nextSaveId();
       setAmount("");
       setNote("");
     });
@@ -49,7 +57,13 @@ export function DrawingsCard({ partnerId, month, rows, closed }: DrawingsCardPro
   function confirmVoid() {
     if (!target) return;
     startVoid(async () => {
-      const result = await voidDrawingAction({ drawingId: target.id, reason });
+      let result;
+      try {
+        result = await voidDrawingAction({ drawingId: target.id, reason });
+      } catch (thrown) {
+        // A cancellation is made once per entry (P7.2), so pressing again is safe.
+        return setVoidError(thrownSaveMessage(thrown, true));
+      }
       if (!result.ok) return setVoidError(result.error);
       setOpen(false);
     });

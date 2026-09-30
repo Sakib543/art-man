@@ -10,6 +10,13 @@ export const ADJUSTMENT_KINDS = ["sale", "expense", "staff_earning", "staff_take
 
 const STAFF_KINDS: readonly string[] = ["staff_earning", "staff_taken"];
 
+/**
+ * The id the screen sends this under until it hears the save worked (P7.2):
+ * the server saves one id once (`saveOnce`). Optional only so a screen loaded
+ * before P7.2 still saves.
+ */
+const clientId = z.uuid().nullish().transform((value) => value ?? null);
+
 export const recordAdjustmentSchema = z
   .object({
     /** The closed month it corrects, "2026-09". */
@@ -25,6 +32,7 @@ export const recordAdjustmentSchema = z
     /** Staff pay only. */
     staffId: z.uuid("Choose a staff member").optional(),
     reason: z.string().trim().min(3, "Say what was wrong").max(200),
+    clientId,
   })
   .refine((input) => !STAFF_KINDS.includes(input.kind) || input.staffId !== undefined, {
     path: ["staffId"],

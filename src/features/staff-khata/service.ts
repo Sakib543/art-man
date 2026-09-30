@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { isMonthClosed } from "@/db/queries/months";
+import { saveOnce, type SavedOnce } from "@/db/save-once";
 import { khataEntries, staff } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth/session";
 import { monthOf } from "@/lib/business-date";
@@ -24,8 +25,14 @@ const actorOf = (user: SessionUser) => user.username || user.name;
  * It does reach the month's accounts — `getMonthlyReport` counts the month's
  * bonuses as part of what staff earned — which is why a closed month is
  * refused here.
+ *
+ * Once per client id (P7.2): the dialog sends the same id until it hears back.
  */
-export async function giveBonus(current: SessionUser, input: BonusInput): Promise<{ staffName: string }> {
+export async function giveBonus(current: SessionUser, input: BonusInput): Promise<SavedOnce> {
+  return saveOnce(khataEntries, khataEntries.clientId, input.clientId, () => saveBonus(current, input));
+}
+
+async function saveBonus(current: SessionUser, input: BonusInput): Promise<void> {
   const day = await getLatestBusinessDay();
   if (!day) throw new UserError("No business day has been opened yet.");
 
@@ -43,6 +50,7 @@ export async function giveBonus(current: SessionUser, input: BonusInput): Promis
       kind: "bonus",
       label: bonusLabel(input.reason),
       amount: input.amount,
+      clientId: input.clientId,
     });
     await writeAudit(tx, {
       actor,
@@ -51,6 +59,4 @@ export async function giveBonus(current: SessionUser, input: BonusInput): Promis
       after: { amount: input.amount, reason: input.reason, businessDate: day.businessDate },
     });
   });
-
-  return { staffName: member.name };
 }

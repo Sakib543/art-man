@@ -2,11 +2,13 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { isMonthClosed } from "@/db/queries/months";
+import { saveOnce, type SavedOnce } from "@/db/save-once";
 import { partnerDrawings, partners } from "@/db/schema";
 import { checkShares } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
 import { monthOf, monthStart } from "@/lib/business-date";
-import { UserError } from "@/lib/errors";
+import { isUniqueViolation, UserError } from "@/lib/errors";
+import type { AddDrawingInput } from "./schemas";
 
 const actorOf = (user: SessionUser) => user.username || user.name;
 
@@ -48,7 +50,12 @@ export async function addPartner(user: SessionUser, name: string): Promise<void>
   });
 }
 
-export async function addDrawing(user: SessionUser, input: { partnerId: string; month: string; amount: number; note?: string }): Promise<void> {
+/** Profit a partner took out. Once per client id (P7.2). */
+export async function addDrawing(user: SessionUser, input: AddDrawingInput): Promise<SavedOnce> {
+  return saveOnce(partnerDrawings, partnerDrawings.clientId, input.clientId, () => saveDrawing(user, input));
+}
+
+async function saveDrawing(user: SessionUser, input: AddDrawingInput): Promise<void> {
   if (await isMonthClosed(input.month)) throw new UserError("This month is closed and frozen. Corrections go into next month.");
 
   const [partner] = await db.select({ id: partners.id, name: partners.name }).from(partners).where(eq(partners.id, input.partnerId)).limit(1);
@@ -61,6 +68,7 @@ export async function addDrawing(user: SessionUser, input: { partnerId: string; 
       month: monthStart(input.month),
       amount: input.amount,
       note: input.note || null,
+      clientId: input.clientId,
       createdBy: actor,
     });
     await writeAudit(tx, { actor, action: "partners.draw", target: partner.name, after: { amount: input.amount, month: input.month } });
@@ -78,15 +86,22 @@ export async function voidDrawing(user: SessionUser, drawingId: string, reason: 
   if (already) throw new UserError("This entry is already cancelled");
 
   const actor = actorOf(user);
-  await db.transaction(async (tx) => {
-    await tx.insert(partnerDrawings).values({
-      partnerId: entry.partnerId,
-      month: entry.month,
-      amount: -entry.amount,
-      note: `Cancelled: ${reason}`,
-      voidsId: entry.id,
-      createdBy: actor,
+  try {
+    await db.transaction(async (tx) => {
+      await tx.insert(partnerDrawings).values({
+        partnerId: entry.partnerId,
+        month: entry.month,
+        amount: -entry.amount,
+        note: `Cancelled: ${reason}`,
+        voidsId: entry.id,
+        createdBy: actor,
+      });
+      await writeAudit(tx, { actor, action: "partners.draw-cancel", target: entry.note ?? "drawing", before: { amount: entry.amount }, after: { reason } });
     });
-    await writeAudit(tx, { actor, action: "partners.draw-cancel", target: entry.note ?? "drawing", before: { amount: entry.amount }, after: { reason } });
-  });
+  } catch (error) {
+    // Two cancellations at the same moment both passed the check above;
+    // `voids_id` is unique (P7.2), so the database keeps one of them.
+    if (isUniqueViolation(error, "partner_drawings_voids_id_unique")) throw new UserError("This entry is already cancelled");
+    throw error;
+  }
 }

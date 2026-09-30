@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-694_passing-2E7D32?logo=vitest&logoColor=white" alt="694 tests" />
+  <img src="https://img.shields.io/badge/tests-695_passing-2E7D32?logo=vitest&logoColor=white" alt="695 tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,8 +67,8 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 18 feature modules · 37 routes · ~32,000 lines of TypeScript · 694 unit tests in 50
-files · 21 database migrations · 15 append-only triggers.
+**By the numbers:** 18 feature modules · 37 routes · ~32,000 lines of TypeScript · 695 unit tests in 50
+files · 22 database migrations · 15 append-only triggers.
 
 ---
 
@@ -141,9 +141,10 @@ files · 21 database migrations · 15 append-only triggers.
 - **Offline-first PWA.** A service worker, an IndexedDB copy of the catalog and of the open day, and an
   outbox let the counter bill, record expenses and even close the day for 6–8 hours without internet. The
   server re-validates every queued item on sync and never trusts a price computed in the browser.
-- **Exactly-once writes over an unreliable connection.** Every bill, cash entry and offline day close carries
-  a client-generated UUID backed by a unique index, so a request whose response was lost can be retried —
-  or asked about — without ever saving twice.
+- **Exactly-once writes over an unreliable connection.** Every bill, cash entry, offline day close and Owner
+  money entry (drawings, expenses, bonuses, capital, adjustments) carries a client-generated UUID backed by
+  a unique index, so a request whose response was lost can be retried — or asked about — without ever
+  saving twice. A cancellation is unique on the row it cancels, so two at once can never both land.
 - **A pure, fully tested accounting core.** Pricing, deal splits, discounts, commission, day close, month
   report, partner shares and capital live in `src/lib/accounting` with no React and no database, in whole
   rupees (integers), using largest-remainder allocation so every split adds up to the rupee.
@@ -434,7 +435,7 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **694 tests in 50 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **695 tests in 50 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline

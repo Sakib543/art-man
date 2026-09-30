@@ -7,6 +7,7 @@ import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { thrownSaveMessage, useSaveId } from "@/components/use-save-id";
 import { contributionsMatch } from "@/lib/accounting";
 import { rs } from "@/lib/format";
 import { addInvestmentAction } from "../actions";
@@ -19,6 +20,7 @@ export function NewInvestmentForm({ partners }: { partners: PartnerOption[] }) {
   const [funds, setFunds] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  const [saveId, nextSaveId] = useSaveId();
 
   const total = Number(cost) || 0;
   const contributed = partners.map((partner) => Number(funds[partner.id]) || 0);
@@ -28,12 +30,19 @@ export function NewInvestmentForm({ partners }: { partners: PartnerOption[] }) {
     event.preventDefault();
     setError("");
     startTransition(async () => {
-      const result = await addInvestmentAction({
-        name,
-        totalCost: total,
-        contributions: partners.map((partner, index) => ({ partnerId: partner.id, amount: contributed[index] })),
-      });
+      let result;
+      try {
+        result = await addInvestmentAction({
+          name,
+          totalCost: total,
+          contributions: partners.map((partner, index) => ({ partnerId: partner.id, amount: contributed[index] })),
+          clientId: saveId,
+        });
+      } catch (thrown) {
+        return setError(thrownSaveMessage(thrown, true));
+      }
       if (!result.ok) return setError(result.error);
+      nextSaveId();
       setName("");
       setCost("");
       setFunds({});

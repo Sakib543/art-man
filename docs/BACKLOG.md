@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-30 (**P7.1 done — cancelling the Owner's cash (taken or added) needs the Owner's PIN, whoever is at the screen; the PIN check runs one at a time under an advisory lock, so 20 sent at once check 5; only an open Owner's PIN counts, and whose it was goes to the audit log. No migration. Verified on throwaway local databases, never live.** Earlier: **P7 added — the QA audit's 44 findings as 18 items, P7.1–P7.9 before the trial (two Critical: a Manager can cancel the Owner's PIN-confirmed cash, P7.1; re-settling a closed day uses today's pay rates, P7.3). Nothing was built; the audit changed no code and never touched live. Four questions for the client added to "Still to ask".** Earlier the same day: **P1.10 done — a developer's change to a bill in a closed month now works the month's saved report and the partners' shares out again: only the days move, the salaries and share percentages stay as closed; `month.recalculate` in the audit log; no sign of it on the Owner's screens (the user, 2026-09-30: a note built first was removed, and a developer's account shows as "System" on the adjustments card); the developer's screen lists the month's adjustments so nothing is counted twice. No migration. Found and fixed with it: such a change on a month's last day took the month's salaries out of the khata, and its khata label named the developer.** Verified against a restored copy of live. 2026-09-29: **P3.3 done — the staff salary slip: a PDF per karigar per month, downloaded from Staff khata, with the month's totals, day by day, and room to sign; final once the month is closed, provisional before. P3.5 removed, and with it every plan to send anything on WhatsApp or SMS: the Day close "WhatsApp summary" preview is gone. The client's other answers the same day: the Customers screen stays the Owner's alone; a developer's edit in a closed month is to recalculate the month — P1.10, not built yet.** **P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-30 (**P7.2 done — one cancellation per row in the database (unique `voids…` on three tables), installments and fixed monthly amounts worked out one at a time under a row lock, and a client id on every Owner money form (`saveOnce`), so a double press or a retried Save saves once. Migration `0021`, applied to live before the push. Verified on restored copies of live, with and without the constraints.** Earlier: **P7.1 done — cancelling the Owner's cash (taken or added) needs the Owner's PIN, whoever is at the screen; the PIN check runs one at a time under an advisory lock, so 20 sent at once check 5; only an open Owner's PIN counts, and whose it was goes to the audit log. No migration. Verified on throwaway local databases, never live.** Earlier: **P7 added — the QA audit's 44 findings as 18 items, P7.1–P7.9 before the trial (two Critical: a Manager can cancel the Owner's PIN-confirmed cash, P7.1; re-settling a closed day uses today's pay rates, P7.3). Nothing was built; the audit changed no code and never touched live. Four questions for the client added to "Still to ask".** Earlier the same day: **P1.10 done — a developer's change to a bill in a closed month now works the month's saved report and the partners' shares out again: only the days move, the salaries and share percentages stay as closed; `month.recalculate` in the audit log; no sign of it on the Owner's screens (the user, 2026-09-30: a note built first was removed, and a developer's account shows as "System" on the adjustments card); the developer's screen lists the month's adjustments so nothing is counted twice. No migration. Found and fixed with it: such a change on a month's last day took the month's salaries out of the khata, and its khata label named the developer.** Verified against a restored copy of live. 2026-09-29: **P3.3 done — the staff salary slip: a PDF per karigar per month, downloaded from Staff khata, with the month's totals, day by day, and room to sign; final once the month is closed, provisional before. P3.5 removed, and with it every plan to send anything on WhatsApp or SMS: the Day close "WhatsApp summary" preview is gone. The client's other answers the same day: the Customers screen stays the Owner's alone; a developer's edit in a closed month is to recalculate the month — P1.10, not built yet.** **P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -76,7 +76,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 | P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | ✅ | done 2026-09-30 |
-| P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration | 🟡 | Sakib543, 2026-09-30 |
+| P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration `0021` | ✅ | done 2026-09-30 |
 | P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration likely | ⬜ | before the trial |
 | P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ⬜ | before the trial |
 | P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | ⬜ | before the trial |
@@ -179,8 +179,61 @@ The finding as the audit wrote it:
 - **Verify:** as Manager, cancelling Owner cash without the PIN is refused (service and screen); 20
   parallel wrong PINs leave ≤ 5 checked.
 
-#### 🟡 P7.2 — One reversal per cancellation, enforced by the database
-**Owner:** Sakib543, 2026-09-30 · **Findings:** QA-03 (High), QA-25 (High) · **migration**
+#### ✅ P7.2 — One reversal per cancellation, enforced by the database
+**Done 2026-09-30** · **Findings:** QA-03 (High), QA-25 (High) · **migration `0021`**, applied to live before the push
+
+**What was built.** The user said "P7.2 shuru karo" and left the choices to Claude; the recommended ones
+were taken:
+
+- **One cancellation per row, in the database** (QA-03): `cash_entries.voids_entry_id`,
+  `partner_drawings.voids_id` and `monthly_expenses.voids_id` are unique (plain `UNIQUE`, as
+  `month_adjustments.voids_id` already was; NULLs do not clash). `voidEntry`, `voidDrawing` and
+  `voidOther` keep their "already cancelled" check for the common case and turn a violation of *that*
+  constraint into the same message — `isUniqueViolation(error, constraint)` now takes a name, so a clash
+  elsewhere in the transaction (a closed day's re-settle) is not reported as "already cancelled".
+- **Installments are checked one at a time** (QA-25): `addRepayment` claims the partner's
+  `capital_contributions` row `FOR UPDATE` inside its transaction, then reads what is repaid and checks it.
+  A row lock does not fire the append-only trigger.
+- **A fixed monthly amount is worked out one save at a time**, found on the way: `setFixedAmount` read the
+  month's total outside any lock, so five saves of Rs 5,000 at once wrote Rs 25,000 (measured with HEAD's
+  code). It now claims the `fixed_expense_lines` row `FOR UPDATE` and reads the total inside. No client id:
+  it sets a figure, so saving it twice adds nothing.
+- **A client id on every Owner money form** — an investment, an installment, a drawing, an "other"
+  monthly expense, a bonus and an adjustment: `client_id uuid UNIQUE` on `capital_items`,
+  `capital_repayments`, `partner_drawings`, `monthly_expenses`, `khata_entries` (bonus lines only) and
+  `month_adjustments`. The server side is one helper, `saveOnce` (`db/save-once.ts`): the id is looked up
+  before anything else runs — so a repeat is answered even when the first changed what would now be
+  refused, an installment that paid off the debt — and a unique violation on it is answered
+  `{ alreadySaved: true }`. The screens use `useSaveId` (`components/use-save-id.ts`): the id stays until
+  the save is known to have worked (in the two dialogs, until they close). The actions answer `SavedOnce`;
+  the bonus's `staffName` and the adjustment's `countsIn` answers were unused and are gone.
+- **A dropped connection no longer takes these screens down**: a Save that throws is caught and said
+  (`thrownSaveMessage`) — "press it again … it is never saved twice" where a save id makes that true, and
+  "not known whether this was saved; check" in the other `FormDialog`s (customers, staff and rates). A
+  screen from before a deploy is told to reload.
+
+**Verified** against restored copies of live in a local cluster (trap 8.20) — the only contact with live
+was the read-only `pnpm db:backup`, until the migration. Live's copy had no duplicate reversal (4 cash
+reversals, all distinct), and `0021` applied to it cleanly. The same new code was raced against a copy
+**without** the constraints and one with them (five calls at once, the pool opened first):
+
+| | without the constraints | with them |
+|---|---|---|
+| 5 cancels of one expense / advance / drawing / other expense | 1 / 5 / 5 / 5 reversals (the advance: 5 khata credits) | 1 each, 1 khata credit; 4 × "already cancelled" |
+| the same Save 5 times (drawing, other, bonus, investment, installment, adjustment) | 5 rows each | 1 row each; 4 × `alreadySaved: true` |
+| 2 installments of Rs 240,000 against Rs 249,000 owed | HEAD's code: both accepted, Rs 480,000 repaid of 250,000 | 1 accepted, the other "Only Rs 9,000 is left" |
+| a fixed line set to Rs 5,000 five times | HEAD's code: Rs 25,000 | Rs 5,000 |
+
+One audit row per saved row. In the browser, as a throwaway Owner on the copy, with the answer to a Save
+cut after the server had it (trap 8.13): a drawing and a bonus each showed the dropped-connection message
+(the bonus dialog stayed open instead of the error page), and pressing again cleared the form with **one**
+row and one audit entry. 695 tests, lint and build pass.
+
+**Not covered:** a Save whose answer was lost and whose fields are then *changed* before pressing again is
+answered "already saved" with the first figures — the list shows which (as for folder entries). Two
+cancellations of one Owner-cash entry at once still both ask for the PIN; the second is refused after it.
+
+The finding as the audit wrote it:
 
 - **QA-03.** `cash_entries` has no unique index on `voids_entry_id`, and `voidEntry` checks "already
   cancelled" outside its transaction (`folders/service.ts:212-217`). Five concurrent cancels of one

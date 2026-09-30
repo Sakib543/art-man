@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { failure, type ActionResult } from "@/lib/action-result";
 import { requireRole } from "@/lib/auth/session";
+import type { SavedOnce } from "@/db/save-once";
 import { bonusSchema } from "./schemas";
 import { giveBonus } from "./service";
 
-export async function giveBonusAction(input: unknown): Promise<ActionResult<{ staffName: string }>> {
+export async function giveBonusAction(input: unknown): Promise<ActionResult<SavedOnce>> {
   // Spec §10.10: only the Owner gives bonuses. `requireRole` lets the developer
   // through, as everywhere else. It is outside the try: it redirects.
   const actor = await requireRole("owner");

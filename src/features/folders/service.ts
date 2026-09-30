@@ -228,41 +228,49 @@ export async function voidEntry(current: SessionUser, input: VoidInput): Promise
     pinOf = await confirmOwnerPin(actor, pin);
   }
 
-  await db.transaction(async (tx) => {
-    const [cancellation] = await tx
-      .insert(cashEntries)
-      .values({
-        businessDate: entry.businessDate,
-        kind: entry.kind,
-        amount: -entry.amount,
-        description: `Cancelled: ${reason}`,
-        paidFrom: entry.paidFrom,
-        staffId: entry.staffId,
-        pinConfirmed: pinOf !== null,
-        voidsEntryId: entry.id,
-        createdBy: actor,
-      })
-      .returning({ id: cashEntries.id });
+  try {
+    await db.transaction(async (tx) => {
+      const [cancellation] = await tx
+        .insert(cashEntries)
+        .values({
+          businessDate: entry.businessDate,
+          kind: entry.kind,
+          amount: -entry.amount,
+          description: `Cancelled: ${reason}`,
+          paidFrom: entry.paidFrom,
+          staffId: entry.staffId,
+          pinConfirmed: pinOf !== null,
+          voidsEntryId: entry.id,
+          createdBy: actor,
+        })
+        .returning({ id: cashEntries.id });
 
-    if (entry.kind === "staff_advance" && entry.staffId) {
-      await tx.insert(khataEntries).values({
-        staffId: entry.staffId,
-        businessDate: entry.businessDate,
-        kind: "adjustment",
-        label: "Advance cancelled",
-        amount: entry.amount,
-        cashEntryId: cancellation.id,
+      if (entry.kind === "staff_advance" && entry.staffId) {
+        await tx.insert(khataEntries).values({
+          staffId: entry.staffId,
+          businessDate: entry.businessDate,
+          kind: "adjustment",
+          label: "Advance cancelled",
+          amount: entry.amount,
+          cashEntryId: cancellation.id,
+        });
+      }
+
+      if (closedDay) await resettleDay(tx, entry.businessDate, actor, `${entry.kind} cancelled`);
+
+      await writeAudit(tx, {
+        actor,
+        action: closedDay ? "folder.cancel-closed-day" : "folder.cancel",
+        target: entry.description ?? entry.kind,
+        before: { kind: entry.kind, amount: entry.amount },
+        after: { reason, pinOf: pinOf ?? undefined },
       });
-    }
-
-    if (closedDay) await resettleDay(tx, entry.businessDate, actor, `${entry.kind} cancelled`);
-
-    await writeAudit(tx, {
-      actor,
-      action: closedDay ? "folder.cancel-closed-day" : "folder.cancel",
-      target: entry.description ?? entry.kind,
-      before: { kind: entry.kind, amount: entry.amount },
-      after: { reason, pinOf: pinOf ?? undefined },
     });
-  });
+  } catch (error) {
+    // Two cancellations at the same moment both passed the check above;
+    // `voids_entry_id` is unique (P7.2, QA-03: five at once wrote five), so the
+    // database keeps one of them and nothing of the other is saved.
+    if (isUniqueViolation(error, "cash_entries_voids_entry_id_unique")) throw new UserError("This entry is already cancelled");
+    throw error;
+  }
 }

@@ -56,7 +56,8 @@ src/
                         build when the rules below are broken.
 
   components/         Shared app pieces: page-header, stat-card, field,
-                      form-dialog, form-feedback, use-form-action, app-shell.
+                      form-dialog, form-feedback, use-form-action, app-shell,
+                      use-save-id (a form's client id, P7.2).
                       The offline pieces (P2.2) live here too, because every
                       signed-in screen carries them: pwa-setup, offline-banner,
                       use-connectivity, catalog-sync, day-sync (the copy of the
@@ -118,6 +119,8 @@ src/
                       the daily report and the developer's edit.
     day-settlement.ts summarize / postEarnings / resettleDay and the guards.
     financial-edit.ts The ONLY place allowed to open the append-only hatch.
+    save-once.ts      saveOnce(): an Owner money form's Save, once per client
+                      id (P7.2).
     pin-guard.ts · user-account.ts · app-settings.ts · day-code.ts
 
   proxy.ts            Optimistic gate: is there a session cookie? It never

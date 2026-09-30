@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { thrownSaveMessage, useSaveId } from "@/components/use-save-id";
 import { addRepaymentAction } from "../actions";
 import type { FunderRow } from "../types";
 
@@ -16,13 +17,20 @@ export function RepayForm({ capitalItemId, owed, nextNumber }: { capitalItemId: 
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  const [saveId, nextSaveId] = useSaveId();
 
   function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
     startTransition(async () => {
-      const result = await addRepaymentAction({ capitalItemId, partnerId, amount: Number(amount) || 0, note });
+      let result;
+      try {
+        result = await addRepaymentAction({ capitalItemId, partnerId, amount: Number(amount) || 0, note, clientId: saveId });
+      } catch (thrown) {
+        return setError(thrownSaveMessage(thrown, true));
+      }
       if (!result.ok) return setError(result.error);
+      nextSaveId();
       setAmount("");
       setNote("");
     });

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { failure, type ActionResult } from "@/lib/action-result";
 import { requireRole } from "@/lib/auth/session";
+import type { SavedOnce } from "@/db/save-once";
 import { cancelAdjustmentSchema, recordAdjustmentSchema } from "./schemas";
 import { cancelAdjustment, recordAdjustment } from "./service";
 
@@ -12,7 +13,7 @@ function refresh() {
 }
 
 /** Only the Owner corrects a closed month, as only the Owner closes one (spec §2, §7.4). */
-export async function recordAdjustmentAction(input: unknown): Promise<ActionResult<{ countsIn: string }>> {
+export async function recordAdjustmentAction(input: unknown): Promise<ActionResult<SavedOnce>> {
   // Outside the try: it redirects.
   const user = await requireRole("owner");
   const parsed = recordAdjustmentSchema.safeParse(input);

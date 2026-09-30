@@ -33,8 +33,20 @@ export const monthlyExpenses = pgTable("monthly_expenses", {
   reason: text("reason"),
   /** Did the money leave the business, or did the Owner pay it himself? */
   paidFrom: paidFromEnum("paid_from").notNull().default("drawer"),
-  /** Set on a cancellation row: the entry it cancels. */
-  voidsId: uuid("voids_id").references((): AnyPgColumn => monthlyExpenses.id),
+  /**
+   * Set on a cancellation row: the entry it cancels. Unique (P7.2), so one
+   * entry is never cancelled twice, even by two requests at the same moment.
+   */
+  voidsId: uuid("voids_id")
+    .unique()
+    .references((): AnyPgColumn => monthlyExpenses.id),
+  /**
+   * The id the Monthly expenses screen sent this "other" expense under (P7.2): a Save sent again —
+   * a double press, or a retry after a lost answer — is answered "already saved" rather than saved
+   * twice, as a bill is (P3.15). Null before P7.2, on fixed amounts (set to a figure, so setting
+   * one twice is harmless) and on cancellations.
+   */
+  clientId: uuid("client_id").unique(),
   createdBy: text("created_by").notNull().default("system"),
   createdAt: createdAt(),
 });
@@ -44,6 +56,12 @@ export const capitalItems = pgTable("capital_items", {
   id: id(),
   name: text("name").notNull(),
   totalCost: rupees("total_cost").notNull(),
+  /**
+   * The id the New investment form sent this investment under (P7.2): a Save sent again — a double
+   * press, or a retry after a lost answer — is answered "already saved" rather than saved twice, as
+   * a bill is (P3.15). Null before P7.2.
+   */
+  clientId: uuid("client_id").unique(),
   createdAt: createdAt(),
 });
 
@@ -69,6 +87,12 @@ export const capitalRepayments = pgTable("capital_repayments", {
   amount: rupees("amount").notNull(),
   paidOn: date("paid_on", { mode: "string" }).notNull(),
   note: text("note"),
+  /**
+   * The id the Capital screen sent this installment under (P7.2): a Save sent again — a double
+   * press, or a retry after a lost answer — is answered "already saved" rather than saved twice, as
+   * a bill is (P3.15). Null before P7.2.
+   */
+  clientId: uuid("client_id").unique(),
   createdBy: text("created_by").notNull().default("system"),
   createdAt: createdAt(),
 });
@@ -86,7 +110,19 @@ export const partnerDrawings = pgTable("partner_drawings", {
   month: date("month", { mode: "string" }).notNull(),
   amount: rupees("amount").notNull(),
   note: text("note"),
-  voidsId: uuid("voids_id").references((): AnyPgColumn => partnerDrawings.id),
+  /**
+   * Set on a cancellation row: the drawing it cancels. Unique (P7.2), so one
+   * drawing is never cancelled twice, even by two requests at the same moment.
+   */
+  voidsId: uuid("voids_id")
+    .unique()
+    .references((): AnyPgColumn => partnerDrawings.id),
+  /**
+   * The id the Partners screen sent this drawing under (P7.2): a Save sent again — a double press,
+   * or a retry after a lost answer — is answered "already saved" rather than saved twice, as a bill
+   * is (P3.15). Null before P7.2 and on cancellations.
+   */
+  clientId: uuid("client_id").unique(),
   createdBy: text("created_by").notNull().default("system"),
   createdAt: createdAt(),
 });
@@ -146,6 +182,12 @@ export const monthAdjustments = pgTable("month_adjustments", {
   voidsId: uuid("voids_id")
     .unique()
     .references((): AnyPgColumn => monthAdjustments.id),
+  /**
+   * The id the Monthly report's adjustment dialog sent this adjustment under (P7.2): a Save sent
+   * again — a double press, or a retry after a lost answer — is answered "already saved" rather
+   * than saved twice, as a bill is (P3.15). Null before P7.2 and on cancellations.
+   */
+  clientId: uuid("client_id").unique(),
   createdBy: text("created_by").notNull(),
   createdAt: createdAt(),
 });

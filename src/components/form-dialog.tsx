@@ -4,6 +4,7 @@ import { AlertCircle } from "lucide-react";
 import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { thrownSaveMessage } from "@/components/use-save-id";
 import type { ActionResult } from "@/lib/action-result";
 
 interface FormDialogProps {
@@ -14,11 +15,13 @@ interface FormDialogProps {
   onClose: () => void;
   /** Runs the save. The dialog closes on success and shows the error otherwise. */
   onSubmit: () => Promise<ActionResult<unknown>>;
+  /** The save carries a save id (P7.2), so pressing again after a dropped connection is safe to suggest. */
+  savesOnce?: boolean;
   children: ReactNode;
 }
 
 /** A dialog around a form: handles the saving state, the error line and closing. */
-export function FormDialog({ open, title, description, submitLabel = "Save", onClose, onSubmit, children }: FormDialogProps) {
+export function FormDialog({ open, title, description, submitLabel = "Save", onClose, onSubmit, savesOnce = false, children }: FormDialogProps) {
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -26,7 +29,12 @@ export function FormDialog({ open, title, description, submitLabel = "Save", onC
     event.preventDefault();
     setError("");
     startTransition(async () => {
-      const result = await onSubmit();
+      let result;
+      try {
+        result = await onSubmit();
+      } catch (thrown) {
+        return setError(thrownSaveMessage(thrown, savesOnce));
+      }
       if (result.ok) onClose();
       else setError(result.error);
     });

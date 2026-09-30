@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { failure, type ActionResult } from "@/lib/action-result";
 import { requireRole } from "@/lib/auth/session";
+import type { SavedOnce } from "@/db/save-once";
 import { addDrawingSchema, addPartnerSchema, saveSharesSchema, voidDrawingSchema } from "./schemas";
 import { addDrawing, addPartner, saveShares, voidDrawing } from "./service";
 
@@ -40,14 +41,14 @@ export async function addPartnerAction(input: unknown): Promise<ActionResult<nul
   }
 }
 
-export async function addDrawingAction(input: unknown): Promise<ActionResult<null>> {
+export async function addDrawingAction(input: unknown): Promise<ActionResult<SavedOnce>> {
   const user = await requireRole("owner");
   const parsed = addDrawingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error, "Invalid amount") };
   try {
-    await addDrawing(user, parsed.data);
+    const saved = await addDrawing(user, parsed.data);
     refresh();
-    return { ok: true, data: null };
+    return { ok: true, data: saved };
   } catch (error) {
     return failure(error);
   }

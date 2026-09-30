@@ -8,6 +8,7 @@ import { Segmented } from "@/components/segmented";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { useSaveId } from "@/components/use-save-id";
 import { adjustmentEffect, type AdjustmentKind, type PaidFrom } from "@/lib/accounting";
 import { formatMonth } from "@/lib/business-date";
 import { rs } from "@/lib/format";
@@ -47,6 +48,8 @@ export function RecordAdjustment({ month, countsIn, staff }: RecordAdjustmentPro
   const [paidFrom, setPaidFrom] = useState<PaidFrom>("drawer");
   const [staffId, setStaffId] = useState("");
   const [reason, setReason] = useState("");
+  // The same until the adjustment is saved or the dialog is closed (P7.2).
+  const [saveId, nextSaveId] = useSaveId();
 
   function close() {
     setOpen(false);
@@ -57,6 +60,7 @@ export function RecordAdjustment({ month, countsIn, staff }: RecordAdjustmentPro
     setPaidFrom("drawer");
     setStaffId("");
     setReason("");
+    nextSaveId();
   }
 
   const choice = KIND_CHOICES.find((c) => c.value === kind) ?? KIND_CHOICES[0];
@@ -80,6 +84,7 @@ export function RecordAdjustment({ month, countsIn, staff }: RecordAdjustmentPro
         description={`${formatMonth(month)} stays exactly as it was closed. This counts in ${formatMonth(countsIn)} instead: in its profit, and so in the partners' shares. Nothing is paid or put in the drawer: money that changes hands now goes in Daily folders.`}
         submitLabel="Record adjustment"
         onClose={close}
+        savesOnce
         onSubmit={() =>
           recordAdjustmentAction({
             correctsMonth: month,
@@ -90,6 +95,7 @@ export function RecordAdjustment({ month, countsIn, staff }: RecordAdjustmentPro
             paidFrom,
             staffId: isStaffKind(kind) && staffId ? staffId : undefined,
             reason,
+            clientId: saveId,
           })
         }
       >
