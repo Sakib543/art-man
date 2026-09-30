@@ -5,6 +5,7 @@ import { writeCancellation } from "@/db/bill-cancel";
 import type { Tx } from "@/db/day-settlement";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
 import { getCatalogVersion } from "@/db/queries/catalog";
+import { lateArrivalNote } from "@/db/queries/offline-work";
 import {
   auditLog,
   billCancellations,
@@ -29,8 +30,9 @@ import { atLeastOwner } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/session";
 import { isUniqueViolation, UserError } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
+import { SLIP_NO_REPEATED } from "@/lib/offline/slip";
 import { draftLinesOf, restoreSaved, type SavedBillLine } from "./bill-draft";
-import { findBillByClientId } from "./queries";
+import { findBillByClientId, findSlipClash, type SlipClash } from "./queries";
 import type { CreateBillInput, DiscardOfflineBillInput, EditBillInput, OfflineOrigin, SyncBillInput } from "./schemas";
 import type { Receipt, SavedBill } from "./types";
 
@@ -299,6 +301,37 @@ async function priceOffline(input: CreateBillInput, offline: OfflineOrigin): Pro
 }
 
 /**
+ * A slip's number that another bill in force already carries (P7.10, QA-28).
+ * A Save from the screen is refused once, naming that bill, and saved when the
+ * counter says to save it anyway (`repeatBookNo`): two slips can share a
+ * number — a new paper book starting again at 1 — but the same slip entered
+ * twice is a sale counted twice. A bill made offline is never refused for it:
+ * the slip is in the customer's hand and its money in the drawer. Either way
+ * the audit entry names the other bill, and the day's lists mark both.
+ */
+async function checkSlipNo(
+  input: CreateBillInput,
+  businessDate: string,
+  exceptBillId: string | null,
+  offline?: OfflineOrigin,
+): Promise<SlipClash | null> {
+  if (!input.bookNo) return null;
+  const clash = await findSlipClash(input.bookNo, businessDate, exceptBillId);
+  if (clash && !offline && !input.repeatBookNo) {
+    const where = clash.businessDate === businessDate ? "today" : `of ${formatDate(clash.businessDate)}`;
+    throw new UserError(
+      `Bill book number ${input.bookNo} is already on bill #${clash.billNo} ${where}. If this is the same slip, it is in already; if it is another slip with the same number, save it anyway.`,
+      SLIP_NO_REPEATED,
+    );
+  }
+  return clash;
+}
+
+/** What an audit entry keeps of a repeated slip number: the bill that had it first. */
+const repeatedOf = (clash: SlipClash | null) =>
+  clash ? { repeatedBookNo: { billNo: clash.billNo, businessDate: clash.businessDate } } : {};
+
+/**
  * Save a bill — once, however many times the same bill is sent (P3.15).
  *
  * `offline` is set when the bill was made with no server and sent later by the
@@ -313,14 +346,17 @@ export async function createBill(user: SessionUser, input: CreateBillInput, offl
   if (earlier) return earlier;
 
   const day = await getOpenBusinessDay();
-  if (!day) throw new UserError("No business day is open. Ask the Owner to open one.");
-  if (offline && offline.businessDate !== day.businessDate) {
+  if (!day || (offline && offline.businessDate !== day.businessDate)) {
+    // Arriving after its day was closed — on another computer (P7.10) — says so.
+    const late = offline ? await lateArrivalNote(offline.businessDate, "bill") : "";
+    if (!day) throw new UserError(`No business day is open. Ask the Owner to open one.${late}`);
     throw new UserError(
-      `This bill was made on ${formatDate(offline.businessDate)}, but the open day is ${formatDate(day.businessDate)}. A bill made offline is only saved into the day it was made on.`,
+      `This bill was made on ${formatDate(offline!.businessDate)}, but the open day is ${formatDate(day.businessDate)}. A bill made offline is only saved into the day it was made on.${late}`,
     );
   }
 
   const priced = offline ? await priceOffline(input, offline) : await priceBill(input);
+  const repeated = await checkSlipNo(input, day.businessDate, null, offline);
   const actor = actorOf(user);
 
   try {
@@ -342,11 +378,23 @@ export async function createBill(user: SessionUser, input: CreateBillInput, offl
           // So is an Other line's price (P3.12): it is the one amount the catalog
           // did not decide.
           ...otherLinesOf(priced),
+          ...repeatedOf(repeated),
           // Made with no server (P2.2c): when, by whom — as the browser tells
           // it — and against which prices. The bill's own time is when it
-          // reached the server.
+          // reached the server. Since P7.10 also the day, the id and the
+          // computer, which is how a second computer offline is noticed
+          // (`db/queries/offline-work.ts`).
           ...(offline
-            ? { offline: { madeAt: offline.madeAt, madeBy: offline.madeBy, catalogVersion: offline.catalogVersion } }
+            ? {
+                offline: {
+                  madeAt: offline.madeAt,
+                  madeBy: offline.madeBy,
+                  catalogVersion: offline.catalogVersion,
+                  businessDate: offline.businessDate,
+                  clientId: input.clientId,
+                  ...(offline.device ? { device: offline.device } : {}),
+                },
+              }
             : {}),
         },
       });
@@ -385,9 +433,9 @@ export async function recordOfflineRefusal(user: SessionUser, clientId: string |
  * passed on.
  */
 export async function syncOfflineBill(user: SessionUser, input: SyncBillInput): Promise<SavedBill> {
-  const { clientId, bill, businessDate, catalogVersion, madeAt, madeBy } = input;
+  const { clientId, bill, businessDate, catalogVersion, madeAt, madeBy, device } = input;
   try {
-    return await createBill(user, { ...bill, clientId }, { businessDate, catalogVersion, madeAt, madeBy });
+    return await createBill(user, { ...bill, clientId }, { businessDate, catalogVersion, madeAt, madeBy, device });
   } catch (error) {
     if (error instanceof UserError) await recordOfflineRefusal(user, clientId, error.message, input);
     throw error;
@@ -467,6 +515,8 @@ export async function editBill(user: SessionUser, input: EditBillInput): Promise
 
   const originalLines = await db.select().from(billLines).where(eq(billLines.billId, original.id));
   const priced = await priceBill(input, { lines: originalLines, discount: original.discount });
+  // The bill being corrected hands its slip's number on; any other bill with it is a clash.
+  const repeated = await checkSlipNo(input, day.businessDate, original.id);
   const actor = actorOf(user);
 
   try {
@@ -497,6 +547,7 @@ export async function editBill(user: SessionUser, input: EditBillInput): Promise
           online: input.online,
           bookNo: input.bookNo,
           lines: auditLines(priced.lines),
+          ...repeatedOf(repeated),
         },
       });
 

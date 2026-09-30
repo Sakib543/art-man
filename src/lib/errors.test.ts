@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isUniqueViolation } from "./errors";
+import { isUniqueViolation, UserError } from "./errors";
 
 /** What `pg` throws: an Error carrying the SQLSTATE in `code`, and the constraint's name in `constraint`. */
 const pgError = (code: string, constraint?: string) =>
@@ -30,5 +30,17 @@ describe("isUniqueViolation", () => {
     ["nothing", undefined],
   ])("is false for %s", (_what, error) => {
     expect(isUniqueViolation(error)).toBe(false);
+  });
+});
+
+describe("UserError (P7.10)", () => {
+  it("carries a code for the screen when given one, and reaches a Server Action's result with it", async () => {
+    const { failure } = await import("./action-result");
+    expect(failure(new UserError("Bill book number 45 is already on bill #3", "book-no-repeated"))).toEqual({
+      ok: false,
+      error: "Bill book number 45 is already on bill #3",
+      code: "book-no-repeated",
+    });
+    expect(failure(new UserError("Choose a staff member"))).toEqual({ ok: false, error: "Choose a staff member" });
   });
 });

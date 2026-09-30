@@ -1,4 +1,5 @@
 import type { BreakdownRow, PaidFrom, Rupees } from "@/lib/accounting";
+import { isDeviceTag, type DeviceTag } from "./device";
 
 /**
  * The counter's outbox (backlog P2.2c): what the server has not received
@@ -83,6 +84,8 @@ export interface OutboxEntry {
   madeAt: string;
   /** Who was signed in. It goes to the audit log; whoever is signed in at sync time saves it. */
   madeBy: string;
+  /** The computer it was made on (P7.10). Missing on what was kept before P7.10. */
+  device?: DeviceTag;
   bill: OutboxBill;
   preview: OutboxPreview;
   /** Why the server refused it, once it has. Null while it waits to be sent. */
@@ -112,6 +115,8 @@ export interface OutboxFolderEntry {
   madeAt: string;
   /** Who was signed in. It goes to the audit log; whoever is signed in at sync time saves it. */
   madeBy: string;
+  /** The computer it was made on (P7.10). Missing on what was kept before P7.10. */
+  device?: DeviceTag;
   entry: OutboxFolder;
   /** What the counter saw, so it can be listed without the catalog: an advance's staff member. */
   preview: { staffName: string | null };
@@ -156,6 +161,8 @@ export interface OutboxCloseEntry {
   madeAt: string;
   /** Who was signed in. It goes to the audit log; whoever is signed in at sync time saves it. */
   madeBy: string;
+  /** The computer it was closed on (P7.10). Missing on what was kept before P7.10. */
+  device?: DeviceTag;
   close: OutboxClose;
   /** What the manager saw, so it can be shown without the server: how expected cash was made up, and who was paid. */
   preview: {
@@ -180,37 +187,40 @@ export const isCloseItem = (item: OutboxItem): item is OutboxCloseEntry => typeO
 /** A bill: the one kind with no `type`. */
 export const isBillItem = (item: OutboxItem): item is OutboxEntry => typeOf(item) === undefined;
 
+/** The computer, when the item carries one (P7.10) — nothing at all when it does not. */
+const deviceOf = (item: { device?: DeviceTag }): { device?: DeviceTag } => (item.device ? { device: item.device } : {});
+
 /** What the sync sends: the entry without what only this browser needs. */
 export type SyncRequest = Pick<
   OutboxEntry,
-  "v" | "clientId" | "businessDate" | "catalogVersion" | "madeAt" | "madeBy" | "bill"
+  "v" | "clientId" | "businessDate" | "catalogVersion" | "madeAt" | "madeBy" | "device" | "bill"
 >;
 
 export function syncRequestOf(entry: OutboxEntry): SyncRequest {
   const { v, clientId, businessDate, catalogVersion, madeAt, madeBy, bill } = entry;
-  return { v, clientId, businessDate, catalogVersion, madeAt, madeBy, bill };
+  return { v, clientId, businessDate, catalogVersion, madeAt, madeBy, ...deviceOf(entry), bill };
 }
 
 /** What the sync sends for a folder entry (P2.2e), likewise. */
 export type FolderSyncRequest = Pick<
   OutboxFolderEntry,
-  "v" | "type" | "clientId" | "businessDate" | "madeAt" | "madeBy" | "entry"
+  "v" | "type" | "clientId" | "businessDate" | "madeAt" | "madeBy" | "device" | "entry"
 >;
 
 export function folderSyncRequestOf(item: OutboxFolderEntry): FolderSyncRequest {
   const { v, type, clientId, businessDate, madeAt, madeBy, entry } = item;
-  return { v, type, clientId, businessDate, madeAt, madeBy, entry };
+  return { v, type, clientId, businessDate, madeAt, madeBy, ...deviceOf(item), entry };
 }
 
 /** What the sync sends for a day's close (P2.2f): the close without its preview. */
 export type CloseSyncRequest = Pick<
   OutboxCloseEntry,
-  "v" | "type" | "clientId" | "businessDate" | "madeAt" | "madeBy" | "close"
+  "v" | "type" | "clientId" | "businessDate" | "madeAt" | "madeBy" | "device" | "close"
 >;
 
 export function closeSyncRequestOf(item: OutboxCloseEntry): CloseSyncRequest {
   const { v, type, clientId, businessDate, madeAt, madeBy, close } = item;
-  return { v, type, clientId, businessDate, madeAt, madeBy, close };
+  return { v, type, clientId, businessDate, madeAt, madeBy, ...deviceOf(item), close };
 }
 
 /** Where an item is sent, what is sent, and how the answer is read (`outcomeOf`). */
@@ -418,6 +428,9 @@ export function waitingFolderEntries(
   );
 }
 
+/** No device (kept before P7.10), or a well-formed one. */
+const isDeviceOrNone = (device: unknown) => device === undefined || isDeviceTag(device);
+
 const isRejection = (rejected: unknown) =>
   rejected === null ||
   (typeof rejected === "object" &&
@@ -439,6 +452,7 @@ export function isOutboxEntry(value: unknown): value is OutboxEntry {
     (entry.catalogVersion === null || typeof entry.catalogVersion === "string") &&
     typeof entry.madeAt === "string" &&
     typeof entry.madeBy === "string" &&
+    isDeviceOrNone(entry.device) &&
     typeof bill === "object" &&
     bill !== null &&
     Array.isArray(bill.lines) &&
@@ -471,6 +485,7 @@ export function isOutboxFolderEntry(value: unknown): value is OutboxFolderEntry 
     typeof item.businessDate === "string" &&
     typeof item.madeAt === "string" &&
     typeof item.madeBy === "string" &&
+    isDeviceOrNone(item.device) &&
     kindOk &&
     typeof preview === "object" &&
     preview !== null &&
@@ -502,6 +517,7 @@ export function isOutboxCloseEntry(value: unknown): value is OutboxCloseEntry {
     typeof item.businessDate === "string" &&
     typeof item.madeAt === "string" &&
     typeof item.madeBy === "string" &&
+    isDeviceOrNone(item.device) &&
     closeOk &&
     typeof preview === "object" &&
     preview !== null &&

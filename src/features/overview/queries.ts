@@ -3,9 +3,11 @@ import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { loadDay } from "@/db/queries/day-data";
 import { getDayBills } from "@/db/queries/day-bills";
+import { offlineWorkOn } from "@/db/queries/offline-work";
 import { auditLog, businessDays, cashEntries, daySnapshots, staff } from "@/db/schema";
 import { summarizeDay, type Rupees } from "@/lib/accounting";
-import { formatDayMonth } from "@/lib/format";
+import { formatDate, formatDayMonth } from "@/lib/format";
+import { offlineDevicesNote } from "@/lib/offline/device";
 import { buildAlerts, type Alert } from "./alerts";
 import { buildFeed, type FeedItem } from "./feed";
 
@@ -76,9 +78,15 @@ export async function getOverview(): Promise<OverviewData | null> {
     payouts: {},
   });
 
-  const snapshots = recentDays.length
-    ? await db.select().from(daySnapshots).where(inArray(daySnapshots.businessDate, recentDays.map((d) => d.businessDate)))
-    : [];
+  // The open day and the one before it: a day closed offline is noticed the day after (P7.10).
+  const lastTwo = recentDays.slice(0, 2).map((d) => d.businessDate);
+  const [snapshots, offlineWork] = await Promise.all([
+    recentDays.length
+      ? db.select().from(daySnapshots).where(inArray(daySnapshots.businessDate, recentDays.map((d) => d.businessDate)))
+      : Promise.resolve([]),
+    offlineWorkOn(lastTwo),
+  ]);
+  const offlineNotes = lastTwo.flatMap((date) => offlineDevicesNote(offlineWork.get(date) ?? [], formatDate(date)) ?? []);
   const saleOf = new Map(snapshots.map((s) => [s.businessDate, s.sale]));
 
   const chart = [...recentDays].reverse().map<ChartDay>((d) => {
@@ -110,6 +118,7 @@ export async function getOverview(): Promise<OverviewData | null> {
         ? { businessDate: latestClose.businessDate, difference: latestClose.difference, reason: latestClose.diffReason }
         : null,
       wrongPins24h: wrong,
+      offlineNotes,
     }),
     feed: buildFeed(
       dayBills,

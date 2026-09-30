@@ -1,5 +1,6 @@
 import { isCatalogCopy, type CatalogCopy } from "./catalog";
 import { isDayCopy, type DayCopy } from "./day";
+import { deviceCodeOf, isDeviceTag, type DeviceTag } from "./device";
 import {
   isOutboxEntry,
   isOutboxItem,
@@ -37,11 +38,13 @@ const CURRENT = "current";
 const DAY = "day";
 
 /**
- * Plain numbers under string keys (P2.2d): today, the last `T-` number given
- * out on each business day, as `temp:<date>`. Never cleared — not even at
- * sign-out — so a number already on a customer's slip is never given twice.
+ * Plain values under string keys (P2.2d): the last `T-` number given out on
+ * each business day, as `temp:<date>`, and this computer's tag under `DEVICE`
+ * (P7.10). Never cleared — not even at sign-out — so a number already on a
+ * customer's slip is never given twice, and the computer keeps its code.
  */
 const COUNTERS = "counters";
+const DEVICE = "device";
 
 /**
  * Bills waiting for the server (P2.2c). Keyed by a number the store counts up
@@ -159,6 +162,33 @@ export async function nextTempNo(businessDate: string): Promise<number> {
 }
 
 /**
+ * This computer's tag (P7.10): made the first time it is asked for, in one
+ * transaction — two tabs asking at once get the same one — and kept for good.
+ * It goes with everything this computer keeps for the server (`queue`), and
+ * its code goes on this computer's slips (`tempNo`).
+ */
+export async function thisDevice(): Promise<DeviceTag> {
+  const db = await openDb();
+  const tx = db.transaction(COUNTERS, "readwrite");
+  const store = tx.objectStore(COUNTERS);
+  let device: DeviceTag | null = null;
+  const found = store.get(DEVICE);
+  found.onsuccess = () => {
+    if (isDeviceTag(found.result)) {
+      device = found.result;
+      return;
+    }
+    device = { id: crypto.randomUUID(), code: deviceCodeOf(crypto.getRandomValues(new Uint8Array(3))) };
+    store.put(device, DEVICE);
+  };
+  await finished(tx);
+  return device!;
+}
+
+/** Stamped with this computer's tag, unless it already carries one (a refused item sent again keeps its own). */
+const stamped = async <T extends OutboxItem>(item: T): Promise<T> => (item.device ? item : { ...item, device: await thisDevice() });
+
+/**
  * On sign-out: the copies belong to a signed-in session, and hold customers'
  * numbers and the day's money. With them goes working offline, until the next
  * sign-in fetches them again.
@@ -248,9 +278,10 @@ export function onOutboxChange(listener: () => void): () => void {
  * is left as it is: queueing it again is not an error.
  */
 async function queue(item: OutboxItem): Promise<void> {
+  const kept = await stamped(item);
   const db = await openDb();
   const tx = db.transaction(OUTBOX, "readwrite");
-  const request = tx.objectStore(OUTBOX).add(item);
+  const request = tx.objectStore(OUTBOX).add(kept);
   request.onerror = (event) => {
     // The unique index refusing a second copy must not abort the transaction.
     if (request.error?.name === "ConstraintError") event.preventDefault();
@@ -275,14 +306,15 @@ export const queueEntry = (item: OutboxFolderEntry): Promise<void> => queue(item
  * close per day waits here, never two.
  */
 export async function queueClose(item: OutboxCloseEntry): Promise<void> {
+  const kept = await stamped(item);
   const db = await openDb();
   const tx = db.transaction(OUTBOX, "readwrite");
   const store = tx.objectStore(OUTBOX);
-  const found = store.index(BY_CLIENT_ID).get(item.clientId);
+  const found = store.index(BY_CLIENT_ID).get(kept.clientId);
   found.onsuccess = () => {
     const seq = (found.result as { seq?: unknown } | undefined)?.seq;
-    if (typeof seq === "number") store.put({ ...item, seq });
-    else store.add(item);
+    if (typeof seq === "number") store.put({ ...kept, seq });
+    else store.add(kept);
   };
   await finished(tx);
   announce();

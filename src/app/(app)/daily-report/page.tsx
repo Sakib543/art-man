@@ -39,7 +39,7 @@ export default async function DailyReportPage({
     );
   }
 
-  const { days, selected, bills, summary, closing, monthClosed } = report;
+  const { days, selected, bills, summary, closing, monthClosed, offlineNote } = report;
   const owner = atLeastOwner(user.role);
   // The register (P6.4) is the old Daily worksheet, for whichever day is chosen.
   const register = view === "register" ? await getRegister(selected.businessDate) : null;
@@ -59,6 +59,14 @@ export default async function DailyReportPage({
         <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-warning-line bg-warning-soft px-3.5 py-3 text-sm text-warning">
           <AlertTriangle className="mt-0.5 size-4.5 shrink-0" aria-hidden />
           <p>{summary.cancelledBills} bills were cancelled on this day. Check the reason given for each.</p>
+        </div>
+      ) : null}
+
+      {/* The app expects one counter computer: two offline on one day can clash (P7.10). */}
+      {offlineNote ? (
+        <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-warning-line bg-warning-soft px-3.5 py-3 text-sm text-warning">
+          <AlertTriangle className="mt-0.5 size-4.5 shrink-0" aria-hidden />
+          <p>{offlineNote}</p>
         </div>
       ) : null}
 

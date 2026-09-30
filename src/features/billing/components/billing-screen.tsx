@@ -17,8 +17,8 @@ import { checkPayment, paymentAmounts, priceCart, PricingError, type PayMode, ty
 import { formatDate, formatDateTime, paidBy, parseRupees, rs } from "@/lib/format";
 import { closeOf, type OutboxBill, type OutboxEntry } from "@/lib/offline/outbox";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
-import { tempNo } from "@/lib/offline/slip";
-import { nextTempNo, queueBill, readCatalog, readOutboxEntry, removeFromOutbox } from "@/lib/offline/store";
+import { SLIP_NO_REPEATED, tempNo } from "@/lib/offline/slip";
+import { nextTempNo, queueBill, readCatalog, readOutboxEntry, removeFromOutbox, thisDevice } from "@/lib/offline/store";
 import { createBillAction, editBillAction, findSavedBillAction, lookupCustomerAction } from "../actions";
 import { payModeOf } from "../bill-draft";
 import { cartReducer } from "../cart-state";
@@ -100,6 +100,9 @@ export function BillingScreen({
   const [error, setError] = useState("");
   // Said once a Save has worked out, e.g. after an answer was lost (P3.15).
   const [notice, setNotice] = useState("");
+  // The server's word that this book number is already on a bill (P7.10,
+  // QA-28), with the number it was said of: typing another number puts it away.
+  const [repeated, setRepeated] = useState<{ bookNo: string; message: string } | null>(null);
   // The id this bill is sent under (P3.15). It stays the same until the server
   // is known to have the bill, so Save can be pressed again without ever
   // making a second one.
@@ -302,8 +305,10 @@ export function BillingScreen({
       if (!stored) return setError(trustRefusal({ ok: false, reason: "no-copy" }));
 
       // One number per slip: a bill first written in the paper book keeps
-      // that book's number and gets no `T-` number.
-      const slipNo = sent.bill.bookNo.trim() || tempNo(await nextTempNo(data.businessDate));
+      // that book's number and gets no `T-` number. A `T-` number carries this
+      // computer's code, so two computers never hand out the same one (P7.10).
+      const slipNo =
+        sent.bill.bookNo.trim() || tempNo(await nextTempNo(data.businessDate), (await thisDevice()).code);
       const { entry, receipt: slip } = offlineBill({
         clientId,
         businessDate: data.businessDate,
@@ -381,9 +386,11 @@ export function BillingScreen({
     };
   }, [doubtful, clientId]);
 
-  function submit() {
+  /** `repeatBookNo`: the counter was told the book number is on another bill, and saves anyway (P7.10). */
+  function submit(repeatBookNo = false) {
     setError("");
     setNotice("");
+    setRepeated(null);
     if (closedHere && closedToThis) return setError(closedHereText(closedHere, "bill"));
     if (cart.length === 0) return setError("Add a service or deal to start the bill");
     if (cart.some((line) => !line.staffId)) return setError("Choose a staff member for every service");
@@ -449,8 +456,8 @@ export function BillingScreen({
       let result;
       try {
         result = editing
-          ? await editBillAction({ ...bill, clientId, billId: editing.id, reason: reason.trim() })
-          : await createBillAction({ ...bill, clientId });
+          ? await editBillAction({ ...bill, clientId, repeatBookNo, billId: editing.id, reason: reason.trim() })
+          : await createBillAction({ ...bill, clientId, repeatBookNo });
       } catch (error) {
         // A screen from before the latest deploy: the server does not know
         // this Save any more, so it never ran. Only a reload fixes that.
@@ -465,7 +472,11 @@ export function BillingScreen({
         // what used to happen, with the cart and the answer both gone.
         return setDoubtful(sent);
       }
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) {
+        // Not an error: a question only the paper slip can answer (P7.10).
+        if (result.code === SLIP_NO_REPEATED) return setRepeated({ bookNo, message: result.error });
+        return setError(result.error);
+      }
       afterSave(result.data);
     });
   }
@@ -677,6 +688,22 @@ export function BillingScreen({
               </p>
             ) : null}
 
+            {/* The book number is on another bill already (P7.10, QA-28). */}
+            {repeated && repeated.bookNo === bookNo ? (
+              <div
+                role="alert"
+                className="mt-3.5 space-y-2 rounded-lg border border-warning-line bg-warning-soft px-3.5 py-3 text-sm text-warning"
+              >
+                <p className="flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+                  {repeated.message}
+                </p>
+                <Button size="sm" variant="outline" disabled={pending} onClick={() => submit(true)}>
+                  It is another slip: save anyway
+                </Button>
+              </div>
+            ) : null}
+
             {/* A Save that lost its answer (P3.15): say so, and keep asking. */}
             {doubtful !== null ? (
               <div
@@ -718,7 +745,7 @@ export function BillingScreen({
             <Button
               size="lg"
               className="mt-3.5 w-full"
-              onClick={submit}
+              onClick={() => submit()}
               disabled={pending || doubtful !== null || closedToThis}
             >
               <ReceiptIcon aria-hidden />

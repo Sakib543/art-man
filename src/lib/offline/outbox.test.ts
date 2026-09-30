@@ -126,6 +126,30 @@ describe("syncRequestOf", () => {
   });
 });
 
+describe("the computer an item was made on (P7.10)", () => {
+  const device = { id: "0f8fad5b-d9cb-469f-a165-70867728950e", code: "KXR" };
+
+  it("goes with every kind of item to the server", () => {
+    expect(syncRequestOf({ ...entry("a"), device })).toMatchObject({ device });
+    expect(syncOf({ ...folder("f"), device }).body).toMatchObject({ device });
+    expect(syncOf({ ...close("c"), device }).body).toMatchObject({ device });
+  });
+
+  it("is simply left out for an item kept before P7.10", () => {
+    expect(syncRequestOf(entry("a"))).not.toHaveProperty("device");
+    expect(syncOf(folder("f")).body).not.toHaveProperty("device");
+    expect(syncOf(close("c")).body).not.toHaveProperty("device");
+  });
+
+  it("is read back from the store when well formed, and refuses the item when not", () => {
+    expect(isOutboxItem({ ...entry("a"), device })).toBe(true);
+    expect(isOutboxItem({ ...folder("f"), device })).toBe(true);
+    expect(isOutboxItem({ ...close("c"), device })).toBe(true);
+    expect(isOutboxItem({ ...entry("a"), device: { id: "x", code: "KXR" } })).toBe(false);
+    expect(isOutboxItem({ ...folder("f"), device: "KXR" })).toBe(false);
+  });
+});
+
 describe("isOutboxEntry", () => {
   it("accepts an entry, waiting or refused, and one the store numbered", () => {
     expect(isOutboxEntry(entry("a"))).toBe(true);

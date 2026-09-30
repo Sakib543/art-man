@@ -15,6 +15,11 @@ export interface AlertInput {
   lastClose: { businessDate: string; difference: number; reason: string | null } | null;
   /** Wrong PIN attempts recorded in the last 24 hours. */
   wrongPins24h: number;
+  /**
+   * More than one computer worked offline on a recent day (P7.10, QA-37), one
+   * note per day, as `offlineDevicesNote` words it.
+   */
+  offlineNotes?: string[];
 }
 
 /** What the Owner should look at, most important first. Empty when all is well. */
@@ -49,6 +54,9 @@ export function buildAlerts(input: AlertInput): Alert[] {
       text: `Cash was ${rs(close.difference)} extra at the close of ${formatDate(close.businessDate)}${close.reason ? `: ${close.reason}` : ""}.`,
     });
   }
+
+  // The app expects one counter computer; two offline at once can clash.
+  (input.offlineNotes ?? []).forEach((note, index) => alerts.push({ id: `devices-${index}`, tone: "warn", text: note }));
 
   if (input.wrongPins24h > 0) {
     alerts.push({

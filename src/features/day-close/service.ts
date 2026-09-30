@@ -206,7 +206,18 @@ export async function closeDay(user: SessionUser, input: CloseInput, offline?: O
         ...(input.clientId ? { clientId: input.clientId } : {}),
         // Closed with no server (P2.2f): when and by whom, as the browser
         // tells it. The close's own time is when it reached the server.
-        ...(offline ? { offline: { madeAt: offline.madeAt, madeBy: offline.madeBy } } : {}),
+        // Since P7.10 also the day, the id and the computer.
+        ...(offline
+          ? {
+              offline: {
+                madeAt: offline.madeAt,
+                madeBy: offline.madeBy,
+                businessDate: offline.businessDate,
+                clientId: input.clientId,
+                ...(offline.device ? { device: offline.device } : {}),
+              },
+            }
+          : {}),
       },
     });
 
@@ -240,7 +251,7 @@ export async function recordOfflineCloseRefusal(user: SessionUser, clientId: str
  * is passed on.
  */
 export async function syncOfflineClose(user: SessionUser, input: SyncCloseInput): Promise<ClosedDay> {
-  const { clientId, businessDate, madeAt, madeBy, close } = input;
+  const { clientId, businessDate, madeAt, madeBy, device, close } = input;
   try {
     return await closeDay(
       user,
@@ -251,7 +262,7 @@ export async function syncOfflineClose(user: SessionUser, input: SyncCloseInput)
         reason: close.reason ?? undefined,
         clientId,
       },
-      { businessDate, madeAt, madeBy, expected: close.expected },
+      { businessDate, madeAt, madeBy, device, expected: close.expected },
     );
   } catch (error) {
     if (error instanceof UserError) await recordOfflineCloseRefusal(user, clientId, error.message, input);

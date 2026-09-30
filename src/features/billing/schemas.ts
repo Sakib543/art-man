@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deviceTagSchema } from "@/lib/offline/device";
 
 const rupees = z.number().int().min(0).max(10_000_000);
 
@@ -81,6 +82,12 @@ export const createBillSchema = z
     discount: discount.default(0),
     /** Why money was taken off. Required as soon as there is a discount. */
     discountReason: z.string().trim().max(120).nullish().transform((value) => value || null),
+    /**
+     * The counter was told this bill book number is already on another bill
+     * and saves it anyway (P7.10, QA-28). Without it such a Save is refused,
+     * once, with the other bill named.
+     */
+    repeatBookNo: z.boolean().default(false),
   })
   // A discount is money leaving the business at the counter's discretion, which
   // is exactly what the spec did not want. The reason is the control that
@@ -130,6 +137,8 @@ export const syncBillSchema = z.object({
   catalogVersion: z.string().max(128).nullable(),
   madeAt: z.iso.datetime(),
   madeBy: z.string().trim().max(80),
+  /** The computer it was made on (P7.10); none on a bill kept before P7.10. */
+  device: deviceTagSchema.optional(),
   bill: createBillSchema,
 });
 
@@ -151,5 +160,5 @@ export type CreateBillInput = z.infer<typeof createBillSchema>;
 export type EditBillInput = z.infer<typeof editBillSchema>;
 export type SyncBillInput = z.infer<typeof syncBillSchema>;
 /** Where an offline bill came from: everything the sync sends besides the bill and its id. */
-export type OfflineOrigin = Pick<SyncBillInput, "businessDate" | "catalogVersion" | "madeAt" | "madeBy">;
+export type OfflineOrigin = Pick<SyncBillInput, "businessDate" | "catalogVersion" | "madeAt" | "madeBy" | "device">;
 export type DiscardOfflineBillInput = z.infer<typeof discardOfflineBillSchema>;

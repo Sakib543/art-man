@@ -2,7 +2,7 @@ import { DiscountNote } from "@/components/discount-note";
 import { Panel } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
 import { formatTime, num, paidBy } from "@/lib/format";
-import { slipLabel } from "@/lib/offline/slip";
+import { repeatedSlipNos, slipKey, slipLabel } from "@/lib/offline/slip";
 import { cn } from "@/lib/utils";
 import type { ReportBill } from "../corrections";
 import { CancelClosedBill } from "./cancel-closed-bill";
@@ -19,12 +19,18 @@ const td = "align-top md:px-3.5 md:py-3";
  * every row said nothing — paid is what a bill is — and buried the three
  * words that do matter.
  */
-function StatusBadges({ bill }: { bill: ReportBill }) {
+function StatusBadges({ bill, repeated }: { bill: ReportBill; repeated: ReadonlySet<string> }) {
   return (
     <>
       {bill.status === "cancelled" ? <Badge variant="destructive">Cancelled</Badge> : null}
       {bill.status === "reversal" ? <Badge variant="secondary">Reversal</Badge> : null}
       {bill.previous.length > 0 ? <Badge variant="warning">Edited</Badge> : null}
+      {/* One slip entered twice, or two slips numbered alike (P7.10, QA-28). */}
+      {bill.status === "active" && bill.bookNo && repeated.has(slipKey(bill.bookNo)) ? (
+        <Badge variant="warning" title="Another bill of this day carries the same slip number">
+          Same slip no.
+        </Badge>
+      ) : null}
     </>
   );
 }
@@ -39,6 +45,7 @@ function StatusBadges({ bill }: { bill: ReportBill }) {
  * plain text beside the service rather than a pill on every line.
  */
 export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCancel: boolean }) {
+  const repeated = repeatedSlipNos(bills);
   return (
     <Panel>
       {/* Below `md` this is a card per bill, not a sideways scroll. The
@@ -65,7 +72,7 @@ export function ReportTable({ bills, canCancel }: { bills: ReportBill[]; canCanc
                         <span className={cn("font-semibold tabular-nums", !muted && "text-foreground")}>
                           #{bill.billNo}
                         </span>
-                        <StatusBadges bill={bill} />
+                        <StatusBadges bill={bill} repeated={repeated} />
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatTime(bill.createdAt)}

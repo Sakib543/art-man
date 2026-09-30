@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deviceTagSchema } from "@/lib/offline/device";
 
 const rupees = z.number().int("Use whole rupees").min(0, "Cannot be negative").max(100_000_000);
 const attendance = z.record(z.uuid(), z.boolean());
@@ -51,6 +52,8 @@ export const syncCloseSchema = z.object({
   businessDate: z.iso.date(),
   madeAt: z.iso.datetime(),
   madeBy: z.string().trim().max(80),
+  /** The computer it was closed on (P7.10); none on a close kept before P7.10. */
+  device: deviceTagSchema.optional(),
   close: z.object({
     attendance,
     payouts,
@@ -79,5 +82,5 @@ export type ReviewInput = z.infer<typeof reviewSchema>;
 export type CloseInput = z.infer<typeof closeSchema>;
 export type SyncCloseInput = z.infer<typeof syncCloseSchema>;
 /** Where an offline close came from: everything the sync sends besides the close's own figures. */
-export type OfflineCloseOrigin = Pick<SyncCloseInput, "businessDate" | "madeAt" | "madeBy"> & { expected: number };
+export type OfflineCloseOrigin = Pick<SyncCloseInput, "businessDate" | "madeAt" | "madeBy" | "device"> & { expected: number };
 export type DiscardOfflineCloseInput = z.infer<typeof discardOfflineCloseSchema>;

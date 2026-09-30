@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deviceTagSchema } from "@/lib/offline/device";
 
 const amount = z.number().int("Use whole rupees").min(1, "Enter an amount").max(10_000_000);
 /** Only the Owner's own cash movements are confirmed with a PIN. Staff PINs were removed. */
@@ -66,6 +67,8 @@ export const syncEntrySchema = z.object({
   businessDate: z.iso.date(),
   madeAt: z.iso.datetime(),
   madeBy: z.string().trim().max(80),
+  /** The computer it was made on (P7.10); none on an entry kept before P7.10. */
+  device: deviceTagSchema.optional(),
   entry: z.discriminatedUnion("kind", [expense, staffAdvance], {
     error: "Only an expense or a staff advance can be made offline",
   }),
@@ -88,6 +91,6 @@ export const discardOfflineEntrySchema = z.object({
 export type EntryInput = z.infer<typeof entrySchema>;
 export type SyncEntryInput = z.infer<typeof syncEntrySchema>;
 /** Where an offline entry came from: everything the sync sends besides the entry and its id. */
-export type OfflineEntryOrigin = Pick<SyncEntryInput, "businessDate" | "madeAt" | "madeBy">;
+export type OfflineEntryOrigin = Pick<SyncEntryInput, "businessDate" | "madeAt" | "madeBy" | "device">;
 export type DiscardOfflineEntryInput = z.infer<typeof discardOfflineEntrySchema>;
 export type VoidInput = z.infer<typeof voidSchema>;

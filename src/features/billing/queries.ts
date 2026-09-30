@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
@@ -6,6 +6,7 @@ import { getActiveCatalog } from "@/db/queries/catalog";
 import { getDayBills } from "@/db/queries/day-bills";
 import { billCancellations, billLines, bills, customerSpecialRates, customers, staff } from "@/db/schema";
 import { priceCart, PricingError } from "@/lib/accounting";
+import { isTempNo, slipKey } from "@/lib/offline/slip";
 import { draftLinesOf, restoreSaved } from "./bill-draft";
 import { lastVisitOf } from "./last-visit";
 import { receiptOfBill } from "./receipt-of-bill";
@@ -35,6 +36,41 @@ export async function getBillingData(): Promise<BillingData | null> {
  * own, so a receipt rebuilt here is exactly the one Today's bills reprints.
  * It runs only after a lost answer or a repeat, so reading one day is cheap.
  */
+/** A bill still in force that carries a slip's number already (P7.10, QA-28). */
+export interface SlipClash {
+  billNo: number;
+  businessDate: string;
+}
+
+/**
+ * The bill still in force — not cancelled, not a reversal — that already
+ * carries this slip's number, compared as the slip reads (`slipKey`): the same
+ * paper slip entered twice, or two slips given one number. A paper book's
+ * number is looked for on every day; a `T-` number only on its own day, since
+ * each computer starts again at 1 every day. `exceptBillId` is the bill being
+ * corrected, whose number the correction takes over.
+ */
+export async function findSlipClash(bookNo: string, businessDate: string, exceptBillId: string | null): Promise<SlipClash | null> {
+  const key = slipKey(bookNo);
+  const [row] = await db
+    .select({ billNo: bills.billNo, businessDate: bills.businessDate })
+    .from(bills)
+    .leftJoin(billCancellations, eq(billCancellations.billId, bills.id))
+    .where(
+      and(
+        // `\\s` here is `\s` in the SQL: a template literal would drop a single backslash.
+        sql`upper(regexp_replace(${bills.bookNo}, '\\s+', '', 'g')) = ${key}`,
+        isNull(bills.reversesBillId),
+        isNull(billCancellations.billId),
+        isTempNo(key) ? eq(bills.businessDate, businessDate) : undefined,
+        exceptBillId ? ne(bills.id, exceptBillId) : undefined,
+      ),
+    )
+    .orderBy(desc(bills.billNo))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function findBillByClientId(clientId: string): Promise<Receipt | null> {
   const [bill] = await db
     .select({ id: bills.id, businessDate: bills.businessDate })

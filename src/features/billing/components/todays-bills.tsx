@@ -2,7 +2,7 @@
 
 import { AlertCircle, Printer } from "lucide-react";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { DiscountNote } from "@/components/discount-note";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { requestDayRefresh } from "@/components/day-sync";
 import { useConnectivity } from "@/components/use-connectivity";
 import { formatTime, num, paidBy } from "@/lib/format";
-import { slipLabel } from "@/lib/offline/slip";
+import { repeatedSlipNos, slipKey, slipLabel } from "@/lib/offline/slip";
 import { cn } from "@/lib/utils";
 import type { DayBill } from "@/db/queries/day-bills";
 import { cancelBillAction } from "../actions";
@@ -37,6 +37,9 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
   // Correcting and cancelling change the server's books, so they wait for the
   // internet; printing does not (P2.2d).
   const online = useConnectivity();
+  // Two bills in force with one slip number: one slip entered twice, or two
+  // slips numbered alike — either way the Owner should look (P7.10, QA-28).
+  const repeated = useMemo(() => repeatedSlipNos(bills), [bills]);
   // `target` is kept after closing so the dialog does not go blank while it animates out.
   const [target, setTarget] = useState<DayBill | null>(null);
   const [open, setOpen] = useState(false);
@@ -121,6 +124,11 @@ export function TodaysBills({ bills, businessDate, canEdit = false, editingId = 
                           ) : null}
                           {bill.status === "reversal" ? (
                             <Badge variant="secondary">Reverses #{bill.reversesBillNo}</Badge>
+                          ) : null}
+                          {bill.status === "active" && bill.bookNo && repeated.has(slipKey(bill.bookNo)) ? (
+                            <Badge variant="warning" title="Another bill of this day carries the same slip number">
+                              Same slip no.
+                            </Badge>
                           ) : null}
                         </p>
                         <p className="text-xs text-muted-foreground tabular-nums">

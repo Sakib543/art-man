@@ -2,8 +2,10 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { getDayBills } from "@/db/queries/day-bills";
 import { isMonthClosed } from "@/db/queries/months";
+import { offlineWorkOn } from "@/db/queries/offline-work";
 import { businessDays, daySnapshots } from "@/db/schema";
 import { monthOf } from "@/lib/business-date";
+import { offlineDevicesNote } from "@/lib/offline/device";
 import { foldCorrections, type ReportBill } from "./corrections";
 import { summarizeBills, type ReportSummary } from "./summary";
 
@@ -33,6 +35,8 @@ export interface DailyReport {
    * a mistake is put right with an adjustment in the open month (P3.4).
    */
   monthClosed: boolean;
+  /** Said when more than one computer worked offline on this day (P7.10, QA-37). */
+  offlineNote: string | null;
 }
 
 /** The report for one business day: the requested date if it exists, otherwise the latest. */
@@ -43,9 +47,10 @@ export async function getDailyReport(requestedDate?: string): Promise<DailyRepor
   const days = dayRows.map((day) => ({ businessDate: day.businessDate, closed: day.closedAt !== null }));
   const selected = days.find((day) => day.businessDate === requestedDate) ?? days[0];
 
-  const [dayBills, monthClosed] = await Promise.all([
+  const [dayBills, monthClosed, offlineWork] = await Promise.all([
     getDayBills(selected.businessDate),
     selected.closed ? isMonthClosed(monthOf(selected.businessDate)) : Promise.resolve(false),
+    offlineWorkOn([selected.businessDate]),
   ]);
   const bills = foldCorrections(dayBills);
 
@@ -62,5 +67,6 @@ export async function getDailyReport(requestedDate?: string): Promise<DailyRepor
     }
   }
 
-  return { days, selected, bills, summary: summarizeBills(bills), closing, monthClosed };
+  const offlineNote = offlineDevicesNote(offlineWork.get(selected.businessDate) ?? []);
+  return { days, selected, bills, summary: summarizeBills(bills), closing, monthClosed, offlineNote };
 }

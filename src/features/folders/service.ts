@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
+import { lateArrivalNote } from "@/db/queries/offline-work";
 import { confirmOwnerPin } from "@/db/pin-guard";
 import { auditLog, cashEntries, khataEntries, staff } from "@/db/schema";
 import { isOwnerCash } from "@/lib/accounting";
@@ -44,10 +45,12 @@ export async function addEntry(current: SessionUser, input: EntryInput, offline?
   if (await savedEarlier(input.clientId)) return { alreadySaved: true };
 
   const day = await getOpenBusinessDay();
-  if (!day) throw new UserError("No business day is open. Ask the Owner to open one.");
-  if (offline && offline.businessDate !== day.businessDate) {
+  if (!day || (offline && offline.businessDate !== day.businessDate)) {
+    // Arriving after its day was closed — on another computer (P7.10) — says so.
+    const late = offline ? await lateArrivalNote(offline.businessDate, "entry") : "";
+    if (!day) throw new UserError(`No business day is open. Ask the Owner to open one.${late}`);
     throw new UserError(
-      `This entry was made on ${formatDate(offline.businessDate)}, but the open day is ${formatDate(day.businessDate)}. An entry made offline is only saved into the day it was made on.`,
+      `This entry was made on ${formatDate(offline!.businessDate)}, but the open day is ${formatDate(day.businessDate)}. An entry made offline is only saved into the day it was made on.${late}`,
     );
   }
   const actor = actorOf(current);
@@ -114,7 +117,18 @@ export async function addEntry(current: SessionUser, input: EntryInput, offline?
           pinOf: pinOf ?? undefined,
           // Made with no internet (P2.2e): when and by whom, as the browser
           // tells it. The entry's own time is when it reached the server.
-          ...(offline ? { offline: { madeAt: offline.madeAt, madeBy: offline.madeBy } } : {}),
+          // Since P7.10 also the day, the id and the computer.
+          ...(offline
+            ? {
+                offline: {
+                  madeAt: offline.madeAt,
+                  madeBy: offline.madeBy,
+                  businessDate: offline.businessDate,
+                  clientId: input.clientId,
+                  ...(offline.device ? { device: offline.device } : {}),
+                },
+              }
+            : {}),
         },
       });
     });
@@ -153,9 +167,9 @@ export async function recordOfflineEntryRefusal(user: SessionUser, clientId: str
  * is passed on.
  */
 export async function syncOfflineEntry(current: SessionUser, input: SyncEntryInput): Promise<SavedEntry> {
-  const { clientId, entry, businessDate, madeAt, madeBy } = input;
+  const { clientId, entry, businessDate, madeAt, madeBy, device } = input;
   try {
-    return await addEntry(current, { ...entry, clientId }, { businessDate, madeAt, madeBy });
+    return await addEntry(current, { ...entry, clientId }, { businessDate, madeAt, madeBy, device });
   } catch (error) {
     if (error instanceof UserError) await recordOfflineEntryRefusal(current, clientId, error.message, input);
     throw error;

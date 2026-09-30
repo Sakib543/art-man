@@ -82,4 +82,12 @@ describe("buildAlerts", () => {
     expect(buildAlerts({ ...none, wrongPins24h: 1 })[0].text).toContain("1 wrong PIN attempt in");
     expect(buildAlerts({ ...none, wrongPins24h: 4 })[0].tone).toBe("warn");
   });
+
+  it("warns when more than one computer worked offline on a day (P7.10)", () => {
+    const alerts = buildAlerts({ ...none, offlineNotes: ["Two computers worked offline on Thu, 24 Sep 2026: ..."] });
+    expect(alerts).toEqual([
+      { id: "devices-0", tone: "warn", text: "Two computers worked offline on Thu, 24 Sep 2026: ..." },
+    ]);
+    expect(buildAlerts({ ...none, offlineNotes: [] })).toEqual([]);
+  });
 });

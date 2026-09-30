@@ -3,7 +3,18 @@
  * app ("Choose a staff member"). Anything else is a bug: log it and show a
  * generic message instead.
  */
-export class UserError extends Error {}
+export class UserError extends Error {
+  /**
+   * Set when the screen does more than show the message — "book-no-repeated"
+   * offers to save anyway (P7.10). Most refusals have none.
+   */
+  readonly code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
+}
 
 /**
  * True when Postgres refused a row because a unique constraint already holds
