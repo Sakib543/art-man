@@ -299,6 +299,12 @@ was the read-only `pnpm db:backup`. Live still has khata lines labelled "Correct
 the developer" from P1.6's check of 2026-09-22 — the label P1.10 stopped writing; they cannot be
 changed, and go with the sample data at go-live.
 
+**P7.8 (2026-10-01) sealed live's 23 and 24 Sep again** with `pnpm db:reseal --live --apply`, after the code
+was deployed: 23 Sep D283-D3BF-87EB → 7D1D-D998-FEA6, 24 Sep 24E9-35C1-45A8 → 3997-DB66-0314 (22 Sep matched
+and was not touched). Both still gave their old codes the old way, so their records were intact; the old
+codes are in `day_snapshot_history` and two `day.reseal` rows are in `audit_log`. A second run: "every closed
+day matches its records". It was rehearsed first on a restored copy, with the same result.
+
 **P7.3 (2026-09-30) wrote only migration `0022` to the live database** — four nullable columns on `attendance` and a check. Live's closed days (22–25 Sep, sample data) have no saved terms and fall back (section 7). Verified on throwaway local databases.
 
 **P7.2 (2026-09-30) wrote only migration `0021` to the live database** — nullable columns and unique constraints; live had no duplicate reversal to stop it (checked on a restored copy first). Its races and screens were verified on restored copies (trap 8.20).
