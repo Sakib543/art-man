@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-752_passing-2E7D32?logo=vitest&logoColor=white" alt="752 tests" />
+  <img src="https://img.shields.io/badge/tests-752_unit_%2B_94_integration-2E7D32?logo=vitest&logoColor=white" alt="752 unit and 94 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -68,7 +68,7 @@ feel like the paper register it replaced — per-person columns, running staff l
 so that training takes minutes.
 
 **By the numbers:** 19 feature modules · 38 routes · ~32,000 lines of TypeScript · 752 unit tests in 54
-files · 23 database migrations · 15 append-only triggers.
+files · 94 integration tests against PostgreSQL · 23 database migrations · 15 append-only triggers.
 
 ---
 
@@ -382,8 +382,8 @@ deliberately left unindexed.
 | UI | Tailwind CSS 4, shadcn/ui on Base UI, lucide icons |
 | Offline | Hand-written service worker, IndexedDB, Web App Manifest |
 | Documents | `pdf-lib` for salary slips on the server; browser print CSS for receipts |
-| Testing | Vitest |
-| CI | GitHub Actions — lint, test and build on every push |
+| Testing | Vitest — pure unit tests, and integration tests against a real PostgreSQL |
+| CI | GitHub Actions — lint, unit tests, build and integration tests (a PostgreSQL 18 container) on every push |
 | Hosting | Vercel + Neon |
 
 ---
@@ -429,7 +429,8 @@ where they belong. The first business day is opened from Day close.
 |---|---|
 | `pnpm dev` | Development server |
 | `pnpm build` / `pnpm start` | Production build and server (the service worker only registers in production) |
-| `pnpm test` / `pnpm test:watch` | Unit tests |
+| `pnpm test` / `pnpm test:watch` | Unit tests — pure, no database |
+| `pnpm test:db` | Integration tests against PostgreSQL; needs `TEST_DATABASE_URL` naming a server on this computer (see below) |
 | `pnpm lint` | ESLint (Next.js core-web-vitals and TypeScript rules) |
 | `pnpm db:generate` | Generate a migration after changing `src/db/schema` |
 | `pnpm db:migrate` | Apply migrations; says which database, and wants `--live` for one not on this computer |
@@ -443,15 +444,27 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **752 tests in 54 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **752 unit tests in 54 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
   session, sign-in error messages, the proxy's redirects, role rules and the salary slip.
 - **Property-style checks** where it matters: for example, recalculating a closed month from corrected days
   must equal building the report from scratch, across every shape of month.
+- **94 integration tests in 8 files** run the services, Server Actions, Route Handlers and triggers against a
+  real PostgreSQL: the Owner-cash PIN and its lock under 20 guesses at once; the same cancellation, installment
+  or save sent five times at once changing the books once; a closed day corrected after a pay change, reopened
+  and closed again; every one of the 46 Server Actions called as each role, signed out and in maintenance
+  mode, against a permission table that must list them all; partner shares through month close; the
+  append-only triggers, the maintainer's escape hatch and the security-code chain; the offline sync
+  endpoints; the salary slip. Each test file gets its own copy of a freshly migrated database, and the
+  suite refuses any server that is not on this computer:
+  `TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/postgres pnpm test:db`. Run against the code as it
+  stood before the fixes of an independent QA audit, the suite fails on each of its findings.
 - **Conventions test** keeps the architecture from drifting (see [Architecture](#architecture)).
-- **CI** runs lint, tests and a production build on every push to `main` and on pull requests.
+- **CI** runs lint, unit tests, a production build and the integration tests on every push to `main` and on
+  pull requests; one job, *Deployable*, passes only when all of them did — the single check for a production
+  deployment to wait on (Vercel's Deployment Checks, [docs/DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md)).
 - Features that touch money were also verified end to end against a **restored copy of the production
   database** in a throwaway local PostgreSQL, so verification never writes to the real books.
 

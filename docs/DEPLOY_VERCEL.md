@@ -28,6 +28,29 @@ follow, and both have already cost time:
 - **Apply a migration to the live database before you push the code that needs it.** Push first and
   the deployed site is querying columns that do not exist yet. See "Later changes to the database".
 
+## 0.2 Deploy only from a green run (backlog P7.9)
+
+GitHub Actions runs lint, the unit tests, a build and the integration tests (against a PostgreSQL 18
+container) on every push; one job, **Deployable**, passes only when all of them did
+(`.github/workflows/ci.yml`). Vercel builds each push on its own, in parallel with CI, and on its own
+it would put a push live whatever CI says. Its **Deployment Checks** hold a production deployment back
+until chosen GitHub checks pass — the build happens, but the domain keeps serving the previous
+deployment until then, and a red run is never put live. Set once, by whoever holds the Vercel project:
+
+1. Settings → Environments → **Production**: *automatic aliasing* (assigning the production domain
+   automatically) must be on. It is the default.
+2. Settings → Build and Deployment → **Deployment Checks** → **Add Checks** → provider **GitHub** →
+   choose **Deployable**. Only that one: it already stands for every other job, and a job added to CI
+   later is covered by adding it to Deployable's `needs`.
+3. Push anything and watch the deployment: it waits while CI runs (about 2–3 minutes) and is promoted
+   when Deployable goes green. A deployment can still be pushed through by hand with **Force Promote**
+   on its page — for an emergency, not a habit.
+
+The check is matched by the job's **name**. Renaming the Deployable job means choosing it again here.
+
+Until this is set (it needs the Vercel access in step 0), a push deploys whatever CI says, as before —
+so look at the CI run before telling anyone a change is live.
+
 ---
 
 ## 1. Environment variables
