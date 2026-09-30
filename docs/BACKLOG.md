@@ -84,7 +84,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.7 | Next.js 16.3.6 (QA-36, critical advisory) — went to 16.3.7 | ✅ | done 2026-10-01 |
 | P7.8 | Security code: deterministic, survives corrections, actually checked (QA-05, QA-27) | ✅ | done 2026-10-01 |
 | P7.8b | Security code: a copy outside the database, a key it does not hold (QA-26) — split from P7.8 | ⬜ | next; until then the Owner notes each code on paper |
-| P7.9 | Integration tests against a real database, and a CI gate (QA-43) | ⬜ | before the trial |
+| P7.9 | Integration tests against a real database, and a CI gate (QA-43) | 🟡 | Sakib543, 2026-10-01 |
 | P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | ⬜ | next |
 | P7.11 | The error screen stops blaming the database (QA-30) | ⬜ | next |
 | P7.12 | Sign-in rate limit that holds, and throttled attempts in the audit log (QA-34) | ⬜ | next |
@@ -527,8 +527,8 @@ whole chain rewritten from that day on. **Fix:** a copy of each code kept where 
 it — printed on a close slip, or sent — and/or an HMAC key the database does not hold. **Until then:** the
 Owner notes each night's code on paper, and compares it on the Security codes screen.
 
-#### ⬜ P7.9 — Integration tests against a real database, and a CI gate
-**Owner:** — · **Findings:** QA-43 (High) · no migration
+#### 🟡 P7.9 — Integration tests against a real database, and a CI gate
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-43 (High) · no migration
 
 All 693 tests are pure: nothing tests a database write (60+ functions), a trigger (15), a Server Action
 (46), a Route Handler (7) or a component. Every Critical and High finding above lives in that untested
