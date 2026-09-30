@@ -88,7 +88,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | ✅ | done 2026-10-01 |
 | P7.11 | The error screen stops blaming the database (QA-30) | ✅ | done 2026-10-01 |
 | P7.12 | Sign-in rate limit that holds, and throttled attempts in the audit log (QA-34) | ✅ | done 2026-10-01 |
-| P7.13 | The offline day copy gives the Manager only what a close needs (QA-08) | ⬜ | next |
+| P7.13 | The offline day copy gives the Manager only what a close needs (QA-08) | 🟡 | Sakib543, 2026-10-01 |
 | P7.14 | Database hardening: TRUNCATE, the app's role, the hatch, day tables (QA-12, QA-23, QA-24) — migration | ⬜ | next |
 | P7.15 | Staff khata one month at a time (QA-42) | ⬜ | next |
 | P7.16 | README and HANDOFF statements that are not so (QA-20) | ⬜ | next |
@@ -749,8 +749,8 @@ row, and a different `X-Forwarded-For` on each request removed the limit entirel
 Counts live in memory (per instance on Vercel). **Fix:** database storage, the platform's IP header
 only, a per-username counter, and an audit row when throttled.
 
-#### ⬜ P7.13 — The offline day copy gives the Manager only what a close needs
-**Findings:** QA-08. `/api/offline/day` (`db/queries/day-copy.ts:57-67`) returns to any role the opening
+#### 🟡 P7.13 — The offline day copy gives the Manager only what a close needs
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-08. `/api/offline/day` (`db/queries/day-copy.ts:57-67`) returns to any role the opening
 cash, all of the day's bills and entries and every staff member's salary, wage and commission rate — so
 expected cash can be worked out before counting (spec §5.4(4)), and staff pay reaches the Manager (§2).
 The online Day close page keeps it hidden. **Fix:** send only what an offline close needs; or record the
