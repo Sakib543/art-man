@@ -45,3 +45,31 @@ export async function reachesServer(
 export function nextCheckIn(online: boolean): number {
   return online ? 20_000 : 3_000;
 }
+
+/** Where the error screen asks whether the server reaches its database (P7.11). */
+export const HEALTH_URL = "/api/health";
+
+/**
+ * Does the server reach its database? (P7.11, QA-30) Asked only once a screen
+ * has failed, so the error screen can say which it was. True on the route's
+ * 204, false on its 503, and null when it cannot tell: no answer in time, the
+ * proxy sending a signed-out browser to /login, anything else.
+ */
+export async function databaseAnswers(
+  fetcher: typeof fetch,
+  url: string = HEALTH_URL,
+  timeoutMs: number = PROBE_TIMEOUT_MS,
+): Promise<boolean | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetcher(url, { cache: "no-store", redirect: "manual", signal: controller.signal });
+    if (response.status === 204) return true;
+    if (response.status === 503) return false;
+    return null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}

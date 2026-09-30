@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { nextCheckIn, reachesServer } from "./connectivity";
+import { databaseAnswers, nextCheckIn, reachesServer } from "./connectivity";
 
 describe("reachesServer", () => {
   it("is online when the server answers", async () => {
@@ -42,5 +42,31 @@ describe("reachesServer", () => {
 describe("nextCheckIn", () => {
   it("checks often while offline and rarely while online", () => {
     expect(nextCheckIn(false)).toBeLessThan(nextCheckIn(true));
+  });
+});
+
+describe("databaseAnswers (P7.11)", () => {
+  it("reads the health route's two answers", async () => {
+    expect(await databaseAnswers(vi.fn(async () => new Response(null, { status: 204 })))).toBe(true);
+    expect(await databaseAnswers(vi.fn(async () => new Response(null, { status: 503 })))).toBe(false);
+  });
+
+  it("cannot tell from anything else: a redirect to the login page, a server error, no network", async () => {
+    // What `redirect: "manual"` makes of the proxy's redirect to /login.
+    const redirected = vi.fn(async () => ({ status: 0, type: "opaqueredirect" }) as Response);
+    expect(await databaseAnswers(redirected)).toBeNull();
+    expect(await databaseAnswers(vi.fn(async () => new Response(null, { status: 500 })))).toBeNull();
+    const failing = vi.fn(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    expect(await databaseAnswers(failing)).toBeNull();
+  });
+
+  it("asks the health route, uncached, without following a redirect", async () => {
+    const fetcher = vi.fn(async () => new Response(null, { status: 204 }));
+    await databaseAnswers(fetcher);
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/health");
+    expect(init).toMatchObject({ cache: "no-store", redirect: "manual" });
   });
 });

@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-772_unit_%2B_106_integration-2E7D32?logo=vitest&logoColor=white" alt="772 unit and 106 integration tests" />
+  <img src="https://img.shields.io/badge/tests-781_unit_%2B_108_integration-2E7D32?logo=vitest&logoColor=white" alt="781 unit and 108 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,8 +67,8 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 38 routes · ~32,000 lines of TypeScript · 772 unit tests in 55
-files · 106 integration tests against PostgreSQL · 23 database migrations · 15 append-only triggers.
+**By the numbers:** 19 feature modules · 39 routes · ~32,000 lines of TypeScript · 781 unit tests in 56
+files · 108 integration tests against PostgreSQL · 23 database migrations · 15 append-only triggers.
 
 ---
 
@@ -315,7 +315,7 @@ flowchart LR
     subgraph Next["Next.js 16 (App Router)"]
         PX["proxy.ts<br/>session-cookie gate"]
         SA["Server Actions<br/>per feature"]
-        RH["Route Handlers<br/>offline sync · salary slip PDF"]
+        RH["Route Handlers<br/>offline sync · salary slip PDF · health"]
         ACC["lib/accounting<br/>pure, tested"]
     end
     DB[("PostgreSQL<br/>append-only triggers")]
@@ -449,14 +449,14 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **772 unit tests in 55 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **781 unit tests in 56 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
   session, sign-in error messages, the proxy's redirects, role rules and the salary slip.
 - **Property-style checks** where it matters: for example, recalculating a closed month from corrected days
   must equal building the report from scratch, across every shape of month.
-- **106 integration tests in 9 files** run the services, Server Actions, Route Handlers and triggers against a
+- **108 integration tests in 10 files** run the services, Server Actions, Route Handlers and triggers against a
   real PostgreSQL: the Owner-cash PIN and its lock under 20 guesses at once; the same cancellation, installment
   or save sent five times at once changing the books once; a closed day corrected after a pay change, reopened
   and closed again; every one of the 46 Server Actions called as each role, signed out and in maintenance

@@ -1,7 +1,6 @@
 "use client";
 
 import { ErrorCard } from "@/components/error-card";
-import { OfflineWayOut } from "@/components/offline-way-out";
 import { PageHeader } from "@/components/page-header";
 
 /**
@@ -12,13 +11,15 @@ import { PageHeader } from "@/components/page-header";
  * It does NOT catch a failure in that layout itself — `error.tsx` never wraps
  * the layout beside it. `requireUser()` runs there and touches the database, so
  * that case is real; it is caught one level up, by `src/app/error.tsx`.
+ *
+ * With no internet, or no database, the card itself offers the offline page
+ * (P7.11); it replaced the `OfflineWayOut` strip here (P2.2d), which said the
+ * same thing a second time. The loading screen keeps the strip.
  */
 export default function AppError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   return (
     <>
       <PageHeader title="Something went wrong" />
-      {/* Often the internet going: offer offline billing (P2.2d). */}
-      <OfflineWayOut />
       <ErrorCard error={error} retry={retry} />
     </>
   );
