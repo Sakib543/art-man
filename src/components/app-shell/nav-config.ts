@@ -14,6 +14,7 @@ import {
   Receipt,
   ScrollText,
   Settings,
+  ShieldCheck,
   SlidersHorizontal,
   UsersRound,
   Wallet,
@@ -75,6 +76,8 @@ export const NAV: NavSection[] = [
       // Logins, not staff: the karigars never sign in. Owner and developer
       // only, and the developer role is filtered out of what the Owner sees.
       { href: "/users", label: "Users", icon: UsersRound },
+      // Each closed day's code checked again against its records (P7.8).
+      { href: "/security-codes", label: "Security codes", icon: ShieldCheck },
     ],
   },
   {

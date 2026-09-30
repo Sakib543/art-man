@@ -1,10 +1,19 @@
-import { asc, desc, eq, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { billLines, bills, cashEntries, daySnapshots } from "@/db/schema";
-import { computeSecurityCode, FIRST_DAY_CODE } from "@/lib/security-code";
+import { writeAudit } from "@/db/audit";
+import { billLines, bills, cashEntries, daySnapshotHistory, daySnapshots } from "@/db/schema";
+import {
+  computeSecurityCode,
+  FIRST_DAY_CODE,
+  securityCodeAsBefore,
+  type SealedBill,
+  type SecurityCodeInput,
+} from "@/lib/security-code";
 
 /** Anything that can run selects: the db itself or a transaction. */
 type Reader = Pick<typeof db, "select">;
+/** Selects and raw SQL: the db itself or a transaction. */
+type Executor = Pick<typeof db, "select" | "execute">;
 
 /** The headline figures a day's security code covers. */
 export type DayFigures = Record<
@@ -22,27 +31,29 @@ export type DayFigures = Record<
   number
 >;
 
-/**
- * Work out a day's security code from the database: the day's figures, its
- * bills and entries as they are now, and the previous day's code. Closing a
- * day and re-checking it later both use this, so they always agree.
- */
-export async function computeDayCode(reader: Reader, businessDate: string, figures: DayFigures): Promise<string> {
-  const [previous] = await reader
-    .select({ code: daySnapshots.securityCode })
-    .from(daySnapshots)
-    .where(lt(daySnapshots.businessDate, businessDate))
-    .orderBy(desc(daySnapshots.businessDate))
-    .limit(1);
+interface DayRecords {
+  bills: SealedBill[];
+  entries: unknown[];
+}
 
-  const billRows = await reader.select().from(bills).where(eq(bills.businessDate, businessDate)).orderBy(asc(bills.billNo));
+/**
+ * The bills (with their lines) and folder entries of every day from `from`
+ * to `to`, by business date, as the code covers them: three queries however
+ * many days. Bills in bill-number order and entries in the order they were
+ * made; a bill's lines in any order — `computeSecurityCode` puts them in its
+ * own (P7.8).
+ */
+async function loadRecords(reader: Reader, from: string, to: string): Promise<Map<string, DayRecords>> {
+  const inRange = (column: typeof bills.businessDate | typeof cashEntries.businessDate) => and(gte(column, from), lte(column, to));
+  const billRows = await reader.select().from(bills).where(inRange(bills.businessDate)).orderBy(asc(bills.billNo));
   const lineRows = await reader
     .select({ billId: billLines.billId, name: billLines.name, amount: billLines.amount, staffId: billLines.staffId })
     .from(billLines)
     .innerJoin(bills, eq(billLines.billId, bills.id))
-    .where(eq(bills.businessDate, businessDate));
+    .where(inRange(bills.businessDate));
   const entryRows = await reader
     .select({
+      businessDate: cashEntries.businessDate,
       kind: cashEntries.kind,
       amount: cashEntries.amount,
       paidFrom: cashEntries.paidFrom,
@@ -51,42 +62,221 @@ export async function computeDayCode(reader: Reader, businessDate: string, figur
       voidsEntryId: cashEntries.voidsEntryId,
     })
     .from(cashEntries)
-    .where(eq(cashEntries.businessDate, businessDate))
+    .where(inRange(cashEntries.businessDate))
     .orderBy(asc(cashEntries.createdAt), asc(cashEntries.id));
 
-  return computeSecurityCode({
-    previousCode: previous?.code ?? FIRST_DAY_CODE,
-    businessDate,
-    figures,
-    bills: billRows.map((bill) => ({
+  const days = new Map<string, DayRecords>();
+  const dayOf = (date: string) => days.get(date) ?? days.set(date, { bills: [], entries: [] }).get(date)!;
+  for (const bill of billRows) {
+    dayOf(bill.businessDate).bills.push({
       billNo: bill.billNo,
       cash: bill.cash,
       online: bill.online,
       customerId: bill.customerId,
       reversesBillId: bill.reversesBillId,
       lines: lineRows.filter((line) => line.billId === bill.id).map(({ name, amount, staffId }) => ({ name, amount, staffId })),
-    })),
-    entries: entryRows,
+    });
+  }
+  for (const { businessDate, ...entry } of entryRows) dayOf(businessDate).entries.push(entry);
+  return days;
+}
+
+const NO_RECORDS: DayRecords = { bills: [], entries: [] };
+
+/**
+ * Work out a day's security code from the database: the day's figures, its
+ * bills and entries as they are now, and the previous day's code. Closing a
+ * day and settling one again both use this.
+ */
+export async function computeDayCode(reader: Reader, businessDate: string, figures: DayFigures): Promise<string> {
+  const [previous] = await reader
+    .select({ code: daySnapshots.securityCode })
+    .from(daySnapshots)
+    .where(lt(daySnapshots.businessDate, businessDate))
+    .orderBy(desc(daySnapshots.businessDate))
+    .limit(1);
+  const records = (await loadRecords(reader, businessDate, businessDate)).get(businessDate) ?? NO_RECORDS;
+
+  return computeSecurityCode({ previousCode: previous?.code ?? FIRST_DAY_CODE, businessDate, figures, ...records });
+}
+
+/** A closed day checked against its records. */
+export interface DayCheck {
+  businessDate: string;
+  /** The code on record for the day — the one the Owner noted, unless the day was corrected since. */
+  code: string;
+  /** Its records still give the same code. */
+  ok: boolean;
+}
+
+interface CheckRow extends Record<string, unknown> {
+  business_date: string;
+  security_code: string;
+  chained_on: string | null;
+  previous_date: string | null;
+  sale: number;
+  cash: number;
+  online: number;
+  expenses: number;
+  staff_earned: number;
+  staff_paid: number;
+  day_profit: number;
+  opening_cash: number;
+  expected_cash: number;
+  counted_cash: number;
+  difference: number;
+  diff_reason: string | null;
+  closed_by: string;
+  /** As Postgres writes it, to the microsecond: drizzle leaves a raw query's timestamps as text. */
+  created_at: string;
+}
+
+/** A closed day as `inspectDays` found it. */
+interface Inspected extends DayCheck {
+  row: CheckRow;
+  figures: DayFigures;
+  /** What the code covers, the lines in the order the database gave them. */
+  input: SecurityCodeInput;
+}
+
+const figuresOf = (row: CheckRow): DayFigures => ({
+  sale: row.sale,
+  cash: row.cash,
+  online: row.online,
+  expenses: row.expenses,
+  staffEarned: row.staff_earned,
+  staffPaid: row.staff_paid,
+  dayProfit: row.day_profit,
+  openingCash: row.opening_cash,
+  expectedCash: row.expected_cash,
+  countedCash: row.counted_cash,
+  difference: row.difference,
+});
+
+/**
+ * Every closed day from `from` to `to`, worked out again from its records.
+ *
+ * Each day is checked against the code it was chained on when it was sealed
+ * — the previous day's code as it stood at that moment — not the previous
+ * day's code now (P7.8, QA-05). A correction to a closed day seals that day
+ * again (its old code goes to `day_snapshot_history`), and the day after it
+ * was chained on the old code; checked against the new one it used to fail,
+ * though nothing in it had changed. The code as it stood is found from the
+ * previous day's versions: its current record and its archived ones, each with
+ * when it was made (`created_at`, `closed_at`) and, archived, when it stopped
+ * being the one (`reopened_at` — a reopen or a correction). Compared in SQL,
+ * to the microsecond.
+ */
+async function inspectDays(executor: Executor, from: string, to: string): Promise<Inspected[]> {
+  const { rows } = await executor.execute<CheckRow>(sql`
+    with days as (
+      select d.*,
+        (select max(b.business_date) from business_days b where b.business_date < d.business_date) as prev
+      from day_snapshots d
+      where d.business_date between ${from} and ${to}
+    )
+    select days.business_date::text as business_date, days.security_code, days.prev::text as previous_date,
+      days.sale, days.cash, days.online, days.expenses, days.staff_earned, days.staff_paid, days.day_profit,
+      days.opening_cash, days.expected_cash, days.counted_cash, days.difference,
+      days.diff_reason, days.closed_by, days.created_at,
+      (select v.code from (
+          select s.security_code as code, s.created_at as since, null::timestamptz as until
+            from day_snapshots s where s.business_date = days.prev
+          union all
+          select h.security_code, h.closed_at, h.reopened_at
+            from day_snapshot_history h where h.business_date = days.prev
+        ) v
+        where v.since <= days.created_at and (v.until is null or v.until > days.created_at)
+        order by v.since desc
+        limit 1) as chained_on
+    from days
+    order by days.business_date
+  `);
+  if (rows.length === 0) return [];
+
+  const records = await loadRecords(executor, rows[0].business_date, rows[rows.length - 1].business_date);
+  const currentCode = new Map(rows.map((row) => [row.business_date, row.security_code]));
+
+  return rows.map((row) => {
+    // A previous day with no version on record for that moment — one sealed
+    // before the history was kept — is taken as it stands now.
+    const previousCode = row.previous_date
+      ? (row.chained_on ?? currentCode.get(row.previous_date) ?? FIRST_DAY_CODE)
+      : FIRST_DAY_CODE;
+    const figures = figuresOf(row);
+    const input = { previousCode, businessDate: row.business_date, figures, ...(records.get(row.business_date) ?? NO_RECORDS) };
+    return { businessDate: row.business_date, code: row.security_code, ok: computeSecurityCode(input) === row.security_code, row, figures, input };
   });
 }
 
-/** Re-check a closed day: does its stored code still match its data? A mismatch means something changed. */
-export async function verifyDayCode(businessDate: string): Promise<{ ok: boolean; stored: string; recomputed: string }> {
-  const [snapshot] = await db.select().from(daySnapshots).where(eq(daySnapshots.businessDate, businessDate)).limit(1);
-  if (!snapshot) throw new Error(`No closing record for ${businessDate}`);
+/**
+ * Check every closed day from `from` to `to` (P7.8): does its code still come
+ * out of its records? The Security codes screen shows this, a month at a time.
+ */
+export async function checkDayCodes(from: string, to: string): Promise<DayCheck[]> {
+  return (await inspectDays(db, from, to)).map(({ businessDate, code, ok }) => ({ businessDate, code, ok }));
+}
 
-  const recomputed = await computeDayCode(db, businessDate, {
-    sale: snapshot.sale,
-    cash: snapshot.cash,
-    online: snapshot.online,
-    expenses: snapshot.expenses,
-    staffEarned: snapshot.staffEarned,
-    staffPaid: snapshot.staffPaid,
-    dayProfit: snapshot.dayProfit,
-    openingCash: snapshot.openingCash,
-    expectedCash: snapshot.expectedCash,
-    countedCash: snapshot.countedCash,
-    difference: snapshot.difference,
-  });
-  return { ok: recomputed === snapshot.securityCode, stored: snapshot.securityCode, recomputed };
+/** Re-check one closed day: does its stored code still match its records? */
+export async function verifyDayCode(businessDate: string): Promise<DayCheck | null> {
+  const [check] = await checkDayCodes(businessDate, businessDate);
+  return check ?? null;
+}
+
+/** A day `resealOldDays` looked at and did not pass. */
+export interface ResealResult {
+  businessDate: string;
+  before: string;
+  /** The new code; null when the day was left alone, its records having changed. */
+  after: string | null;
+}
+
+/** Why a day was sealed again, in `day_snapshot_history`. */
+export const RESEAL_REASON = "Sealed again: a bill's lines are now covered in a fixed order (P7.8)";
+
+/**
+ * Seal again, once, the closed days sealed before P7.8 whose code only fails
+ * because of the order their lines came back in (P7.8, QA-27). Inside the
+ * caller's transaction.
+ *
+ * A day is sealed again only when its records still give its code the old way
+ * — lines in the order the database gives them now — so nothing that changed
+ * after it was sealed is waved through: such a day is left failing, and said.
+ * The old code goes to `day_snapshot_history`, as with a correction, and an
+ * audit row keeps both. Days in date order, so a day sealed again chains on the
+ * one before it as it now stands. A day that passes is not touched.
+ */
+export async function resealOldDays(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], actor: string): Promise<ResealResult[]> {
+  const results: ResealResult[] = [];
+  for (const day of await inspectDays(tx, "0001-01-01", "9999-12-31")) {
+    if (day.ok) continue;
+    if (securityCodeAsBefore(day.input) !== day.code) {
+      results.push({ businessDate: day.businessDate, before: day.code, after: null });
+      continue;
+    }
+    const { row, figures } = day;
+    await tx.insert(daySnapshotHistory).values({
+      businessDate: row.business_date,
+      ...figures,
+      diffReason: row.diff_reason,
+      securityCode: row.security_code,
+      closedBy: row.closed_by,
+      // Kept to the microsecond: the check finds a version by when it was made.
+      closedAt: sql`${row.created_at}::timestamptz`,
+      reopenReason: RESEAL_REASON,
+      reopenedBy: actor,
+    });
+    await tx.delete(daySnapshots).where(eq(daySnapshots.businessDate, row.business_date));
+    const after = await computeDayCode(tx, row.business_date, figures);
+    await tx.insert(daySnapshots).values({
+      businessDate: row.business_date,
+      ...figures,
+      diffReason: row.diff_reason,
+      securityCode: after,
+      closedBy: row.closed_by,
+    });
+    await writeAudit(tx, { actor, action: "day.reseal", target: row.business_date, before: { securityCode: row.security_code }, after: { securityCode: after, reason: RESEAL_REASON } });
+    results.push({ businessDate: row.business_date, before: row.security_code, after });
+  }
+  return results;
 }

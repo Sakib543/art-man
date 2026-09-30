@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-742_passing-2E7D32?logo=vitest&logoColor=white" alt="742 tests" />
+  <img src="https://img.shields.io/badge/tests-752_passing-2E7D32?logo=vitest&logoColor=white" alt="752 tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,7 +67,7 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 18 feature modules · 37 routes · ~32,000 lines of TypeScript · 742 unit tests in 53
+**By the numbers:** 19 feature modules · 38 routes · ~32,000 lines of TypeScript · 752 unit tests in 54
 files · 23 database migrations · 15 append-only triggers.
 
 ---
@@ -136,8 +136,11 @@ files · 23 database migrations · 15 append-only triggers.
   cancellation plus a reversing entry, so every change stays on the record. No bug in the application can
   bypass it.
 - **A tamper-evident chain of daily security codes.** Closing a day hashes (SHA-256) its figures, every bill,
-  line and cash entry, and the previous day's code. Change anything in a sealed day and its code — and the
-  chain after it — no longer verifies.
+  line and cash entry, and the previous day's code. Change anything in a sealed day and its code no longer
+  verifies; rewrite that code to match, and the next day — sealed on the old one — no longer does. The Owner's
+  Security codes screen checks every closed day, each against the code it was chained on, so a legitimate
+  correction does not break the days after it. The codes live in the same database, so the Owner also notes
+  each night's code on paper.
 - **Offline-first PWA.** A service worker, an IndexedDB copy of the catalog and of the open day, and an
   outbox let the counter bill, record expenses and even close the day for 6–8 hours without internet. The
   server re-validates every queued item on sync and never trusts a price computed in the browser.
@@ -187,6 +190,7 @@ files · 23 database migrations · 15 append-only triggers.
 | **Staff and rates** | Services, deals, price ranges, three pay types (salary, salary + commission, daily wage + commission) |
 | **Customers** | Names, numbers and special rates |
 | **Users** | Create Owner and Manager logins, close and reopen accounts |
+| **Security codes** | Each closed day's code worked out again from its records, a month at a time, to compare with the codes noted each night |
 
 ### Maintainer (developer role)
 
@@ -253,7 +257,7 @@ flowchart LR
 | **Append-only tables** | `BEFORE UPDATE OR DELETE` triggers on every financial table. Configuration (services, staff, rates) stays editable and applies forward only. |
 | **Corrections by reversal** | Cancelling a bill writes a cancellation and a mirrored negative bill. Cancelling inside a closed day re-settles it: earnings are reversed and re-posted, a new snapshot and code are written, and the counted cash is never rewritten — only what was *expected* moves. |
 | **Reopening a day** | Only the latest day, only by the Owner, only while its month is open. Everything the close wrote is reversed, and the old closing record and code are archived for good. |
-| **Security code chain** | SHA-256 over the day's figures, bills, lines, cash entries and the previous day's code. Any sealed day can be re-verified against its data. |
+| **Security code chain** | SHA-256 over the day's figures, bills, lines (in a fixed order, not the database's), cash entries and the previous day's code. Every closed day is re-verified on the Security codes screen, each against the code it was chained on. |
 | **Audit log** | Every sign-in, cancellation, correction, reset and setting change with actor, target, before and after. Its trigger can never be opened. |
 | **Frozen months** | A closed month keeps the report and shares it closed with, so later changes to salaries or percentages cannot alter it. |
 | **Maintainer hatch** | A transaction-local setting lets exactly one code path (`src/db/financial-edit.ts`) change a bill in place; it is shut again as soon as the rows are written. |
@@ -433,12 +437,13 @@ where they belong. The first business day is opened from Day close.
 | `pnpm db:seed:developer` | Create the developer account (skips if one exists); `--live` as above |
 | `pnpm db:check` | Check the connection, the applied migrations against the repo, and the accounts |
 | `pnpm db:backup` | Full `pg_dump` backup to `backups/` (git-ignored) |
+| `pnpm db:reseal` | Once, for days sealed before the fixed line order: seal again those whose records are intact (dry run unless `--apply`) |
 
 ---
 
 ## Testing and quality
 
-- **742 tests in 53 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **752 tests in 54 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
