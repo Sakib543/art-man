@@ -80,7 +80,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration `0022` | ✅ | done 2026-09-30 |
 | P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ✅ | done 2026-09-30 |
 | P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | ✅ | done 2026-10-01 |
-| P7.6 | Scripts never reach live by accident (QA-01) | ⬜ | before the trial |
+| P7.6 | Scripts never reach live by accident (QA-01) | 🟡 | Sakib543, 2026-10-01 |
 | P7.7 | Next.js 16.3.6 (QA-36, critical advisory) | ⬜ | before the trial |
 | P7.8 | Security code: deterministic, survives corrections, actually checked (QA-05, QA-26, QA-27) | ⬜ | before the trial (part) |
 | P7.9 | Integration tests against a real database, and a CI gate (QA-43) | ⬜ | before the trial |
@@ -388,8 +388,8 @@ The finding as the audit wrote it:
   above the drawer and confirm one above the khata balance; negative expected cash is an error, not
   "Extra"; refuse fractions and negatives with a message; keep the wizard's state in `sessionStorage`.
 
-#### ⬜ P7.6 — Scripts never reach live by accident
-**Owner:** — · **Findings:** QA-01 (High) · no migration
+#### 🟡 P7.6 — Scripts never reach live by accident
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-01 (High) · no migration
 
 `drizzle.config.ts:34` and `scripts/backup.ts:28` take `DATABASE_URL_UNPOOLED || DATABASE_URL`, and
 `.env.local` sets `DATABASE_URL_UNPOOLED` to the live direct string (HANDOFF §5 said it was empty — it
