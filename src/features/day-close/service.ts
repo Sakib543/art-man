@@ -12,6 +12,7 @@ import { loadDay } from "@/db/queries/day-data";
 import { postEarnings, requireOpenMonth, summarize } from "@/db/day-settlement";
 import type { CloseInput, DiscardOfflineCloseInput, OfflineCloseOrigin, ReviewInput, SyncCloseInput } from "./schemas";
 import { computeDayCode, type DayFigures } from "@/db/day-code";
+import { drawerBelowZero } from "./offline-close";
 import type { ClosedDay, CloseReview } from "./types";
 
 const actorOf = (user: SessionUser) => user.username || user.name;
@@ -117,6 +118,9 @@ export async function closeDay(user: SessionUser, input: CloseInput, offline?: O
         `The day's cash changed after it was closed on this computer: the count was compared with an expected ${rs(offline.expected)}, and the server's books now expect ${rs(summary.expectedCash)}. Close the day again on the Day close screen.`,
       );
     }
+
+    // Nothing can be counted against a drawer that holds less than nothing (P7.5).
+    if (summary.expectedCash < 0) throw new UserError(drawerBelowZero(summary.expectedCash));
 
     const { difference, reasonRequired } = cashDifference(input.counted, summary.expectedCash);
     const reason = input.reason?.trim() || null;

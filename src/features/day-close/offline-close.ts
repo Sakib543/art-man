@@ -9,6 +9,7 @@ import {
   type FolderEntry,
   type Rupees,
 } from "@/lib/accounting";
+import { rs } from "@/lib/format";
 import { closeCopyOf, knownIds, type DayCopy } from "@/lib/offline/day";
 import {
   ENTRY_VERSION,
@@ -182,8 +183,19 @@ export function reviewLocally(day: LocalDay, { attendance, payouts, counted }: C
   };
 }
 
+/**
+ * Expected cash below zero: more is recorded as leaving the drawer than it
+ * ever held, which no count can match (P7.5, QA-29). It used to read as a huge
+ * "Extra" with the reason optional, and close — an Rs 11,101,110 payment typed
+ * by mistake among them. The server refuses such a close in these words.
+ */
+export function drawerBelowZero(expected: Rupees): string {
+  return `Expected cash comes to ${rs(expected)}: more is recorded as leaving the drawer than it held. Check the payments to staff and today's Daily folders, then count again.`;
+}
+
 /** What the server would refuse in a close before it gets it, in its own words — or null. */
 export function closeProblem(review: CloseReview, reason: string): string | null {
+  if (review.expected < 0) return drawerBelowZero(review.expected);
   if (cashDifference(review.counted, review.expected).reasonRequired && !reason.trim()) {
     return "Write a reason for the shortage before closing.";
   }

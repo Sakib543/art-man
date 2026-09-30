@@ -4,7 +4,7 @@ import { Segmented } from "@/components/segmented";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkPayment, type PayMode } from "@/lib/accounting";
-import { rs } from "@/lib/format";
+import { parseRupees, rs } from "@/lib/format";
 
 const MODES: { value: PayMode; label: string }[] = [
   { value: "cash", label: "Cash" },
@@ -23,7 +23,9 @@ interface PaymentBoxProps {
 }
 
 export function PaymentBox({ total, mode, onModeChange, cash, online, onCashChange, onOnlineChange }: PaymentBoxProps) {
-  const check = checkPayment(total, Number(cash) || 0, Number(online) || 0);
+  const cashAmount = parseRupees(cash);
+  const onlineAmount = parseRupees(online);
+  const check = checkPayment(total, cashAmount ?? 0, onlineAmount ?? 0);
 
   return (
     <div className="mt-3.5">
@@ -39,10 +41,9 @@ export function PaymentBox({ total, mode, onModeChange, cash, online, onCashChan
               </Label>
               <Input
                 id="pay-cash"
-                type="number"
-                min={0}
-                step={1}
+                type="text"
                 inputMode="numeric"
+                autoComplete="off"
                 value={cash}
                 onChange={(event) => onCashChange(event.target.value)}
                 className="h-10 tabular-nums"
@@ -54,17 +55,21 @@ export function PaymentBox({ total, mode, onModeChange, cash, online, onCashChan
               </Label>
               <Input
                 id="pay-online"
-                type="number"
-                min={0}
-                step={1}
+                type="text"
                 inputMode="numeric"
+                autoComplete="off"
                 value={online}
                 onChange={(event) => onOnlineChange(event.target.value)}
                 className="h-10 tabular-nums"
               />
             </div>
           </div>
-          {total > 0 ? (
+          {cashAmount === null || onlineAmount === null ? (
+            // A fraction or a minus is said, never cut away (P7.5).
+            <p role="alert" className="mt-1.5 text-xs text-destructive">
+              Enter whole rupees, e.g. 1500
+            </p>
+          ) : total > 0 ? (
             <p className="mt-1.5 text-xs text-muted-foreground">
               {check.remaining === 0
                 ? "Payment matches total"

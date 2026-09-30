@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime, paidBy, priceRange } from "./format";
+import { formatDateTime, paidBy, parseRupees, priceRange } from "./format";
 
 describe("formatDateTime", () => {
   it("reads the date and time in Karachi, whatever the server's zone", () => {
@@ -14,6 +14,20 @@ describe("formatDateTime", () => {
 
   it("takes an ISO string as well as a Date", () => {
     expect(formatDateTime("2026-01-05T06:05:00Z")).toBe("5 Jan 2026, 11:05");
+  });
+});
+
+describe("parseRupees", () => {
+  it("reads whole rupees, and blank as nothing", () => {
+    expect(parseRupees("1500")).toBe(1500);
+    expect(parseRupees(" 700 ")).toBe(700);
+    expect(parseRupees("0")).toBe(0);
+    expect(parseRupees("")).toBe(0);
+    expect(parseRupees(undefined)).toBe(0);
+  });
+
+  it.each(["1500.7", "-500", "1e3", "12abc", "1,500", ".5", "99999999999999999999"])("refuses %s rather than guess", (typed) => {
+    expect(parseRupees(typed)).toBeNull();
   });
 });
 

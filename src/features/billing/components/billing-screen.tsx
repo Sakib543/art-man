@@ -14,7 +14,7 @@ import { requestDayRefresh } from "@/components/day-sync";
 import { useConnectivity } from "@/components/use-connectivity";
 import { useOutbox } from "@/components/use-outbox";
 import { checkPayment, paymentAmounts, priceCart, PricingError, type PayMode, type PricedLine } from "@/lib/accounting";
-import { formatDate, formatDateTime, paidBy, rs } from "@/lib/format";
+import { formatDate, formatDateTime, paidBy, parseRupees, rs } from "@/lib/format";
 import { closeOf, type OutboxBill, type OutboxEntry } from "@/lib/offline/outbox";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
 import { tempNo } from "@/lib/offline/slip";
@@ -35,7 +35,8 @@ import { Badge } from "@/components/ui/badge";
 /** A stable empty object, so memoised prices do not recompute on every render. */
 const NO_RATES: Record<string, number> = {};
 
-const toRupees =(text: string) => Math.max(0, Math.trunc(Number(text) || 0));
+/** Said beside a money box that holds something other than whole rupees (P7.5, QA-14). */
+const WHOLE_RUPEES = (what: string, example: number) => `Enter ${what} in whole rupees, e.g. ${example}`;
 
 /**
  * How often to ask "did it arrive?" after a Save lost its answer (P3.15). Not
@@ -188,7 +189,10 @@ export function BillingScreen({
   // shows its two ends under the name (P3.11).
   const servicesById = useMemo(() => Object.fromEntries(data.services.map((s) => [s.id, s])), [data.services]);
 
-  const discount = toRupees(discountText);
+  // Whole rupees or nothing (P7.5): 300.5 or -300 is said, never cut down to 300 or 0.
+  const typedDiscount = parseRupees(discountText);
+  const discount = typedDiscount ?? 0;
+  const discountTyping = typedDiscount === null ? WHOLE_RUPEES("the discount", 300) : "";
 
   /**
    * Same pricing function the server uses, so the total shown is the total
@@ -228,7 +232,9 @@ export function BillingScreen({
     }
   }, [cart, catalog, discount]);
 
-  const amounts = paymentAmounts(payMode, total, { cash: toRupees(typedCash), online: toRupees(typedOnline) });
+  const typedCashAmount = parseRupees(typedCash);
+  const typedOnlineAmount = parseRupees(typedOnline);
+  const amounts = paymentAmounts(payMode, total, { cash: typedCashAmount ?? 0, online: typedOnlineAmount ?? 0 });
   const payment = checkPayment(total, amounts.cash, amounts.online);
 
   /**
@@ -386,7 +392,10 @@ export function BillingScreen({
     if (customer.status === "new" && !customer.name.trim()) return setError("Enter the customer's name");
     if (editing && reason.trim().length < 3) return setError("Write what was wrong with the bill");
     if (priceProblem) return setError(priceProblem);
+    if (discountTyping) return setError(discountTyping);
     if (discountProblem) return setError(discountProblem);
+    if (payMode === "split" && typedCashAmount === null) return setError(WHOLE_RUPEES("the cash", 1500));
+    if (payMode === "split" && typedOnlineAmount === null) return setError(WHOLE_RUPEES("the online amount", 1500));
     if (discount > 0 && discountReason.trim().length < 3) return setError("Say why the discount is being given");
     if (!payment.ok) {
       return setError(
@@ -593,10 +602,9 @@ export function BillingScreen({
               </Label>
               <Input
                 id="discount"
-                type="number"
-                min={0}
-                step={1}
+                type="text"
                 inputMode="numeric"
+                autoComplete="off"
                 value={discountText}
                 onChange={(event) => setDiscountText(event.target.value)}
                 placeholder="0"
@@ -604,9 +612,9 @@ export function BillingScreen({
               />
             </div>
 
-            {discountProblem ? (
+            {discountTyping || discountProblem ? (
               <p role="alert" className="py-1 text-xs text-destructive">
-                {discountProblem}
+                {discountTyping || discountProblem}
               </p>
             ) : null}
 

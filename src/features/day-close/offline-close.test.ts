@@ -219,6 +219,14 @@ describe("closeProblem", () => {
   it("keeps the reason within what the server takes", () => {
     expect(closeProblem(review, "x".repeat(301))).toBe("Keep the reason to 300 characters");
   });
+
+  it("refuses expected cash below zero, which used to read as a huge Extra (QA-29)", () => {
+    const belowZero = { ...review, expected: -11_069_885, counted: 31_225, difference: 11_101_110 };
+    expect(closeProblem(belowZero, "")).toBe(
+      "Expected cash comes to -Rs 11,069,885: more is recorded as leaving the drawer than it held. Check the payments to staff and today's Daily folders, then count again.",
+    );
+    expect(closeProblem({ ...review, expected: 0, counted: 0, difference: 0 }, "")).toBeNull();
+  });
 });
 
 describe("closeEntryOf", () => {

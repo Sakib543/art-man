@@ -161,12 +161,17 @@ export function PaymentsStep({ staff, earnings, payouts, onPayout, error, pendin
                 <td className={cn(td, "text-right tabular-nums")}>{num(row.khataBalance)}</td>
                 <td className={cn(td, "text-right tabular-nums")}>{num(earnings[row.id].total)}</td>
                 <td className={td}>
+                  {/* Text, not a number box: what is typed is what is read, and a
+                      fraction or a minus is refused with a message rather than
+                      cut away (P7.5). Selected on focus, so typing replaces the
+                      pre-filled earning instead of adding to it — 1110 typed into
+                      1,110 once made Rs 11,101,110 (QA-29). */}
                   <Input
-                    type="number"
-                    min={0}
-                    step={1}
+                    type="text"
                     inputMode="numeric"
+                    autoComplete="off"
                     value={payouts[row.id] ?? "0"}
+                    onFocus={(event) => event.currentTarget.select()}
                     onChange={(event) => onPayout(row.id, event.target.value)}
                     aria-label={`Paid to ${row.name}`}
                     className="h-9 tabular-nums"

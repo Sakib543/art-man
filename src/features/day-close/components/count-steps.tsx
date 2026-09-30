@@ -37,10 +37,9 @@ export function CountStep({ counted, onCounted, error, pending, onBack, onNext }
           </Label>
           <Input
             id="cash-counted"
-            type="number"
+            type="text"
             inputMode="numeric"
-            min={0}
-            step={1}
+            autoComplete="off"
             value={counted}
             onChange={(event) => onCounted(event.target.value)}
             placeholder="0"
@@ -100,8 +99,10 @@ interface ReviewStepProps {
 /** Step 5: expected against counted, then lock the day. */
 export function ReviewStep({ review, here, reason, onReason, error, pending, onRecount, onClose }: ReviewStepProps) {
   const { expected, counted, difference, breakdown, onlineSales } = review;
+  // Below zero, no count can match: it is an error to put right, never "Extra" (P7.5).
+  const impossible = expected < 0;
   const short = difference < 0;
-  const extra = difference > 0;
+  const extra = difference > 0 && !impossible;
 
   return (
     <>
@@ -123,9 +124,9 @@ export function ReviewStep({ review, here, reason, onReason, error, pending, onR
         <Result label="Expected" value={rs(expected)} />
         <Result label="Counted" value={rs(counted)} />
         <Result
-          label={short ? "Short" : extra ? "Extra" : "Difference"}
-          value={rs(Math.abs(difference))}
-          tone={short ? "short" : extra ? "extra" : "match"}
+          label={impossible ? "Difference" : short ? "Short" : extra ? "Extra" : "Difference"}
+          value={impossible ? "-" : rs(Math.abs(difference))}
+          tone={impossible ? "short" : short ? "short" : extra ? "extra" : "match"}
         />
       </div>
 
@@ -156,7 +157,15 @@ export function ReviewStep({ review, here, reason, onReason, error, pending, onR
         <Panel>
           <PanelHeader title="Close the day" />
           <div className="space-y-3 px-card py-4">
-            {difference !== 0 ? (
+            {impossible ? (
+              <p role="alert" className="flex items-start gap-2 rounded-lg border border-danger-line bg-danger-soft px-3 py-2.5 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <span>
+                  Expected cash comes to {rs(expected)}: more is recorded as leaving the drawer than it held, so the day
+                  cannot be closed like this. Go back and check the payments to staff, and today&apos;s Daily folders.
+                </span>
+              </p>
+            ) : difference !== 0 ? (
               <div>
                 <Label htmlFor="difference-reason" className="mb-1.5">
                   {short ? "Reason for shortage (required)" : "Reason for extra cash"}
@@ -193,7 +202,7 @@ export function ReviewStep({ review, here, reason, onReason, error, pending, onR
               <ArrowLeft aria-hidden />
               Recount
             </Button>
-            <Button onClick={onClose} disabled={pending}>
+            <Button onClick={onClose} disabled={pending || impossible}>
               <Lock aria-hidden />
               {pending ? "Closing..." : here !== null ? "Close day offline" : "Close day"}
             </Button>

@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-703_passing-2E7D32?logo=vitest&logoColor=white" alt="703 tests" />
+  <img src="https://img.shields.io/badge/tests-729_passing-2E7D32?logo=vitest&logoColor=white" alt="729 tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,7 +67,7 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 18 feature modules · 37 routes · ~32,000 lines of TypeScript · 703 unit tests in 50
+**By the numbers:** 18 feature modules · 37 routes · ~32,000 lines of TypeScript · 729 unit tests in 52
 files · 23 database migrations · 15 append-only triggers.
 
 ---
@@ -435,7 +435,7 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **703 tests in 50 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **729 tests in 52 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline

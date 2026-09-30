@@ -1,24 +1,25 @@
 "use client";
 
 import { unstable_isUnrecognizedActionError, useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { requestCatalogRefresh } from "@/components/catalog-sync";
 import { requestDayRefresh } from "@/components/day-sync";
 import { useConnectivity } from "@/components/use-connectivity";
 import { dayEarning, type DayEarning } from "@/lib/accounting";
 import type { ActionResult } from "@/lib/action-result";
+import { parseRupees } from "@/lib/format";
 import { dayFor } from "@/lib/offline/day";
 import { describeCounts, outboxTally, workOfDay, type OutboxCloseEntry } from "@/lib/offline/outbox";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
 import { queueClose, readCatalog, readDay, readOutbox, removeFromOutbox } from "@/lib/offline/store";
 import { closeDayAction, reviewCloseAction } from "../actions";
 import { closeEntryOf, closeProblem, localDayOf, reviewLocally, type CloseCount, type LocalDay } from "../offline-close";
+import { checkPayouts, overOwedText } from "../payments";
 import type { CloseReview, CloseStaffRow } from "../types";
+import { restoreWizard, wizardKey, type WizardState } from "../wizard-state";
 import { CountStep, ReviewStep } from "./count-steps";
 import { AttendanceStep, EarningsStep, PaymentsStep } from "./staff-steps";
 import { Stepper } from "./stepper";
-
-const toRupees = (text: string | undefined) => Math.max(0, Math.trunc(Number(text) || 0));
 
 const OUTDATED = "The app was updated while this screen was open, so the day was not closed. Reload the page (F5) and try again.";
 
@@ -35,6 +36,54 @@ interface Reviewed {
   here: string | null;
 }
 
+interface WizardProps {
+  staff: CloseStaffRow[];
+  /** The day being closed. */
+  businessDate: string;
+  /** The offline page (P2.2f): the day as this computer knows it. Nothing is asked of the server. */
+  local?: LocalDay;
+  /**
+   * A close made on this computer that the server refused (P2.2f), to close
+   * the day again from: its id, and what was entered then.
+   */
+  start?: OutboxCloseEntry | null;
+}
+
+/** Nothing to subscribe to: the kept answers are read once, when the wizard mounts. */
+const noSubscription = () => () => {};
+
+function readKept(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null; // Storage blocked: the close starts over, as it always did.
+  }
+}
+
+function forget(key: string) {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Nothing kept, then.
+  }
+}
+
+/**
+ * Day Close, picking up where a reload left it (P7.5, QA-31): the answers so
+ * far are kept in this tab's `sessionStorage`, one entry per business day.
+ * The server has no storage, so the wizard is drawn once the page is running
+ * in the browser — the server's render and the first one here both see
+ * "not read yet", and they agree. A refused offline close (`start`) opens from
+ * what it was, never from what was kept.
+ */
+export function CloseWizard(props: WizardProps) {
+  const key = wizardKey(props.businessDate);
+  const raw = useSyncExternalStore(noSubscription, () => readKept(key), () => undefined);
+  if (raw === undefined) return null;
+  const kept = props.start ? null : restoreWizard(raw, props.staff.map((row) => row.id));
+  return <Wizard {...props} storageKey={key} kept={kept} />;
+}
+
 /**
  * The five Day Close steps. Steps 1 to 3 only collect what the manager tells
  * us; the server works out expected cash and does the closing itself.
@@ -48,41 +97,46 @@ interface Reviewed {
  * sent from the full screen whose answer is lost is kept the same way, under
  * the same id — so it closes the day exactly once, whichever copy arrives.
  */
-export function CloseWizard({
+function Wizard({
   staff,
   businessDate,
   local,
   start,
-}: {
-  staff: CloseStaffRow[];
-  /** The day being closed. */
-  businessDate: string;
-  /** The offline page (P2.2f): the day as this computer knows it. Nothing is asked of the server. */
-  local?: LocalDay;
-  /**
-   * A close made on this computer that the server refused (P2.2f), to close
-   * the day again from: its id, and what was entered then.
-   */
-  start?: OutboxCloseEntry | null;
-}) {
+  storageKey,
+  kept,
+}: WizardProps & { storageKey: string; kept: WizardState | null }) {
   const router = useRouter();
   const online = useConnectivity();
-  const [step, setStep] = useState(1);
-  // The close's id (P2.2f): the same until the day is known to be closed. A
-  // refused close closed again keeps its own.
-  const [clientId] = useState(() => start?.clientId ?? crypto.randomUUID());
+  // Step 3 needs its payments pre-filled first; kept answers always have them by then.
+  const [step, setStep] = useState(() => (kept && (kept.step < 3 || kept.payouts) ? kept.step : kept ? 2 : 1));
+  // The close's id (P2.2f): the same until the day is known to be closed — across
+  // a reload too (P7.5). A refused close closed again keeps its own.
+  const [clientId] = useState(() => start?.clientId ?? kept?.clientId ?? crypto.randomUUID());
   const [present, setPresent] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(staff.map((s) => [s.id, start?.close.attendance[s.id] ?? true])),
+    Object.fromEntries(staff.map((s) => [s.id, start?.close.attendance[s.id] ?? kept?.present[s.id] ?? true])),
   );
   // null until step 3 opens, then pre-filled with what daily-wage staff earned.
   const [payouts, setPayouts] = useState<Record<string, string> | null>(() =>
-    start ? Object.fromEntries(staff.map((s) => [s.id, String(start.close.payouts[s.id] ?? 0)])) : null,
+    start ? Object.fromEntries(staff.map((s) => [s.id, String(start.close.payouts[s.id] ?? 0)])) : (kept?.payouts ?? null),
   );
-  const [counted, setCounted] = useState(start ? String(start.close.counted) : "");
+  const [counted, setCounted] = useState(start ? String(start.close.counted) : (kept?.counted ?? ""));
   const [reviewed, setReviewed] = useState<Reviewed | null>(null);
-  const [reason, setReason] = useState(start?.close.reason ?? "");
+  const [reason, setReason] = useState(start?.close.reason ?? kept?.reason ?? "");
+  // The payments someone was asked about and said yes to (P7.5): pressing Continue
+  // again with the same figures goes on; any change asks again.
+  const [confirmedPayouts, setConfirmedPayouts] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+
+  // Every answer kept as it is given, so a reload carries on from here (P7.5).
+  useEffect(() => {
+    const state: WizardState = { v: 1, clientId, step, present, payouts, counted, reason };
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(state));
+    } catch {
+      // Storage blocked or full: a reload starts over, as it did before.
+    }
+  }, [storageKey, clientId, step, present, payouts, counted, reason]);
 
   const earnings = useMemo(() => {
     const result: Record<string, DayEarning> = {};
@@ -101,7 +155,20 @@ export function CloseWizard({
     setStep(next);
   };
 
-  const payoutAmounts = () => Object.fromEntries(staff.map((row) => [row.id, toRupees(payouts?.[row.id])]));
+  const payoutsCheck = () => checkPayouts(staff, earnings, payouts ?? {});
+
+  /** Step 3 done: every payment whole rupees, and anyone paid more than they are owed asked about once. */
+  function paymentsDone() {
+    setError("");
+    const check = payoutsCheck();
+    if (!check.ok) return setError(check.problem);
+    const figures = JSON.stringify(check.amounts);
+    if (check.overOwed.length > 0 && confirmedPayouts !== figures) {
+      setConfirmedPayouts(figures);
+      return setError(overOwedText(check.overOwed));
+    }
+    go(4);
+  }
 
   function toPayments() {
     // Daily-wage staff usually take their day's earning in hand, so start from that.
@@ -133,7 +200,11 @@ export function CloseWizard({
   function countDone() {
     setError("");
     if (counted.trim() === "") return setError("Enter the total cash counted in the drawer.");
-    const count = { attendance: present, payouts: payoutAmounts(), counted: toRupees(counted) };
+    const cash = parseRupees(counted);
+    if (cash === null) return setError("Enter the cash counted in whole rupees, e.g. 12500.");
+    const payments = payoutsCheck();
+    if (!payments.ok) return setError(payments.problem);
+    const count = { attendance: present, payouts: payments.amounts, counted: cash };
     startTransition(async () => {
       const result = await reviewOf(count);
       if (!result.ok) return setError(result.error);
@@ -148,7 +219,7 @@ export function CloseWizard({
    * here — it reads the outbox. Only within 12 hours of the server last
    * confirming the sign-in, like everything made offline.
    */
-  async function keep(review: CloseReview) {
+  async function keep(review: CloseReview, count: CloseCount) {
     try {
       const stored = await readCatalog().catch(() => null);
       const trust = offlineTrust(stored?.savedAt ?? null, Date.now());
@@ -161,14 +232,13 @@ export function CloseWizard({
           businessDate,
           madeBy: stored.user.username,
           madeAt: new Date().toISOString(),
-          attendance: present,
-          payouts: payoutAmounts(),
-          counted: toRupees(counted),
+          ...count,
           reason,
           review,
           staffNames: Object.fromEntries(staff.map((row) => [row.id, row.name])),
         }),
       );
+      forget(storageKey);
     } catch (thrown) {
       console.error(thrown);
       setError("This computer could not keep the close. Write the count down and close the day when the internet is back.");
@@ -177,6 +247,7 @@ export function CloseWizard({
 
   /** The server has closed the day. */
   function afterClose() {
+    forget(storageKey);
     // A refused close made on this computer is done with: the day is closed.
     if (start) removeFromOutbox(start.clientId).catch((thrown) => console.warn("Could not clear the kept close", thrown));
     // Both offline copies carry the open day: they should know at once that
@@ -192,9 +263,14 @@ export function CloseWizard({
     const { review, here } = reviewed;
     const problem = closeProblem(review, reason);
     if (problem) return setError(problem);
+    // Exactly what was compared with the count: every payment was checked
+    // there, and the count is the review's own.
+    const payments = payoutsCheck();
+    if (!payments.ok) return setError(payments.problem);
+    const count = { attendance: present, payouts: payments.amounts, counted: review.counted };
 
     startTransition(async () => {
-      if (here !== null) return keep(review);
+      if (here !== null) return keep(review, count);
 
       // Sent straight to the server only while nothing of the day is left on
       // this computer: once the server has closed a day, none of it goes in.
@@ -208,18 +284,12 @@ export function CloseWizard({
 
       let result;
       try {
-        result = await closeDayAction({
-          attendance: present,
-          payouts: payoutAmounts(),
-          counted: toRupees(counted),
-          reason,
-          clientId,
-        });
+        result = await closeDayAction({ ...count, reason, clientId });
       } catch (thrown) {
         if (unstable_isUnrecognizedActionError(thrown)) return setError(OUTDATED);
         // The connection dropped. The close may or may not have reached the
         // server; kept under the same id, it closes the day exactly once.
-        return keep(review);
+        return keep(review, count);
       }
       if (!result.ok) return setError(result.error);
       afterClose();
@@ -250,7 +320,7 @@ export function CloseWizard({
           error={error}
           pending={pending}
           onBack={() => go(2)}
-          onNext={() => go(4)}
+          onNext={paymentsDone}
         />
       ) : null}
 

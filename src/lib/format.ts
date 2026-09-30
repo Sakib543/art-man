@@ -8,6 +8,20 @@ export function rs(amount: number): string {
 export const num = (amount: number): string => amount.toLocaleString("en-US");
 
 /**
+ * A rupee amount as typed into a money field, read strictly (P7.5, QA-14):
+ * whole rupees, 0 or more; blank is 0. Anything else — 1500.7, -500, 1e3,
+ * "12abc" — is null, for the screen to refuse with a message. It used to be
+ * cut down quietly: 1500.7 became 1500 and -500 became 0.
+ */
+export function parseRupees(text: string | undefined): number | null {
+  const typed = (text ?? "").trim();
+  if (typed === "") return 0;
+  if (!/^\d+$/.test(typed)) return null;
+  const value = Number(typed);
+  return Number.isSafeInteger(value) ? value : null;
+}
+
+/**
  * A service's price, or its range when it has one: "Rs 800" or "Rs 300 – 500"
  * (backlog P3.11). One function, so the billing tiles, the cart and the Staff
  * and rates list all write a range the same way.
