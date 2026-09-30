@@ -78,7 +78,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | ✅ | done 2026-09-30 |
 | P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration `0021` | ✅ | done 2026-09-30 |
 | P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration `0022` | ✅ | done 2026-09-30 |
-| P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ⬜ | before the trial |
+| P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | 🟡 | Sakib543, 2026-09-30 |
 | P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | ⬜ | before the trial |
 | P7.6 | Scripts never reach live by accident (QA-01) | ⬜ | before the trial |
 | P7.7 | Next.js 16.3.6 (QA-36, critical advisory) | ⬜ | before the trial |
@@ -299,8 +299,8 @@ since, with no work that day, loses the wage for good. Spec §6.5: rate changes 
 small `day_staff_terms` table, or in the snapshot — and re-settle from those. **Verify:** the scenario
 above leaves 700 / 0 / 613.
 
-#### ⬜ P7.4 — Partner shares: one check everywhere; Partners never crashes
-**Owner:** — · **Findings:** QA-06 (High) · no migration
+#### 🟡 P7.4 — Partner shares: one check everywhere; Partners never crashes
+**Owner:** Sakib543, 2026-09-30 · **Findings:** QA-06 (High) · no migration
 
 `checkShares` rounds to 2 decimals (`lib/accounting/partners.ts:6`) but `partnerShares` compares the raw
 float with `!== 100` (`lib/accounting/month.ts:70-71`). Shares 0.01 / 65.4 / 34.59 save, then the
