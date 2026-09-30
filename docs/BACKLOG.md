@@ -76,7 +76,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 | P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | ✅ | done 2026-09-30 |
-| P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration | ⬜ | before the trial |
+| P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration | 🟡 | Sakib543, 2026-09-30 |
 | P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration likely | ⬜ | before the trial |
 | P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ⬜ | before the trial |
 | P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | ⬜ | before the trial |
@@ -179,8 +179,8 @@ The finding as the audit wrote it:
 - **Verify:** as Manager, cancelling Owner cash without the PIN is refused (service and screen); 20
   parallel wrong PINs leave ≤ 5 checked.
 
-#### ⬜ P7.2 — One reversal per cancellation, enforced by the database
-**Owner:** — · **Findings:** QA-03 (High), QA-25 (High) · **migration**
+#### 🟡 P7.2 — One reversal per cancellation, enforced by the database
+**Owner:** Sakib543, 2026-09-30 · **Findings:** QA-03 (High), QA-25 (High) · **migration**
 
 - **QA-03.** `cash_entries` has no unique index on `voids_entry_id`, and `voidEntry` checks "already
   cancelled" outside its transaction (`folders/service.ts:212-217`). Five concurrent cancels of one
