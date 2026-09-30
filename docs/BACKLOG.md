@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-30 (**P1.10 done — a developer's change to a bill in a closed month now works the month's saved report and the partners' shares out again: only the days move, the salaries and share percentages stay as closed; `month.recalculate` in the audit log; no sign of it on the Owner's screens (the user, 2026-09-30: a note built first was removed, and a developer's account shows as "System" on the adjustments card); the developer's screen lists the month's adjustments so nothing is counted twice. No migration. Found and fixed with it: such a change on a month's last day took the month's salaries out of the khata, and its khata label named the developer.** Verified against a restored copy of live. 2026-09-29: **P3.3 done — the staff salary slip: a PDF per karigar per month, downloaded from Staff khata, with the month's totals, day by day, and room to sign; final once the month is closed, provisional before. P3.5 removed, and with it every plan to send anything on WhatsApp or SMS: the Day close "WhatsApp summary" preview is gone. The client's other answers the same day: the Customers screen stays the Owner's alone; a developer's edit in a closed month is to recalculate the month — P1.10, not built yet.** **P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-30 (**P7 added — the QA audit's 44 findings as 18 items, P7.1–P7.9 before the trial (two Critical: a Manager can cancel the Owner's PIN-confirmed cash, P7.1; re-settling a closed day uses today's pay rates, P7.3). Nothing was built; the audit changed no code and never touched live. Four questions for the client added to "Still to ask".** Earlier the same day: **P1.10 done — a developer's change to a bill in a closed month now works the month's saved report and the partners' shares out again: only the days move, the salaries and share percentages stay as closed; `month.recalculate` in the audit log; no sign of it on the Owner's screens (the user, 2026-09-30: a note built first was removed, and a developer's account shows as "System" on the adjustments card); the developer's screen lists the month's adjustments so nothing is counted twice. No migration. Found and fixed with it: such a change on a month's last day took the month's salaries out of the khata, and its khata label named the developer.** Verified against a restored copy of live. 2026-09-29: **P3.3 done — the staff salary slip: a PDF per karigar per month, downloaded from Staff khata, with the month's totals, day by day, and room to sign; final once the month is closed, provisional before. P3.5 removed, and with it every plan to send anything on WhatsApp or SMS: the Day close "WhatsApp summary" preview is gone. The client's other answers the same day: the Customers screen stays the Owner's alone; a developer's edit in a closed month is to recalculate the month — P1.10, not built yet.** **P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -75,6 +75,255 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | ✅ | done 2026-09-28 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
+| P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | ⬜ | before the trial |
+| P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration | ⬜ | before the trial |
+| P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration likely | ⬜ | before the trial |
+| P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ⬜ | before the trial |
+| P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | ⬜ | before the trial |
+| P7.6 | Scripts never reach live by accident (QA-01) | ⬜ | before the trial |
+| P7.7 | Next.js 16.3.6 (QA-36, critical advisory) | ⬜ | before the trial |
+| P7.8 | Security code: deterministic, survives corrections, actually checked (QA-05, QA-26, QA-27) | ⬜ | before the trial (part) |
+| P7.9 | Integration tests against a real database, and a CI gate (QA-43) | ⬜ | before the trial |
+| P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | ⬜ | next |
+| P7.11 | The error screen stops blaming the database (QA-30) | ⬜ | next |
+| P7.12 | Sign-in rate limit that holds, and throttled attempts in the audit log (QA-34) | ⬜ | next |
+| P7.13 | The offline day copy gives the Manager only what a close needs (QA-08) | ⬜ | next |
+| P7.14 | Database hardening: TRUNCATE, the app's role, the hatch, day tables (QA-12, QA-23, QA-24) — migration | ⬜ | next |
+| P7.15 | Staff khata one month at a time (QA-42) | ⬜ | next |
+| P7.16 | README and HANDOFF statements that are not so (QA-20) | ⬜ | next |
+| P7.17 | Small UX, accessibility and header fixes (QA-13, 21, 32, 35, 38, 39, 40, 41) | ⬜ | when convenient |
+| P7.18 | Code health and test-suite gaps (QA-15, 16, 17, 18, 22, 33, 44) | ⬜ | when convenient |
+
+---
+
+## P7 — From the QA audit (2026-09-30)
+
+A senior-SQA audit ran nine phases — baseline, accounting core, database integrity, business flows,
+dates, authorization and security, offline, UI and accessibility, performance, test quality — against
+a **throwaway local PostgreSQL only**. Live was never connected to and the repository was not changed.
+About 350 checks; 44 findings (2 Critical, 6 High, 16 Medium, 19 Low, 1 Info).
+
+**Full report** — every finding with steps, expected/actual, evidence and a fix, 328 test cases, the
+README claims check and a 124-row traceability matrix: https://claude.ai/artifact/4P8fNtRv9uMu4kx4y1tVrH
+(private: ask Sakib543 to share it). `QA-nn` below are that report's finding ids. Each item here carries
+enough to reproduce without it.
+
+**Verdict:** rating C+ (6/10). The pure accounting core, authorization (all 46 Server Actions allow or
+refuse exactly as the role matrix says), the append-only triggers against UPDATE/DELETE, exactly-once
+saving, the one-counter offline design, dates in any server time zone, the responsive layout and speed
+with a year of data (18k bills) all held. **Conditional GO for the parallel-run trial once P7.1–P7.9 are
+done**; the paper register should not be retired before then. Until P7.8 is done, the Owner writes each
+day's security code on paper.
+
+### Before the trial
+
+#### ⬜ P7.1 — Owner cash: cancelling it needs the Owner's PIN
+**Owner:** — · **Findings:** QA-02 (Critical), QA-07, QA-10 · no migration
+
+- **QA-02.** `voidEntry` (`features/folders/service.ts:197-251`) never asks for a PIN, and
+  `voidEntryAction` is `requireUser` (`features/folders/actions.ts:23-24`). A Manager cancels an
+  "Owner added Rs 5,000" entry with any 3-letter reason; expected cash drops by 5,000, so 5,000 can
+  leave the drawer and the count still matches. Reproduced through the service (expected cash
+  36,275 → 31,275) and in the browser (the "PIN confirmed" row shows Cancel; the dialog asks only a reason).
+  **Fix:** `confirmPin` for `owner_took`/`owner_added` cancellations (or Owner-only), on the screen and the service.
+- **QA-07.** `confirmPin` counts earlier failures, then verifies (`db/pin-guard.ts:25-41`): 20 wrong
+  PINs sent at once were all checked (21 `pin.wrong` rows, none met the lock). **Fix:** serialise
+  (advisory lock on the subject, or a counter row updated in the same statement).
+- **QA-10.** The PIN is read with `where role='owner' limit 1` (`folders/service.ts:66`) — no order,
+  no `active` filter; with a second Owner the PIN checked is arbitrary. **Fix:** active Owners only;
+  say whose PIN.
+- **Verify:** as Manager, cancelling Owner cash without the PIN is refused (service and screen); 20
+  parallel wrong PINs leave ≤ 5 checked.
+
+#### ⬜ P7.2 — One reversal per cancellation, enforced by the database
+**Owner:** — · **Findings:** QA-03 (High), QA-25 (High) · **migration**
+
+- **QA-03.** `cash_entries` has no unique index on `voids_entry_id`, and `voidEntry` checks "already
+  cancelled" outside its transaction (`folders/service.ts:212-217`). Five concurrent cancels of one
+  Rs 700 expense wrote **5 reversals** (expected cash off by Rs 2,800); an advance got 5 reversals and
+  5 khata credits. Same for `partner_drawings.voids_id` and `monthly_expenses.voids_id`. Bills (PK on
+  `bill_cancellations.bill_id`) and adjustments (`month_adjustments_voids_id_unique`) were safe. A
+  plain double click in the browser wrote one (the dialog closes first) — two tabs, two devices or a
+  retried request are what trigger it.
+- **QA-25.** `addRepayment` reads what is owed, then inserts, with no lock (`capital/service.ts:45-80`):
+  two concurrent Rs 240,000 repayments against Rs 250,000 owed were both accepted (Rs 530,000 repaid of
+  300,000). Owner money forms (repayment, drawing, monthly expense, bonus, adjustment) have no client id,
+  so a double submit saves twice.
+- **Fix:** unique partial indexes on the three `voids…` columns (treat the violation as "already
+  cancelled"); `SELECT … FOR UPDATE` on the capital item before re-checking; client ids on Owner money
+  forms as bills have (P3.15).
+- **Verify:** 5 parallel cancels → 1 reversal for each table; 2 parallel repayments never exceed what is owed.
+
+#### ⬜ P7.3 — Re-settling a closed day uses that day's pay and attendance
+**Owner:** — · **Findings:** QA-04 (Critical) · migration likely
+
+`resettleDay` (`db/day-settlement.ts:88-163`) re-reads the **current** `staff` rows (`loadDay`,
+`db/queries/day-data.ts:43, 60-70`) and treats anyone with no attendance row as present
+(`day-settlement.ts:62`). Reproduced: after 4 Sep was closed, Bilal's wage went 700 → 900, Arshad's
+commission 10% → 20% and "Newbie" (daily wage 1,000) joined; the Owner cancelled one bill in 4 Sep, and
+4 Sep was re-posted with Bilal 900, Newbie 1,000 and Arshad 1,225 instead of 613. A karigar deactivated
+since, with no work that day, loses the wage for good. Spec §6.5: rate changes apply forward only.
+**Fix:** keep each staff member's pay terms (and attendance, already stored) with the day at close — a
+small `day_staff_terms` table, or in the snapshot — and re-settle from those. **Verify:** the scenario
+above leaves 700 / 0 / 613.
+
+#### ⬜ P7.4 — Partner shares: one check everywhere; Partners never crashes
+**Owner:** — · **Findings:** QA-06 (High) · no migration
+
+`checkShares` rounds to 2 decimals (`lib/accounting/partners.ts:6`) but `partnerShares` compares the raw
+float with `!== 100` (`lib/accounting/month.ts:70-71`). Shares 0.01 / 65.4 / 34.59 save, then the
+**Partners page shows the "could not reach the database" error** (digest in the server log: "got
+100.00000000000001%") and Month close throws a plain `Error`. Partners is the only screen where shares
+are edited, so the Owner cannot put it right in the app. Separately `saveSharesSchema` accepts 33.333
+(`partners/schemas.ts:11`) but the column is `numeric(5,2)` (`db/schema/config.ts:112`): saved as 33.33 × 3
+= 99.99, then Month close refuses. **Fix:** one tolerance-based check (or basis points as integers);
+2 decimals in the schema. **Verify:** any shares the schema accepts render Partners and let Month close run.
+
+#### ⬜ P7.5 — Day close payouts and money fields: no silent typos
+**Owner:** — · **Findings:** QA-29 (Medium, P1), QA-14, QA-31 · no migration
+
+- **QA-29.** A daily-wage karigar's "Paid today" is pre-filled with the day's earning; typing 1110
+  into the pre-filled 1,110 made **Rs 11,101,110**. Review then showed expected cash −Rs 11,069,885 as
+  "Extra" with the reason optional, and Close day was enabled (`day-close/components/close-wizard.tsx:21,
+  104`; the payout schema allows up to Rs 100,000,000, `day-close/schemas.ts:3-6`).
+- **QA-14.** `toRupees = Math.max(0, Math.trunc(Number(text) || 0))` (`billing-screen.tsx:38`,
+  `close-wizard.tsx:21`) silently turns 1500.7 into 1500 and −500 into 0.
+- **QA-31.** Reloading Day close starts over at step 1 with every daily-wage karigar present again.
+- **Fix:** select the field on focus (or leave it empty with the earning as a hint); refuse a payout
+  above the drawer and confirm one above the khata balance; negative expected cash is an error, not
+  "Extra"; refuse fractions and negatives with a message; keep the wizard's state in `sessionStorage`.
+
+#### ⬜ P7.6 — Scripts never reach live by accident
+**Owner:** — · **Findings:** QA-01 (High) · no migration
+
+`drizzle.config.ts:34` and `scripts/backup.ts:28` take `DATABASE_URL_UNPOOLED || DATABASE_URL`, and
+`.env.local` sets `DATABASE_URL_UNPOOLED` to the live direct string (HANDOFF §5 said it was empty — it
+is not). So `DATABASE_URL=<local> pnpm db:migrate` — the override pattern the README, `backup.ts` and
+HANDOFF §7 document — **migrates live**, and `db:backup` backs up live. Checked by resolving the URL
+only, with no connection. **Fix:** when `DATABASE_URL` comes from the process environment, ignore the
+file's `DATABASE_URL_UNPOOLED` (or require an explicit `MIGRATE_DATABASE_URL`); print the target host and
+refuse a non-local one without `--live`. Until then: always override **both** variables.
+
+#### ⬜ P7.7 — Next.js 16.3.6
+**Owner:** — · **Findings:** QA-36 · no migration
+
+`pnpm audit`: critical GHSA-vcvr-r3jv-pc5j in next 16.3.5 (RCE in `next/og` ImageResponse; vulnerable
+>=16.2.0 <16.3.6). `next/og` is not imported today, so it is not reachable yet. Bump `next` and
+`eslint-config-next` to 16.3.6; build, test, lint. (Moderate: esbuild 0.18.20 through drizzle-kit, dev
+server only — goes with drizzle-kit's next release.)
+
+#### ⬜ P7.8 — Security code: deterministic, survives corrections, actually checked
+**Owner:** — · **Findings:** QA-27, QA-05, QA-26 (High) · no migration for the first two
+
+- **QA-27.** `computeDayCode` reads `bill_lines` with **no ORDER BY** (`db/day-code.ts:39-43`). The same
+  day gave 6EE7-B5A9-CBE5 with the default plan and C8F7-FC92-2B17 with merge join or seq scans; a no-op
+  rewrite of one line changed it again. An untouched day can fail verification once the table grows,
+  after a VACUUM FULL or a repair. **Fix:** order by `bill_lines.id`; re-seal once, old codes to history.
+- **QA-05.** A legitimate correction re-seals only its own day; the next day was chained on the old code
+  and fails `verifyDayCode` (reproduced for a closed-day cancel and a developer edit). `verifyDayCode` has
+  no caller. **Fix:** verify each day against the code it was chained on (history), or re-chain; add a
+  Verify screen for the Owner.
+- **QA-26.** Changing a 30 Aug line (triggers disabled) failed only 30 Aug — 31 Aug to 3 Sep still
+  verified, against the README; recomputing and writing the codes back made every day verify. The hash
+  is unkeyed and, since 2026-09-29, sent nowhere. **Fix:** a copy outside the database (printed on the
+  close slip, or sent), an HMAC key the database does not hold. **Before the trial:** the Owner notes
+  each day's code on paper.
+
+#### ⬜ P7.9 — Integration tests against a real database, and a CI gate
+**Owner:** — · **Findings:** QA-43 (High) · no migration
+
+All 693 tests are pure: nothing tests a database write (60+ functions), a trigger (15), a Server Action
+(46), a Route Handler (7) or a component. Every Critical and High finding above lives in that untested
+code. CI runs lint, test and build but does not gate the deploy. **Do:** a PostgreSQL service container
+in CI; migrate; seed through the services; then, in this order: Owner-cash PIN (P7.1); the concurrency
+cases (P7.2); the day lifecycle close → rate change → closed-day cancel → reopen → re-close (P7.3); the
+role matrix — call all 46 actions directly as each role with `{}` (the role is checked before Zod, so
+nothing is written) and assert against a table; shares (P7.4). Then triggers incl. TRUNCATE, the hatch,
+the security-code chain, the offline sync routes, month close and slips. Deploy only from a green run.
+
+### Next
+
+#### ⬜ P7.10 — Paper book numbers and `T-` numbers never collide unnoticed
+**Findings:** QA-28, QA-37. The same paper number was saved twice silently (`bills.book_no` has no
+check). Two devices offline both number from `T-1` (per-device counter, `lib/offline/store.ts`); the
+server accepted three `T-1` bills on one day. Device A's offline close reaching the server first makes
+device B's bill of that day a 422 "No business day is open", though its cash was in the drawer A
+counted. **Fix:** warn on a repeated book number; prefix `T-` with a device code; record a device id on
+offline items; tell the Owner when a second device works offline on the open day (the one-device
+assumption, spec §10.5, is nowhere enforced).
+
+#### ⬜ P7.11 — The error screen stops blaming the database
+**Findings:** QA-30. `components/error-card.tsx:40` always says "The system could not reach the database …
+use the paper bill book", even for a code bug (seen on Partners, P7.4). **Fix:** neutral wording;
+suggest paper only when the connectivity probe also fails.
+
+#### ⬜ P7.12 — A sign-in rate limit that holds
+**Findings:** QA-34. Better Auth's default limiter (no `rateLimit` block in `lib/auth/server.ts`) let
+3 wrong passwords through then answered 429 — but the 7 rate-limited attempts wrote **no** `login.failed`
+row, and a different `X-Forwarded-For` on each request removed the limit entirely (10 of 10 processed).
+Counts live in memory (per instance on Vercel). **Fix:** database storage, the platform's IP header
+only, a per-username counter, and an audit row when throttled.
+
+#### ⬜ P7.13 — The offline day copy gives the Manager only what a close needs
+**Findings:** QA-08. `/api/offline/day` (`db/queries/day-copy.ts:57-67`) returns to any role the opening
+cash, all of the day's bills and entries and every staff member's salary, wage and commission rate — so
+expected cash can be worked out before counting (spec §5.4(4)), and staff pay reaches the Manager (§2).
+The online Day close page keeps it hidden. **Fix:** send only what an offline close needs; or record the
+trade-off with the client.
+
+#### ⬜ P7.14 — Database hardening
+**Findings:** QA-23, QA-24, QA-12 · migration. `TRUNCATE` passes every append-only trigger, `audit_log`
+included (row triggers do not fire on it). A session-level `SET app.allow_financial_edit = 'on'` from
+any connection opens every financial table (only `db/financial-edit.ts` sets it today, with
+`is_local = true`, and that was shut after commit, rollback, error and across the pool).
+`business_days` (opening cash, `closed_at`) and `attendance` have no trigger; discount, book number,
+cancellations, khata, attendance and `diff_reason` are outside the security code. **Fix:** `BEFORE
+TRUNCATE` statement triggers; run the app as a role that does not own the tables; make the hatch
+require that role; protect `business_days.opening_cash`; hash attendance and the discount fields.
+
+#### ⬜ P7.15 — Staff khata one month at a time
+**Findings:** QA-42. With a year of data every screen rendered in 33–85 ms except Staff khata: 210 ms and
+**1.4 MB** for one daily-wage karigar (~1,200 lines, rendered as HTML and again as RSC data), growing
+~1.3 MB a year. **Fix:** the current month plus the balance brought forward, with month navigation — the
+salary slip's shape.
+
+#### ⬜ P7.16 — README and HANDOFF statements that are not so
+**Findings:** QA-20. README: `day_snapshots` cannot be deleted (it can, by design since `0009`); "any
+sealed day can be re-verified" (no tool); "change a sealed day and the chain after it no longer
+verifies" (it does verify — P7.8); "no bug can bypass the triggers" (TRUNCATE, a session SET — P7.14);
+"components never talk to the database … a test checks" (it does not — P7.18). HANDOFF §5 and §1 were
+corrected with this entry; `CLAUDE.md` still says "600 tests" (693).
+
+### When convenient
+
+#### ⬜ P7.17 — Small UX, accessibility and header fixes
+- **QA-40:** `--muted-foreground` `#6b7584` is 4.12–4.27:1 on the greys at 12–13 px (AA needs 4.5:1),
+  including the unselected "Online (QR)" / "Split" options. About `#5b6472` fixes it.
+- **QA-41:** no "Skip to content": 15 Tab stops before Billing's search (as Owner).
+- **QA-32:** a reprint lists lines in another order than the original (`bill_lines` has no position).
+- **QA-39:** "Needs attention" does not show the slip's `T-` number; an old "No internet" note stays after
+  reconnecting; the fix screen could offer "the customer paid Rs 300 — record Rs 50 as a discount".
+- **QA-38:** an offline bill kept without a catalog version is refused as "Rs 50 short" with no word
+  that prices changed.
+- **QA-13:** a deal made only of zero-priced services throws a plain `Error` (`allocate.ts:9`): empty
+  message on screen, "Something went wrong" from the server.
+- **QA-21:** the Users form allows `-` in a username (`users/schemas.ts:10-16`); Better Auth refuses it
+  (`INVALID_USERNAME`) and the screen says "Something went wrong".
+- **QA-35:** no CSP / `frame-ancestors`, `X-Content-Type-Options` or `Referrer-Policy`; `X-Powered-By` sent.
+
+#### ⬜ P7.18 — Code health and test-suite gaps
+- **QA-44:** the conventions test misses one action losing its role check (it matches one regex per
+  file), a cross-feature import written `../billing/…`, and `@/db` in a component (the build catches
+  client components only; 16 server components are unguarded).
+- **QA-22:** `loadDay` runs five selects with `Promise.all` on one transaction client
+  (`db/queries/day-data.ts:27`); pg warns this will throw in pg 9.
+- **QA-18:** `deal_items` is read without ORDER BY and `allocate` breaks ties by position.
+- **QA-15:** `countedTotal`, `commissionReversal`, `advanceOutstanding`, `capitalSummary` are tested but
+  unused; the cash count by denomination (spec §5.4) was never built — build it or record that it was dropped.
+- **QA-17:** `voidEntry` accepts a `staff_payment` but reverses only an advance's khata line.
+- **QA-16:** a "Final" salary slip can still change after a developer edit in its month.
+- **QA-33:** setting the device clock back after the last sign-in stretches the 12-hour offline window
+  indefinitely (`lib/offline/session.ts:31-36`); keep a high-water mark.
 
 ---
 
@@ -3317,6 +3566,19 @@ offers a toggle, so nothing reaches it. It is a task of its own. **Removed entir
 2. **A bill edited in a closed month** leaves that month's frozen report as it was — leave it, or
    recalculate it? And **may the Manager use the Customers screen?** Both are written up in
    `docs/HANDOFF.md` section 9, "Questions blocking work"; neither is urgent.
+   *(Both answered 2026-09-29: recalculate — built as P1.10; Customers stays the Owner's alone.)*
+3. **Cash the Owner puts into the drawer — does it offset what "reached the Owner"?** (QA-09, the QA
+   audit.) The Owner account counts `owner_took` only (`db/queries/month-report.ts:80-83`): Rs 5,000
+   added as change and Rs 20,000 taken shows 20,000 reached and 5,000 too little held by the business.
+   The spec is silent.
+4. **A salaried karigar who leaves mid-month — full, part or no salary?** (QA-11.) Month close pays only
+   staff active at close (`features/month-close/queries.ts:55-57`), so a leaver gets nothing and the
+   month's profit is overstated by that salary. Spec §10.8 left it to be confirmed.
+5. **Will more than one device ever bill offline on the same day?** (QA-37, P7.10.) The design assumes
+   one counter (spec §10.5), and nothing enforces it.
+6. **Commission rounding** (QA-19): it is rounded half-up per karigar per day, so a month's commission
+   can be a few rupees above the rate × the month's work (30 × 125 = 3,750 against 3,735). Fine to keep,
+   but it should be the client's stated policy.
 
 ## Answered
 

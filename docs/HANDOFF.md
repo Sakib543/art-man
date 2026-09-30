@@ -9,7 +9,7 @@ is in **English**. Talk to the user in **Roman Urdu**.
 
 **Update this file at the end of every task** — see section 11.
 
-Last updated: 2026-09-30 (**`README.md` rewritten as the project's public page, at the user's request for their portfolio:** overview, engineering highlights, features by screen, roles, the daily and monthly flow, integrity mechanisms, offline design, architecture and data model with Mermaid diagrams, setup, scripts, testing, deployment, docs. It names no live URL, database host or real person; the salon's own guide stays `docs/PROJECT_GUIDE.md`. Keep its numbers (tests, migrations, triggers, routes) in step when they change. Its ten screenshots (`docs/screenshots/`) come from a throwaway demo database with fictional people — never from live, which holds real customers (trap 8.23). **P1.10: a developer's change to a bill in a closed month now works that month's saved report and the partners' shares out again — only the days move (`recalculateMonthReport`), the salaries and share percentages stay as the month closed with them (`recalculateShares`); `month_closes` is updated through the hatch in the same transaction, which claims the row first; `month.recalculate` in `audit_log` holds before and after; the Owner's screens show only the new figures — the user's decision the same day, which also removed a note built first and shows a developer's account as "System" on the adjustments card; the developer's screen lists the month's P3.4 adjustments so a mistake is not counted twice. No migration. Found and fixed with it: a change to a bill on a closed month's last day reversed the month's salary lines in the khata for good, and the khata label a developer's change leaves named the developer.** Verified against a restored copy of live — nothing written to live (trap 8.20, 8.22). 2026-09-29: **P3.3: the staff salary slip — a PDF per karigar per month from Staff khata (`/api/staff-slip`, `pdf-lib` on the server): the month's totals, the days, room to sign; final once the month is closed. The client removed P3.5 and every plan to send anything on WhatsApp or SMS; the Day close summary preview went with it. Customers stay Owner-only; a developer's edit in a closed month is to recalculate it — P1.10, open. Run `pnpm install` after pulling: `pdf-lib` is new.** **P3.7 closed, the user's call: the two restores into a local copy (P2.2f, P3.4) count as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4: an adjustment for a closed month — the Owner records it from the closed month's Monthly report; it counts in the open month's profit, so in that month's partners' shares, and in the staff khata when it is about someone's pay; the closed month is never touched. Four kinds: a sale, an expense, what a staff member earned, what a staff member took. Cancelled with a row of the opposite sign while its month is open. Migration `0020` (`month_adjustments`, append-only, the 15th trigger), applied to live before the push. Found and fixed with it: a month could be closed before its last day, which would have opened the next day inside the frozen month.** **Verified against a restored copy of live — nothing but the migration written to live (trap 8.20).** **P2.2f: Day Close offline — the five steps worked out in the browser from the copy of the day plus what is still in the outbox; the close waits in the outbox behind its day's bills and entries (`heldBack`), goes to `/api/offline/close`, and the server closes the day — making the security code — only if its own expected cash matches the one the count was compared with. One close per id, kept in the `day.close` audit entry; no migration. The online close holds back while this computer has any of the day; both copies refresh the moment the day changes; a day closed here takes no more bills or entries. P2.2 is complete.** **Verified against a restored copy of live in a throwaway local PostgreSQL — nothing written to live (trap 8.20).** **P2.2e: Daily folders offline — an expense or a staff advance made with no internet waits in the outbox beside the bills and is saved once through `addEntry` (migration `0019`, `cash_entries.client_id`, applied to live before the push); a copy of the open day in the browser (`/api/offline/day`, refreshed after every save); `/offline-folders` and `/offline-register`, opened by the worker for Daily folders and the Daily report; the register draws bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2.** **P2.2d: the counter bills offline — a Save with no internet goes to the outbox with a `T-` number on the slip (kept in `book_no`), `/offline-billing` opens from the service worker when Billing cannot load, 12 hours per sign-in the server confirmed, and the offline copy now holds every customer (the user's choice). No migration.** 2026-09-28: **P2.2c: the outbox and its sync — a bill that could not reach the server waits in IndexedDB and is sent by `/api/offline/sync` through `createBill`, into the day it was made on; a refused one waits in "Needs attention". No migration; nothing queues a bill until P2.2d.** **The user: no dev Neon branch before the VPS move — P2.2c–f are built against this database (section 9).** **P3.16: the customer box starts empty for the next bill — keyed on the bill's id; verified without writing a bill (trap 8.16).** **P2.2b: the catalog copy in IndexedDB, refreshed from `/api/offline/catalog`.** **P3.15: a Save that loses its answer no longer leaves the bill in doubt — `bills.client_id` (migration `0018`, on live), one bill per id, and the screen asks the server instead of falling over.** 2026-09-26: **P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
+Last updated: 2026-09-30 (**An independent QA audit ran nine phases against a throwaway local PostgreSQL — live never connected, no code changed — and its 44 findings are now backlog P7.1–P7.18; P7.1–P7.9 come before the trial (section 10, STAGE 3c). Two are Critical: a Manager can cancel the Owner's PIN-confirmed cash with no PIN (P7.1), and re-settling a closed day uses today's pay rates and staff list (P7.3). Rating C+ (6/10), conditional GO for the parallel-run trial once P7.1–P7.9 are done. Section 5 corrected: `DATABASE_URL_UNPOOLED` is set, to live, so overriding `DATABASE_URL` alone still migrates and backs up live (trap 8.24). New facts in section 7, traps 8.24–8.27, four client questions in section 9. Report: https://claude.ai/artifact/4P8fNtRv9uMu4kx4y1tVrH (private).** Earlier the same day: **`README.md` rewritten as the project's public page, at the user's request for their portfolio:** overview, engineering highlights, features by screen, roles, the daily and monthly flow, integrity mechanisms, offline design, architecture and data model with Mermaid diagrams, setup, scripts, testing, deployment, docs. It names no live URL, database host or real person; the salon's own guide stays `docs/PROJECT_GUIDE.md`. Keep its numbers (tests, migrations, triggers, routes) in step when they change. Its ten screenshots (`docs/screenshots/`) come from a throwaway demo database with fictional people — never from live, which holds real customers (trap 8.23). **P1.10: a developer's change to a bill in a closed month now works that month's saved report and the partners' shares out again — only the days move (`recalculateMonthReport`), the salaries and share percentages stay as the month closed with them (`recalculateShares`); `month_closes` is updated through the hatch in the same transaction, which claims the row first; `month.recalculate` in `audit_log` holds before and after; the Owner's screens show only the new figures — the user's decision the same day, which also removed a note built first and shows a developer's account as "System" on the adjustments card; the developer's screen lists the month's P3.4 adjustments so a mistake is not counted twice. No migration. Found and fixed with it: a change to a bill on a closed month's last day reversed the month's salary lines in the khata for good, and the khata label a developer's change leaves named the developer.** Verified against a restored copy of live — nothing written to live (trap 8.20, 8.22). 2026-09-29: **P3.3: the staff salary slip — a PDF per karigar per month from Staff khata (`/api/staff-slip`, `pdf-lib` on the server): the month's totals, the days, room to sign; final once the month is closed. The client removed P3.5 and every plan to send anything on WhatsApp or SMS; the Day close summary preview went with it. Customers stay Owner-only; a developer's edit in a closed month is to recalculate it — P1.10, open. Run `pnpm install` after pulling: `pdf-lib` is new.** **P3.7 closed, the user's call: the two restores into a local copy (P2.2f, P3.4) count as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4: an adjustment for a closed month — the Owner records it from the closed month's Monthly report; it counts in the open month's profit, so in that month's partners' shares, and in the staff khata when it is about someone's pay; the closed month is never touched. Four kinds: a sale, an expense, what a staff member earned, what a staff member took. Cancelled with a row of the opposite sign while its month is open. Migration `0020` (`month_adjustments`, append-only, the 15th trigger), applied to live before the push. Found and fixed with it: a month could be closed before its last day, which would have opened the next day inside the frozen month.** **Verified against a restored copy of live — nothing but the migration written to live (trap 8.20).** **P2.2f: Day Close offline — the five steps worked out in the browser from the copy of the day plus what is still in the outbox; the close waits in the outbox behind its day's bills and entries (`heldBack`), goes to `/api/offline/close`, and the server closes the day — making the security code — only if its own expected cash matches the one the count was compared with. One close per id, kept in the `day.close` audit entry; no migration. The online close holds back while this computer has any of the day; both copies refresh the moment the day changes; a day closed here takes no more bills or entries. P2.2 is complete.** **Verified against a restored copy of live in a throwaway local PostgreSQL — nothing written to live (trap 8.20).** **P2.2e: Daily folders offline — an expense or a staff advance made with no internet waits in the outbox beside the bills and is saved once through `addEntry` (migration `0019`, `cash_entries.client_id`, applied to live before the push); a copy of the open day in the browser (`/api/offline/day`, refreshed after every save); `/offline-folders` and `/offline-register`, opened by the worker for Daily folders and the Daily report; the register draws bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2.** **P2.2d: the counter bills offline — a Save with no internet goes to the outbox with a `T-` number on the slip (kept in `book_no`), `/offline-billing` opens from the service worker when Billing cannot load, 12 hours per sign-in the server confirmed, and the offline copy now holds every customer (the user's choice). No migration.** 2026-09-28: **P2.2c: the outbox and its sync — a bill that could not reach the server waits in IndexedDB and is sent by `/api/offline/sync` through `createBill`, into the day it was made on; a refused one waits in "Needs attention". No migration; nothing queues a bill until P2.2d.** **The user: no dev Neon branch before the VPS move — P2.2c–f are built against this database (section 9).** **P3.16: the customer box starts empty for the next bill — keyed on the bill's id; verified without writing a bill (trap 8.16).** **P2.2b: the catalog copy in IndexedDB, refreshed from `/api/offline/catalog`.** **P3.15: a Save that loses its answer no longer leaves the bill in doubt — `bills.client_id` (migration `0018`, on live), one bill per id, and the screen asks the server instead of falling over.** 2026-09-26: **P2.2 started: split into P2.2a–f, the client's four offline answers recorded, P2.2a — manifest, service worker, offline page and banner — done.** P6.7: Folders and Staff khata tables fixed on a phone. P6.8: login footer, BrandLockup comment, dark mode removed. 2026-09-25 — P1.9: one seed script, developer only. P6.3: login page tidied. P4.11: `db:check` counts against the journal. **P6.4: the worksheet is the Daily report's Register view, and quick-add is gone.** P6.5 and P6.6: the Daily report and Today's bills decluttered. **P3.12: an "Other" line on a bill.** **P3.13: re-opening a discounted bill no longer takes the discount off twice.** **P3.14: a corrected bill keeps its deals' split.** Before that, 2026-09-23: P0 complete; P1.0-P1.6, P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.1-P4.10, P5.2, **P6.1**, **P6.2**, **P1.7** and **P1.8** done. P3.7: the backup is built, a restore has never been run)
 
 ---
 
@@ -22,7 +22,7 @@ Standing instructions. They override default habits.
 | **One task per session** | Work through the backlog one item at a time. Do the task asked for; do not start the next one. |
 | **`main` branch only** | Never create a branch. Never open a PR. All work lands on `main`. |
 | **Ask before implementing** | The user says when to build. If a request is ambiguous, discuss first — do not start editing files in answer to a question. |
-| **Verify every change** | After each task: `pnpm build`, `pnpm test` (600 tests), `pnpm lint`. All three must pass before reporting done. |
+| **Verify every change** | After each task: `pnpm build`, `pnpm test` (693 tests), `pnpm lint`. All three must pass before reporting done. |
 | **Roman Urdu in chat, English in files** | The user writes Roman Urdu. Match it in conversation. Everything committed stays English. |
 | **Commit and push at the end of a task** | Required — see section 2. Two people share this branch and each pulls the other's work. |
 
@@ -155,6 +155,7 @@ Better Auth (username + password) · Tailwind 4 + shadcn/ui · Zod · Vitest.
 | Error and loading screens | both boundaries were made to fire in a browser, and the 404 and skeleton checked against a production build (P4.6). `global-error.tsx` has never been triggered |
 | CI | the first run went **green in 56 seconds** on GitHub, commit `0f74808` (P4.7) |
 | Users screen | an account was created, signed in with, closed, refused at the login screen, re-opened and had its password reset three times, all in a browser as the Owner (P1.2) |
+| **Independent QA audit** | 2026-09-30, nine phases against a throwaway local PostgreSQL only (live never connected; repo unchanged). Rating C+ (6/10); **conditional GO for the parallel-run trial once backlog P7.1–P7.9 are done**. 44 findings, now backlog P7.1–P7.18. Report: https://claude.ai/artifact/4P8fNtRv9uMu4kx4y1tVrH (private — ask Sakib543) |
 
 Feature completeness: spec Phases 1–3 are essentially built (billing, worksheet, folders, day
 close, daily report, staff khata, overview, monthly report, monthly expenses, capital, partners,
@@ -218,8 +219,10 @@ services, staff, partners and fixed lines go in from their own screens. `db:seed
 
 `.env.local` points at **the live Neon database** — the same one the deployed site uses. It is not a
 dev database, whatever its name suggests; see section 9a, and treat every command on this page as
-running against production. Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (currently empty —
-optional), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
+running against production. Keys: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `BETTER_AUTH_SECRET`,
+`BETTER_AUTH_URL`. **`DATABASE_URL_UNPOOLED` is set — to live's direct string** (measured 2026-09-30 by
+its length and host, never its value; this line used to say it was empty). `db:migrate` and `db:backup`
+prefer it, so overriding `DATABASE_URL` alone still reaches live: see trap 8.24 and backlog P7.6.
 
 **So anything run from here writes into the salon's books.** The sample seed that made that
 easiest to forget is gone (P1.9), but a browser check against `pnpm dev` still writes to live.
@@ -560,6 +563,12 @@ Measured, not guessed. Do not spend time re-deriving these.
 | **`pdf-lib` is a server-only dependency since P3.3** | Standard Helvetica only, so nothing is embedded; it writes a Western character set, and `pdfSafe` turns anything else (a name in Urdu script) into `?` rather than fail. `/api/staff-slip?staff=&month=` is a GET for any signed-in role, `no-store`, `attachment`. The screen fetches it and saves the blob, so a refusal is said on the screen instead of being saved as a file. **Run `pnpm install` after pulling** |
 | **Nothing is sent anywhere, by design** | The client, 2026-09-29: no WhatsApp, no SMS. The Day close summary preview (`summary-text.ts`) was deleted with `SnapshotRow.cancelledBills` and the query that counted them |
 | `useOutboxReady()` | false until the page has read the outbox once. Day close waits for it: an empty `useOutbox()` before the read means "not read yet", and the steps must never be offered over a close already made here |
+| **Every Server Action checks its role before its input** (QA audit, 2026-09-30) | So posting `{}` to an action as each role tells allow from refuse without writing anything: a refusal answers with an `x-action-redirect` header, an allowed call with the Zod error in the RSC body. All 46 were called that way as Manager, Owner and Developer (135 calls) and matched the role matrix. How to post one: trap 8.27 |
+| **Row triggers do not fire on TRUNCATE**, and any connection can open the hatch with a session-level `SET` | Measured on a local copy (QA audit). Only `db/financial-edit.ts` sets the key, with `is_local = true`, and that setting was gone after commit, rollback, an error, and across the app's pool. Backlog P7.14 |
+| **`cash_entries`, `partner_drawings` and `monthly_expenses` have no unique index on their `voids…` column** | Five concurrent cancels wrote five reversals (QA audit). `bill_cancellations` (primary key) and `month_adjustments` (unique index) are safe. Backlog P7.2 |
+| **A day's security code depends on the order `bill_lines` comes back in** | `computeDayCode` has no ORDER BY on the lines: forcing a merge join or a seq scan gave a different code for the same day (QA audit). Backlog P7.8 |
+| **Better Auth rate-limits sign-in in production: 3 attempts per 10 s**, keyed on the client IP header, counts in memory | No `rateLimit` block is configured, so these are its defaults. Throttled attempts are not audited; a changed `X-Forwarded-For` escapes it (QA audit, backlog P7.12) |
+| With a year of data (18k bills, 38k lines) every screen but one renders in 33–85 ms | Production build on a local database, warm (QA audit). Staff khata is the exception: 210 ms and 1.4 MB, the whole ledger (backlog P7.15). Every hot query uses its index |
 
 ## 8. Traps that have already cost time
 
@@ -942,6 +951,43 @@ the month's "balance with business" goes negative — neither looks like a salon
 server is on that database before signing in (8.22). Delete the database and the browser profile
 afterwards. The demo seed is deliberately not in the repo: P1.9 keeps one seed, the developer's.
 
+### 8.24 Overriding `DATABASE_URL` alone does not keep migrations or backups off live
+
+Found 2026-09-30 (QA audit). `drizzle.config.ts` and `scripts/backup.ts` use
+`DATABASE_URL_UNPOOLED || DATABASE_URL`, and `.env.local` has `DATABASE_URL_UNPOOLED` set to live's
+direct string. So `DATABASE_URL=<local> pnpm db:migrate` migrates **live**, and the same for
+`db:backup`. The app and the seed only read `DATABASE_URL`, which is why the pattern looked safe. Until
+backlog P7.6 is built, **override both** — and `CHECK_DATABASE_URL` for `db:check`:
+
+```bash
+export DATABASE_URL=postgres://postgres@127.0.0.1:5544/x DATABASE_URL_UNPOOLED=$DATABASE_URL CHECK_DATABASE_URL=$DATABASE_URL
+```
+
+Check it without connecting: `node -e 'process.loadEnvFile(".env.local"); console.log(new URL(process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL).host)'`.
+
+### 8.25 Git Bash on Windows drops `TZ`
+
+Found 2026-09-30. `TZ=America/Los_Angeles node …` in Git Bash reaches Node as **undefined** (the MSYS
+runtime treats `TZ` itself), so a "different time zone" run silently uses the machine's. Set it from
+Node instead: `execFileSync(process.execPath, [...], { env: { ...process.env, TZ } })`, and print
+`new Date(0).toString()` in the child to prove it.
+
+### 8.26 Scripts that sign in trip the sign-in rate limit
+
+Found 2026-09-30. A production build allows 3 sign-ins per 10 s per client (fact in section 7). A test
+script that signs in as three roles back to back gets a 429 on the third and carries on with no cookie —
+every check after it then looks like a refusal. Wait 11 s after a 429 and retry, and check the cookie
+is not empty.
+
+### 8.27 Calling a Server Action directly, for a test
+
+Found 2026-09-30. `.next/server/server-reference-manifest.json` → `node[<id>]` has `exportedName` and
+the pages (`workers`) that carry the action. POST to one of those pages with headers
+`next-action: <id>`, `content-type: text/plain;charset=UTF-8`, `origin: <the site>` and the session
+cookie; the body is `JSON.stringify([input])`. The answer is RSC text: the `ActionResult` is on the line
+starting `1:`. A `requireRole` refusal comes back as HTTP 200 with `x-action-redirect: /billing;push`.
+The id is stable while the file is unchanged (section 7), but read it from the manifest each time.
+
 ### 8.1 Migration conflicts between the two developers
 
 `pnpm db:generate` writes a new `drizzle/NNNN_*.sql` **and appends to the shared
@@ -1177,6 +1223,11 @@ to keep it small, is under "Owed by the user" above.
    **Answered 2026-09-29 by the user: every customer** (P2.2d). The cost, accepted: every
    customer's name and number sits in the IndexedDB of whichever browser signs in, until sign-out
    clears it. The copy is never cached by the network (`no-store`).
+5. **Four questions for the client from the QA audit (2026-09-30)**, written up in `docs/BACKLOG.md`,
+   "Still to ask" 3–6: does cash the Owner adds offset what "reached the Owner" (QA-09); a salaried
+   karigar who leaves mid-month — full, part or no salary (QA-11); will more than one device ever
+   bill offline on one day (QA-37); is half-up commission rounding per day the policy (QA-19). None
+   blocks P7.1–P7.9.
 
 **Answered:**
 - **Does a Vercel project already exist?** Yes (2026-09-22) — connected to this same repo, but
@@ -1271,6 +1322,19 @@ STAGE 3b — before the trial starts, and none of it is code
   3. A clean database for the trial, and the real services/staff/partners in it
   4. Vercel access (P5.1)
 
+STAGE 3c — before the trial, and this is code (the QA audit, 2026-09-30; backlog P7)
+  P7.1  Owner cash: cancelling it needs the Owner's PIN                 (Critical)
+  P7.2  One reversal per cancellation, in the database · repayments locked   (migration)
+  P7.3  Re-settle a closed day with that day's pay and attendance       (Critical; migration likely)
+  P7.4  Partner shares: one check; Partners never crashes
+  P7.5  Day close payouts and money fields: no silent typos
+  P7.6  Scripts never reach live by accident
+  P7.7  Next.js 16.3.6
+  P7.8  Security code: ORDER BY and a Verify screen now; out-of-band copy later
+  P7.9  Integration tests on a real database, and a CI gate
+  Until P7.8: the Owner writes each day's security code on paper.
+  P7.10–P7.18 follow; see the backlog.
+
 STAGE 4 — after the trial
   P2.2  Offline PWA + sync — DONE 2026-09-29, all six parts (P2.2a–f): billing, Daily
         folders, the register and Day close work offline. Starting the next day still
@@ -1287,9 +1351,9 @@ Offline comes after the trial because the trial's purpose is to prove the **acco
 (spec Phase 1: run in parallel with the paper register, 7 straight days with a difference of 0).
 The paper bill book (P2.1) covers outages until then.
 
-**P4, P6.1, P2.2, P3.3, P3.4, P3.7 and P1.10 are finished; P3.5 was removed.** No backlog item is
-left in code (P1.10 was the last, 2026-09-30); what remains is outside code — the items in STAGE 3b —
-and the deployment items P5.1 and P5.3. (P3.7 was closed on the local restores — the user,
+**P4, P6.1, P2.2, P3.3, P3.4, P3.7 and P1.10 are finished; P3.5 was removed.** P1.10 was the last
+planned item; **the QA audit of 2026-09-30 added P7.1–P7.18, and P7.1–P7.9 come before the trial**
+(STAGE 3c). Besides them: the items in STAGE 3b and the deployment items P5.1 and P5.3. (P3.7 was closed on the local restores — the user,
 2026-09-29.) (Dark mode was removed outright in P6.8.) Nothing in the project sends anything, and
 by the client's decision nothing will: no WhatsApp, no SMS.
 **Do not parallelise:** P0.2 with P1.0 (both `day-close`). P1.2 is the next item in `features/developer`;
