@@ -9,7 +9,7 @@ what it depends on.
 and the date in its **Owner** line and push that change first, so the other person sees it. See
 `docs/HANDOFF.md` section 2 for the full coordination rules.
 
-Last updated: 2026-09-30 (**P7 added — the QA audit's 44 findings as 18 items, P7.1–P7.9 before the trial (two Critical: a Manager can cancel the Owner's PIN-confirmed cash, P7.1; re-settling a closed day uses today's pay rates, P7.3). Nothing was built; the audit changed no code and never touched live. Four questions for the client added to "Still to ask".** Earlier the same day: **P1.10 done — a developer's change to a bill in a closed month now works the month's saved report and the partners' shares out again: only the days move, the salaries and share percentages stay as closed; `month.recalculate` in the audit log; no sign of it on the Owner's screens (the user, 2026-09-30: a note built first was removed, and a developer's account shows as "System" on the adjustments card); the developer's screen lists the month's adjustments so nothing is counted twice. No migration. Found and fixed with it: such a change on a month's last day took the month's salaries out of the khata, and its khata label named the developer.** Verified against a restored copy of live. 2026-09-29: **P3.3 done — the staff salary slip: a PDF per karigar per month, downloaded from Staff khata, with the month's totals, day by day, and room to sign; final once the month is closed, provisional before. P3.5 removed, and with it every plan to send anything on WhatsApp or SMS: the Day close "WhatsApp summary" preview is gone. The client's other answers the same day: the Customers screen stays the Owner's alone; a developer's edit in a closed month is to recalculate the month — P1.10, not built yet.** **P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
+Last updated: 2026-09-30 (**P7.1 done — cancelling the Owner's cash (taken or added) needs the Owner's PIN, whoever is at the screen; the PIN check runs one at a time under an advisory lock, so 20 sent at once check 5; only an open Owner's PIN counts, and whose it was goes to the audit log. No migration. Verified on throwaway local databases, never live.** Earlier: **P7 added — the QA audit's 44 findings as 18 items, P7.1–P7.9 before the trial (two Critical: a Manager can cancel the Owner's PIN-confirmed cash, P7.1; re-settling a closed day uses today's pay rates, P7.3). Nothing was built; the audit changed no code and never touched live. Four questions for the client added to "Still to ask".** Earlier the same day: **P1.10 done — a developer's change to a bill in a closed month now works the month's saved report and the partners' shares out again: only the days move, the salaries and share percentages stay as closed; `month.recalculate` in the audit log; no sign of it on the Owner's screens (the user, 2026-09-30: a note built first was removed, and a developer's account shows as "System" on the adjustments card); the developer's screen lists the month's adjustments so nothing is counted twice. No migration. Found and fixed with it: such a change on a month's last day took the month's salaries out of the khata, and its khata label named the developer.** Verified against a restored copy of live. 2026-09-29: **P3.3 done — the staff salary slip: a PDF per karigar per month, downloaded from Staff khata, with the month's totals, day by day, and room to sign; final once the month is closed, provisional before. P3.5 removed, and with it every plan to send anything on WhatsApp or SMS: the Day close "WhatsApp summary" preview is gone. The client's other answers the same day: the Customers screen stays the Owner's alone; a developer's edit in a closed month is to recalculate the month — P1.10, not built yet.** **P3.7 closed — the user accepted the two local restores as spec phase 4's "restore from backup verified"; no restore into Neon; `docs/BACKUP.md` records them; a schedule moved to P5.3.** **P3.4 done — an adjustment for a closed month: recorded by the Owner from the closed month's Monthly report, counted in the open month's profit (and so its partners' shares) and in the staff khata for staff pay; the closed month is never touched. Four kinds — a sale, an expense, what a staff member earned, what a staff member took. Migration `0020` (`month_adjustments`, append-only), applied to live before the push. Found and fixed with it: a month can no longer be closed before its last day is closed.** Verified against a restored copy of live. **P2.2f done — Day Close offline: the five steps worked out in the browser, the close kept in the outbox behind the day's bills and entries and sent when they have gone, the security code made by the server, which closes the day only if its expected cash matches. No migration. The online close holds back while this computer has any of the day; both copies refresh the moment the business day changes. P2.2 is complete.** Verified against a restored copy of the live database — nothing written to live. P2.2e done — expenses and staff advances offline, in the outbox beside the bills; `cash_entries.client_id` (migration `0019`); a copy of the open day in the browser; `/offline-folders` and `/offline-register`; the register shows bills still on this computer. Only P2.2f (Day Close offline) is left of P2.2. P2.2d done — the counter bills offline: `T-` slips, `/offline-billing`, 12 hours per sign-in, every customer in the offline copy. 2026-09-28: P2.2c done — the outbox and its sync; nothing queues a bill until P2.2d. It no longer waited on a dev Neon branch — the user's call. P3.16 done — the customer box starts empty after a save. P2.2b done — the catalog copy in IndexedDB. P3.15 done — `bills.client_id`, one bill per id; P3.16 found. 2026-09-26: P2.2 split into P2.2a–f with the client's offline answers; P2.2a done. P6.7 and P6.8 done. 2026-09-25: P1.9, P6.3, P4.11, P6.4, P6.5, P6.6, P3.12, P3.13 and P3.14 done. 2026-09-23: P6.1, P6.2, P1.7 and P1.8 done; P0 and P1 complete; P2.1, P3.1, P3.2, P3.6, P3.8, P3.9, P4.2, P4.4, P4.5,
 P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 half done)
 
 ---
@@ -75,7 +75,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | ✅ | done 2026-09-28 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
-| P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | 🟡 | Sakib543, 2026-09-30 |
+| P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | ✅ | done 2026-09-30 |
 | P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration | ⬜ | before the trial |
 | P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration likely | ⬜ | before the trial |
 | P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ⬜ | before the trial |
@@ -117,8 +117,52 @@ day's security code on paper.
 
 ### Before the trial
 
-#### 🟡 P7.1 — Owner cash: cancelling it needs the Owner's PIN
-**Owner:** Sakib543, 2026-09-30 · **Findings:** QA-02 (Critical), QA-07, QA-10 · no migration
+#### ✅ P7.1 — Owner cash: cancelling it needs the Owner's PIN
+**Done 2026-09-30** · **Findings:** QA-02 (Critical), QA-07, QA-10 · no migration
+
+**What was built.** The user said "P7.1 shuru karo" and left the choices to Claude; the recommended ones
+were taken:
+
+- **Cancelling "Owner took" or "Owner added" needs the Owner's PIN, whoever is at the screen** — the
+  same rule as making one (the Manager, the Owner and the developer alike), not "Owner-only". `voidEntry`
+  (`features/folders/service.ts`) asks for it after every other check, so a PIN is never spent on a
+  cancellation refused for another reason; `voidSchema` takes an optional `pin`; the Cancel dialog
+  (`entries-table.tsx`) shows an "Owner's PIN to confirm" field for those two kinds only and clears it
+  after a refusal. An expense or a staff advance is still cancelled on a reason alone. The rule is one
+  function, `isOwnerCash` (`lib/accounting/folders.ts`). The cancellation row now carries
+  `pin_confirmed = true` (the security code does not hash that column), so the list shows "PIN confirmed"
+  on it as on the entry.
+- **The PIN check runs one at a time** (QA-07): `confirmOwnerPin` (`db/pin-guard.ts`, replacing
+  `confirmPin`) counts the wrong tries, checks the PIN and records a wrong one inside one transaction
+  holding `pg_advisory_xact_lock(hashtextextended('pin:owner', 0))`, and throws only after it commits, so
+  the record is never rolled back. Everything in it runs on that transaction's connection — a second one
+  taken from the pool of 5 while waiting on the lock could run it dry.
+- **Only an open Owner account's PIN counts, and any open Owner's does** (QA-10), tried in the order the
+  accounts were made. Whose it was goes to the audit log as `after.pinOf` on `folder.owner_took`,
+  `folder.owner_added`, `folder.cancel` and `folder.cancel-closed-day`. The screens do not show it (it
+  would need a column). With no open Owner holding a PIN: "No PIN has been set for the Owner. The Owner
+  sets one in Settings." Wrong tries are still counted together for every Owner (`pin.wrong`, target
+  `owner`), as before.
+
+**Verified** against throwaway local databases only (trap 8.20's cluster, fresh migrations and a scratch
+setup — live was never connected; all three URLs overridden, trap 8.24). HEAD's code, copied to the
+scratchpad, first reproduced all three: the Manager cancelled "Owner added Rs 5,000" with no PIN
+(expected cash 11,300 → 6,300); a closed Owner's PIN (made first) was accepted and the open Owner's
+refused; 20 wrong PINs at once were all checked (21 `pin.wrong` rows). The new code: no PIN, a wrong PIN
+and the closed Owner's PIN refused, expected cash unchanged at 11,300; the open Owner's PIN cancels, with
+`pinOf` in the audit and `pin_confirmed` on the cancellation; an expense still cancels with no PIN; 20
+wrong PINs at once → 5 checked ("Wrong PIN") and 15 refused as locked, then the right PIN refused as
+locked. In the browser, as the Manager against the local database: the dialog shows the PIN field for
+Owner cash and not for an expense; blank → "Enter the 4-digit PIN", wrong → "Wrong PIN" (field cleared),
+right → cancelled. 694 tests, lint and build pass.
+
+**Not covered:** cancelling the Owner's cash in a *closed* day has no screen (Daily folders lists the
+open day only); the service asks for the PIN there too, through the same lines. A browser tab left open
+from before the deploy has no PIN field: its Cancel on Owner cash is refused, and a reload brings the field.
+`confirmOwnPassword` (`features/account/service.ts`, the password that confirms a PIN change) has the same
+count-then-check shape as QA-07 had; it is reached only by a signed-in Owner, and was left for P7.18.
+
+The finding as the audit wrote it:
 
 - **QA-02.** `voidEntry` (`features/folders/service.ts:197-251`) never asks for a PIN, and
   `voidEntryAction` is `requireUser` (`features/folders/actions.ts:23-24`). A Manager cancels an
@@ -324,6 +368,9 @@ corrected with this entry; `CLAUDE.md` still says "600 tests" (693).
 - **QA-16:** a "Final" salary slip can still change after a developer edit in its month.
 - **QA-33:** setting the device clock back after the last sign-in stretches the 12-hour offline window
   indefinitely (`lib/offline/session.ts:31-36`); keep a high-water mark.
+- **Found in P7.1:** `confirmOwnPassword` (`features/account/service.ts`) counts wrong passwords, then
+  checks, as `confirmPin` did before P7.1 (QA-07) — tries sent at once each pass the count. Only a
+  signed-in Owner reaches it (to change the PIN). Serialise it the same way (`db/pin-guard.ts`).
 
 ---
 

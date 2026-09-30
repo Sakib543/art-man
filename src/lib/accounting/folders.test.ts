@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expectedCash, folderTotals, type FolderEntry } from "./index";
+import { expectedCash, folderTotals, isOwnerCash, type FolderEntry } from "./index";
 
 const entries: FolderEntry[] = [
   { kind: "expense", amount: 300, paidFrom: "drawer" },
@@ -44,5 +44,13 @@ describe("folderTotals", () => {
     });
     // 5000 + 10000 + 500 - 900 - 1000 - 0 - 3000
     expect(cash).toBe(10600);
+  });
+});
+
+describe("isOwnerCash", () => {
+  it("is the Owner's cash taken or added, and nothing else", () => {
+    expect(isOwnerCash("owner_took")).toBe(true);
+    expect(isOwnerCash("owner_added")).toBe(true);
+    for (const kind of ["expense", "staff_advance", "staff_payment"] as const) expect(isOwnerCash(kind)).toBe(false);
   });
 });

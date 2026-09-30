@@ -5,6 +5,12 @@ import type { Rupees } from "./types";
 export type FolderKind = "expense" | "staff_advance" | "staff_payment" | "owner_took" | "owner_added";
 export type PaidFrom = "drawer" | "owner";
 
+/**
+ * The Owner's own cash, taken from the drawer or added to it. It is made with
+ * the Owner's PIN and cancelled only with it (P7.1), whoever is at the screen.
+ */
+export const isOwnerCash = (kind: FolderKind): boolean => kind === "owner_took" || kind === "owner_added";
+
 export interface FolderEntry {
   kind: FolderKind;
   /** Negative on a void row, so a voided entry and its void add up to zero. */

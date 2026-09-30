@@ -26,7 +26,7 @@ export async function voidEntryAction(input: unknown): Promise<ActionResult<null
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid request" };
 
   try {
-    await voidEntry(user, parsed.data.entryId, parsed.data.reason);
+    await voidEntry(user, parsed.data);
     revalidatePath("/folders");
     return { ok: true, data: null };
   } catch (error) {

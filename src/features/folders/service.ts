@@ -2,13 +2,14 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
-import { confirmPin } from "@/db/pin-guard";
-import { auditLog, cashEntries, khataEntries, staff, user } from "@/db/schema";
+import { confirmOwnerPin } from "@/db/pin-guard";
+import { auditLog, cashEntries, khataEntries, staff } from "@/db/schema";
+import { isOwnerCash } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
 import { isUniqueViolation, UserError } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
 import { requireOwnerOnOpenMonth, resettleDay } from "@/db/day-settlement";
-import type { DiscardOfflineEntryInput, EntryInput, OfflineEntryOrigin, SyncEntryInput } from "./schemas";
+import type { DiscardOfflineEntryInput, EntryInput, OfflineEntryOrigin, SyncEntryInput, VoidInput } from "./schemas";
 
 const actorOf = (u: SessionUser) => u.username || u.name;
 
@@ -61,10 +62,11 @@ export async function addEntry(current: SessionUser, input: EntryInput, offline?
     staffName = member.name;
   }
 
+  // Whose PIN confirmed the Owner's cash, for the audit log.
+  let pinOf: string | null = null;
   if (input.kind === "owner_took" || input.kind === "owner_added") {
     // The owner confirms in person, even when the manager is at the screen.
-    const [owner] = await db.select({ pinHash: user.pinHash }).from(user).where(eq(user.role, "owner")).limit(1);
-    await confirmPin({ actor, subject: "owner", pin: input.pin, hash: owner?.pinHash ?? null });
+    pinOf = await confirmOwnerPin(actor, input.pin);
   }
 
   const description =
@@ -82,7 +84,7 @@ export async function addEntry(current: SessionUser, input: EntryInput, offline?
           paidFrom: input.kind === "expense" ? input.paidFrom : null,
           staffId,
           // Only the Owner's own cash movements are confirmed with a PIN, above.
-          pinConfirmed: input.kind === "owner_took" || input.kind === "owner_added",
+          pinConfirmed: pinOf !== null,
           // Unique: a second insert with the same id fails, and is answered
           // below as already saved (P2.2e).
           clientId: input.clientId,
@@ -109,6 +111,7 @@ export async function addEntry(current: SessionUser, input: EntryInput, offline?
         after: {
           amount: input.amount,
           paidFrom: input.kind === "expense" ? input.paidFrom : undefined,
+          pinOf: pinOf ?? undefined,
           // Made with no internet (P2.2e): when and by whom, as the browser
           // tells it. The entry's own time is when it reached the server.
           ...(offline ? { offline: { madeAt: offline.madeAt, madeBy: offline.madeBy } } : {}),
@@ -193,8 +196,14 @@ export async function discardOfflineEntry(
  * negative amount is added, so both stay visible. An entry in a day that is
  * already closed is the Owner's alone, and that day is settled again afterwards
  * so its figures and security code match the correction.
+ *
+ * The Owner's own cash is cancelled as it is made: with the Owner's PIN,
+ * whoever is at the screen (P7.1, QA-02). Without it, a Manager could cancel an
+ * "Owner added Rs 5,000" — expected cash drops by 5,000, so 5,000 can leave the
+ * drawer and the count still matches.
  */
-export async function voidEntry(current: SessionUser, entryId: string, reason: string): Promise<void> {
+export async function voidEntry(current: SessionUser, input: VoidInput): Promise<void> {
+  const { entryId, reason, pin } = input;
   const day = await getOpenBusinessDay();
   const actor = actorOf(current);
 
@@ -212,6 +221,13 @@ export async function voidEntry(current: SessionUser, entryId: string, reason: s
     .limit(1);
   if (already) throw new UserError("This entry is already cancelled");
 
+  // Checked last, so a PIN is never spent on a cancellation refused for another reason.
+  let pinOf: string | null = null;
+  if (isOwnerCash(entry.kind)) {
+    if (!pin) throw new UserError("Cancelling the Owner's cash needs the Owner's PIN.");
+    pinOf = await confirmOwnerPin(actor, pin);
+  }
+
   await db.transaction(async (tx) => {
     const [cancellation] = await tx
       .insert(cashEntries)
@@ -222,7 +238,7 @@ export async function voidEntry(current: SessionUser, entryId: string, reason: s
         description: `Cancelled: ${reason}`,
         paidFrom: entry.paidFrom,
         staffId: entry.staffId,
-        pinConfirmed: false,
+        pinConfirmed: pinOf !== null,
         voidsEntryId: entry.id,
         createdBy: actor,
       })
@@ -246,7 +262,7 @@ export async function voidEntry(current: SessionUser, entryId: string, reason: s
       action: closedDay ? "folder.cancel-closed-day" : "folder.cancel",
       target: entry.description ?? entry.kind,
       before: { kind: entry.kind, amount: entry.amount },
-      after: { reason },
+      after: { reason, pinOf: pinOf ?? undefined },
     });
   });
 }

@@ -1,14 +1,17 @@
 "use client";
 
 import { Panel } from "@/components/panel";
+import { PasswordInput } from "@/components/password-input";
 import { AlertCircle } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { requestDayRefresh } from "@/components/day-sync";
+import { Field } from "@/components/field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useConnectivity } from "@/components/use-connectivity";
+import { isOwnerCash } from "@/lib/accounting";
 import { formatTime, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { voidEntryAction } from "../actions";
@@ -63,6 +66,7 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
   const [target, setTarget] = useState<EntryRow | null>(null);
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -79,16 +83,20 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
   function openFor(entry: EntryRow) {
     setTarget(entry);
     setReason("");
+    setPin("");
     setError("");
     setOpen(true);
   }
+
+  // The Owner's cash is cancelled only with the Owner's PIN (P7.1), as it was made.
+  const needsPin = target ? isOwnerCash(target.kind) : false;
 
   function confirm() {
     if (!target) return;
     startTransition(async () => {
       let result;
       try {
-        result = await voidEntryAction({ entryId: target.id, reason });
+        result = await voidEntryAction({ entryId: target.id, reason, pin: needsPin ? pin : undefined });
       } catch {
         // Uncaught, a dropped connection took the whole screen down. Nothing
         // was cancelled that the server did not say so about.
@@ -96,7 +104,11 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
           "The server could not be reached, so it is not known whether the entry was cancelled. Check the list when the internet is back.",
         );
       }
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) {
+        // A wrong PIN is not kept for the next try.
+        setPin("");
+        return setError(result.error);
+      }
       requestDayRefresh();
       setOpen(false);
     });
@@ -225,6 +237,24 @@ export function EntriesTable({ entries, online }: { entries: EntryRow[]; online:
             aria-label="Reason for cancelling"
             rows={3}
           />
+          {needsPin ? (
+            <Field
+              label="Owner's PIN to confirm"
+              htmlFor="void-pin"
+              hint="The Owner's cash is cancelled only with the Owner's own PIN, as it was entered."
+            >
+              <PasswordInput
+                id="void-pin"
+                inputMode="numeric"
+                maxLength={4}
+                autoComplete="off"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="4-digit PIN"
+                className="h-10 tracking-widest"
+              />
+            </Field>
+          ) : null}
           {error ? (
             <p role="alert" className="flex items-center gap-1.5 text-xs text-destructive">
               <AlertCircle className="size-4" aria-hidden />

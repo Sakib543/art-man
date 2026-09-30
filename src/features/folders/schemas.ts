@@ -48,6 +48,8 @@ export const entrySchema = z.discriminatedUnion("kind", [
 export const voidSchema = z.object({
   entryId: z.uuid(),
   reason: z.string().trim().min(3, "Write a reason for cancelling").max(200),
+  /** The Owner's cash is cancelled only with the Owner's PIN (P7.1); `voidEntry` asks for it. Nothing else takes one. */
+  pin: pin.optional(),
 });
 
 /**
@@ -88,3 +90,4 @@ export type SyncEntryInput = z.infer<typeof syncEntrySchema>;
 /** Where an offline entry came from: everything the sync sends besides the entry and its id. */
 export type OfflineEntryOrigin = Pick<SyncEntryInput, "businessDate" | "madeAt" | "madeBy">;
 export type DiscardOfflineEntryInput = z.infer<typeof discardOfflineEntrySchema>;
+export type VoidInput = z.infer<typeof voidSchema>;
