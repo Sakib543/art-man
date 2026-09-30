@@ -1047,6 +1047,14 @@ take a screenshot before reading the DOM, since the wizard only draws after hydr
 A Bash heredoc of ~160 lines holding a Python edit script was cut short ("here-document … delimited by
 end-of-file") and nothing was written. Write long edit scripts to a scratchpad file and run that.
 
+### 8.30 GitHub's deployments API runs out after an hour of polling
+
+Found 2026-10-01 (P7.6). Section 7b's check — `api.github.com/repos/Sakib543/art-man/deployments` — is
+unauthenticated: 60 requests an hour per IP. Polling it every 5 s after each push used the hour up, and
+the answers came back empty (`API rate limit exceeded`, read with `curl …/rate_limit`). `gh` is not
+installed on this machine. Poll every 20–30 s, stop at the first answer, and when the change does not
+touch the app (scripts, docs) a `GET /login` returning 200 is enough.
+
 ### 8.1 Migration conflicts between the two developers
 
 `pnpm db:generate` writes a new `drizzle/NNNN_*.sql` **and appends to the shared
