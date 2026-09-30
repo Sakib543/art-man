@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasShareDecimals } from "@/lib/accounting";
 
 const month = z.string().regex(/^\d{4}-\d{2}$/, "Choose a month");
 
@@ -15,7 +16,13 @@ export const saveSharesSchema = z.object({
       z.object({
         id: z.uuid(),
         name: z.string().trim().min(1, "Every partner needs a name").max(60),
-        sharePct: z.number().min(0, "A share cannot be negative").max(100, "A share cannot be more than 100%"),
+        sharePct: z
+          .number()
+          .min(0, "A share cannot be negative")
+          .max(100, "A share cannot be more than 100%")
+          // The column keeps two decimals: 33.333 would be stored as 33.33, and
+          // three of them would add up to 99.99 (P7.4).
+          .refine(hasShareDecimals, "Use at most two decimals in a share, e.g. 33.33"),
       }),
     )
     .min(1)

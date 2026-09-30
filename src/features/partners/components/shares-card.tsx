@@ -18,6 +18,9 @@ interface SharesCardProps {
   monthLabel: string;
 }
 
+/** What the share box takes while it is typed in: up to 100, with at most two decimals. */
+const SHARE_INPUT = /^\d{0,3}(\.\d{0,2})?$/;
+
 /** Edit the partners' names and profit shares. Shares must add up to 100%. */
 export function SharesCard({ partners, netProfit, monthLabel }: SharesCardProps) {
   const [draft, setDraft] = useState(() => partners.map((p) => ({ ...p, pct: String(p.sharePct) })));
@@ -81,10 +84,13 @@ export function SharesCard({ partners, netProfit, monthLabel }: SharesCardProps)
                     type="number"
                     min={0}
                     max={100}
-                    step="0.5"
+                    step="0.01"
                     inputMode="decimal"
                     value={row.pct}
-                    onChange={(e) => update(index, { pct: e.target.value })}
+                    onChange={(e) => {
+                      // Two decimals at most, as a share is stored (P7.4): a third is not taken.
+                      if (SHARE_INPUT.test(e.target.value)) update(index, { pct: e.target.value });
+                    }}
                     aria-label={`${row.name} share`}
                     className="h-9 tabular-nums"
                   />

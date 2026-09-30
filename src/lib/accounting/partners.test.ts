@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkShares, partnerAccount, partnerShares, recalculateShares, type ClosedShare } from "./index";
+import { checkShares, hasShareDecimals, partnerAccount, partnerShares, recalculateShares, shareHundredths, type ClosedShare } from "./index";
 
 describe("checkShares", () => {
   it("accepts shares that add up to 100", () => {
@@ -11,6 +11,28 @@ describe("checkShares", () => {
     expect(checkShares([50, 40])).toEqual({ ok: false, total: 90 });
     expect(checkShares([60, 50])).toEqual({ ok: false, total: 110 });
     expect(checkShares([120, -20]).ok).toBe(false);
+  });
+
+  it("adds up in whole hundredths, so floating point never refuses a true 100 (QA-06)", () => {
+    // As floats, 0.01 + 65.4 + 34.59 is 100.00000000000001.
+    expect(checkShares([0.01, 65.4, 34.59])).toEqual({ ok: true, total: 100 });
+    expect(checkShares([33.33, 33.33, 33.34])).toEqual({ ok: true, total: 100 });
+  });
+
+  it("refuses a share with more than two decimals, which the column would round away", () => {
+    expect(checkShares([33.333, 33.333, 33.334]).ok).toBe(false);
+    expect(hasShareDecimals(33.33)).toBe(true);
+    expect(hasShareDecimals(33.3)).toBe(true);
+    expect(hasShareDecimals(33.333)).toBe(false);
+    expect(shareHundredths(65.4)).toBe(6540);
+  });
+
+  it("agrees with partnerShares: whatever it accepts can be split", () => {
+    for (const shares of [[0.01, 65.4, 34.59], [33.33, 33.33, 33.34], [0.1, 0.2, 99.7], [12.34, 56.78, 30.88]]) {
+      expect(checkShares(shares).ok).toBe(true);
+      const split = partnerShares(100_001, shares.map((sharePct, i) => ({ id: String(i), sharePct })));
+      expect(Object.values(split).reduce((sum, part) => sum + part, 0)).toBe(100_001);
+    }
   });
 });
 

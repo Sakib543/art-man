@@ -1,4 +1,5 @@
 import { allocate } from "./allocate";
+import { checkShares, shareHundredths } from "./partners";
 import type { Partner, Rupees } from "./types";
 
 export interface MonthInput {
@@ -65,12 +66,16 @@ export function ownerAccount(i: OwnerAccountInput): OwnerAccount {
   };
 }
 
-/** Each partner's share of the net profit. Shares must add up to 100%. */
+/**
+ * Each partner's share of the net profit. The shares must pass `checkShares`,
+ * which every caller asks first; split by hundredths of a percent, as whole
+ * numbers (P7.4).
+ */
 export function partnerShares(profit: Rupees, partners: Partner[]): Record<string, Rupees> {
-  const pctTotal = partners.reduce((sum, p) => sum + p.sharePct, 0);
-  if (pctTotal !== 100) throw new Error(`Partner shares must add up to 100%, got ${pctTotal}%`);
+  const check = checkShares(partners.map((p) => p.sharePct));
+  if (!check.ok) throw new Error(`Partner shares must add up to 100%, got ${check.total}%`);
 
-  const parts = allocate(profit, partners.map((p) => p.sharePct));
+  const parts = allocate(profit, partners.map((p) => shareHundredths(p.sharePct)));
   return Object.fromEntries(partners.map((p, i) => [p.id, parts[i]]));
 }
 

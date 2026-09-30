@@ -1,10 +1,30 @@
 import type { Rupees } from "./types";
 
-/** Partners' profit shares must add up to exactly 100%. */
+/**
+ * A share in hundredths of a percent: 33.33% is 3,333. Two decimals is all
+ * `partners.share_pct` keeps (numeric(5,2)), so a stored share is always a
+ * whole number of these, and shares are added and compared as whole numbers
+ * (P7.4) — added as floats, 0.01 + 65.4 + 34.59 comes to 100.00000000000001.
+ */
+export const shareHundredths = (pct: number): number => Math.round(pct * 100);
+
+/** At most two decimals, as the column keeps a share: 33.33 is one, 33.333 is not. */
+export const hasShareDecimals = (pct: number): boolean => Math.abs(pct * 100 - shareHundredths(pct)) < 1e-6;
+
+/**
+ * Partners' profit shares must add up to exactly 100%, none negative, each to
+ * at most two decimals. The one check the Partners screen, its Save, Month
+ * close and `partnerShares` all use (P7.4), so none of them can accept shares
+ * another refuses — before, the screen's check rounded and `partnerShares`
+ * did not, and the Partners page fell over on shares the Save had taken.
+ */
 export function checkShares(percents: number[]): { ok: boolean; total: number } {
-  // Rounded so 33.3 + 33.3 + 33.4 is not thrown off by floating point.
-  const total = Math.round(percents.reduce((sum, p) => sum + p, 0) * 100) / 100;
-  return { ok: total === 100 && percents.every((p) => p >= 0), total };
+  const parts = percents.map(shareHundredths);
+  const sum = parts.reduce((total, part) => total + part, 0);
+  return {
+    ok: sum === 10_000 && parts.every((part) => part >= 0) && percents.every(hasShareDecimals),
+    total: sum / 100,
+  };
 }
 
 export interface PartnerAccountInput {

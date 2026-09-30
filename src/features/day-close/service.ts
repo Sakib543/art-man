@@ -123,8 +123,9 @@ export async function closeDay(user: SessionUser, input: CloseInput, offline?: O
     if (reasonRequired && !reason) throw new UserError("Write a reason for the shortage before closing.");
 
     // 1. The day's staff list: attendance, and the pay the day is settled on,
-    //    so a correction to it later is settled on the same (P7.3).
-    await tx.insert(attendance).values(
+    //    so a correction to it later is settled on the same (P7.3). Skipped
+    //    with nobody on it: an insert of no rows throws.
+    if (loaded.staff.length > 0) await tx.insert(attendance).values(
       loaded.staff.map((member) => ({
         businessDate: day.businessDate,
         staffId: member.id,
