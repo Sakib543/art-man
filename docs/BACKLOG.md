@@ -77,7 +77,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 | P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | ✅ | done 2026-09-30 |
 | P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration `0021` | ✅ | done 2026-09-30 |
-| P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration likely | ⬜ | before the trial |
+| P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration likely | 🟡 | Sakib543, 2026-09-30 |
 | P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ⬜ | before the trial |
 | P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | ⬜ | before the trial |
 | P7.6 | Scripts never reach live by accident (QA-01) | ⬜ | before the trial |
@@ -251,8 +251,8 @@ The finding as the audit wrote it:
   forms as bills have (P3.15).
 - **Verify:** 5 parallel cancels → 1 reversal for each table; 2 parallel repayments never exceed what is owed.
 
-#### ⬜ P7.3 — Re-settling a closed day uses that day's pay and attendance
-**Owner:** — · **Findings:** QA-04 (Critical) · migration likely
+#### 🟡 P7.3 — Re-settling a closed day uses that day's pay and attendance
+**Owner:** Sakib543, 2026-09-30 · **Findings:** QA-04 (Critical) · migration likely
 
 `resettleDay` (`db/day-settlement.ts:88-163`) re-reads the **current** `staff` rows (`loadDay`,
 `db/queries/day-data.ts:43, 60-70`) and treats anyone with no attendance row as present
