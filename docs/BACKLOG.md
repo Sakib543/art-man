@@ -89,7 +89,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.11 | The error screen stops blaming the database (QA-30) | ✅ | done 2026-10-01 |
 | P7.12 | Sign-in rate limit that holds, and throttled attempts in the audit log (QA-34) | ✅ | done 2026-10-01 |
 | P7.13 | The offline day copy gives the Manager only what a close needs (QA-08) | ✅ | done 2026-10-01 |
-| P7.14 | Database hardening: TRUNCATE, the app's role, the hatch, day tables (QA-12, QA-23, QA-24) — migration | ⬜ | next |
+| P7.14 | Database hardening: TRUNCATE, the app's role, the hatch, day tables (QA-12, QA-23, QA-24) — migration | 🟡 | Sakib543, 2026-10-01 |
 | P7.15 | Staff khata one month at a time (QA-42) | ⬜ | next |
 | P7.16 | README and HANDOFF statements that are not so (QA-20) | ⬜ | next |
 | P7.17 | Small UX, accessibility and header fixes (QA-13, 21, 32, 35, 38, 39, 40, 41) | ⬜ | when convenient |
@@ -797,8 +797,8 @@ expected cash can be worked out before counting (spec §5.4(4)), and staff pay r
 The online Day close page keeps it hidden. **Fix:** send only what an offline close needs; or record the
 trade-off with the client.
 
-#### ⬜ P7.14 — Database hardening
-**Findings:** QA-23, QA-24, QA-12 · migration. `TRUNCATE` passes every append-only trigger, `audit_log`
+#### 🟡 P7.14 — Database hardening
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-23, QA-24, QA-12 · migration. `TRUNCATE` passes every append-only trigger, `audit_log`
 included (row triggers do not fire on it). A session-level `SET app.allow_financial_edit = 'on'` from
 any connection opens every financial table (only `db/financial-edit.ts` sets it today, with
 `is_local = true`, and that was shut after commit, rollback, error and across the pool).
