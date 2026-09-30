@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-781_unit_%2B_108_integration-2E7D32?logo=vitest&logoColor=white" alt="781 unit and 108 integration tests" />
+  <img src="https://img.shields.io/badge/tests-796_unit_%2B_115_integration-2E7D32?logo=vitest&logoColor=white" alt="796 unit and 115 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,8 +67,8 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 39 routes · ~32,000 lines of TypeScript · 781 unit tests in 56
-files · 108 integration tests against PostgreSQL · 23 database migrations · 15 append-only triggers.
+**By the numbers:** 19 feature modules · 39 routes · ~32,000 lines of TypeScript · 796 unit tests in 57
+files · 115 integration tests against PostgreSQL · 23 database migrations · 15 append-only triggers.
 
 ---
 
@@ -415,6 +415,7 @@ pnpm dev                          # http://localhost:3000
 | `DATABASE_URL_UNPOOLED` | Used by migrations and backups — Neon's direct string. Optional; falls back to `DATABASE_URL`, and is ignored when `DATABASE_URL` alone is named on the command line |
 | `BETTER_AUTH_SECRET` | Signs sessions. Generate one: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
 | `BETTER_AUTH_URL` | The app's own URL, e.g. `http://localhost:3000` |
+| `CLIENT_IP_HEADER` | Optional. The header your host sets with the visitor's IP (default `x-forwarded-for`, which Vercel overwrites); behind nginx, e.g. `x-real-ip` |
 
 Sign in as `developer`. There is deliberately only one seed: from the screens, the developer creates the
 Owner and the Manager, sets the Owner's PIN, and the services, staff, partners and fixed expenses are entered
@@ -449,14 +450,14 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **781 unit tests in 56 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **796 unit tests in 57 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
   session, sign-in error messages, the proxy's redirects, role rules and the salary slip.
 - **Property-style checks** where it matters: for example, recalculating a closed month from corrected days
   must equal building the report from scratch, across every shape of month.
-- **108 integration tests in 10 files** run the services, Server Actions, Route Handlers and triggers against a
+- **115 integration tests in 11 files** run the services, Server Actions, Route Handlers and triggers against a
   real PostgreSQL: the Owner-cash PIN and its lock under 20 guesses at once; the same cancellation, installment
   or save sent five times at once changing the books once; a closed day corrected after a pay change, reopened
   and closed again; every one of the 46 Server Actions called as each role, signed out and in maintenance

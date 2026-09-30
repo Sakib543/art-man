@@ -170,6 +170,7 @@ Measured from the code, because guessing this is how the wrong database gets wri
 |---|---|---|
 | `DATABASE_URL` | the app **and the seed script** | `src/db/index.ts` |
 | `DATABASE_URL_UNPOOLED` | **migrations and backups** (`pnpm db:migrate`, `pnpm db:backup`) | `directDatabaseUrl` in `src/lib/db-target.ts`, from `scripts/migrate.ts`, `scripts/backup.ts` and `drizzle.config.ts`; falling back to `DATABASE_URL` when it is empty |
+| `CLIENT_IP_HEADER` | the sign-in flood guard and the audit log (P7.12) | `src/lib/auth/server.ts`. **Not needed on Vercel**, which overwrites `X-Forwarded-For` (the default). Behind nginx on a VPS: `proxy_set_header X-Real-IP $remote_addr;` and `CLIENT_IP_HEADER=x-real-ip` — never a header a visitor can send as they like. The account lock (5 wrong passwords in 15 minutes) does not use it |
 
 A value set on the command line **wins over `.env.local`**: `scripts/load-env.ts` reads the file with
 `process.loadEnvFile`, which leaves a variable alone if the environment already has it. And since P7.6 a

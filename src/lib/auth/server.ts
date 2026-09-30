@@ -6,8 +6,10 @@ import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { writeAudit } from "../../db/audit";
+import { signInLockFor } from "../../db/sign-in-guard";
 import * as schema from "../../db/schema";
-import { loginAuditEntry } from "./login-audit";
+import { loginAuditEntry, throttledAuditEntry } from "./login-audit";
+import { clientIpOf, SIGN_IN_LOCKED, signInLockedMessage } from "./sign-in-lock";
 
 /**
  * True while the account may sign in. Queried here rather than imported from
@@ -23,6 +25,15 @@ async function isActive(userId: string): Promise<boolean> {
     .limit(1);
   return row?.active ?? false;
 }
+
+/**
+ * The one header this platform sets itself with the client's address (P7.12,
+ * QA-34). Vercel overwrites `X-Forwarded-For`, so a client cannot choose its
+ * value there; behind another proxy — the VPS of backlog P5.3 — set
+ * `CLIENT_IP_HEADER` to the header that proxy writes (nginx: `X-Real-IP`).
+ * Better Auth keys its limiter on it, and the audit log records it.
+ */
+const CLIENT_IP_HEADER = process.env.CLIENT_IP_HEADER?.trim().toLowerCase() || "x-forwarded-for";
 
 /**
  * Server-side auth. Users sign in with a username and password.
@@ -68,7 +79,42 @@ export const auth = betterAuth({
       },
     },
   },
+  /**
+   * Better Auth's own limiter (P7.12): per client address, in each server's
+   * memory — a flood guard, refusing a request before it reaches the app and
+   * without writing it down. Ten sign-ins a minute from one address, looser
+   * than the account lock below (5 wrong in 15 minutes), so that lock, which
+   * is shared and written down, is what a person guessing at a password meets
+   * first. On in production only, as Better Auth has it.
+   */
+  rateLimit: {
+    customRules: { "/sign-in/*": { window: 60, max: 10 } },
+  },
+  advanced: {
+    ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
+  },
   hooks: {
+    /**
+     * A username locked after too many wrong passwords is refused before its
+     * password is checked (P7.12, QA-34; `db/sign-in-guard.ts`), and the
+     * refusal goes in the audit log as `login.throttled`. It is written here:
+     * an error thrown by a `before` hook skips the `after` hooks.
+     */
+    before: createAuthMiddleware(async (ctx) => {
+      if (!ctx.path.startsWith("/sign-in/")) return;
+      const body = ctx.body as { username?: unknown; email?: unknown } | undefined;
+      const typed = body?.username ?? body?.email;
+
+      const lock = await signInLockFor(typed);
+      if (!lock.locked) return;
+
+      try {
+        await writeAudit(db, throttledAuditEntry(typed, SIGN_IN_LOCKED, lock.minutesLeft, clientIpOf(ctx.headers, CLIENT_IP_HEADER)));
+      } catch (error) {
+        ctx.context.logger.error("Could not record the refused sign-in", error);
+      }
+      throw new APIError("TOO_MANY_REQUESTS", { code: SIGN_IN_LOCKED, message: signInLockedMessage(lock.minutesLeft) });
+    }),
     /**
      * Every sign-in attempt, successful or not, goes in the audit log — spec
      * section 11 requires the failed ones (backlog P3.9).
@@ -86,6 +132,7 @@ export const auth = betterAuth({
         path: ctx.path,
         username: body?.username ?? body?.email,
         failureCode: isAPIError(returned) ? (returned.body?.code ?? String(returned.status)) : null,
+        ip: clientIpOf(ctx.headers, CLIENT_IP_HEADER),
       });
       if (!entry) return;
 

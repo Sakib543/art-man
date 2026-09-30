@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginAuditEntry } from "./login-audit";
+import { cleanName, loginAuditEntry, throttledAuditEntry } from "./login-audit";
 
 describe("loginAuditEntry", () => {
   it("records a failed sign-in with its reason", () => {
@@ -48,5 +48,33 @@ describe("loginAuditEntry", () => {
     expect(loginAuditEntry({ path: "/sign-in/username", username: { toString: () => "x" }, failureCode: null })?.actor).toBe(
       "unknown",
     );
+  });
+});
+
+describe("the address and the lock (P7.12)", () => {
+  it("records where a sign-in came from, when the platform says", () => {
+    expect(loginAuditEntry({ path: "/sign-in/username", username: "owner", failureCode: null, ip: "203.0.113.7" })).toMatchObject({
+      action: "login.ok",
+      after: { ip: "203.0.113.7" },
+    });
+    expect(
+      loginAuditEntry({ path: "/sign-in/username", username: "owner", failureCode: "INVALID_USERNAME_OR_PASSWORD", ip: "203.0.113.7" }),
+    ).toMatchObject({ after: { reason: "INVALID_USERNAME_OR_PASSWORD", ip: "203.0.113.7" } });
+  });
+
+  it("writes a refused sign-in as throttled, not as a failure — it never reached the password check", () => {
+    expect(throttledAuditEntry("  Owner ", "TOO_MANY_ATTEMPTS", 12, "203.0.113.7")).toEqual({
+      actor: "Owner",
+      action: "login.throttled",
+      target: "Owner",
+      success: false,
+      after: { reason: "TOO_MANY_ATTEMPTS", minutesLeft: 12, ip: "203.0.113.7" },
+    });
+    expect(throttledAuditEntry(undefined, "TOO_MANY_ATTEMPTS", 3).after).toEqual({ reason: "TOO_MANY_ATTEMPTS", minutesLeft: 3 });
+  });
+
+  it("names a username the way the lock counts it", () => {
+    expect(cleanName("  Manager ")).toBe("Manager");
+    expect(cleanName(42)).toBe("unknown");
   });
 });

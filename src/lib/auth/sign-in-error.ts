@@ -28,7 +28,12 @@ export interface SignInFailure {
   status?: number;
   /** Better Auth's code, e.g. "INVALID_USERNAME_OR_PASSWORD". */
   code?: string;
+  /** The server's own words, used where they are ours to show (a locked username says for how long). */
+  message?: string;
 }
+
+/** A username locked after too many wrong passwords, when the server did not say for how long (P7.12). */
+export const SIGN_IN_LOCKED_FALLBACK = "Too many wrong passwords for this username. Wait 15 minutes, or ask the developer to reset the password.";
 
 /** Codes that mean the person typed something wrong, not that we are broken. */
 const CREDENTIAL_CODES = new Set([
@@ -42,6 +47,8 @@ const CREDENTIAL_CODES = new Set([
 
 export function signInErrorMessage(failure: SignInFailure | null | undefined): string {
   if (failure?.code === "ACCOUNT_CLOSED") return ACCOUNT_CLOSED;
+  // The account lock (P7.12): the server wrote the message, with the minutes left.
+  if (failure?.code === "TOO_MANY_ATTEMPTS") return failure.message || SIGN_IN_LOCKED_FALLBACK;
   if (failure?.code && CREDENTIAL_CODES.has(failure.code)) return WRONG_CREDENTIALS;
 
   // A missing status means the request never got a reply, same as 0.
@@ -56,8 +63,9 @@ export function signInErrorMessage(failure: SignInFailure | null | undefined): s
     case 403:
       return WRONG_CREDENTIALS;
 
+    // Better Auth's flood guard, per computer (P7.12).
     case 429:
-      return "Too many sign-in attempts. Wait a few minutes, then try again.";
+      return "Too many sign-in attempts from this computer. Wait a minute, then try again.";
 
     // Anything else is a fault on our side. Name the status so whoever is
     // called about it has something to go on.

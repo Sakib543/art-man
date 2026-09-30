@@ -19,15 +19,20 @@ export interface SignInAttempt {
   username?: unknown;
   /** The error code when the attempt failed, null when it succeeded. */
   failureCode: string | null;
+  /** Where it came from, as the platform's IP header says (P7.12), when it says. */
+  ip?: string | null;
 }
 
 export interface LoginAuditEntry {
   actor: string;
-  action: "login.ok" | "login.failed";
+  action: "login.ok" | "login.failed" | "login.throttled";
   target: string;
   success: boolean;
-  after?: { reason: string };
+  after?: { reason?: string; ip?: string; minutesLeft?: number };
 }
+
+/** The username as the log records it — and, lower-cased, as the lock counts it (P7.12). */
+export const cleanName = (value: unknown): string => clean(value);
 
 const clean = (value: unknown): string => {
   if (typeof value !== "string") return "unknown";
@@ -48,8 +53,9 @@ export function loginAuditEntry(attempt: SignInAttempt): LoginAuditEntry | null 
   if (!attempt.path.startsWith("/sign-in/")) return null;
 
   const who = clean(attempt.username);
+  const ip = attempt.ip ? { ip: attempt.ip } : {};
   if (attempt.failureCode === null) {
-    return { actor: who, action: "login.ok", target: who, success: true };
+    return { actor: who, action: "login.ok", target: who, success: true, ...(attempt.ip ? { after: ip } : {}) };
   }
   return {
     actor: who,
@@ -58,6 +64,23 @@ export function loginAuditEntry(attempt: SignInAttempt): LoginAuditEntry | null 
     success: false,
     // The code, not the message: "INVALID_USERNAME_OR_PASSWORD" and
     // "ACCOUNT_CLOSED" are different events and the log should tell them apart.
-    after: { reason: clean(attempt.failureCode) },
+    after: { reason: clean(attempt.failureCode), ...ip },
+  };
+}
+
+/**
+ * A sign-in refused because the username is locked after too many wrong
+ * passwords (P7.12, QA-34). It never reached the password check, so it is not
+ * a `login.failed`, and it does not count towards the lock: waiting it out
+ * always works. The lock's code is the reason.
+ */
+export function throttledAuditEntry(username: unknown, reason: string, minutesLeft: number, ip?: string | null): LoginAuditEntry {
+  const who = clean(username);
+  return {
+    actor: who,
+    action: "login.throttled",
+    target: who,
+    success: false,
+    after: { reason, minutesLeft, ...(ip ? { ip } : {}) },
   };
 }

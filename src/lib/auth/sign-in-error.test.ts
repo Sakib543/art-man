@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ACCOUNT_CLOSED, WRONG_CREDENTIALS, signInErrorMessage } from "./sign-in-error";
+import { ACCOUNT_CLOSED, SIGN_IN_LOCKED_FALLBACK, WRONG_CREDENTIALS, signInErrorMessage } from "./sign-in-error";
 
 describe("signInErrorMessage", () => {
   it("is vague about a wrong password, so it does not reveal which accounts exist", () => {
@@ -44,4 +44,19 @@ describe("signInErrorMessage", () => {
     expect(signInErrorMessage({ status: 403 })).toBe(WRONG_CREDENTIALS);
   });
 
+});
+
+describe("a locked username (P7.12)", () => {
+  it("shows the server's message, which says how long", () => {
+    const message = "Too many wrong passwords for this username. Try again in 12 minutes, or ask the developer to reset the password.";
+    expect(signInErrorMessage({ status: 429, code: "TOO_MANY_ATTEMPTS", message })).toBe(message);
+  });
+
+  it("still says what happened without the server's words", () => {
+    expect(signInErrorMessage({ status: 429, code: "TOO_MANY_ATTEMPTS" })).toBe(SIGN_IN_LOCKED_FALLBACK);
+  });
+
+  it("tells Better Auth's flood guard apart: that one is about this computer", () => {
+    expect(signInErrorMessage({ status: 429 })).toContain("from this computer");
+  });
 });
