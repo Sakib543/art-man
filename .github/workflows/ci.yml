@@ -33,7 +33,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # Next 16.3.5 needs >= 20.9. Pinned to the LTS the deployment runs,
+          # Next 16.3.7 needs >= 20.9. Pinned to the LTS the deployment runs,
           # not to whatever is on a laptop.
           node-version: 22
           cache: pnpm
