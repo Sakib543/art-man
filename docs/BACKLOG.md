@@ -87,7 +87,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.9 | Integration tests against a real database, and a CI gate (QA-43) | ✅ | done 2026-10-01; Deployment Checks wait for the Vercel project (P5.1) |
 | P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | ✅ | done 2026-10-01 |
 | P7.11 | The error screen stops blaming the database (QA-30) | ✅ | done 2026-10-01 |
-| P7.12 | Sign-in rate limit that holds, and throttled attempts in the audit log (QA-34) | ⬜ | next |
+| P7.12 | Sign-in rate limit that holds, and throttled attempts in the audit log (QA-34) | 🟡 | Sakib543, 2026-10-01 |
 | P7.13 | The offline day copy gives the Manager only what a close needs (QA-08) | ⬜ | next |
 | P7.14 | Database hardening: TRUNCATE, the app's role, the hatch, day tables (QA-12, QA-23, QA-24) — migration | ⬜ | next |
 | P7.15 | Staff khata one month at a time (QA-42) | ⬜ | next |
@@ -703,8 +703,8 @@ The finding as the audit wrote it:
 use the paper bill book", even for a code bug (seen on Partners, P7.4). **Fix:** neutral wording;
 suggest paper only when the connectivity probe also fails.
 
-#### ⬜ P7.12 — A sign-in rate limit that holds
-**Findings:** QA-34. Better Auth's default limiter (no `rateLimit` block in `lib/auth/server.ts`) let
+#### 🟡 P7.12 — A sign-in rate limit that holds
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-34. Better Auth's default limiter (no `rateLimit` block in `lib/auth/server.ts`) let
 3 wrong passwords through then answered 429 — but the 7 rate-limited attempts wrote **no** `login.failed`
 row, and a different `X-Forwarded-For` on each request removed the limit entirely (10 of 10 processed).
 Counts live in memory (per instance on Vercel). **Fix:** database storage, the platform's IP header
