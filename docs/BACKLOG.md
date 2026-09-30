@@ -75,7 +75,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | ✅ | done 2026-09-28 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
-| P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | ⬜ | before the trial |
+| P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | 🟡 | Sakib543, 2026-09-30 |
 | P7.2 | One reversal per cancellation, enforced by the database; repayments locked (QA-03, QA-25) — migration | ⬜ | before the trial |
 | P7.3 | Re-settling a closed day uses that day's pay and attendance (QA-04 **Critical**) — migration likely | ⬜ | before the trial |
 | P7.4 | Partner shares: one check everywhere; Partners never crashes (QA-06) | ⬜ | before the trial |
@@ -117,8 +117,8 @@ day's security code on paper.
 
 ### Before the trial
 
-#### ⬜ P7.1 — Owner cash: cancelling it needs the Owner's PIN
-**Owner:** — · **Findings:** QA-02 (Critical), QA-07, QA-10 · no migration
+#### 🟡 P7.1 — Owner cash: cancelling it needs the Owner's PIN
+**Owner:** Sakib543, 2026-09-30 · **Findings:** QA-02 (Critical), QA-07, QA-10 · no migration
 
 - **QA-02.** `voidEntry` (`features/folders/service.ts:197-251`) never asks for a PIN, and
   `voidEntryAction` is `requireUser` (`features/folders/actions.ts:23-24`). A Manager cancels an
