@@ -82,7 +82,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.5 | Day close payouts and money fields: no silent typos (QA-29, QA-14, QA-31) | ✅ | done 2026-10-01 |
 | P7.6 | Scripts never reach live by accident (QA-01) | ✅ | done 2026-10-01 |
 | P7.7 | Next.js 16.3.6 (QA-36, critical advisory) — went to 16.3.7 | ✅ | done 2026-10-01 |
-| P7.8 | Security code: deterministic, survives corrections, actually checked (QA-05, QA-26, QA-27) | ⬜ | before the trial (part) |
+| P7.8 | Security code: deterministic, survives corrections, actually checked (QA-05, QA-26, QA-27) | 🟡 | Sakib543, 2026-10-01 (QA-27, QA-05) |
 | P7.9 | Integration tests against a real database, and a CI gate (QA-43) | ⬜ | before the trial |
 | P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | ⬜ | next |
 | P7.11 | The error screen stops blaming the database (QA-30) | ⬜ | next |
@@ -456,8 +456,8 @@ The finding as the audit wrote it:
 `eslint-config-next` to 16.3.6; build, test, lint. (Moderate: esbuild 0.18.20 through drizzle-kit, dev
 server only — goes with drizzle-kit's next release.)
 
-#### ⬜ P7.8 — Security code: deterministic, survives corrections, actually checked
-**Owner:** — · **Findings:** QA-27, QA-05, QA-26 (High) · no migration for the first two
+#### 🟡 P7.8 — Security code: deterministic, survives corrections, actually checked
+**Owner:** Sakib543, 2026-10-01 (QA-27 and QA-05; QA-26 stays open) · **Findings:** QA-27, QA-05, QA-26 (High) · no migration for the first two
 
 - **QA-27.** `computeDayCode` reads `bill_lines` with **no ORDER BY** (`db/day-code.ts:39-43`). The same
   day gave 6EE7-B5A9-CBE5 with the default plan and C8F7-FC92-2B17 with merge join or seq scans; a no-op
