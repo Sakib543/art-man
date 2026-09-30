@@ -85,7 +85,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.8 | Security code: deterministic, survives corrections, actually checked (QA-05, QA-27) | ✅ | done 2026-10-01 |
 | P7.8b | Security code: a copy outside the database, a key it does not hold (QA-26) — split from P7.8 | ⬜ | next; until then the Owner notes each code on paper |
 | P7.9 | Integration tests against a real database, and a CI gate (QA-43) | ✅ | done 2026-10-01; Deployment Checks wait for the Vercel project (P5.1) |
-| P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | ⬜ | next |
+| P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | 🟡 | Sakib543, 2026-10-01 |
 | P7.11 | The error screen stops blaming the database (QA-30) | ⬜ | next |
 | P7.12 | Sign-in rate limit that holds, and throttled attempts in the audit log (QA-34) | ⬜ | next |
 | P7.13 | The offline day copy gives the Manager only what a close needs (QA-08) | ⬜ | next |
@@ -604,8 +604,8 @@ the security-code chain, the offline sync routes, month close and slips. Deploy 
 
 ### Next
 
-#### ⬜ P7.10 — Paper book numbers and `T-` numbers never collide unnoticed
-**Findings:** QA-28, QA-37. The same paper number was saved twice silently (`bills.book_no` has no
+#### 🟡 P7.10 — Paper book numbers and `T-` numbers never collide unnoticed
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-28, QA-37. The same paper number was saved twice silently (`bills.book_no` has no
 check). Two devices offline both number from `T-1` (per-device counter, `lib/offline/store.ts`); the
 server accepted three `T-1` bills on one day. Device A's offline close reaching the server first makes
 device B's bill of that day a 422 "No business day is open", though its cash was in the drawer A
