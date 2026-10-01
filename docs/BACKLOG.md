@@ -91,7 +91,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.13 | The offline day copy gives the Manager only what a close needs (QA-08) | ✅ | done 2026-10-01 |
 | P7.14 | Database hardening: TRUNCATE, the app's role, the hatch, day tables (QA-12, QA-23, QA-24) — migration | ✅ | done 2026-10-01 (migration `0023`); the live site's switch to the app's role waits on Vercel access (P5.1) |
 | P7.15 | Staff khata one month at a time (QA-42) | ✅ | done 2026-10-01 |
-| P7.16 | README and HANDOFF statements that are not so (QA-20) | ⬜ | next |
+| P7.16 | README and HANDOFF statements that are not so (QA-20) | 🟡 | Sakib543, 2026-10-01 |
 | P7.17 | Small UX, accessibility and header fixes (QA-13, 21, 32, 35, 38, 39, 40, 41) | ⬜ | when convenient |
 | P7.18 | Code health and test-suite gaps (QA-15, 16, 17, 18, 22, 33, 44) | ⬜ | when convenient |
 
@@ -895,8 +895,8 @@ With a year of data every screen rendered in 33–85 ms except Staff khata: 210 
 ~1.3 MB a year. **Fix:** the current month plus the balance brought forward, with month navigation — the
 salary slip's shape.
 
-#### ⬜ P7.16 — README and HANDOFF statements that are not so
-**Findings:** QA-20. README: `day_snapshots` cannot be deleted (it can, by design since `0009`); "any
+#### 🟡 P7.16 — README and HANDOFF statements that are not so
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-20. README: `day_snapshots` cannot be deleted (it can, by design since `0009`); "any
 sealed day can be re-verified" (no tool); "change a sealed day and the chain after it no longer
 verifies" (it does verify — P7.8); "no bug can bypass the triggers" (TRUNCATE, a session SET — closed by
 P7.14; an owner could still switch a trigger off until the site runs as `art_man_app`);
