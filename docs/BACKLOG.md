@@ -92,7 +92,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.14 | Database hardening: TRUNCATE, the app's role, the hatch, day tables (QA-12, QA-23, QA-24) — migration | ✅ | done 2026-10-01 (migration `0023`); the live site's switch to the app's role waits on Vercel access (P5.1) |
 | P7.15 | Staff khata one month at a time (QA-42) | ✅ | done 2026-10-01 |
 | P7.16 | README and HANDOFF statements that are not so (QA-20) | ✅ | done 2026-10-01 |
-| P7.17 | Small UX, accessibility and header fixes (QA-13, 21, 32, 35, 38, 39, 40, 41) | ⬜ | when convenient |
+| P7.17 | Small UX, accessibility and header fixes (QA-13, 21, 32, 35, 38, 39, 40, 41) | 🟡 | Sakib543, 2026-10-01 |
 | P7.18 | Code health and test-suite gaps (QA-15, 16, 17, 18, 22, 33, 44) | ⬜ | when convenient |
 
 ---
@@ -945,7 +945,8 @@ corrected with this entry; `CLAUDE.md` still says "600 tests" (693).
 
 ### When convenient
 
-#### ⬜ P7.17 — Small UX, accessibility and header fixes
+#### 🟡 P7.17 — Small UX, accessibility and header fixes
+**Owner:** Sakib543, 2026-10-01
 - **QA-40:** `--muted-foreground` `#6b7584` is 4.12–4.27:1 on the greys at 12–13 px (AA needs 4.5:1),
   including the unselected "Online (QR)" / "Split" options. About `#5b6472` fixes it.
 - **QA-41:** no "Skip to content": 15 Tab stops before Billing's search (as Owner).
