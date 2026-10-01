@@ -67,7 +67,7 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 39 routes · ~32,000 lines of TypeScript · 814 unit tests in 57
+**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 814 unit tests in 57
 files · 157 integration tests against PostgreSQL · 24 database migrations · 34 database triggers.
 
 ---
@@ -131,16 +131,20 @@ files · 157 integration tests against PostgreSQL · 24 database migrations · 3
 
 ## Highlights
 
-- **Financial records are append-only, enforced by the database.** PostgreSQL triggers refuse any `UPDATE`
-  or `DELETE` on bills, cash entries, ledgers, snapshots and month closes. A mistake is fixed by a
-  cancellation plus a reversing entry, so every change stays on the record. No bug in the application can
-  bypass it.
-- **A tamper-evident chain of daily security codes.** Closing a day hashes (SHA-256) its figures, every bill,
-  line and cash entry, and the previous day's code. Change anything in a sealed day and its code no longer
-  verifies; rewrite that code to match, and the next day — sealed on the old one — no longer does. The Owner's
-  Security codes screen checks every closed day, each against the code it was chained on, so a legitimate
-  correction does not break the days after it. The codes live in the same database, so the Owner also notes
-  each night's code on paper.
+- **Financial records are append-only, enforced by the database.** PostgreSQL triggers refuse any `UPDATE`,
+  `DELETE` or `TRUNCATE` on bills, cash entries, ledgers, cancellations, capital, month closes and the audit
+  log; a day's closing record is never edited, and is replaced only when the day is reopened or corrected,
+  the old one archived first. A mistake is fixed by a cancellation plus a reversing entry, so every change
+  stays on the record. No code path in the application can change a financial row except the audited
+  maintainer hatch below — though whoever owns the tables could switch a trigger off, which is why the app
+  is meant to connect as a role that owns none of them.
+- **A tamper-evident chain of daily security codes.** Closing a day hashes (SHA-256) its figures, every bill
+  and line with its discount, slip number and cancellation reason, every cash entry, the day's staff list
+  with the pay it was settled on, and the previous day's code. Change any of that in a sealed day and its
+  code no longer verifies; rewrite that code to match, and the next day — sealed on the old one — no longer
+  does. The Owner's Security codes screen checks every closed day, each against the code it was chained on,
+  so a legitimate correction does not break the days after it. The codes live in the same database, so the
+  Owner also notes each night's code on paper.
 - **Offline-first PWA.** A service worker, an IndexedDB copy of the catalog and of the open day, and an
   outbox let the counter bill, record expenses and even close the day for 6–8 hours without internet. The
   server re-validates every queued item on sync and never trusts a price computed in the browser.
@@ -151,12 +155,15 @@ files · 157 integration tests against PostgreSQL · 24 database migrations · 3
 - **A pure, fully tested accounting core.** Pricing, deal splits, discounts, commission, day close, month
   report, partner shares and capital live in `src/lib/accounting` with no React and no database, in whole
   rupees (integers), using largest-remainder allocation so every split adds up to the rupee.
-- **Architecture rules enforced by a test.** A conventions test reads the feature folders and fails the
-  build if a feature imports another feature, a "pure" file grows a database import, or a pure file has no
-  test beside it.
-- **Audited, bounded escape hatch.** A maintainer role can correct a bill in place through a
-  transaction-scoped setting (`set_config(..., is_local => true)`) that the triggers honour and that dies
-  with the transaction. The audit log and snapshot history can never be opened, even by it; every change
+- **Architecture rules a test checks.** A conventions test reads the feature folders and fails the build
+  if a feature imports another through `@/features/…`, a "pure" file grows a database import or has no test
+  beside it, an `actions.ts` loses its `"use server"` or has no role check at all, or any file but one sets
+  the maintainer hatch. It does not yet catch one action in a file losing its check, a relative import
+  between features, or a server component reading the database (backlog P7.18).
+- **Audited, bounded escape hatch.** A maintainer role can correct a bill in place through a setting the
+  triggers honour only when it names the current transaction's own id (`pg_current_xact_id()`), set
+  transaction-locally — so it dies with the transaction, and a session-wide `SET` opens nothing. The audit
+  log and snapshot history can never be opened, even by it; every change
   writes its before and after, the day is re-settled and a closed month's report and partner shares are
   recalculated.
 
@@ -201,7 +208,9 @@ everyone else, and the audited in-place bill correction described above.
 
 Responsive layout designed at 375, 768 and 1440 px (a drawer and bottom bar on phones, tables that turn into
 cards), an offline banner and outbox status on every screen, error and loading boundaries, Karachi business
-dates regardless of the server's time zone, and every sign-in attempt — successful or not — in the audit log.
+dates regardless of the server's time zone, and every sign-in that reaches the app — successful, a wrong
+password, or refused by the account lock — in the audit log. (Beyond 10 a minute from one address, Better
+Auth's flood guard refuses before the app and writes nothing.)
 
 ---
 
@@ -254,13 +263,14 @@ flowchart LR
 
 | Mechanism | How it works |
 |---|---|
-| **Append-only tables** | `BEFORE UPDATE OR DELETE` triggers on every financial table. Configuration (services, staff, rates) stays editable and applies forward only. |
+| **Append-only tables** | `BEFORE UPDATE OR DELETE` triggers on every financial table and a `BEFORE TRUNCATE` trigger on each. The day's closing record (`day_snapshots`) is never updated, and is deleted only by a reopen or a correction after being archived. A business day may only be closed and reopened — its opening cash never changes — and a closed day's staff list is never edited. Configuration (services, staff, rates) stays editable and applies forward only. |
 | **Corrections by reversal** | Cancelling a bill writes a cancellation and a mirrored negative bill. Cancelling inside a closed day re-settles it: earnings are reversed and re-posted, a new snapshot and code are written, and the counted cash is never rewritten — only what was *expected* moves. |
 | **Reopening a day** | Only the latest day, only by the Owner, only while its month is open. Everything the close wrote is reversed, and the old closing record and code are archived for good. |
-| **Security code chain** | SHA-256 over the day's figures, bills, lines (in a fixed order, not the database's), cash entries and the previous day's code. Every closed day is re-verified on the Security codes screen, each against the code it was chained on. |
-| **Audit log** | Every sign-in, cancellation, correction, reset and setting change with actor, target, before and after. Its trigger can never be opened. |
+| **Security code chain** | SHA-256 over the day's figures and the drawer's reason, bills with their discounts, slip numbers and cancellation reasons, lines (in a fixed order, not the database's), cash entries, the staff list with its pay, and the previous day's code. Not the staff khata, which Month close adds to after the last day is sealed. Every closed day is re-verified on the Security codes screen, each against the code it was chained on, and a day sealed before the code covered all of this against what it covered then. |
+| **Audit log** | Every sign-in that reaches the app, cancellation, correction, reset and setting change with actor, target, before and after. Its trigger can never be opened, and the app's database role may not update or delete it at all. |
 | **Frozen months** | A closed month keeps the report and shares it closed with, so later changes to salaries or percentages cannot alter it. |
-| **Maintainer hatch** | A transaction-local setting lets exactly one code path (`src/db/financial-edit.ts`) change a bill in place; it is shut again as soon as the rows are written. |
+| **Maintainer hatch** | A transaction-local setting naming the transaction's own id lets exactly one code path (`src/db/financial-edit.ts`) change a bill in place; it is shut again as soon as the rows are written, and a test fails if any other file sets it. |
+| **The app's database role** | `art_man_app` may read and write rows and nothing more — no `TRUNCATE`, no `ALTER`, so no switching a trigger off. The integration tests run the app as it; the live site moves to it once its login is set in Vercel. |
 
 ---
 
@@ -294,7 +304,8 @@ sequenceDiagram
   needs: no salary, and pay and balances only for the staff the close lists.
 - **Ordering:** a day's close waits in the outbox behind that day's bills and entries, and the server closes
   the day only if its own expected cash matches the figure the cash was counted against.
-- **Sessions:** an offline sign-in lasts 12 hours from the last one the server confirmed. "Online" means the
+- **Sessions:** an offline sign-in lasts 12 hours from the last one the server confirmed, by the computer's
+  clock — setting it back stretches the window (backlog P7.18). "Online" means the
   server answered a probe, not that the browser thinks it has a network.
 - **One counter computer, checked:** each browser tags what it keeps with a code of its own, which also goes
   into its temporary slip numbers (`T-KXR-3`), so two computers never hand out the same one. When more than
@@ -354,9 +365,11 @@ drizzle/               SQL migrations, including the hand-written triggers
 scripts/               Developer seed, database check, backup
 ```
 
-Rules the codebase keeps (and a test checks): money logic lives only in `lib/accounting`; money is whole
-rupees as integers; components never talk to the database; a feature never imports another feature; every
-accounting change comes with a test.
+Rules the codebase keeps: money logic lives only in `lib/accounting`; money is whole rupees as integers;
+components never talk to the database; a feature never imports another feature; every accounting change
+comes with a test. The conventions test checks the feature folders' shape, that a pure file stays pure and
+has a test, and imports between features written `@/features/…`; the rest is kept by review (backlog P7.18
+adds the components rule and relative imports).
 
 ---
 
@@ -467,12 +480,13 @@ where they belong. The first business day is opened from Day close.
   security-code chain — with the app connected as a role that owns no table; the offline sync
   endpoints; repeated slip numbers and a second computer offline; the salary slip. Each test file gets its own copy of a freshly migrated database, and the
   suite refuses any server that is not on this computer:
-  `TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/postgres pnpm test:db`. Run against the code as it
-  stood before the fixes of an independent QA audit, the suite fails on each of its findings.
+  `TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/postgres pnpm test:db`. Most fixes of an
+  independent QA audit came with tests that were run first against the code before the fix, and failed there.
 - **Conventions test** keeps the architecture from drifting (see [Architecture](#architecture)).
 - **CI** runs lint, unit tests, a production build and the integration tests on every push to `main` and on
   pull requests; one job, *Deployable*, passes only when all of them did — the single check for a production
-  deployment to wait on (Vercel's Deployment Checks, [docs/DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md)).
+  deployment to wait on, once Vercel's Deployment Checks are switched on for it
+  ([docs/DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md)). Until then a push deploys whatever CI says.
 - Features that touch money were also verified end to end against a **restored copy of the production
   database** in a throwaway local PostgreSQL, so verification never writes to the real books.
 
@@ -505,8 +519,10 @@ where they belong. The first business day is opened from Day close.
 
 All planned features are built: billing, day close, daily and monthly reporting, staff ledgers and salary
 slips, partners and capital, closed-month adjustments, the maintainer tools, and full offline support.
-Remaining work is operational — a clean production database for the client's trial and a move to a VPS
-with scheduled off-site backups.
+What remains: the last items of the QA audit (a copy of the security codes outside the database, small
+interface fixes, code-health gaps), and the operational steps — a clean production database for the
+client's trial, the app connected as its own database role, the deploy gate switched on, and a move to a
+VPS with scheduled off-site backups.
 
 ---
 

@@ -141,6 +141,10 @@ drizzle/              Generated migrations. Never edited by hand.
    re-entered (spec section 11). The one exception is the developer's edit
    screen — a bill, and with it a closed month's saved report and shares
    (P1.10) — which goes through `db/financial-edit.ts` and audits both sides.
+   A day's closing records are replaced, never edited: a reopen or a
+   correction archives the snapshot to `day_snapshot_history` and deletes it,
+   and a reopen deletes the day's `attendance`, which the next close writes
+   again. The database enforces all of it (migrations `0001`–`0023`).
 5. **A feature imports from `lib`, `db`, `components`, never from another
    feature.** Shared pieces move up. Measured 2026-09-22: 0 violations.
 6. **Every accounting change comes with a test.** `pnpm test`
@@ -155,10 +159,16 @@ drizzle/              Generated migrations. Never edited by hand.
     and `month-close` has no schemas; empty files to satisfy a rule would be
     worse than the rule.
 
-Rules 3, 5, 7, 9 and the "a test beside it" part of the tree above are checked
-by `src/features/conventions.test.ts` — they were written down here from the
-start and drifted anyway, because a document cannot fail a build. Each of those
-checks was confirmed to fail when the rule is broken, not only to pass today.
+Rule 9, the "a test beside it" part of the tree above, and most of rules 5
+and 7 are checked by `src/features/conventions.test.ts` — they were written down
+here from the start and drifted anyway, because a document cannot fail a build.
+Each of those checks was confirmed to fail when the rule is broken, not only to
+pass today. What it does not catch yet (backlog P7.18, QA-44): rule 3 — no test
+reads the components, and the build stops only a client component that imports
+the database; rule 5 written as a relative import (`../billing/…`); and rule 7
+for one action in a file whose others check (the test looks for one
+`requireUser`/`requireRole` per `actions.ts`). It also fails on any file but
+`db/financial-edit.ts` naming the developer's hatch (P7.14).
 
 ## Reference
 
