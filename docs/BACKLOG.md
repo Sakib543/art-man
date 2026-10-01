@@ -83,7 +83,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.6 | Scripts never reach live by accident (QA-01) | ✅ | done 2026-10-01 |
 | P7.7 | Next.js 16.3.6 (QA-36, critical advisory) — went to 16.3.7 | ✅ | done 2026-10-01 |
 | P7.8 | Security code: deterministic, survives corrections, actually checked (QA-05, QA-27) | ✅ | done 2026-10-01 |
-| P7.8b | Security code: a copy outside the database, a key it does not hold (QA-26) — split from P7.8 | ⬜ | next; until then the Owner notes each code on paper |
+| P7.8b | Security code: a copy outside the database, a key it does not hold (QA-26) — split from P7.8 | 🟡 | Claude (Sakib543), 2026-10-01 |
 | P7.9 | Integration tests against a real database, and a CI gate (QA-43) | ✅ | done 2026-10-01; Deployment Checks wait for the Vercel project (P5.1) |
 | P7.10 | Paper book numbers and `T-` numbers never collide unnoticed (QA-28, QA-37) | ✅ | done 2026-10-01 |
 | P7.11 | The error screen stops blaming the database (QA-30) | ✅ | done 2026-10-01 |
@@ -517,7 +517,7 @@ The finding as the audit wrote it:
   each day's code on paper.
 
 #### ⬜ P7.8b — Security code: a copy outside the database, a key it does not hold
-**Owner:** — · **Findings:** QA-26 (High) · split from P7.8 on 2026-10-01
+**Owner:** Claude (Sakib543), started 2026-10-01 · **Findings:** QA-26 (High) · split from P7.8 on 2026-10-01
 
 The codes are stored in the database they seal, and the hash is unkeyed: someone who can change a day's
 records outside the app can work its code out again and write it back — and the next day's too — so every
