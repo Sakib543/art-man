@@ -1,4 +1,4 @@
-import { date, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { date, index, integer, pgTable, smallint, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, id, rupees } from "./_shared";
 import { customers, deals, services, staff } from "./config";
 
@@ -77,6 +77,13 @@ export const billLines = pgTable(
     staffId: uuid("staff_id")
       .notNull()
       .references(() => staff.id),
+    /**
+     * Where the line stood on the bill, from 0 (P7.17, QA-32): what every list
+     * of a bill's lines is ordered by, so a reprint reads like the slip the
+     * customer was handed. Null on lines saved before it, which fall back to
+     * their name. Not covered by the security code, which orders lines itself.
+     */
+    position: smallint("position"),
   },
   // The most joined column in the app. Postgres does not index a foreign key
   // on its own. `staff_id` gets none: it is only ever joined TO staff.id,

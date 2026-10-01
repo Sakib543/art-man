@@ -1,17 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { checkUsername, MAX_USERNAME_LENGTH, usernameKey } from "./username-rules";
+import { checkUsername, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, usernameCharactersOk, usernameKey } from "./username-rules";
 
 describe("checkUsername", () => {
   it("accepts an ordinary one", () => {
     expect(checkUsername("developer")).toBeNull();
     expect(checkUsername("saud.admin")).toBeNull();
     expect(checkUsername("dev_2")).toBeNull();
-    expect(checkUsername("art-man")).toBeNull();
+  });
+
+  it("refuses a hyphen, which Better Auth refuses at sign-in — the account could never sign in (QA-21)", () => {
+    expect(checkUsername("art-man")).toMatch(/a dot or an underscore/);
+    expect(usernameCharactersOk("art-man")).toBe(false);
+  });
+
+  it("is Better Auth's rule: its defaults are 3 to 30 characters of letters, digits, dots and underscores", () => {
+    expect([MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH]).toEqual([3, 30]);
+    // The username plugin's own default validator, as Better Auth 1.7 ships it.
+    const betterAuths = (value: string) => /^[a-zA-Z0-9_.]+$/.test(value);
+    for (const value of ["developer", "Saud.Admin", "dev_2", "art-man", "saud admin", "saudé", "a@b"]) {
+      expect(usernameCharactersOk(value), value).toBe(betterAuths(value));
+    }
   });
 
   it("refuses one that is too short or too long", () => {
     expect(checkUsername("ab")).toMatch(/at least 3/);
-    expect(checkUsername("a".repeat(MAX_USERNAME_LENGTH + 1))).toMatch(/32 characters or fewer/);
+    expect(checkUsername("a".repeat(MAX_USERNAME_LENGTH + 1))).toMatch(/30 characters or fewer/);
     expect(checkUsername("a".repeat(MAX_USERNAME_LENGTH))).toBeNull();
   });
 
@@ -25,7 +38,7 @@ describe("checkUsername", () => {
 
   it("refuses one made only of punctuation", () => {
     expect(checkUsername("...")).toMatch(/at least one letter or number/);
-    expect(checkUsername("-_-")).toMatch(/at least one letter or number/);
+    expect(checkUsername("._.")).toMatch(/at least one letter or number/);
   });
 
   it("trims before judging, so a pasted value with spaces still passes", () => {

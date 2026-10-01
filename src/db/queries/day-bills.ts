@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { billCancellations, billLines, bills, customers, staff } from "@/db/schema";
 import type { Rupees } from "@/lib/accounting";
@@ -46,6 +46,13 @@ export interface DayBill {
   lines: DayBillLine[];
 }
 
+/**
+ * The order a bill's lines are listed in everywhere — receipts, reprints, the
+ * edit screens, a customer's last visit: as they stood on the bill (P7.17,
+ * QA-32), and by name for lines saved before their position was kept.
+ */
+export const billLineOrder = [asc(billLines.position), asc(billLines.name)] as const;
+
 /** Every bill of one business day, newest first, with its lines and cancellation info. */
 export async function getDayBills(businessDate: string): Promise<DayBill[]> {
   const rows = await db
@@ -82,7 +89,8 @@ export async function getDayBills(businessDate: string): Promise<DayBill[]> {
     })
     .from(billLines)
     .innerJoin(staff, eq(billLines.staffId, staff.id))
-    .where(inArray(billLines.billId, rows.map((row) => row.id)));
+    .where(inArray(billLines.billId, rows.map((row) => row.id)))
+    .orderBy(...billLineOrder);
 
   const billNoById = new Map(rows.map((row) => [row.id, row.billNo]));
 

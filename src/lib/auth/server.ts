@@ -10,6 +10,7 @@ import { signInLockFor } from "../../db/sign-in-guard";
 import * as schema from "../../db/schema";
 import { loginAuditEntry, throttledAuditEntry } from "./login-audit";
 import { clientIpOf, SIGN_IN_LOCKED, signInLockedMessage } from "./sign-in-lock";
+import { MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, usernameCharactersOk } from "./username-rules";
 
 /**
  * True while the account may sign in. Queried here rather than imported from
@@ -145,5 +146,14 @@ export const auth = betterAuth({
       }
     }),
   },
-  plugins: [username(), nextCookies()],
+  // The username rules are ours and Better Auth's alike (P7.17, QA-21): it
+  // checks them at sign-in too, so a wider rule of ours would lock someone out.
+  plugins: [
+    username({
+      minUsernameLength: MIN_USERNAME_LENGTH,
+      maxUsernameLength: MAX_USERNAME_LENGTH,
+      usernameValidator: usernameCharactersOk,
+    }),
+    nextCookies(),
+  ],
 });

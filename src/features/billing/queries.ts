@@ -1,9 +1,9 @@
-import { and, asc, count, desc, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
 import { getActiveCatalog } from "@/db/queries/catalog";
-import { getDayBills } from "@/db/queries/day-bills";
+import { billLineOrder, getDayBills } from "@/db/queries/day-bills";
 import { billCancellations, billLines, bills, customerSpecialRates, customers, staff } from "@/db/schema";
 import { priceCart, PricingError } from "@/lib/accounting";
 import { isTempNo, slipKey } from "@/lib/offline/slip";
@@ -124,15 +124,14 @@ async function customerInfo(customer: typeof customers.$inferSelect): Promise<Cu
     db.select().from(customerSpecialRates).where(eq(customerSpecialRates.customerId, customer.id)),
   ]);
 
-  // `bill_lines` has no order column, so order by name — the same choice the
-  // developer's edit screen makes, which keeps the two lists looking alike.
+  // In the order they stood on the bill (P7.17), as every list of its lines is.
   const lines = last
     ? await db
         .select({ name: billLines.name, amount: billLines.amount, staffName: staff.name })
         .from(billLines)
         .innerJoin(staff, eq(billLines.staffId, staff.id))
         .where(eq(billLines.billId, last.id))
-        .orderBy(asc(billLines.name))
+        .orderBy(...billLineOrder)
     : [];
 
   return {
@@ -172,7 +171,8 @@ export async function getBillForEdit(billId: string, data: BillingData): Promise
       amount: billLines.amount,
     })
     .from(billLines)
-    .where(eq(billLines.billId, bill.id));
+    .where(eq(billLines.billId, bill.id))
+    .orderBy(...billLineOrder);
 
   const customer = bill.customerId ? await findCustomerById(bill.customerId) : null;
   const catalog = {

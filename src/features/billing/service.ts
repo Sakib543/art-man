@@ -35,6 +35,7 @@ import { draftLinesOf, restoreSaved, type SavedBillLine } from "./bill-draft";
 import { findBillByClientId, findSlipClash, type SlipClash } from "./queries";
 import type { CreateBillInput, DiscardOfflineBillInput, EditBillInput, OfflineOrigin, SyncBillInput } from "./schemas";
 import type { Receipt, SavedBill } from "./types";
+import { billLineOrder } from "@/db/queries/day-bills";
 
 const NOTE_TEXT: Record<string, string | undefined> = {
   "special-rate": "Special rate",
@@ -213,13 +214,15 @@ async function writeBill(
     .returning();
 
   await tx.insert(billLines).values(
-    priced.lines.map((line) => ({
+    priced.lines.map((line, position) => ({
       billId: bill.id,
       serviceId: line.serviceId,
       dealId: line.dealId,
       name: line.name,
       amount: line.amount,
       staffId: line.staffId!,
+      // As on the screen and the slip (P7.17), so a reprint reads the same.
+      position,
     })),
   );
 
@@ -294,7 +297,16 @@ async function priceOffline(input: CreateBillInput, offline: OfflineOrigin): Pro
   try {
     return await priceBill(input);
   } catch (error) {
-    if (!(error instanceof UserError) || offline.catalogVersion === null) throw error;
+    if (!(error instanceof UserError)) throw error;
+    // Kept with no note of the prices it was made on (P7.17, QA-38): whether
+    // they moved cannot be told, so the refusal says it may be that, instead
+    // of "Rs 50 short" alone. Every copy since P2.2b has a version; this is a
+    // bill kept before it.
+    if (offline.catalogVersion === null) {
+      throw new UserError(
+        `Prices may have changed since this bill was made offline: it was kept without a note of the prices it used. ${error.message}`,
+      );
+    }
     if ((await getCatalogVersion()) === offline.catalogVersion) throw error;
     throw new UserError(`Prices have changed since this bill was made offline. ${error.message}`);
   }
@@ -513,7 +525,7 @@ export async function editBill(user: SessionUser, input: EditBillInput): Promise
     .limit(1);
   if (cancelled) throw new UserError("This bill is already cancelled");
 
-  const originalLines = await db.select().from(billLines).where(eq(billLines.billId, original.id));
+  const originalLines = await db.select().from(billLines).where(eq(billLines.billId, original.id)).orderBy(...billLineOrder);
   const priced = await priceBill(input, { lines: originalLines, discount: original.discount });
   // The bill being corrected hands its slip's number on; any other bill with it is a clash.
   const repeated = await checkSlipNo(input, day.businessDate, original.id);

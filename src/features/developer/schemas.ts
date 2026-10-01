@@ -6,7 +6,7 @@ export const resetPasswordSchema = z.object({
 });
 
 export const changeUsernameSchema = z.object({
-  // Shape only. What a username may actually be is `username-rules.ts`, so the
+  // Shape only. What a username may actually be is `lib/auth/username-rules.ts`, so the
   // form and the server cannot disagree about it.
   username: z.string().trim().min(1).max(64),
 });

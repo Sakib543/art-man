@@ -1,19 +1,24 @@
 import { z } from "zod";
 import { ROLES } from "@/lib/auth/roles";
+import { checkUsername } from "@/lib/auth/username-rules";
 
 /**
  * A username is what someone types at 7am on a counter tablet, so it is kept
- * narrow on purpose: lowercase letters, digits and a few separators. It is
- * also half of the account's email (`<username>@art-man.local`), which Better
- * Auth requires and nobody ever reads.
+ * narrow on purpose: letters, digits, a dot and an underscore — the rules in
+ * `lib/auth/username-rules.ts`, which Better Auth checks too, at sign-up and
+ * at sign-in (P7.17, QA-21: a hyphen used to pass here and be refused there as
+ * "Something went wrong"). Stored in lower case. It is also half of the
+ * account's email (`<username>@art-man.local`), which Better Auth requires
+ * and nobody ever reads.
  */
 export const usernameSchema = z
   .string()
   .trim()
-  .toLowerCase()
-  .min(3, "The username needs at least 3 characters")
-  .max(32, "The username can be at most 32 characters")
-  .regex(/^[a-z0-9._-]+$/, "Use only letters, digits, dots, dashes and underscores");
+  .superRefine((value, ctx) => {
+    const problem = checkUsername(value);
+    if (problem) ctx.addIssue({ code: "custom", message: problem });
+  })
+  .transform((value) => value.toLowerCase());
 
 export const createUserSchema = z.object({
   username: usernameSchema,

@@ -6,6 +6,7 @@ import { getOpenBusinessDay } from "@/db/queries/business-day";
 import { billCancellations, billLines, bills } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth/session";
 import { UserError } from "@/lib/errors";
+import { billLineOrder } from "@/db/queries/day-bills";
 
 /**
  * Cancel a bill. The bill itself is never changed: a cancellation row and a
@@ -56,11 +57,13 @@ export async function writeCancellation(
     .returning({ id: bills.id, billNo: bills.billNo });
 
   await tx.insert(billLines).values(
-    lines.map((line) => ({
+    lines.map((line, position) => ({
       billId: reversal.id,
       name: `Reversal of #${bill.billNo}`,
       amount: -line.amount,
       staffId: line.staffId,
+      // Line for line with the bill it reverses, in the same order (P7.17).
+      position,
     })),
   );
 
@@ -80,7 +83,7 @@ export async function cancelBill(user: SessionUser, billId: string, reason: stri
   const [existing] = await db.select().from(billCancellations).where(eq(billCancellations.billId, billId)).limit(1);
   if (existing) throw new UserError("This bill is already cancelled");
 
-  const lines = await db.select().from(billLines).where(eq(billLines.billId, billId));
+  const lines = await db.select().from(billLines).where(eq(billLines.billId, billId)).orderBy(...billLineOrder);
   const actor = user.username || user.name;
 
   await db.transaction(async (tx) => {

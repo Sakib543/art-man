@@ -100,6 +100,10 @@ export function BillingScreen({
   const [error, setError] = useState("");
   // Said once a Save has worked out, e.g. after an answer was lost (P3.15).
   const [notice, setNotice] = useState("");
+  // The notice says a bill was kept for want of internet (P2.2d): it goes when
+  // the internet is back, instead of saying "No internet" over a working
+  // connection (P7.17, QA-39).
+  const [keptOffline, setKeptOffline] = useState(false);
   // The server's word that this book number is already on a bill (P7.10,
   // QA-28), with the number it was said of: typing another number puts it away.
   const [repeated, setRepeated] = useState<{ bookNo: string; message: string } | null>(null);
@@ -271,6 +275,7 @@ export function BillingScreen({
     }
 
     setNotice(note ?? (alreadySaved ? `Bill #${saved.billNo} had already been saved, so it was not saved twice.` : ""));
+    setKeptOffline(false);
     setReceipt(saved);
     setReceiptOpen(true);
     startNextBill();
@@ -327,6 +332,7 @@ export function BillingScreen({
       setNotice(
         `No internet: bill ${slip.slipNo} is kept on this computer and goes to the server by itself when the internet is back.`,
       );
+      setKeptOffline(true);
       setReceipt(slip);
       setReceiptOpen(true);
       startNextBill();
@@ -390,6 +396,7 @@ export function BillingScreen({
   function submit(repeatBookNo = false) {
     setError("");
     setNotice("");
+    setKeptOffline(false);
     setRepeated(null);
     if (closedHere && closedToThis) return setError(closedHereText(closedHere, "bill"));
     if (cart.length === 0) return setError("Add a service or deal to start the bill");
@@ -538,6 +545,22 @@ export function BillingScreen({
                 ) : null}
                 Put right what is wrong and save it: it goes once into the open day, {formatDate(data.businessDate)}.
               </p>
+              {/* A price went up while the counter was offline (P7.17, QA-39): the customer paid
+                  the old one, and the difference is a discount with a reason — one tap. */}
+              {total > fixed.bill.cash + fixed.bill.online ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-1 bg-card"
+                  onClick={() => {
+                    setDiscountText(String(discount + total - (fixed.bill.cash + fixed.bill.online)));
+                    if (!discountReason.trim()) setDiscountReason("Charged at the old price while offline");
+                  }}
+                >
+                  Record {rs(total - (fixed.bill.cash + fixed.bill.online))} as a discount
+                </Button>
+              ) : null}
             </div>
           ) : fix === "gone" ? (
             <p role="status" className="border-b bg-surface-sunken px-card py-3 text-sm text-muted-foreground">
@@ -681,7 +704,7 @@ export function BillingScreen({
               </p>
             ) : null}
 
-            {notice ? (
+            {notice && !(keptOffline && online) ? (
               <p role="status" className="mt-2 flex items-center gap-1.5 text-xs text-success">
                 <CheckCircle2 className="size-4 shrink-0" aria-hidden />
                 {notice}

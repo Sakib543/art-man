@@ -22,6 +22,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[16.5rem_minmax(0,1fr)]">
+      {/* The first Tab stop: past the sidebar's links, straight to the screen (P7.17, QA-41). */}
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       <CatalogSync />
       {/* The open day's bills and entries, for the offline screens (P2.2e). */}
       <DaySync />
@@ -34,7 +38,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         `pb-28` clears the bottom bar on a phone. On `lg` the bar is gone and
         the padding comes back to something ordinary.
       */}
-      <main className="min-w-0 px-4 pt-5 pb-28 sm:px-6 lg:px-8 lg:pb-12 print:px-0 print:pt-0">
+      <main id="main" tabIndex={-1} className="min-w-0 px-4 pt-5 pb-28 outline-none sm:px-6 lg:px-8 lg:pb-12 print:px-0 print:pt-0">
         <div className="mx-auto w-full max-w-[1400px]">
           <OutboxStatus />
           {children}

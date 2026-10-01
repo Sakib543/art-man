@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-814_unit_%2B_157_integration-2E7D32?logo=vitest&logoColor=white" alt="814 unit and 157 integration tests" />
+  <img src="https://img.shields.io/badge/tests-817_unit_%2B_165_integration-2E7D32?logo=vitest&logoColor=white" alt="817 unit and 165 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,8 +67,8 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 814 unit tests in 57
-files · 157 integration tests against PostgreSQL · 24 database migrations · 34 database triggers.
+**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 817 unit tests in 57
+files · 165 integration tests against PostgreSQL · 25 database migrations · 34 database triggers.
 
 ---
 
@@ -464,14 +464,14 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **814 unit tests in 57 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **817 unit tests in 57 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
   session, sign-in error messages, the proxy's redirects, role rules and the salary slip.
 - **Property-style checks** where it matters: for example, recalculating a closed month from corrected days
   must equal building the report from scratch, across every shape of month.
-- **157 integration tests in 13 files** run the services, Server Actions, Route Handlers and triggers against a
+- **165 integration tests in 14 files** run the services, Server Actions, Route Handlers and triggers against a
   real PostgreSQL: the Owner-cash PIN and its lock under 20 guesses at once; the same cancellation, installment
   or save sent five times at once changing the books once; a closed day corrected after a pay change, reopened
   and closed again; every one of the 46 Server Actions called as each role, signed out and in maintenance
@@ -519,10 +519,10 @@ where they belong. The first business day is opened from Day close.
 
 All planned features are built: billing, day close, daily and monthly reporting, staff ledgers and salary
 slips, partners and capital, closed-month adjustments, the maintainer tools, and full offline support.
-What remains: the last items of the QA audit (a copy of the security codes outside the database, small
-interface fixes, code-health gaps), and the operational steps — a clean production database for the
-client's trial, the app connected as its own database role, the deploy gate switched on, and a move to a
-VPS with scheduled off-site backups.
+What remains: the last items of the QA audit (a copy of the security codes outside the database, and
+code-health gaps), and the operational steps — a clean production database for the client's trial, the
+app connected as its own database role, the deploy gate switched on, and a move to a VPS with scheduled
+off-site backups.
 
 ---
 

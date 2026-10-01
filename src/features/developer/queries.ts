@@ -15,6 +15,7 @@ import {
 import type { AdjustmentKind, PaidFrom } from "@/lib/accounting";
 import { isRole, type Role } from "@/lib/auth/roles";
 import { monthOf, monthStart } from "@/lib/business-date";
+import { billLineOrder } from "@/db/queries/day-bills";
 
 export const PAGE_SIZE = 50;
 
@@ -187,7 +188,7 @@ export async function findBillForEdit(billNo: number): Promise<BillLookup> {
 
   const month = monthStart(monthOf(bill.businessDate));
   const [lines, [day], [monthClose], adjustmentRows] = await Promise.all([
-    db.select().from(billLines).where(eq(billLines.billId, bill.id)).orderBy(asc(billLines.name)),
+    db.select().from(billLines).where(eq(billLines.billId, bill.id)).orderBy(...billLineOrder),
     db.select({ closedAt: businessDays.closedAt }).from(businessDays).where(eq(businessDays.businessDate, bill.businessDate)).limit(1),
     db.select({ month: monthCloses.month }).from(monthCloses).where(eq(monthCloses.month, month)).limit(1),
     // Only a closed month can have any: one is recorded for a month once it has closed.

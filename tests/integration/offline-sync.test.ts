@@ -86,10 +86,13 @@ describe("a bill made offline", () => {
     expect(await db.select().from(bills).where(eq(bills.clientId, sent.clientId))).toEqual([]);
   });
 
-  it("paid the wrong amount is refused", async () => {
+  it("paid the wrong amount is refused — and, kept with no note of its prices, says they may have changed (QA-38)", async () => {
     asRequest(cookie);
     const refused = await answer(await post(syncBill, offlineBill({ cash: 450 })));
     expect(refused.status).toBe(422);
+    expect(refused.body.reason).toMatch(
+      /^Prices may have changed since this bill was made offline: it was kept without a note of the prices it used\. .*Rs 50/,
+    );
   });
 
   it("that cannot be read is refused", async () => {

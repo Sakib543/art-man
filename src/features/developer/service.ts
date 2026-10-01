@@ -13,7 +13,7 @@ import { monthOf, monthStart, nextMonth } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
 import { hashPin } from "@/lib/pin";
 import { checkBillEdit } from "./bill-edit-rules";
-import { checkUsername, usernameKey } from "./username-rules";
+import { checkUsername, usernameKey } from "@/lib/auth/username-rules";
 import { findBillForEdit, listStaffForEdit } from "./queries";
 import type { EditBillRowInput } from "./schemas";
 

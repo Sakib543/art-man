@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useOutbox } from "@/components/use-outbox";
 import { formatDate, formatDateTime, paidBy, rs } from "@/lib/format";
 import { isBillItem, type OutboxEntry } from "@/lib/offline/outbox";
+import { slipLabel } from "@/lib/offline/slip";
 import { removeFromOutbox, setRejected } from "@/lib/offline/store";
 import { discardOfflineBillAction } from "../actions";
 
@@ -114,7 +115,8 @@ export function NeedsAttention({ fixing }: { fixing: string | null }) {
               <li key={entry.clientId} className="px-card py-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <p className="text-sm">
-                    <span className="font-medium">Made offline</span>
+                    {/* The number on the customer's slip, to find the bill by (P7.17, QA-39). */}
+                    <span className="font-medium">{entry.bill.bookNo ? slipLabel(entry.bill.bookNo) : "Made offline"}</span>
                     <span className="text-muted-foreground">
                       {" "}
                       · {formatDateTime(entry.madeAt)} · {entry.madeBy || "unknown"} · for {formatDate(entry.businessDate)}

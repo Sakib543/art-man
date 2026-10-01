@@ -35,6 +35,13 @@ describe("allocate / deal split (spec 6.3)", () => {
     expect(splitDealPrice(2000, [800, 400, 1800])).toEqual([533, 267, 1200]);
   });
 
+  it("shares a deal of services that all list at 0 equally, rather than failing at the counter (QA-13)", () => {
+    expect(splitDealPrice(1000, [0, 0, 0])).toEqual([334, 333, 333]);
+    expect(splitDealPrice(0, [0, 0])).toEqual([0, 0]);
+    // One priced service still takes it all, as before.
+    expect(splitDealPrice(1000, [0, 500])).toEqual([0, 1000]);
+  });
+
   it("always sums to the total", () => {
     const parts = allocate(1001, [1, 1, 1]);
     expect(parts.reduce((a, b) => a + b, 0)).toBe(1001);

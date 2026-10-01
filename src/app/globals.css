@@ -163,7 +163,7 @@
   --secondary: #eff1f4;
   --secondary-foreground: #101828;
   --muted: #eff1f4;
-  --muted-foreground: #6b7584;
+  --muted-foreground: #5b6472;
   --accent: #f8f1e6;
   --accent-foreground: #7a5a2e;
   --destructive: #b42318;
@@ -409,6 +409,36 @@
     .table-stacked > tbody > tr > td:empty {
       display: none;
     }
+  }
+
+  /*
+   * "Skip to content" (P7.17, QA-41): the first Tab stop on every signed-in
+   * screen, which jumps past the sidebar — 15 stops before Billing's search,
+   * as the Owner. Out of sight until it has focus, then a chip in the corner.
+   * Clipped rather than moved off-screen, so nothing here needs `translate`
+   * (HANDOFF 8.0d).
+   */
+  .skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 100;
+    border-radius: var(--radius-md);
+    background: var(--card);
+    padding: 0.5rem 0.875rem;
+    color: var(--foreground);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+  }
+
+  .skip-link:not(:focus) {
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    padding: 0;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 

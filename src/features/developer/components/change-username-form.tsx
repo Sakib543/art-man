@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFormAction } from "@/components/use-form-action";
 import { changeUsernameAction } from "../actions";
-import { checkUsername } from "../username-rules";
+import { checkUsername } from "@/lib/auth/username-rules";
 
 /**
  * Rename the developer's own account. Only this account can be renamed, and
@@ -34,7 +34,7 @@ export function ChangeUsernameForm({ current }: { current: string }) {
       <Field
         label="Username"
         htmlFor="dev-username"
-        hint="Letters, numbers, a dot, an underscore or a hyphen. Capitals are ignored when you sign in."
+        hint="Letters, numbers, a dot or an underscore. Capitals are ignored when you sign in."
       >
         <Input
           id="dev-username"
