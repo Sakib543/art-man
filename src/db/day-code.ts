@@ -265,9 +265,3 @@ async function inspectDays(executor: Executor, from: string, to: string): Promis
 export async function checkDayCodes(from: string, to: string): Promise<DayCheck[]> {
   return inspectDays(db, from, to);
 }
-
-/** Re-check one closed day: does its stored code still match its records? */
-export async function verifyDayCode(businessDate: string): Promise<DayCheck | null> {
-  const [check] = await checkDayCodes(businessDate, businessDate);
-  return check ?? null;
-}

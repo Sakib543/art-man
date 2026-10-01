@@ -70,20 +70,6 @@ export function PanelHeader({ title, description, icon: Icon, action, className,
   );
 }
 
-export function PanelBody({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="panel-body" className={cn("px-card py-4", className)} {...props} />;
-}
-
-export function PanelFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="panel-footer"
-      className={cn("flex flex-wrap items-center gap-3 border-t bg-surface-sunken px-card py-3", className)}
-      {...props}
-    />
-  );
-}
-
 /** What a list shows when it has nothing in it. */
 export function PanelEmpty({ className, ...props }: React.ComponentProps<"p">) {
   return <p className={cn("px-card py-10 text-center text-muted-foreground", className)} {...props} />;
