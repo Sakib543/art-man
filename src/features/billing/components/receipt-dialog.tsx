@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, formatTime, num, rs } from "@/lib/format";
 import { slipLabel } from "@/lib/offline/slip";
+import { SALON_ADDRESS, SALON_PHONE } from "@/lib/salon";
 import type { OfflineReceipt, Receipt } from "../types";
 
 interface ReceiptDialogProps {
@@ -96,6 +97,9 @@ export function ReceiptDialog({
                 doing, and the artwork is already dark ink on transparent.
               */}
               <SalonLogo unoptimized className="mx-auto mb-2 h-12" />
+              {/* Where the salon is and its number, under the logo (the client, 2026-10-01). */}
+              <p className="text-center text-2xs leading-snug">{SALON_ADDRESS}</p>
+              <p className="mb-1 text-center text-2xs">Contact: {SALON_PHONE}</p>
               <p className="text-center text-muted-foreground">
                 {formatDate(receipt.businessDate)}, {formatTime(receipt.createdAt)}
               </p>
