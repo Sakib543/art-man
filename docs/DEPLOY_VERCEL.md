@@ -51,6 +51,33 @@ The check is matched by the job's **name**. Renaming the Deployable job means ch
 Until this is set (it needs the Vercel access in step 0), a push deploys whatever CI says, as before —
 so look at the CI run before telling anyone a change is live.
 
+## 0.3 Run the app as a role that cannot empty or unlock the books (backlog P7.14)
+
+The app has always connected as the **owner** of its tables, and an owner can do what no trigger stops:
+switch a trigger off (`ALTER TABLE … DISABLE TRIGGER`), drop a table, or empty one past its trigger. Migration
+`0023` made a role, **`art_man_app`**, that may read and write rows and nothing more — no `TRUNCATE`, no
+`ALTER`, no `DROP`, and no `UPDATE` or `DELETE` at all on `audit_log` and `day_snapshot_history`. It cannot log
+in. Every integration test already runs the app as a login in it, so the app needs nothing it lacks.
+
+To switch the live site over — once, by whoever holds the Neon and Vercel projects:
+
+1. In Neon's SQL editor, on the `live` branch, as the owner (`neondb_owner`):
+   ```sql
+   CREATE ROLE art_man_web LOGIN PASSWORD '<a long random value>' IN ROLE art_man_app;
+   ```
+   Make the value with the `node -e` line in step 1 below. (Neon's Roles page can make the login too; then
+   run `GRANT art_man_app TO art_man_web;`.)
+2. In Vercel → Settings → Environment Variables → Production, set **`DATABASE_URL`** to the `live` branch's
+   **pooled** string with `art_man_web` and its password in place of the owner's. Leave
+   **`DATABASE_URL_UNPOOLED`** as the owner's direct string: migrations and backups need the owner, and the
+   app does not read it.
+3. Redeploy (step 4), sign in, make a bill, and check the Daily report.
+4. Proof, from Neon's SQL editor signed in as `art_man_web`: `TRUNCATE audit_log;` must answer
+   *permission denied*, and `ALTER TABLE bills DISABLE TRIGGER bills_append_only;` *must be owner*.
+
+Until then the triggers still refuse every change and every `TRUNCATE` — even the owner's — but an owner
+could switch them off first. The two developers' `.env.local` may keep the owner: they run the migrations.
+
 ---
 
 ## 1. Environment variables
@@ -168,7 +195,7 @@ Measured from the code, because guessing this is how the wrong database gets wri
 
 | Variable | Read by | Where |
 |---|---|---|
-| `DATABASE_URL` | the app **and the seed script** | `src/db/index.ts` |
+| `DATABASE_URL` | the app **and the seed script** | `src/db/index.ts`. On the live site, a login in `art_man_app` once section 0.3 is done — never needed for migrations |
 | `DATABASE_URL_UNPOOLED` | **migrations and backups** (`pnpm db:migrate`, `pnpm db:backup`) | `directDatabaseUrl` in `src/lib/db-target.ts`, from `scripts/migrate.ts`, `scripts/backup.ts` and `drizzle.config.ts`; falling back to `DATABASE_URL` when it is empty |
 | `CLIENT_IP_HEADER` | the sign-in flood guard and the audit log (P7.12) | `src/lib/auth/server.ts`. **Not needed on Vercel**, which overwrites `X-Forwarded-For` (the default). Behind nginx on a VPS: `proxy_set_header X-Real-IP $remote_addr;` and `CLIENT_IP_HEADER=x-real-ip` — never a header a visitor can send as they like. The account lock (5 wrong passwords in 15 minutes) does not use it |
 

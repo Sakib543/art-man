@@ -185,7 +185,7 @@ export async function closeDay(user: SessionUser, input: CloseInput, offline?: O
       difference,
     };
 
-    const securityCode = await computeDayCode(tx, day.businessDate, figures);
+    const securityCode = await computeDayCode(tx, day.businessDate, figures, reason);
 
     await tx.insert(daySnapshots).values({
       businessDate: day.businessDate,

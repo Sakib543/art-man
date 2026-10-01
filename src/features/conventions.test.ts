@@ -125,3 +125,26 @@ describe("every feature has the same shape", () => {
     expect(crossing).toEqual([]);
   });
 });
+
+/** Every source file under `dir`, at any depth. */
+function sourcesUnder(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sourcesUnder(path);
+    return /\.(ts|tsx|mts|cjs|mjs|js)$/.test(name) ? [path] : [];
+  });
+}
+
+describe("the developer's hatch through the append-only triggers", () => {
+  it("is opened in one file only (P7.14, QA-24)", () => {
+    // `src/db/financial-edit.ts` is the one place that names the setting; the
+    // migrations name it in SQL. A second place would make the guarantee
+    // something no single file shows.
+    const naming = ["src", "scripts"]
+      .flatMap(sourcesUnder)
+      .map((path) => path.replaceAll("\\", "/"))
+      .filter((path) => path !== "src/db/financial-edit.ts" && path !== "src/features/conventions.test.ts")
+      .filter((path) => read(path).includes("allow_financial_edit"));
+    expect(naming).toEqual([]);
+  });
+});

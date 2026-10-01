@@ -3,7 +3,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Client } from "pg";
 import type { TestProject } from "vitest/node";
 import { describeDatabase, isLocalDatabase } from "../../src/lib/db-target";
-import { DATABASE_PREFIX, TEMPLATE_DATABASE, withDatabase } from "./database-names";
+import { APP_LOGIN, DATABASE_PREFIX, TEMPLATE_DATABASE, withDatabase } from "./database-names";
 
 declare module "vitest" {
   export interface ProvidedContext {
@@ -21,6 +21,10 @@ declare module "vitest" {
  * accepted — the same rule as `pnpm db:migrate` without `--live` (P7.6). The
  * suite creates and drops databases, so it must never be pointed at live, and
  * `.env.local` is never read: nothing here can reach the salon's books.
+ *
+ * Migrations run as the server's user, who owns what they make; the app then
+ * runs as a login in `art_man_app` (P7.14), which owns nothing — so every test
+ * also shows the app needs no more than that role allows.
  */
 export async function setup(project: TestProject) {
   const serverUrl = process.env.TEST_DATABASE_URL;
@@ -44,6 +48,12 @@ export async function setup(project: TestProject) {
     // A database is copied only while nobody is connected to it.
     await template.end();
   }
+
+  await onServer(serverUrl, async (client) => {
+    const { rows } = await client.query("select 1 from pg_roles where rolname = $1", [APP_LOGIN.user]);
+    if (rows.length === 0) await client.query(`create role ${APP_LOGIN.user} login password '${APP_LOGIN.password}'`);
+    await client.query(`grant art_man_app to ${APP_LOGIN.user}`);
+  });
 
   project.provide("serverUrl", serverUrl);
   return () => dropTestDatabases(serverUrl);

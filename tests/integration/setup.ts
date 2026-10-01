@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { afterAll, inject, vi } from "vitest";
-import { DATABASE_PREFIX, TEMPLATE_DATABASE, withDatabase } from "./database-names";
+import { asAppLogin, DATABASE_PREFIX, TEMPLATE_DATABASE, withDatabase } from "./database-names";
 
 /**
  * Runs before each test file, in its own worker, before the file's imports:
  * the file gets a database of its own, copied from the migrated template, and
  * `src/db` — which builds its pool from `DATABASE_URL` the moment it is first
- * imported — connects to that copy and nothing else.
+ * imported — connects to that copy and nothing else, as the app's login, which
+ * owns no table (P7.14). `TEST_OWNER_DATABASE_URL` is the same copy as its
+ * owner, for a test about what the owner can do (`owner.ts`).
  */
 const serverUrl = inject("serverUrl");
 const database = `${DATABASE_PREFIX}${randomUUID().replaceAll("-", "").slice(0, 16)}`;
@@ -21,8 +23,10 @@ try {
 }
 
 const url = withDatabase(serverUrl, database);
-process.env.DATABASE_URL = url;
+process.env.DATABASE_URL = asAppLogin(url);
+// Migrations and backups, which the owner runs — as on the live site.
 process.env.DATABASE_URL_UNPOOLED = url;
+process.env.TEST_OWNER_DATABASE_URL = url;
 // Better Auth signs its cookies with this; a fixed value that is only ever used here.
 process.env.BETTER_AUTH_SECRET = "integration-tests-only-not-a-real-secret-0123456789";
 process.env.BETTER_AUTH_URL = "http://localhost:3000";

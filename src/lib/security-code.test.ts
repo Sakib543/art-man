@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { computeSecurityCode, FIRST_DAY_CODE, securityCodeAsBefore, stableStringify, type SecurityCodeInput } from "./security-code";
+import {
+  computeSecurityCode,
+  FIRST_DAY_CODE,
+  securityCodeAsBefore,
+  securityCodeBeforeP714,
+  stableStringify,
+  type SecurityCodeInput,
+} from "./security-code";
 
 const bill = (lines: SecurityCodeInput["bills"][number]["lines"], cash = 800) => ({
   billNo: 1,
@@ -8,14 +15,23 @@ const bill = (lines: SecurityCodeInput["bills"][number]["lines"], cash = 800) =>
   customerId: null,
   reversesBillId: null,
   lines,
+  discount: 0,
+  discountReason: null,
+  bookNo: null,
+  cancelReason: null,
 });
+
+const arshad = { staffId: "arshad", present: true, payType: 3, salary: 0, dailyWage: 600, commissionRate: 10 };
+const sherry = { staffId: "sherry", present: false, payType: 2, salary: 20000, dailyWage: 0, commissionRate: 20 };
 
 const day = (): SecurityCodeInput => ({
   previousCode: FIRST_DAY_CODE,
   businessDate: "2026-09-21",
   figures: { sale: 6200, counted: 4600 },
+  diffReason: null,
   bills: [bill([{ name: "Haircut", amount: 800, staffId: "arshad" }])],
   entries: [{ kind: "expense", amount: 300 }],
+  attendance: [arshad, sherry],
 });
 
 describe("stableStringify", () => {
@@ -63,8 +79,8 @@ describe("computeSecurityCode", () => {
     expect(computeSecurityCode(moved)).not.toBe(computeSecurityCode(oneWay));
   });
 
-  it("is the old code for a day whose bills have one line each or lines already in order", () => {
-    expect(computeSecurityCode(day())).toBe(securityCodeAsBefore(day()));
+  it("was the pre-P7.8 code for a day whose bills have one line each or lines already in order", () => {
+    expect(securityCodeBeforeP714(day())).toBe(securityCodeAsBefore(day()));
   });
 
   it("kept the order it was given before P7.8, which is what made it depend on the database", () => {
@@ -80,5 +96,43 @@ describe("computeSecurityCode", () => {
     const later = day();
     later.previousCode = "AAAA-BBBB-CCCC";
     expect(computeSecurityCode(later)).not.toBe(computeSecurityCode(day()));
+  });
+});
+
+describe("what the code covers since P7.14 (QA-12)", () => {
+  const changes: [string, (input: SecurityCodeInput) => void][] = [
+    ["a discount", (input) => void (input.bills[0].discount = 100)],
+    ["a discount's reason", (input) => void (input.bills[0].discountReason = "Regular")],
+    ["a slip number", (input) => void (input.bills[0].bookNo = "17")],
+    ["a cancellation's reason", (input) => void (input.bills[0].cancelReason = "Customer left")],
+    ["the drawer's reason", (input) => void (input.diffReason = "Change given twice")],
+    ["who was present", (input) => void (input.attendance[1] = { ...sherry, present: true })],
+    ["the pay a day was settled on", (input) => void (input.attendance[0] = { ...arshad, dailyWage: 900 })],
+    ["someone added to the staff list", (input) => void input.attendance.push({ ...arshad, staffId: "newbie" })],
+  ];
+
+  it.each(changes)("changes with %s — which the code before P7.14 did not see", (_, change) => {
+    const changed = day();
+    change(changed);
+    expect(computeSecurityCode(changed)).not.toBe(computeSecurityCode(day()));
+    expect(securityCodeBeforeP714(changed)).toBe(securityCodeBeforeP714(day()));
+  });
+
+  it("does not depend on the order the staff list comes back in", () => {
+    expect(computeSecurityCode({ ...day(), attendance: [sherry, arshad] })).toBe(computeSecurityCode(day()));
+  });
+
+  it("is never the code worked out the older way, so a day sealed since is checked on all of it", () => {
+    expect(computeSecurityCode(day())).not.toBe(securityCodeBeforeP714(day()));
+  });
+
+  it("works a day sealed before out exactly as it was sealed — the codes P7.8 gave", () => {
+    // Worked out with the code as committed before P7.14, on the same day.
+    const sealed = {
+      ...day(),
+      bills: [bill([{ name: "Haircut", amount: 800, staffId: "arshad" }, { name: "Hair wash", amount: 300, staffId: "sherry" }], 1100)],
+    };
+    expect(securityCodeBeforeP714(sealed)).toBe("FE5F-88AD-F45E");
+    expect(securityCodeAsBefore(sealed)).toBe("1228-2498-5847");
   });
 });

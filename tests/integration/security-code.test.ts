@@ -1,10 +1,12 @@
 import { and, eq, sql } from "drizzle-orm";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "@/db";
 import { cancelBill } from "@/db/bill-cancel";
 import { checkDayCodes } from "@/db/day-code";
+import { allowFinancialEdit } from "@/db/financial-edit";
 import { billLines, bills } from "@/db/schema";
 import { getSecurityCodes } from "@/features/security-codes/queries";
+import { asOwner } from "./owner";
 import { closeAndStartNext, ringUp, seedSalon, type Salon } from "./salon";
 
 /**
@@ -16,11 +18,24 @@ import { closeAndStartNext, ringUp, seedSalon, type Salon } from "./salon";
  */
 let salon: Salon;
 
+// A day sealed the way days were before P7.14: while this is on, the code a
+// close or a correction seals with is worked out as it was then.
+const sealing = vi.hoisted(() => ({ beforeP714: false }));
+vi.mock("@/lib/security-code", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/security-code")>();
+  return {
+    ...real,
+    computeSecurityCode: (input: Parameters<typeof real.computeSecurityCode>[0]) =>
+      sealing.beforeP714 ? real.securityCodeBeforeP714(input) : real.computeSecurityCode(input),
+  };
+});
+
 const codesOk = async () => (await checkDayCodes("2026-09-01", "2026-09-03")).map((day) => [day.businessDate, day.ok]);
 
+/** A change made the way the developer's edit makes one — through the hatch, not through the app's rules. */
 async function throughTheHatch(statement: ReturnType<typeof sql>) {
   await db.transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.allow_financial_edit', 'on', true)`);
+    await allowFinancialEdit(tx);
     await tx.execute(statement);
   });
 }
@@ -81,6 +96,17 @@ describe("the security code", () => {
     expect(screen?.days.map((day) => day.ok)).toEqual([true, true, true]);
   });
 
+  it("still checks out on a day sealed before P7.14, on what its code covered then", async () => {
+    await ringUp(salon.manager, [{ serviceId: salon.services.Haircut, staffId: salon.staff.Karim }], { cash: 500 });
+    sealing.beforeP714 = true;
+    try {
+      await closeAndStartNext(salon.manager);
+    } finally {
+      sealing.beforeP714 = false;
+    }
+    expect((await checkDayCodes("2026-09-04", "2026-09-04")).map((day) => day.ok)).toEqual([true]);
+  });
+
   it("catches a line's amount changed behind the app's back", async () => {
     const [bill] = await db.select().from(bills).where(eq(bills.businessDate, "2026-09-01"));
     await throughTheHatch(sql`update bill_lines set amount = 300 where bill_id = ${bill.id} and name = 'Shave'`);
@@ -88,5 +114,27 @@ describe("the security code", () => {
     expect((await codesOk())[0]).toEqual(["2026-09-01", false]);
     const [line] = await db.select().from(billLines).where(and(eq(billLines.billId, bill.id), eq(billLines.name, "Shave")));
     expect(line.amount).toBe(300);
+  });
+
+  it("catches a closed day's staff list changed behind the app's back — the attendance its wages come from (P7.14)", async () => {
+    // Its trigger refuses any change, so only an owner switching it off could make one.
+    await asOwner(async (client) => {
+      await client.query("begin");
+      await client.query("alter table attendance disable trigger attendance_guard");
+      await client.query("update attendance set present = not present where business_date = '2026-09-02'");
+      await client.query("alter table attendance enable trigger attendance_guard");
+      await client.query("commit");
+    });
+
+    expect(await codesOk()).toEqual([
+      ["2026-09-01", false],
+      ["2026-09-02", false],
+      ["2026-09-03", true],
+    ]);
+  });
+
+  it("catches a discount written onto a closed day's bill (P7.14)", async () => {
+    await throughTheHatch(sql`update bills set discount = 50, discount_reason = 'Regular' where business_date = '2026-09-03'`);
+    expect((await codesOk())[2]).toEqual(["2026-09-03", false]);
   });
 });

@@ -1,11 +1,13 @@
 import { and, asc, desc, eq, gte, lt, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
-import { billLines, bills, cashEntries, daySnapshotHistory, daySnapshots } from "@/db/schema";
+import { attendance, billCancellations, billLines, bills, cashEntries, daySnapshotHistory, daySnapshots } from "@/db/schema";
 import {
   computeSecurityCode,
   FIRST_DAY_CODE,
   securityCodeAsBefore,
+  securityCodeBeforeP714,
+  type SealedAttendance,
   type SealedBill,
   type SecurityCodeInput,
 } from "@/lib/security-code";
@@ -34,23 +36,42 @@ export type DayFigures = Record<
 interface DayRecords {
   bills: SealedBill[];
   entries: unknown[];
+  attendance: SealedAttendance[];
 }
 
 /**
- * The bills (with their lines) and folder entries of every day from `from`
- * to `to`, by business date, as the code covers them: three queries however
- * many days. Bills in bill-number order and entries in the order they were
- * made; a bill's lines in any order — `computeSecurityCode` puts them in its
- * own (P7.8).
+ * The bills (with their lines and any cancellation), folder entries and staff
+ * list of every day from `from` to `to`, by business date, as the code covers
+ * them: five queries however many days. Bills in bill-number order and entries
+ * in the order they were made; a bill's lines and the staff list in any order
+ * — `computeSecurityCode` puts them in its own (P7.8, P7.14).
  */
 async function loadRecords(reader: Reader, from: string, to: string): Promise<Map<string, DayRecords>> {
-  const inRange = (column: typeof bills.businessDate | typeof cashEntries.businessDate) => and(gte(column, from), lte(column, to));
+  const inRange = (column: typeof bills.businessDate | typeof cashEntries.businessDate | typeof attendance.businessDate) =>
+    and(gte(column, from), lte(column, to));
   const billRows = await reader.select().from(bills).where(inRange(bills.businessDate)).orderBy(asc(bills.billNo));
   const lineRows = await reader
     .select({ billId: billLines.billId, name: billLines.name, amount: billLines.amount, staffId: billLines.staffId })
     .from(billLines)
     .innerJoin(bills, eq(billLines.billId, bills.id))
     .where(inRange(bills.businessDate));
+  const cancelRows = await reader
+    .select({ billId: billCancellations.billId, reason: billCancellations.reason })
+    .from(billCancellations)
+    .innerJoin(bills, eq(billCancellations.billId, bills.id))
+    .where(inRange(bills.businessDate));
+  const staffRows = await reader
+    .select({
+      businessDate: attendance.businessDate,
+      staffId: attendance.staffId,
+      present: attendance.present,
+      payType: attendance.payType,
+      salary: attendance.salary,
+      dailyWage: attendance.dailyWage,
+      commissionRate: attendance.commissionRate,
+    })
+    .from(attendance)
+    .where(inRange(attendance.businessDate));
   const entryRows = await reader
     .select({
       businessDate: cashEntries.businessDate,
@@ -65,8 +86,9 @@ async function loadRecords(reader: Reader, from: string, to: string): Promise<Ma
     .where(inRange(cashEntries.businessDate))
     .orderBy(asc(cashEntries.createdAt), asc(cashEntries.id));
 
+  const cancelReason = new Map(cancelRows.map((row) => [row.billId, row.reason]));
   const days = new Map<string, DayRecords>();
-  const dayOf = (date: string) => days.get(date) ?? days.set(date, { bills: [], entries: [] }).get(date)!;
+  const dayOf = (date: string) => days.get(date) ?? days.set(date, { bills: [], entries: [], attendance: [] }).get(date)!;
   for (const bill of billRows) {
     dayOf(bill.businessDate).bills.push({
       billNo: bill.billNo,
@@ -75,20 +97,31 @@ async function loadRecords(reader: Reader, from: string, to: string): Promise<Ma
       customerId: bill.customerId,
       reversesBillId: bill.reversesBillId,
       lines: lineRows.filter((line) => line.billId === bill.id).map(({ name, amount, staffId }) => ({ name, amount, staffId })),
+      discount: bill.discount,
+      discountReason: bill.discountReason,
+      bookNo: bill.bookNo,
+      cancelReason: cancelReason.get(bill.id) ?? null,
     });
   }
   for (const { businessDate, ...entry } of entryRows) dayOf(businessDate).entries.push(entry);
+  for (const { businessDate, ...member } of staffRows) dayOf(businessDate).attendance.push(member);
   return days;
 }
 
-const NO_RECORDS: DayRecords = { bills: [], entries: [] };
+const NO_RECORDS: DayRecords = { bills: [], entries: [], attendance: [] };
 
 /**
- * Work out a day's security code from the database: the day's figures, its
- * bills and entries as they are now, and the previous day's code. Closing a
- * day and settling one again both use this.
+ * Work out a day's security code from the database: the day's figures and
+ * the drawer's reason, its records as they are now, and the previous day's
+ * code. Closing a day and settling one again both use this — after the day's
+ * staff list is written, which the code covers (P7.14).
  */
-export async function computeDayCode(reader: Reader, businessDate: string, figures: DayFigures): Promise<string> {
+export async function computeDayCode(
+  reader: Reader,
+  businessDate: string,
+  figures: DayFigures,
+  diffReason: string | null,
+): Promise<string> {
   const [previous] = await reader
     .select({ code: daySnapshots.securityCode })
     .from(daySnapshots)
@@ -97,7 +130,7 @@ export async function computeDayCode(reader: Reader, businessDate: string, figur
     .limit(1);
   const records = (await loadRecords(reader, businessDate, businessDate)).get(businessDate) ?? NO_RECORDS;
 
-  return computeSecurityCode({ previousCode: previous?.code ?? FIRST_DAY_CODE, businessDate, figures, ...records });
+  return computeSecurityCode({ previousCode: previous?.code ?? FIRST_DAY_CODE, businessDate, figures, diffReason, ...records });
 }
 
 /** A closed day checked against its records. */
@@ -105,7 +138,10 @@ export interface DayCheck {
   businessDate: string;
   /** The code on record for the day — the one the Owner noted, unless the day was corrected since. */
   code: string;
-  /** Its records still give the same code. */
+  /**
+   * Its records still give the same code — worked out as it is now, or, for a
+   * day sealed before P7.14, as it was then (`securityCodeBeforeP714`).
+   */
   ok: boolean;
 }
 
@@ -204,8 +240,17 @@ async function inspectDays(executor: Executor, from: string, to: string): Promis
       ? (row.chained_on ?? currentCode.get(row.previous_date) ?? FIRST_DAY_CODE)
       : FIRST_DAY_CODE;
     const figures = figuresOf(row);
-    const input = { previousCode, businessDate: row.business_date, figures, ...(records.get(row.business_date) ?? NO_RECORDS) };
-    return { businessDate: row.business_date, code: row.security_code, ok: computeSecurityCode(input) === row.security_code, row, figures, input };
+    const input: SecurityCodeInput = {
+      previousCode,
+      businessDate: row.business_date,
+      figures,
+      diffReason: row.diff_reason,
+      ...(records.get(row.business_date) ?? NO_RECORDS),
+    };
+    // A day sealed before P7.14 is checked on what its code covered then; that
+    // cannot give the code of a day sealed since, which covered more.
+    const ok = computeSecurityCode(input) === row.security_code || securityCodeBeforeP714(input) === row.security_code;
+    return { businessDate: row.business_date, code: row.security_code, ok, row, figures, input };
   });
 }
 
@@ -267,7 +312,7 @@ export async function resealOldDays(tx: Parameters<Parameters<typeof db.transact
       reopenedBy: actor,
     });
     await tx.delete(daySnapshots).where(eq(daySnapshots.businessDate, row.business_date));
-    const after = await computeDayCode(tx, row.business_date, figures);
+    const after = await computeDayCode(tx, row.business_date, figures, row.diff_reason);
     await tx.insert(daySnapshots).values({
       businessDate: row.business_date,
       ...figures,

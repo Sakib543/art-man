@@ -19,8 +19,8 @@ pnpm db:backup
 
 It writes `backups/art-man-<timestamp>.dump` — one file, `pg_dump`'s custom
 format, which `pg_restore` reads. It contains the schema, the data, the enums,
-every index and constraint, the three trigger functions, all 15 append-only
-triggers (14 before migration `0020` added `month_adjustments`'s), **and**
+every index and constraint, the trigger functions, all 34 triggers (15 append-only,
+two on the day tables and 17 against `TRUNCATE` since migration `0023`), **and**
 `drizzle.__drizzle_migrations`, so a restored database knows which migrations it
 has and `pnpm db:migrate` carries on from the right place.
 
@@ -108,9 +108,16 @@ one and point the app at it.
 4. Point the app at it: `DATABASE_URL` in `.env.local` locally, or in the Vercel
    project for the live site, then redeploy.
 
-**The append-only triggers do not get in the way of a restore.** All 15 are
-`BEFORE UPDATE OR DELETE` — none of them fires on `INSERT`, which is what a
-restore does. This was measured, not assumed (`docs/HANDOFF.md` section 7).
+**The triggers do not get in the way of a restore.** The row triggers are
+`BEFORE UPDATE OR DELETE` and the rest `BEFORE TRUNCATE` — none of them fires on
+`INSERT`, which is what a restore does. This was measured, not assumed
+(`docs/HANDOFF.md` section 7).
+
+**A restore with `--no-privileges` leaves out the app's grants** (migration `0023`). If the
+site runs as a login in `art_man_app` (`docs/DEPLOY_VERCEL.md` section 0.3), run the `DO`
+block of `drizzle/0023_database_hardening.sql` section 5 on the restored database as its
+owner before pointing the app at it; it makes the role if the server lacks it and grants it
+again.
 
 ### Restores that have been run
 

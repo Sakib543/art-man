@@ -159,7 +159,7 @@ export async function resettleDay(tx: Tx, businessDate: string, actor: string, r
     businessDate,
     ...figures,
     diffReason: snapshot.diffReason,
-    securityCode: await computeDayCode(tx, businessDate, figures),
+    securityCode: await computeDayCode(tx, businessDate, figures, snapshot.diffReason),
     closedBy: snapshot.closedBy,
   });
 }
