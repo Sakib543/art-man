@@ -478,7 +478,7 @@ a Verify screen before the trial, the out-of-band copy later. The recommended ch
   month at a time, each closed day's date, code and Matches / Does not match, a summary line
   (`checkSummary`) and a note on comparing with the codes noted each night. Codes stay on one line on a
   phone.
-- **Days sealed before P7.8, sealed again once**: `pnpm db:reseal` (`scripts/reseal-days.ts`,
+- **Days sealed before P7.8, sealed again once** (the script was removed 2026-10-01 once its work was done; it is at `git show 8efe8d2:scripts/reseal-days.ts`): `pnpm db:reseal` (`scripts/reseal-days.ts`,
   `resealOldDays`) — a dry run by default, `--apply` to write, `--live` for live. Only a day that fails the
   new check but whose records still give its code the old way (`securityCodeAsBefore`, lines in the order
   the database gives them) is sealed again; its old code goes to `day_snapshot_history` ("Sealed again: …

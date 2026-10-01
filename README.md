@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-837_unit_%2B_175_integration-2E7D32?logo=vitest&logoColor=white" alt="837 unit and 175 integration tests" />
+  <img src="https://img.shields.io/badge/tests-835_unit_%2B_175_integration-2E7D32?logo=vitest&logoColor=white" alt="835 unit and 175 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,7 +67,7 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 837 unit tests in 59
+**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 835 unit tests in 59
 files · 175 integration tests against PostgreSQL · 25 database migrations · 34 database triggers.
 
 ---
@@ -459,13 +459,12 @@ where they belong. The first business day is opened from Day close.
 | `pnpm db:seed:developer` | Create the developer account (skips if one exists); `--live` as above |
 | `pnpm db:check` | Check the connection, the applied migrations against the repo, and the accounts |
 | `pnpm db:backup` | Full `pg_dump` backup to `backups/` (git-ignored) |
-| `pnpm db:reseal` | Once, for days sealed before the fixed line order: seal again those whose records are intact (dry run unless `--apply`) |
 
 ---
 
 ## Testing and quality
 
-- **837 unit tests in 59 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **835 unit tests in 59 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline

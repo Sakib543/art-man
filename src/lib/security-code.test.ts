@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   computeSecurityCode,
   FIRST_DAY_CODE,
-  securityCodeAsBefore,
   securityCodeBeforeP714,
   stableStringify,
   type SecurityCodeInput,
@@ -80,19 +79,6 @@ describe("computeSecurityCode", () => {
     expect(computeSecurityCode(moved)).not.toBe(computeSecurityCode(oneWay));
   });
 
-  it("was the pre-P7.8 code for a day whose bills have one line each or lines already in order", () => {
-    expect(securityCodeBeforeP714(day())).toBe(securityCodeAsBefore(day()));
-  });
-
-  it("kept the order it was given before P7.8, which is what made it depend on the database", () => {
-    const cut = { name: "Haircut", amount: 800, staffId: "arshad" };
-    const wash = { name: "Hair wash", amount: 300, staffId: "sherry" };
-    const asStored = { ...day(), bills: [bill([cut, wash], 1100)] };
-    const turned = { ...day(), bills: [bill([wash, cut], 1100)] };
-    expect(securityCodeAsBefore(turned)).not.toBe(securityCodeAsBefore(asStored));
-    expect(computeSecurityCode(turned)).toBe(computeSecurityCode(asStored));
-  });
-
   it("chains: a different previous code gives a different code", () => {
     const later = day();
     later.previousCode = "AAAA-BBBB-CCCC";
@@ -134,7 +120,6 @@ describe("what the code covers since P7.14 (QA-12)", () => {
       bills: [bill([{ name: "Haircut", amount: 800, staffId: "arshad" }, { name: "Hair wash", amount: 300, staffId: "sherry" }], 1100)],
     };
     expect(securityCodeBeforeP714(sealed)).toBe("FE5F-88AD-F45E");
-    expect(securityCodeAsBefore(sealed)).toBe("1228-2498-5847");
   });
 });
 

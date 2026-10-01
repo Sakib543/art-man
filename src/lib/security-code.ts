@@ -124,7 +124,7 @@ export function computeSecurityCode(input: SecurityCodeInput, key: Uint8Array | 
 }
 
 /** What a code covered before P7.14: the figures, the bills' money and lines, the entries. */
-function coveredBeforeP714(input: SecurityCodeInput, lines: (lines: readonly SealedLine[]) => SealedLine[]) {
+function coveredBeforeP714(input: SecurityCodeInput) {
   return {
     previousCode: input.previousCode,
     businessDate: input.businessDate,
@@ -135,7 +135,7 @@ function coveredBeforeP714(input: SecurityCodeInput, lines: (lines: readonly Sea
       online: bill.online,
       customerId: bill.customerId,
       reversesBillId: bill.reversesBillId,
-      lines: lines(bill.lines),
+      lines: inFixedOrder(bill.lines),
     })),
     entries: input.entries,
   };
@@ -148,15 +148,5 @@ function coveredBeforeP714(input: SecurityCodeInput, lines: (lines: readonly Sea
  * on `computeSecurityCode` — this cannot give their code, which covered more.
  */
 export function securityCodeBeforeP714(input: SecurityCodeInput): string {
-  return codeOf(coveredBeforeP714(input, inFixedOrder));
-}
-
-/**
- * The code as it was worked out before P7.8: a bill's lines in the order they
- * are given. Only to tell a day sealed that way — whose records are as they
- * were — from one whose records changed, before it is sealed again in the
- * fixed order (`resealOldDays`).
- */
-export function securityCodeAsBefore(input: SecurityCodeInput): string {
-  return codeOf(coveredBeforeP714(input, (lines) => [...lines]));
+  return codeOf(coveredBeforeP714(input));
 }
