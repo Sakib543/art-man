@@ -5,7 +5,6 @@ const sherry: StaffPay = { payType: 3, salary: 0, dailyWage: 800, commissionRate
 const hamid: StaffPay = { payType: 2, salary: 40000, dailyWage: 0, commissionRate: 10 };
 
 const bill = (staffId: string, amount: number, cash: number, online = 0): Bill => ({
-  status: "active",
   lines: [{ staffId, amount }],
   cash,
   online,
@@ -79,8 +78,8 @@ describe("summarizeDay", () => {
   it("a cancelled bill and its reversal cancel out of sales and work", () => {
     const input = base();
     input.bills.push(
-      { status: "cancelled", lines: [{ staffId: "hamid", amount: 500 }], cash: 500, online: 0 },
-      { status: "reversal", lines: [{ staffId: "hamid", amount: -500 }], cash: -500, online: 0 },
+      { lines: [{ staffId: "hamid", amount: 500 }], cash: 500, online: 0 },
+      { lines: [{ staffId: "hamid", amount: -500 }], cash: -500, online: 0 },
     );
     const s = summarizeDay(input);
     expect(s.cash).toBe(5200);

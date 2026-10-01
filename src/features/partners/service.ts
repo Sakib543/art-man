@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { isMonthClosed } from "@/db/queries/months";
-import { saveOnce, type SavedOnce } from "@/db/save-once";
+import { saveOnce } from "@/db/save-once";
 import { partnerDrawings, partners } from "@/db/schema";
 import { checkShares } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
@@ -51,7 +51,7 @@ export async function addPartner(user: SessionUser, name: string): Promise<void>
 }
 
 /** Profit a partner took out. Once per client id (P7.2). */
-export async function addDrawing(user: SessionUser, input: AddDrawingInput): Promise<SavedOnce> {
+export async function addDrawing(user: SessionUser, input: AddDrawingInput): Promise<void> {
   return saveOnce(partnerDrawings, partnerDrawings.clientId, input.clientId, () => saveDrawing(user, input));
 }
 

@@ -24,8 +24,17 @@ const secret = Buffer.alloc(32, 7).toString("base64url");
 const KEY = `2026-09-01.${secret}`;
 const setServerKey = (value: string) => vi.stubEnv("SECURITY_CODE_KEY", value);
 
-const checks = async (from: string, to: string) =>
-  (await checkDayCodes(from, to)).map((day) => [day.businessDate, day.ok, day.keyed]);
+const checks = async (from: string, to: string) => (await checkDayCodes(from, to)).map((day) => [day.businessDate, day.ok]);
+
+/** Whether each day matches when the server has no key: a day sealed with the key does not. */
+async function withoutTheKey(from: string, to: string, key: string) {
+  setServerKey("");
+  try {
+    return await checks(from, to);
+  } finally {
+    setServerKey(key);
+  }
+}
 
 const FIGURES = [
   "sale",
@@ -85,9 +94,15 @@ describe("the server's key (P7.8b)", () => {
   it("seals every day it closes, and each matches", async () => {
     setServerKey(KEY);
     expect(await checks("2026-09-01", "2026-09-03")).toEqual([
-      ["2026-09-01", true, true],
-      ["2026-09-02", true, true],
-      ["2026-09-03", true, true],
+      ["2026-09-01", true],
+      ["2026-09-02", true],
+      ["2026-09-03", true],
+    ]);
+    // Sealed with the key: without it, not one of them matches.
+    expect(await withoutTheKey("2026-09-01", "2026-09-03", KEY)).toEqual([
+      ["2026-09-01", false],
+      ["2026-09-02", false],
+      ["2026-09-03", false],
     ]);
   });
 
@@ -109,16 +124,16 @@ describe("the server's key (P7.8b)", () => {
     // Without the key — as before P7.8b — the rewritten chain checks out from end to end.
     setServerKey("");
     expect(await checks("2026-09-01", "2026-09-03")).toEqual([
-      ["2026-09-01", true, false],
-      ["2026-09-02", true, false],
-      ["2026-09-03", true, false],
+      ["2026-09-01", true],
+      ["2026-09-02", true],
+      ["2026-09-03", true],
     ]);
     // With it, not one of the three days does.
     setServerKey(KEY);
     expect(await checks("2026-09-01", "2026-09-03")).toEqual([
-      ["2026-09-01", false, false],
-      ["2026-09-02", false, false],
-      ["2026-09-03", false, false],
+      ["2026-09-01", false],
+      ["2026-09-02", false],
+      ["2026-09-03", false],
     ]);
   });
 });
@@ -142,9 +157,15 @@ describe("a key set on a salon that already has days (P7.8b)", () => {
   it("still matches the days sealed before its first day without it, and seals from then on with it", async () => {
     setServerKey(LATE_KEY);
     expect(await checks("2026-09-04", "2026-09-06")).toEqual([
-      ["2026-09-04", true, false],
-      ["2026-09-05", true, false],
-      ["2026-09-06", true, true],
+      ["2026-09-04", true],
+      ["2026-09-05", true],
+      ["2026-09-06", true],
+    ]);
+    // Only 6 Sep was sealed with it.
+    expect(await withoutTheKey("2026-09-04", "2026-09-06", LATE_KEY)).toEqual([
+      ["2026-09-04", true],
+      ["2026-09-05", true],
+      ["2026-09-06", false],
     ]);
   });
 
@@ -153,9 +174,9 @@ describe("a key set on a salon that already has days (P7.8b)", () => {
     await ringUp(salon.manager, [{ serviceId: salon.services.Shave, staffId: salon.staff.Karim }], { cash: 250 }); // 7 Sep
     await closeAndStartNext(salon.manager);
 
-    expect(await checks("2026-09-07", "2026-09-07")).toEqual([["2026-09-07", true, false]]);
+    expect(await checks("2026-09-07", "2026-09-07")).toEqual([["2026-09-07", true]]);
     setServerKey(LATE_KEY);
-    expect(await checks("2026-09-07", "2026-09-07")).toEqual([["2026-09-07", false, false]]);
+    expect(await checks("2026-09-07", "2026-09-07")).toEqual([["2026-09-07", false]]);
   });
 
   it("seals with it a day before its first day that is corrected once it is set — the day after still matches", async () => {
@@ -164,8 +185,13 @@ describe("a key set on a salon that already has days (P7.8b)", () => {
     await cancelBill(salon.owner, bill.id, "Customer disputed it");
 
     expect(await checks("2026-09-04", "2026-09-05")).toEqual([
-      ["2026-09-04", true, true],
-      ["2026-09-05", true, false],
+      ["2026-09-04", true],
+      ["2026-09-05", true],
+    ]);
+    // 4 Sep is sealed with the key now; 5 Sep still has its plain code.
+    expect(await withoutTheKey("2026-09-04", "2026-09-05", LATE_KEY)).toEqual([
+      ["2026-09-04", false],
+      ["2026-09-05", true],
     ]);
   });
 });
@@ -186,6 +212,7 @@ describe("a key set wrongly (P7.8b)", () => {
 
     setServerKey(KEY);
     await closeToday(salon.manager);
-    expect(await checks(today, today)).toEqual([[today, true, true]]);
+    expect(await checks(today, today)).toEqual([[today, true]]);
+    expect(await withoutTheKey(today, today, KEY)).toEqual([[today, false]]);
   });
 });

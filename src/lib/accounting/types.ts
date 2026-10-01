@@ -39,10 +39,7 @@ export interface BillLine {
   amount: Rupees;
 }
 
-export type BillStatus = "active" | "cancelled" | "reversal";
-
 export interface Bill {
-  status: BillStatus;
   lines: BillLine[];
   cash: Rupees;
   online: Rupees;

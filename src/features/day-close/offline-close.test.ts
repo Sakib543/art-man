@@ -45,7 +45,6 @@ const dayEntry = (id: string, over: Partial<DayEntry>): DayEntry => ({
   amount: 0,
   description: null,
   paidFrom: null,
-  staffName: null,
   pinConfirmed: false,
   isVoid: false,
   voided: false,
@@ -61,7 +60,7 @@ const copy: DayCopy = {
     dayBill(1, { cash: 800, lines: [line("arshad", 800)], clientId: "sent-bill" }),
   ],
   entries: [
-    dayEntry("e2", { kind: "staff_advance", amount: 100, staffName: "Arshad" }),
+    dayEntry("e2", { kind: "staff_advance", amount: 100 }),
     dayEntry("e1", { kind: "expense", amount: 200, paidFrom: "drawer", clientId: "sent-entry" }),
   ],
   staff: [

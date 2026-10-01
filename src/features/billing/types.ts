@@ -83,7 +83,6 @@ export interface ReceiptLine {
   name: string;
   amount: Rupees;
   staffName: string;
-  note: string | null;
 }
 
 export interface Receipt {

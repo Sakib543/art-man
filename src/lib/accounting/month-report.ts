@@ -89,15 +89,14 @@ export interface MonthReport {
   capitalRepaid: Rupees;
   /**
    * What adjustments for earlier, closed months did to this month's profit
-   * (backlog P3.4). A month closed before P3.4 has no such field in its
-   * frozen report, so read it with `?? 0`.
+   * (backlog P3.4).
    */
   adjustments: Rupees;
   /**
    * What those adjustments changed in the money that reached the Owner: online
    * a corrected sale did or did not bring, less a corrected cost he paid
    * himself. Already inside `owner.heldByBusiness`; kept apart so the Owner
-   * account can show it as a line of its own. `?? 0` too.
+   * account can show it as a line of its own.
    */
   adjustmentsToOwner: Rupees;
 }
@@ -189,9 +188,8 @@ export function recalculateMonthReport(closed: MonthReport, days: MonthDay[]): M
       netReachedOwner: closed.owner.netReachedOwner + onlineMoved,
       heldByBusiness: closed.owner.heldByBusiness + profitMoved - onlineMoved,
     },
-    // A report frozen before P3.1 or P3.4 has none of these; there were none.
-    bonuses: closed.bonuses ?? 0,
-    adjustments: closed.adjustments ?? 0,
-    adjustmentsToOwner: closed.adjustmentsToOwner ?? 0,
+    bonuses: closed.bonuses,
+    adjustments: closed.adjustments,
+    adjustmentsToOwner: closed.adjustmentsToOwner,
   };
 }

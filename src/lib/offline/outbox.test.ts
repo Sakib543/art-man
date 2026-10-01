@@ -15,7 +15,6 @@ import {
   isOutboxItem,
   nextToSend,
   NO_COUNTS,
-  outboxCounts,
   outboxTally,
   outcomeOf,
   SYNC_URL,
@@ -56,16 +55,12 @@ const entry = (clientId: string, rejected: OutboxEntry["rejected"] = null): Outb
   rejected,
 });
 
-const refused = { reason: "Payment is Rs 50 short of the total", at: "2026-09-24T10:00:00.000Z" };
+const refused = { reason: "Payment is Rs 50 short of the total" };
 
 describe("outcomeOf", () => {
   it("takes a 200 with a bill number as saved", () => {
-    expect(outcomeOf({ status: 200 }, { billNo: 36, alreadySaved: false })).toEqual({
-      kind: "saved",
-      billNo: 36,
-      alreadySaved: false,
-    });
-    expect(outcomeOf({ status: 200 }, { billNo: 36, alreadySaved: true })).toMatchObject({ alreadySaved: true });
+    expect(outcomeOf({ status: 200 }, { billNo: 36, alreadySaved: false })).toEqual({ kind: "saved" });
+    expect(outcomeOf({ status: 200 }, { billNo: 36, alreadySaved: true })).toEqual({ kind: "saved" });
   });
 
   it("takes a 422 with a reason as the server's refusal", () => {
@@ -105,13 +100,6 @@ describe("nextToSend", () => {
   it("has nothing to send when every bill waits for a person, or there are none", () => {
     expect(nextToSend([entry("a", refused)])).toBeNull();
     expect(nextToSend([])).toBeNull();
-  });
-});
-
-describe("outboxCounts", () => {
-  it("counts the waiting and the refused apart", () => {
-    expect(outboxCounts([entry("a"), entry("b", refused), entry("c")])).toEqual({ waiting: 2, refused: 1 });
-    expect(outboxCounts([])).toEqual({ waiting: 0, refused: 0 });
   });
 });
 
@@ -225,8 +213,8 @@ describe("folder entries in the outbox (P2.2e)", () => {
   });
 
   it("are saved on a 200 that says whether they had arrived before — no number to give back", () => {
-    expect(outcomeOf({ status: 200 }, { alreadySaved: false }, "folder")).toEqual({ kind: "saved", alreadySaved: false });
-    expect(outcomeOf({ status: 200 }, { alreadySaved: true }, "folder")).toEqual({ kind: "saved", alreadySaved: true });
+    expect(outcomeOf({ status: 200 }, { alreadySaved: false }, "folder")).toEqual({ kind: "saved" });
+    expect(outcomeOf({ status: 200 }, { alreadySaved: true }, "folder")).toEqual({ kind: "saved" });
     expect(outcomeOf({ status: 422 }, { reason: "That staff member is not available" }, "folder")).toEqual({
       kind: "rejected",
       reason: "That staff member is not available",
@@ -334,11 +322,7 @@ describe("a day's close in the outbox (P2.2f)", () => {
   });
 
   it("is saved on a 200 that carries the server's security code", () => {
-    expect(outcomeOf({ status: 200 }, { securityCode: "A3F9-7C21-0B8E", alreadySaved: false }, "close")).toEqual({
-      kind: "saved",
-      securityCode: "A3F9-7C21-0B8E",
-      alreadySaved: false,
-    });
+    expect(outcomeOf({ status: 200 }, { securityCode: "A3F9-7C21-0B8E", alreadySaved: false }, "close")).toEqual({ kind: "saved" });
     expect(outcomeOf({ status: 200 }, { alreadySaved: true }, "close")).toEqual({ kind: "later" });
     expect(outcomeOf({ status: 200 }, { securityCode: "", alreadySaved: true }, "close")).toEqual({ kind: "later" });
     expect(outcomeOf({ status: 422 }, { reason: "The day's cash changed" }, "close")).toEqual({

@@ -13,12 +13,11 @@ interface StepCardProps {
   children: ReactNode;
   onBack?: () => void;
   onNext: () => void;
-  nextLabel?: string;
   pending?: boolean;
 }
 
 /** The card around one Day Close step, with Back and Continue at the bottom. */
-export function StepCard({ title, badge, help, error, children, onBack, onNext, nextLabel = "Continue", pending }: StepCardProps) {
+export function StepCard({ title, badge, help, error, children, onBack, onNext, pending }: StepCardProps) {
   return (
     <Panel>
       <PanelHeader title={title} action={badge ? <Badge variant="secondary">{badge}</Badge> : null} />
@@ -47,7 +46,7 @@ export function StepCard({ title, badge, help, error, children, onBack, onNext, 
           <span />
         )}
         <Button onClick={onNext} disabled={pending}>
-          {pending ? "Please wait..." : nextLabel}
+          {pending ? "Please wait..." : "Continue"}
           {pending ? null : <ArrowRight aria-hidden />}
         </Button>
       </div>

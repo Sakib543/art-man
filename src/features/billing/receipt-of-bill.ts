@@ -16,10 +16,7 @@ export function receiptOfBill(bill: DayBill, businessDate: string): Receipt {
     createdAt: bill.createdAt,
     businessDate,
     customerName: bill.customerName,
-    // `note` ("Special rate", "Deal share") is worked out while pricing a cart
-    // and is never stored on the line, so it cannot be rebuilt from a saved
-    // bill. The receipt does not print it, so the two paths still print alike.
-    lines: bill.lines.map(({ name, amount, staffName }) => ({ name, amount, staffName, note: null })),
+    lines: bill.lines.map(({ name, amount, staffName }) => ({ name, amount, staffName })),
     // The lines are stored net of any discount, so the subtotal has to be put
     // back together from the two (P3.10). On a bill with no discount this is
     // the total, and the slip prints exactly as it did before.

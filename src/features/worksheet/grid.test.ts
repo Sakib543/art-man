@@ -175,7 +175,7 @@ describe("pendingBillsOf", () => {
 
   it("leaves out refused bills, another day's, folder entries, and bills the server already has", () => {
     const items: OutboxItem[] = [
-      queued("refused", { rejected: { reason: "No", at: "2026-09-29T10:00:00.000Z" } }),
+      queued("refused", { rejected: { reason: "No" } }),
       queued("other-day", { businessDate: "2026-09-25" }),
       {
         v: 1,

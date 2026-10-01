@@ -66,7 +66,6 @@ const OLD_COPY =
 
 /** A saved bill, as the accounting functions read it. */
 const billOfDay = (bill: DayBill): Bill => ({
-  status: bill.status,
   cash: bill.cash,
   online: bill.online,
   lines: bill.lines.map(({ staffId, amount }) => ({ staffId, amount })),
@@ -78,7 +77,6 @@ const billOfDay = (bill: DayBill): Bill => ({
  * `features/worksheet` reads them the same way).
  */
 const billOfOutbox = (entry: OutboxEntry): Bill => ({
-  status: "active",
   cash: entry.bill.cash,
   online: entry.bill.online,
   lines: entry.bill.lines.map((line, index) => ({ staffId: line.staffId, amount: entry.preview.lines[index]?.amount ?? 0 })),

@@ -36,13 +36,6 @@ import type { CreateBillInput, DiscardOfflineBillInput, EditBillInput, OfflineOr
 import type { Receipt, SavedBill } from "./types";
 import { billLineOrder } from "@/db/queries/day-bills";
 
-const NOTE_TEXT: Record<string, string | undefined> = {
-  "special-rate": "Special rate",
-  "deal-share": "Deal share",
-  // "chosen" says nothing useful: the amount box beside it already shows that
-  // the counter picked a figure, and the range is written under it (P3.11).
-};
-
 const actorOf = (user: SessionUser) => user.username || user.name;
 
 /** Everything settled before the transaction opens: prices, the customer, staff names. */
@@ -238,7 +231,6 @@ function receiptOf(bill: typeof bills.$inferSelect, priced: PricedBill, input: C
       name: line.name,
       amount: line.amount,
       staffName: priced.staffName.get(line.staffId!) ?? "",
-      note: (line.note ? NOTE_TEXT[line.note] : null) ?? null,
     })),
     subtotal: priced.subtotal,
     discount: priced.discount,

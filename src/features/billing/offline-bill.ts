@@ -52,8 +52,7 @@ export function offlineBill(parts: OfflineBillParts): { entry: OutboxEntry; rece
     createdAt: parts.madeAt,
     businessDate: parts.businessDate,
     customerName,
-    // The slip never prints a line's note — the same as a reprint (P3.6).
-    lines: lines.map((line) => ({ ...line, note: null })),
+    lines,
     subtotal: priced.subtotal,
     discount: priced.discount,
     total: priced.total,

@@ -34,8 +34,8 @@ describe("receiptOfBill", () => {
       businessDate: "2026-09-24",
       customerName: "Ashfaq Bhai",
       lines: [
-        { name: "Haircut", amount: 800, staffName: "Sherry", note: null },
-        { name: "Hair wash", amount: 300, staffName: "Arshad", note: null },
+        { name: "Haircut", amount: 800, staffName: "Sherry" },
+        { name: "Hair wash", amount: 300, staffName: "Arshad" },
       ],
       subtotal: 1100,
       discount: 0,

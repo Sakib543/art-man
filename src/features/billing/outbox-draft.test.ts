@@ -25,7 +25,7 @@ const entry = (bill: Partial<OutboxBill> = {}): OutboxEntry => ({
     ...bill,
   },
   preview: { customerName: null, lines: [], total: 1500 },
-  rejected: { reason: "Payment is Rs 50 short of the total", at: "2026-09-24T10:00:00.000Z" },
+  rejected: { reason: "Payment is Rs 50 short of the total" },
 });
 
 describe("draftOfEntry", () => {

@@ -10,7 +10,6 @@ interface SegmentedProps<T extends string> {
   options: readonly { value: T; label: string }[];
   /** 36px reads as a form control; 44px is the counter's main choice. */
   size?: "default" | "lg";
-  className?: string;
 }
 
 /**
@@ -27,13 +26,12 @@ export function Segmented<T extends string>({
   onChange,
   options,
   size = "default",
-  className,
 }: SegmentedProps<T>) {
   return (
     <div
       role="radiogroup"
       aria-label={label}
-      className={cn("grid auto-cols-fr grid-flow-col gap-1 rounded-lg bg-secondary p-1", className)}
+      className="grid auto-cols-fr grid-flow-col gap-1 rounded-lg bg-secondary p-1"
     >
       {options.map((option) => {
         const selected = value === option.value;

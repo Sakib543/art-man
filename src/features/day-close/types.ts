@@ -34,7 +34,6 @@ export interface SnapshotRow {
   difference: Rupees;
   diffReason: string | null;
   securityCode: string;
-  closedBy: string;
   closedAt: string;
 }
 

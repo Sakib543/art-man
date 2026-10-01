@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { isMonthClosed } from "@/db/queries/months";
-import { saveOnce, type SavedOnce } from "@/db/save-once";
+import { saveOnce } from "@/db/save-once";
 import { fixedExpenseLines, monthlyExpenses } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth/session";
 import { monthOf, monthStart } from "@/lib/business-date";
@@ -74,7 +74,7 @@ export async function addFixedLine(user: SessionUser, name: string, paidByOwner:
 }
 
 /** An "other" expense for the month. Once per client id (P7.2). */
-export async function addOther(user: SessionUser, input: AddOtherInput): Promise<SavedOnce> {
+export async function addOther(user: SessionUser, input: AddOtherInput): Promise<void> {
   return saveOnce(monthlyExpenses, monthlyExpenses.clientId, input.clientId, () => saveOther(user, input));
 }
 

@@ -41,7 +41,6 @@ export function expectedCash(m: CashMovements): Rupees {
 
 export interface CashDifference {
   difference: Rupees;
-  kind: "match" | "short" | "extra";
   /** Short cash needs a reason before the day can close. */
   reasonRequired: boolean;
 }
@@ -49,8 +48,7 @@ export interface CashDifference {
 /** Counted minus expected. Negative = short, positive = extra. */
 export function cashDifference(counted: Rupees, expected: Rupees): CashDifference {
   const difference = counted - expected;
-  const kind = difference === 0 ? "match" : difference < 0 ? "short" : "extra";
-  return { difference, kind, reasonRequired: kind === "short" };
+  return { difference, reasonRequired: difference < 0 };
 }
 
 /** Total of a denomination count, e.g. { 5000: 2, 1000: 3 } = 13,000. */

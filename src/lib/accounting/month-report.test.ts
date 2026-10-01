@@ -5,7 +5,6 @@ import {
   recalculateMonthReport,
   type MonthDay,
   type MonthlyExpenseEntry,
-  type MonthReport,
   type MonthReportInput,
 } from "./index";
 
@@ -210,12 +209,5 @@ describe("recalculateMonthReport (P1.10)", () => {
     expect(r.netProfit).toBe(closed.netProfit);
     expect(r.owner.reachedOwner).toBe(closed.owner.reachedOwner - 1000);
     expect(r.owner.heldByBusiness).toBe(closed.owner.heldByBusiness + 1000);
-  });
-
-  it("a report frozen before P3.4 comes back with the adjustment fields it lacked, at zero", () => {
-    const frozen: Partial<MonthReport> = { ...buildMonthReport(base) };
-    delete frozen.adjustments;
-    delete frozen.adjustmentsToOwner;
-    expect(recalculateMonthReport(frozen as MonthReport, cashSaleLower)).toEqual(buildMonthReport({ ...base, days: cashSaleLower }));
   });
 });

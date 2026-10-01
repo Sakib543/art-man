@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkSummary } from "./summary";
 
-const day = (businessDate: string, ok: boolean) => ({ businessDate, code: "AAAA-BBBB-CCCC", ok, keyed: false });
+const day = (businessDate: string, ok: boolean) => ({ businessDate, code: "AAAA-BBBB-CCCC", ok });
 
 describe("checkSummary", () => {
   it("says when every closed day matches", () => {

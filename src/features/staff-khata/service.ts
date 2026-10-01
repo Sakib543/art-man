@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { isMonthClosed } from "@/db/queries/months";
-import { saveOnce, type SavedOnce } from "@/db/save-once";
+import { saveOnce } from "@/db/save-once";
 import { khataEntries, staff } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth/session";
 import { monthOf } from "@/lib/business-date";
@@ -28,7 +28,7 @@ const actorOf = (user: SessionUser) => user.username || user.name;
  *
  * Once per client id (P7.2): the dialog sends the same id until it hears back.
  */
-export async function giveBonus(current: SessionUser, input: BonusInput): Promise<SavedOnce> {
+export async function giveBonus(current: SessionUser, input: BonusInput): Promise<void> {
   return saveOnce(khataEntries, khataEntries.clientId, input.clientId, () => saveBonus(current, input));
 }
 

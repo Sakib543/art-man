@@ -89,7 +89,7 @@ export interface OutboxEntry {
   bill: OutboxBill;
   preview: OutboxPreview;
   /** Why the server refused it, once it has. Null while it waits to be sent. */
-  rejected: { reason: string; at: string } | null;
+  rejected: { reason: string } | null;
 }
 
 /**
@@ -121,7 +121,7 @@ export interface OutboxFolderEntry {
   /** What the counter saw, so it can be listed without the catalog: an advance's staff member. */
   preview: { staffName: string | null };
   /** Why the server refused it, once it has. Null while it waits to be sent. */
-  rejected: { reason: string; at: string } | null;
+  rejected: { reason: string } | null;
 }
 
 /**
@@ -171,7 +171,7 @@ export interface OutboxCloseEntry {
     payouts: { name: string; amount: Rupees }[];
   };
   /** Why the server refused it, once it has. Null while it waits to be sent. */
-  rejected: { reason: string; at: string } | null;
+  rejected: { reason: string } | null;
 }
 
 /** Anything in the outbox. */
@@ -262,7 +262,7 @@ export interface SyncRefused {
 }
 
 export type SyncOutcome =
-  | { kind: "saved"; alreadySaved: boolean; billNo?: number; securityCode?: string }
+  | { kind: "saved" }
   | ({ kind: "rejected" } & SyncRefused)
   | { kind: "signed-out" }
   | { kind: "later" };
@@ -308,11 +308,9 @@ export function outcomeOf(
 ): SyncOutcome {
   if (response.type === "opaqueredirect" || response.status === 401) return { kind: "signed-out" };
   if (response.status === 200) {
-    if (kind === "bill" && isSaved(body)) return { kind: "saved", billNo: body.billNo, alreadySaved: body.alreadySaved };
-    if (kind === "folder" && isFolderSaved(body)) return { kind: "saved", alreadySaved: body.alreadySaved };
-    if (kind === "close" && isCloseSaved(body)) {
-      return { kind: "saved", securityCode: body.securityCode, alreadySaved: body.alreadySaved };
-    }
+    if (kind === "bill" && isSaved(body)) return { kind: "saved" };
+    if (kind === "folder" && isFolderSaved(body)) return { kind: "saved" };
+    if (kind === "close" && isCloseSaved(body)) return { kind: "saved" };
   }
   if (response.status === 422 && isRefused(body)) return { kind: "rejected", reason: body.reason };
   return { kind: "later" };
@@ -338,12 +336,6 @@ export function heldBack(item: OutboxItem, items: readonly OutboxItem[]): boolea
  */
 export function nextToSend<T extends OutboxItem>(items: readonly T[]): T | null {
   return items.find((item) => item.rejected === null && !heldBack(item, items)) ?? null;
-}
-
-/** Waiting to be sent, and refused by the server. */
-export function outboxCounts(entries: readonly { rejected: unknown }[]): { waiting: number; refused: number } {
-  const refused = entries.filter((entry) => entry.rejected !== null).length;
-  return { waiting: entries.length - refused, refused };
 }
 
 /** How many bills, folder entries and day closes. */
@@ -432,10 +424,7 @@ export function waitingFolderEntries(
 const isDeviceOrNone = (device: unknown) => device === undefined || isDeviceTag(device);
 
 const isRejection = (rejected: unknown) =>
-  rejected === null ||
-  (typeof rejected === "object" &&
-    typeof (rejected as { reason?: unknown }).reason === "string" &&
-    typeof (rejected as { at?: unknown }).at === "string");
+  rejected === null || (typeof rejected === "object" && typeof (rejected as { reason?: unknown }).reason === "string");
 
 /**
  * A light check of what comes out of IndexedDB — enough to refuse an old or

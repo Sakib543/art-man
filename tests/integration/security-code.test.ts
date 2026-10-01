@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/db";
 import { cancelBill } from "@/db/bill-cancel";
 import { checkDayCodes } from "@/db/day-code";
@@ -17,18 +17,6 @@ import { closeAndStartNext, ringUp, seedSalon, type Salon } from "./salon";
  * with a bill whose lines are out of name order.
  */
 let salon: Salon;
-
-// A day sealed the way days were before P7.14: while this is on, the code a
-// close or a correction seals with is worked out as it was then.
-const sealing = vi.hoisted(() => ({ beforeP714: false }));
-vi.mock("@/lib/security-code", async (importOriginal) => {
-  const real = await importOriginal<typeof import("@/lib/security-code")>();
-  return {
-    ...real,
-    computeSecurityCode: (...[input, key]: Parameters<typeof real.computeSecurityCode>) =>
-      sealing.beforeP714 ? real.securityCodeBeforeP714(input) : real.computeSecurityCode(input, key),
-  };
-});
 
 const codesOk = async () => (await checkDayCodes("2026-09-01", "2026-09-03")).map((day) => [day.businessDate, day.ok]);
 
@@ -94,17 +82,6 @@ describe("the security code", () => {
   it("is what the Owner's Security codes screen shows", async () => {
     const screen = await getSecurityCodes("2026-09");
     expect(screen?.days.map((day) => day.ok)).toEqual([true, true, true]);
-  });
-
-  it("still checks out on a day sealed before P7.14, on what its code covered then", async () => {
-    await ringUp(salon.manager, [{ serviceId: salon.services.Haircut, staffId: salon.staff.Karim }], { cash: 500 });
-    sealing.beforeP714 = true;
-    try {
-      await closeAndStartNext(salon.manager);
-    } finally {
-      sealing.beforeP714 = false;
-    }
-    expect((await checkDayCodes("2026-09-04", "2026-09-04")).map((day) => day.ok)).toEqual([true]);
   });
 
   it("catches a line's amount changed behind the app's back", async () => {

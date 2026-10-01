@@ -83,12 +83,10 @@
 
   /*
    * Surfaces. `sunken` is the tint under a table head or a card footer — it
-   * was written as `#fafbfc` in 24 places. `raised` is a card on the page.
+   * was written as `#fafbfc` in 24 places.
    */
   --color-foreground-soft: var(--foreground-soft);
   --color-surface-sunken: var(--surface-sunken);
-  --color-surface-raised: var(--surface-raised);
-  --color-line-soft: var(--line-soft);
 
   /* The sidebar is a dark navy panel, so it carries its own scale. */
   --color-sidebar: var(--sidebar);
@@ -100,16 +98,10 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
@@ -165,7 +157,6 @@
   --muted: #eff1f4;
   --muted-foreground: #5b6472;
   --accent: #f8f1e6;
-  --accent-foreground: #7a5a2e;
   --destructive: #b42318;
   --border: #e3e6eb;
   --input: #e3e6eb;
@@ -175,8 +166,6 @@
   /* One step in from the body colour: a finished step, a secondary heading. */
   --foreground-soft: #475467;
   --surface-sunken: #fafbfc;
-  --surface-raised: #ffffff;
-  --line-soft: #eff1f4;
 
   --brass: #a67c45;
   --brass-soft: #f8f1e6;
@@ -198,11 +187,6 @@
   --info-soft: #eef3fb;
   --info-line: #d6e0f2;
 
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
 
   /*
@@ -253,15 +237,6 @@
 }
 @utility px-card {
   padding-inline: var(--pad-card);
-}
-@utility py-card {
-  padding-block: var(--pad-card);
-}
-@utility gap-card {
-  gap: var(--pad-card);
-}
-@utility -mx-card {
-  margin-inline: calc(var(--pad-card) * -1);
 }
 
 @layer base {

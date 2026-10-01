@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { isMonthClosed } from "@/db/queries/months";
-import { saveOnce, type SavedOnce } from "@/db/save-once";
+import { saveOnce } from "@/db/save-once";
 import { khataEntries, monthAdjustments, staff } from "@/db/schema";
 import { adjustmentEffect } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
@@ -29,7 +29,7 @@ const actorOf = (user: SessionUser) => user.username || user.name;
  *
  * Once per client id (P7.2): the dialog sends the same id until it hears back.
  */
-export async function recordAdjustment(user: SessionUser, input: RecordAdjustmentInput): Promise<SavedOnce> {
+export async function recordAdjustment(user: SessionUser, input: RecordAdjustmentInput): Promise<void> {
   return saveOnce(monthAdjustments, monthAdjustments.clientId, input.clientId, () => saveAdjustment(user, input));
 }
 

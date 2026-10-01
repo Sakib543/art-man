@@ -122,31 +122,3 @@ export function computeSecurityCode(input: SecurityCodeInput, key: Uint8Array | 
     key,
   );
 }
-
-/** What a code covered before P7.14: the figures, the bills' money and lines, the entries. */
-function coveredBeforeP714(input: SecurityCodeInput) {
-  return {
-    previousCode: input.previousCode,
-    businessDate: input.businessDate,
-    figures: input.figures,
-    bills: input.bills.map((bill) => ({
-      billNo: bill.billNo,
-      cash: bill.cash,
-      online: bill.online,
-      customerId: bill.customerId,
-      reversesBillId: bill.reversesBillId,
-      lines: inFixedOrder(bill.lines),
-    })),
-    entries: input.entries,
-  };
-}
-
-/**
- * The code as it was worked out from P7.8 to P7.14, without what P7.14 added.
- * A day sealed then is checked on it (`inspectDays`): its code covers what it
- * covered, and was never meant to cover the rest. Days sealed since are checked
- * on `computeSecurityCode` — this cannot give their code, which covered more.
- */
-export function securityCodeBeforeP714(input: SecurityCodeInput): string {
-  return codeOf(coveredBeforeP714(input));
-}

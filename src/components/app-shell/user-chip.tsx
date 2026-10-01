@@ -1,5 +1,3 @@
-import { cn } from "@/lib/utils";
-
 const initials = (name: string) =>
   name
     .split(/\s+/)
@@ -8,15 +6,12 @@ const initials = (name: string) =>
     .slice(0, 2)
     .toUpperCase();
 
-/** The round initials beside a name. Brass on navy, or brass on white. */
-export function UserChip({ name, onLight = false }: { name: string; onLight?: boolean }) {
+/** The round initials beside a name, brass on the navy sidebar and drawer. */
+export function UserChip({ name }: { name: string }) {
   return (
     <span
       aria-hidden
-      className={cn(
-        "grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold",
-        onLight ? "bg-brass-soft text-brass-strong" : "bg-sidebar-active text-brass-bright",
-      )}
+      className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-active text-xs font-semibold text-brass-bright"
     >
       {initials(name)}
     </span>

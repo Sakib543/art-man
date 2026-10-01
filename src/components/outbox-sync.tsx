@@ -74,7 +74,7 @@ async function sendAll(stopped: () => boolean, onSaved: () => void) {
       case "rejected":
         // A refusal is an answer from a signed-in session, too.
         setSyncSignedOut(false);
-        await setRejected(next.clientId, { reason: outcome.reason, at: new Date().toISOString() });
+        await setRejected(next.clientId, { reason: outcome.reason });
         continue;
       case "signed-out":
         setSyncSignedOut(true);

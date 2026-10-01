@@ -84,9 +84,9 @@ describe("commission and daily earning (spec 6.1, 6.2)", () => {
 describe("work per staff and cancelled bills (spec 11)", () => {
   it("a cancelled bill and its reversal net to zero", () => {
     const bills: Bill[] = [
-      { status: "cancelled", lines: [{ staffId: "a", amount: 500 }], cash: 500, online: 0 },
-      { status: "reversal", lines: [{ staffId: "a", amount: -500 }], cash: -500, online: 0 },
-      { status: "active", lines: [{ staffId: "a", amount: 1500 }], cash: 1500, online: 0 },
+      { lines: [{ staffId: "a", amount: 500 }], cash: 500, online: 0 },
+      { lines: [{ staffId: "a", amount: -500 }], cash: -500, online: 0 },
+      { lines: [{ staffId: "a", amount: 1500 }], cash: 1500, online: 0 },
     ];
     expect(workByStaff(bills)).toEqual({ a: 1500 });
     expect(salesTotals(bills)).toEqual({ cash: 1500, online: 0, sale: 1500 });
@@ -142,14 +142,10 @@ describe("day close (spec 5.4)", () => {
     ).toBe(9800);
   });
 
-  it("classifies the difference and requires a reason only when short", () => {
-    expect(cashDifference(9800, 9800)).toEqual({
-      difference: 0,
-      kind: "match",
-      reasonRequired: false,
-    });
-    expect(cashDifference(9700, 9800)).toMatchObject({ difference: -100, kind: "short", reasonRequired: true });
-    expect(cashDifference(9900, 9800)).toMatchObject({ difference: 100, kind: "extra", reasonRequired: false });
+  it("works out the difference and requires a reason only when short", () => {
+    expect(cashDifference(9800, 9800)).toEqual({ difference: 0, reasonRequired: false });
+    expect(cashDifference(9700, 9800)).toEqual({ difference: -100, reasonRequired: true });
+    expect(cashDifference(9900, 9800)).toEqual({ difference: 100, reasonRequired: false });
   });
 
   it("adds up counted notes", () => {

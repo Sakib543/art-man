@@ -104,7 +104,7 @@ describe("pendingEntryRows", () => {
   });
 
   it("leaves out another day's entries, and refused ones, which wait in Needs attention", () => {
-    const refused = { ...offlineEntryOf(expense), rejected: { reason: "No", at: "2026-09-29T10:00:00.000Z" } };
+    const refused = { ...offlineEntryOf(expense), rejected: { reason: "No" } };
     const otherDay = { ...offlineEntryOf(advance), businessDate: "2026-09-25" };
     expect(pendingEntryRows([refused, otherDay], DAY, new Set())).toEqual([]);
   });

@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { isMonthClosed } from "@/db/queries/months";
-import { saveOnce, type SavedOnce } from "@/db/save-once";
+import { saveOnce } from "@/db/save-once";
 import { capitalContributions, capitalItems, capitalRepayments, partners } from "@/db/schema";
 import { contributionsMatch, funderPosition } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
@@ -18,7 +18,7 @@ const actorOf = (user: SessionUser) => user.username || user.name;
  * A new partner-funded investment. It is capital, not an expense: it never
  * touches net profit. Once per client id (P7.2).
  */
-export async function addInvestment(user: SessionUser, input: AddInvestmentInput): Promise<SavedOnce> {
+export async function addInvestment(user: SessionUser, input: AddInvestmentInput): Promise<void> {
   return saveOnce(capitalItems, capitalItems.clientId, input.clientId, () => saveInvestment(user, input));
 }
 
@@ -56,7 +56,7 @@ async function saveInvestment(user: SessionUser, input: AddInvestmentInput): Pro
  * An installment paid back to a partner. It lowers what the business owes; it
  * is not an expense. Once per client id (P7.2).
  */
-export async function addRepayment(user: SessionUser, input: AddRepaymentInput): Promise<SavedOnce> {
+export async function addRepayment(user: SessionUser, input: AddRepaymentInput): Promise<void> {
   return saveOnce(capitalRepayments, capitalRepayments.clientId, input.clientId, () => saveRepayment(user, input));
 }
 

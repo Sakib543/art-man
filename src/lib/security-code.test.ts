@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   computeSecurityCode,
   FIRST_DAY_CODE,
-  securityCodeBeforeP714,
   stableStringify,
   type SecurityCodeInput,
 } from "./security-code";
@@ -98,28 +97,14 @@ describe("what the code covers since P7.14 (QA-12)", () => {
     ["someone added to the staff list", (input) => void input.attendance.push({ ...arshad, staffId: "newbie" })],
   ];
 
-  it.each(changes)("changes with %s — which the code before P7.14 did not see", (_, change) => {
+  it.each(changes)("changes with %s", (_, change) => {
     const changed = day();
     change(changed);
     expect(computeSecurityCode(changed)).not.toBe(computeSecurityCode(day()));
-    expect(securityCodeBeforeP714(changed)).toBe(securityCodeBeforeP714(day()));
   });
 
   it("does not depend on the order the staff list comes back in", () => {
     expect(computeSecurityCode({ ...day(), attendance: [sherry, arshad] })).toBe(computeSecurityCode(day()));
-  });
-
-  it("is never the code worked out the older way, so a day sealed since is checked on all of it", () => {
-    expect(computeSecurityCode(day())).not.toBe(securityCodeBeforeP714(day()));
-  });
-
-  it("works a day sealed before out exactly as it was sealed — the codes P7.8 gave", () => {
-    // Worked out with the code as committed before P7.14, on the same day.
-    const sealed = {
-      ...day(),
-      bills: [bill([{ name: "Haircut", amount: 800, staffId: "arshad" }, { name: "Hair wash", amount: 300, staffId: "sherry" }], 1100)],
-    };
-    expect(securityCodeBeforeP714(sealed)).toBe("FE5F-88AD-F45E");
   });
 });
 

@@ -51,7 +51,6 @@ export async function getDayCloseData(): Promise<DayCloseData> {
       difference: snapshot.difference,
       diffReason: snapshot.diffReason,
       securityCode: snapshot.securityCode,
-      closedBy: snapshot.closedBy,
       closedAt: snapshot.createdAt.toISOString(),
     },
   };

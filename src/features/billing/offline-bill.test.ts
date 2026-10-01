@@ -68,7 +68,6 @@ describe("offlineBill", () => {
     expect(receipt).not.toHaveProperty("billNo");
     expect(receipt).toMatchObject({ subtotal: 650, discount: 50, total: 600, cash: 600, online: 0 });
     expect(receipt.createdAt).toBe(parts.madeAt);
-    expect(receipt.lines.every((line) => line.note === null)).toBe(true);
   });
 
   it("the slip and the queued bill add up to the same total", () => {

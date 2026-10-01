@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { cashEntries, staff } from "@/db/schema";
+import { cashEntries } from "@/db/schema";
 import type { FolderKind, PaidFrom, Rupees } from "@/lib/accounting";
 
 /** One row of a day's folders, as the Daily folders screen lists it. */
@@ -14,7 +14,6 @@ export interface DayEntry {
   amount: Rupees;
   description: string | null;
   paidFrom: PaidFrom | null;
-  staffName: string | null;
   pinConfirmed: boolean;
   /** This row cancels an earlier entry. */
   isVoid: boolean;
@@ -39,10 +38,8 @@ export async function getDayEntries(businessDate: string): Promise<DayEntry[]> {
       paidFrom: cashEntries.paidFrom,
       pinConfirmed: cashEntries.pinConfirmed,
       voidsEntryId: cashEntries.voidsEntryId,
-      staffName: staff.name,
     })
     .from(cashEntries)
-    .leftJoin(staff, eq(cashEntries.staffId, staff.id))
     .where(eq(cashEntries.businessDate, businessDate))
     .orderBy(desc(cashEntries.createdAt));
 
@@ -56,7 +53,6 @@ export async function getDayEntries(businessDate: string): Promise<DayEntry[]> {
     amount: row.amount,
     description: row.description,
     paidFrom: row.paidFrom,
-    staffName: row.staffName,
     pinConfirmed: row.pinConfirmed,
     isVoid: row.voidsEntryId !== null,
     voided: cancelled.has(row.id),

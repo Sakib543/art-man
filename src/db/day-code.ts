@@ -4,7 +4,6 @@ import { attendance, billCancellations, billLines, bills, cashEntries, daySnapsh
 import {
   computeSecurityCode,
   FIRST_DAY_CODE,
-  securityCodeBeforeP714,
   type SealedAttendance,
   type SealedBill,
   type SecurityCodeInput,
@@ -142,13 +141,10 @@ export interface DayCheck {
   /** The code on record for the day — the one the Owner noted, unless the day was corrected since. */
   code: string;
   /**
-   * Its records still give the same code — worked out as it is now, or, for a
-   * day sealed before P7.14, as it was then (`securityCodeBeforeP714`). From
-   * the first day of the server's key on, only with the key (P7.8b).
+   * Its records still give the same code. From the first day of the server's
+   * key on, only with the key (P7.8b).
    */
   ok: boolean;
-  /** Its code was sealed with the server's key (P7.8b). */
-  keyed: boolean;
 }
 
 interface CheckRow extends Record<string, unknown> {
@@ -250,11 +246,9 @@ async function inspectDays(executor: Executor, from: string, to: string): Promis
       ...(records.get(row.business_date) ?? NO_RECORDS),
     };
     const keyed = key !== null && computeSecurityCode(input, key.key) === row.security_code;
-    // Without the key: a day sealed before P7.14 is checked on what its code
-    // covered then; that cannot give the code of a day sealed since, which covered more.
-    const plain = !keyed && (computeSecurityCode(input) === row.security_code || securityCodeBeforeP714(input) === row.security_code);
+    const plain = !keyed && computeSecurityCode(input) === row.security_code;
     const ok = keyed || (plain && (key === null || row.business_date < key.since));
-    return { businessDate: row.business_date, code: row.security_code, ok, keyed };
+    return { businessDate: row.business_date, code: row.security_code, ok };
   });
 }
 

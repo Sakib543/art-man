@@ -31,9 +31,8 @@ export function ProfitAndLoss({ report }: { report: MonthReport }) {
           <Row label="Other expenses (with reason)" value={minus(report.others)} />
           <Row label="Staff earnings from day close (commission, daily wage)" value={minus(report.staffEarned)} />
           <Row label="Monthly salaries (staff on a salary)" value={minus(report.salaries)} />
-          {/* A month closed before P3.1 has no `bonuses` in its frozen report. */}
-          <Row label="Bonuses given (Owner)" value={minus(report.bonuses ?? 0)} />
-          {/* Only a month that has any (P3.4); a month closed before P3.4 has no such field. */}
+          <Row label="Bonuses given (Owner)" value={minus(report.bonuses)} />
+          {/* Only a month that has any (P3.4). */}
           {report.adjustments ? (
             <Row label="Adjustments for earlier months (listed below)" value={signed(report.adjustments)} />
           ) : null}

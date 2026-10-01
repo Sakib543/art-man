@@ -41,18 +41,13 @@ interface PanelHeaderProps {
   icon?: LucideIcon;
   /** The right-hand side: a count, a badge, a button. */
   action?: ReactNode;
-  className?: string;
-  children?: ReactNode;
 }
 
-export function PanelHeader({ title, description, icon: Icon, action, className, children }: PanelHeaderProps) {
+export function PanelHeader({ title, description, icon: Icon, action }: PanelHeaderProps) {
   return (
     <div
       data-slot="panel-header"
-      className={cn(
-        "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b bg-surface-sunken px-card py-3.5",
-        className,
-      )}
+      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b bg-surface-sunken px-card py-3.5"
     >
       <div className="flex min-w-0 items-center gap-2.5">
         {Icon ? (
@@ -65,7 +60,7 @@ export function PanelHeader({ title, description, icon: Icon, action, className,
           {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
         </div>
       </div>
-      {action ?? children}
+      {action}
     </div>
   );
 }
