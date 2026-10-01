@@ -90,7 +90,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.12 | Sign-in rate limit that holds, and throttled attempts in the audit log (QA-34) | ✅ | done 2026-10-01 |
 | P7.13 | The offline day copy gives the Manager only what a close needs (QA-08) | ✅ | done 2026-10-01 |
 | P7.14 | Database hardening: TRUNCATE, the app's role, the hatch, day tables (QA-12, QA-23, QA-24) — migration | ✅ | done 2026-10-01 (migration `0023`); the live site's switch to the app's role waits on Vercel access (P5.1) |
-| P7.15 | Staff khata one month at a time (QA-42) | ⬜ | next |
+| P7.15 | Staff khata one month at a time (QA-42) | 🟡 | Sakib543, 2026-10-01 |
 | P7.16 | README and HANDOFF statements that are not so (QA-20) | ⬜ | next |
 | P7.17 | Small UX, accessibility and header fixes (QA-13, 21, 32, 35, 38, 39, 40, 41) | ⬜ | when convenient |
 | P7.18 | Code health and test-suite gaps (QA-15, 16, 17, 18, 22, 33, 44) | ⬜ | when convenient |
@@ -855,8 +855,8 @@ cancellations, khata, attendance and `diff_reason` are outside the security code
 TRUNCATE` statement triggers; run the app as a role that does not own the tables; make the hatch
 require that role; protect `business_days.opening_cash`; hash attendance and the discount fields.
 
-#### ⬜ P7.15 — Staff khata one month at a time
-**Findings:** QA-42. With a year of data every screen rendered in 33–85 ms except Staff khata: 210 ms and
+#### 🟡 P7.15 — Staff khata one month at a time
+**Owner:** Sakib543, 2026-10-01 · **Findings:** QA-42. With a year of data every screen rendered in 33–85 ms except Staff khata: 210 ms and
 **1.4 MB** for one daily-wage karigar (~1,200 lines, rendered as HTML and again as RSC data), growing
 ~1.3 MB a year. **Fix:** the current month plus the balance brought forward, with month navigation — the
 salary slip's shape.
