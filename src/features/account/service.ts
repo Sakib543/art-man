@@ -1,7 +1,7 @@
-import { and, count, eq, gt } from "drizzle-orm";
+import { and, count, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
-import { auditLog, user as userTable } from "@/db/schema";
+import { account, auditLog, user as userTable } from "@/db/schema";
 import { auth } from "@/lib/auth/server";
 import { checkNewPassword } from "@/lib/auth/password-rules";
 import type { SessionUser } from "@/lib/auth/session";
@@ -15,22 +15,40 @@ const actorOf = (user: SessionUser) => user.username || user.name;
 /**
  * Check the signed-in person's own password. Wrong tries are audited and, like
  * PINs, count towards a short lock so the password cannot be guessed here.
+ *
+ * The count, the check and the record of a wrong one run one at a time per
+ * person, under an advisory lock, as the Owner's PIN does (`db/pin-guard.ts`,
+ * P7.1): counted first and checked after, tries sent all at once each read
+ * the count before any was recorded, and every one was checked (P7.18). All of
+ * it on `tx` — the password hash included — so a request waiting on the lock
+ * never takes a second connection from the pool.
  */
 async function confirmOwnPassword(user: SessionUser, password: string): Promise<void> {
   const ctx = await auth.$context;
-  const since = new Date(Date.now() - LOCK_MINUTES * 60_000);
-  const [{ wrong }] = await db
-    .select({ wrong: count() })
-    .from(auditLog)
-    .where(and(eq(auditLog.action, "password.wrong"), eq(auditLog.target, user.id), gt(auditLog.createdAt, since)));
-  if (wrong >= MAX_WRONG_TRIES) throw new UserError(`Too many wrong passwords. Try again in ${LOCK_MINUTES} minutes.`);
+  const problem = await db.transaction(async (tx): Promise<string | null> => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`password:${user.id}`}, 0))`);
 
-  const accounts = await ctx.internalAdapter.findAccounts(user.id);
-  const credential = accounts.find((account) => account.providerId === "credential");
-  if (!credential?.password || !(await ctx.password.verify({ hash: credential.password, password }))) {
-    await writeAudit(db, { actor: actorOf(user), action: "password.wrong", target: user.id, success: false });
-    throw new UserError("That password is not correct.");
-  }
+    const since = new Date(Date.now() - LOCK_MINUTES * 60_000);
+    const [{ wrong }] = await tx
+      .select({ wrong: count() })
+      .from(auditLog)
+      .where(and(eq(auditLog.action, "password.wrong"), eq(auditLog.target, user.id), gt(auditLog.createdAt, since)));
+    if (wrong >= MAX_WRONG_TRIES) return `Too many wrong passwords. Try again in ${LOCK_MINUTES} minutes.`;
+
+    const [credential] = await tx
+      .select({ hash: account.password })
+      .from(account)
+      .where(and(eq(account.userId, user.id), eq(account.providerId, "credential")))
+      .limit(1);
+    if (credential?.hash && (await ctx.password.verify({ hash: credential.hash, password }))) return null;
+
+    await writeAudit(tx, { actor: actorOf(user), action: "password.wrong", target: user.id, success: false });
+    return "That password is not correct.";
+  });
+
+  // Thrown only once the transaction has committed: thrown inside it, the
+  // record of a wrong password would be rolled back and never count.
+  if (problem) throw new UserError(problem);
 }
 
 /** Change your own login password. Other devices are signed out; this one stays signed in. */

@@ -50,12 +50,6 @@ export interface Bill {
 
 export type KhataKind = "earning" | "payment" | "advance" | "bonus" | "adjustment";
 
-/** One line of a staff member's running ledger. Positive = owed to staff, negative = taken. */
-export interface KhataEntry {
-  kind: KhataKind;
-  amount: Rupees;
-}
-
 export interface Partner {
   id: string;
   /** Profit share percent. All partners together must sum to 100. */

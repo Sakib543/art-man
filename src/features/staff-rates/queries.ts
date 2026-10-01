@@ -1,6 +1,7 @@
 import { asc } from "drizzle-orm";
 import { db } from "@/db";
-import { dealItems, deals, services, staff } from "@/db/schema";
+import { dealItemsInOrder } from "@/db/queries/catalog";
+import { deals, services, staff } from "@/db/schema";
 import type { PayType } from "@/lib/accounting";
 import type { DealRow, ServiceRow, StaffRow } from "./types";
 
@@ -39,7 +40,7 @@ export async function getServiceList(): Promise<ServiceRow[]> {
 export async function getDealList(): Promise<DealRow[]> {
   const [dealRows, itemRows] = await Promise.all([
     db.select().from(deals).orderBy(asc(deals.createdAt), asc(deals.name)),
-    db.select().from(dealItems),
+    dealItemsInOrder(),
   ]);
 
   return dealRows.map(({ id, name, price, active }) => ({

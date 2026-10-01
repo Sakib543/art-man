@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-817_unit_%2B_165_integration-2E7D32?logo=vitest&logoColor=white" alt="817 unit and 165 integration tests" />
+  <img src="https://img.shields.io/badge/tests-824_unit_%2B_168_integration-2E7D32?logo=vitest&logoColor=white" alt="824 unit and 168 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,8 +67,8 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 817 unit tests in 57
-files · 165 integration tests against PostgreSQL · 25 database migrations · 34 database triggers.
+**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 824 unit tests in 58
+files · 168 integration tests against PostgreSQL · 25 database migrations · 34 database triggers.
 
 ---
 
@@ -155,11 +155,10 @@ files · 165 integration tests against PostgreSQL · 25 database migrations · 3
 - **A pure, fully tested accounting core.** Pricing, deal splits, discounts, commission, day close, month
   report, partner shares and capital live in `src/lib/accounting` with no React and no database, in whole
   rupees (integers), using largest-remainder allocation so every split adds up to the rupee.
-- **Architecture rules a test checks.** A conventions test reads the feature folders and fails the build
-  if a feature imports another through `@/features/…`, a "pure" file grows a database import or has no test
-  beside it, an `actions.ts` loses its `"use server"` or has no role check at all, or any file but one sets
-  the maintainer hatch. It does not yet catch one action in a file losing its check, a relative import
-  between features, or a server component reading the database (backlog P7.18).
+- **Architecture rules a test checks.** A conventions test reads the source and fails the build if a
+  feature imports another (by alias or by relative path), a component imports the database, a "pure" file
+  grows a database import or has no test beside it, any Server Action does not check the role itself, or
+  any file but one sets the maintainer hatch. Each rule was confirmed to fail when broken.
 - **Audited, bounded escape hatch.** A maintainer role can correct a bill in place through a setting the
   triggers honour only when it names the current transaction's own id (`pg_current_xact_id()`), set
   transaction-locally — so it dies with the transaction, and a session-wide `SET` opens nothing. The audit
@@ -304,9 +303,9 @@ sequenceDiagram
   needs: no salary, and pay and balances only for the staff the close lists.
 - **Ordering:** a day's close waits in the outbox behind that day's bills and entries, and the server closes
   the day only if its own expected cash matches the figure the cash was counted against.
-- **Sessions:** an offline sign-in lasts 12 hours from the last one the server confirmed, by the computer's
-  clock — setting it back stretches the window (backlog P7.18). "Online" means the
-  server answered a probe, not that the browser thinks it has a network.
+- **Sessions:** an offline sign-in lasts 12 hours from the last one the server confirmed. The browser keeps
+  the latest time its clock has shown, so setting the clock back ends the window rather than stretching it.
+  "Online" means the server answered a probe, not that the browser thinks it has a network.
 - **One counter computer, checked:** each browser tags what it keeps with a code of its own, which also goes
   into its temporary slip numbers (`T-KXR-3`), so two computers never hand out the same one. When more than
   one computer worked offline on a day, the Owner's Overview and that day's report say so; a bill arriving
@@ -367,9 +366,8 @@ scripts/               Developer seed, database check, backup
 
 Rules the codebase keeps: money logic lives only in `lib/accounting`; money is whole rupees as integers;
 components never talk to the database; a feature never imports another feature; every accounting change
-comes with a test. The conventions test checks the feature folders' shape, that a pure file stays pure and
-has a test, and imports between features written `@/features/…`; the rest is kept by review (backlog P7.18
-adds the components rule and relative imports).
+comes with a test. The conventions test checks the features' shape and imports, the components, the pure
+files and every Server Action; money in whole rupees and in `lib/accounting` only is kept by review.
 
 ---
 
@@ -464,14 +462,14 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **817 unit tests in 57 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **824 unit tests in 58 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
   session, sign-in error messages, the proxy's redirects, role rules and the salary slip.
 - **Property-style checks** where it matters: for example, recalculating a closed month from corrected days
   must equal building the report from scratch, across every shape of month.
-- **165 integration tests in 14 files** run the services, Server Actions, Route Handlers and triggers against a
+- **168 integration tests in 15 files** run the services, Server Actions, Route Handlers and triggers against a
   real PostgreSQL: the Owner-cash PIN and its lock under 20 guesses at once; the same cancellation, installment
   or save sent five times at once changing the books once; a closed day corrected after a pay change, reopened
   and closed again; every one of the 46 Server Actions called as each role, signed out and in maintenance
@@ -519,8 +517,8 @@ where they belong. The first business day is opened from Day close.
 
 All planned features are built: billing, day close, daily and monthly reporting, staff ledgers and salary
 slips, partners and capital, closed-month adjustments, the maintainer tools, and full offline support.
-What remains: the last items of the QA audit (a copy of the security codes outside the database, and
-code-health gaps), and the operational steps — a clean production database for the client's trial, the
+What remains: the QA audit's last item (a copy of the security codes outside the database), and the
+operational steps — a clean production database for the client's trial, the
 app connected as its own database role, the deploy gate switched on, and a move to a VPS with scheduled
 off-site backups.
 

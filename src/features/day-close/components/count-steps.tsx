@@ -2,13 +2,14 @@
 
 import { Panel, PanelHeader, panelClass } from "@/components/panel";
 import { AlertCircle, ArrowLeft, Check, Lock, WifiOff } from "lucide-react";
-import type { FormEvent } from "react";
+import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatTime, num, rs } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { cashCountOf, NOTES, type NoteCounts } from "../cash-count";
 import type { CloseReview } from "../types";
 
 interface CountStepProps {
@@ -49,6 +50,7 @@ export function CountStep({ counted, onCounted, error, pending, onBack, onNext }
           <p className="mt-2 text-xs text-muted-foreground">
             Count all the cash in the drawer and enter only the total, then press Enter.
           </p>
+          <NoteByNote onTotal={(total) => onCounted(String(total))} />
         </div>
       </form>
 
@@ -78,6 +80,88 @@ export function CountStep({ counted, onCounted, error, pending, onBack, onNext }
         </div>
       </Panel>
     </div>
+  );
+}
+
+/**
+ * The drawer counted note by note (P7.18, QA-15; spec §5.4(4)): how many of
+ * each note, and the coins, added up into the total above as they are typed.
+ * Folded away until wanted — the total box is still the quick way, and what is
+ * saved. Enter here does not finish the count: the next box is a note away.
+ */
+function NoteByNote({ onTotal }: { onTotal: (total: number) => void }) {
+  const [notes, setNotes] = useState<NoteCounts>({});
+  const [coins, setCoins] = useState("");
+  const count = cashCountOf(notes, coins);
+
+  function change(nextNotes: NoteCounts, nextCoins: string) {
+    setNotes(nextNotes);
+    setCoins(nextCoins);
+    const next = cashCountOf(nextNotes, nextCoins);
+    if (next.ok) onTotal(next.total);
+  }
+
+  const stayHere = (event: KeyboardEvent) => {
+    if (event.key === "Enter") event.preventDefault();
+  };
+
+  return (
+    <details className="mt-3 rounded-lg border bg-surface-sunken">
+      <summary className="cursor-pointer px-3 py-2 text-sm font-medium">Count note by note</summary>
+      <div className="space-y-1.5 border-t px-3 py-3">
+        {NOTES.map((note) => {
+          const id = `note-${note}`;
+          const many = Number(notes[note] || 0);
+          return (
+            <div key={note} className="flex items-center gap-2.5 text-sm">
+              <Label htmlFor={id} className="w-20 shrink-0 justify-end tabular-nums">
+                Rs {num(note)} ×
+              </Label>
+              <Input
+                id={id}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={notes[note] ?? ""}
+                onChange={(event) => change({ ...notes, [note]: event.target.value }, coins)}
+                onKeyDown={stayHere}
+                placeholder="0"
+                className="h-9 w-20 tabular-nums"
+              />
+              <span className="ml-auto text-muted-foreground tabular-nums">
+                {Number.isSafeInteger(many) && many > 0 ? rs(note * many) : ""}
+              </span>
+            </div>
+          );
+        })}
+        <div className="flex items-center gap-2.5 text-sm">
+          <Label htmlFor="note-coins" className="w-20 shrink-0 justify-end">
+            Coins (Rs)
+          </Label>
+          <Input
+            id="note-coins"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={coins}
+            onChange={(event) => change(notes, event.target.value)}
+            onKeyDown={stayHere}
+            placeholder="0"
+            className="h-9 w-20 tabular-nums"
+          />
+        </div>
+        {count.ok ? (
+          <p className="pt-1 text-xs text-muted-foreground">
+            Adds up to <span className="font-semibold text-foreground tabular-nums">{rs(count.total)}</span>, put in the total above.
+          </p>
+        ) : (
+          <p role="alert" className="flex items-center gap-1.5 pt-1 text-xs text-destructive">
+            <AlertCircle className="size-4 shrink-0" aria-hidden />
+            {count.problem}
+          </p>
+        )}
+      </div>
+    </details>
   );
 }
 

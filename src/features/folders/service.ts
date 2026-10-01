@@ -224,6 +224,13 @@ export async function voidEntry(current: SessionUser, input: VoidInput): Promise
   const [entry] = await db.select().from(cashEntries).where(eq(cashEntries.id, entryId)).limit(1);
   if (!entry) throw new UserError("Entry not found");
   if (entry.voidsEntryId) throw new UserError("A cancellation cannot be cancelled");
+  // A payment handed over at Day close has a khata line beside it, which only
+  // reopening the day reverses with it (P7.18, QA-17). Cancelled here, the cash
+  // came back and the staff member's khata still said it was paid. The screen
+  // never offers it; this is for a request made without the screen.
+  if (entry.kind === "staff_payment") {
+    throw new UserError("A payment made at Day close is undone by reopening the day, not cancelled here.");
+  }
 
   const closedDay = entry.businessDate !== day?.businessDate;
   if (closedDay) await requireOwnerOnOpenMonth(current, entry.businessDate, "entry");

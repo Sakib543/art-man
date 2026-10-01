@@ -4,7 +4,7 @@ import { writeAudit } from "@/db/audit";
 import { writeCancellation } from "@/db/bill-cancel";
 import type { Tx } from "@/db/day-settlement";
 import { getOpenBusinessDay } from "@/db/queries/business-day";
-import { getCatalogVersion } from "@/db/queries/catalog";
+import { dealItemsInOrder, getCatalogVersion } from "@/db/queries/catalog";
 import { lateArrivalNote } from "@/db/queries/offline-work";
 import {
   auditLog,
@@ -13,7 +13,6 @@ import {
   bills,
   customerSpecialRates,
   customers,
-  dealItems,
   deals,
   services,
   staff,
@@ -88,7 +87,7 @@ async function priceBill(
     // A bill of nothing but Other lines names no service at all.
     serviceIds.length ? db.select().from(services).where(inArray(services.id, serviceIds)) : [],
     dealIds.length ? db.select().from(deals).where(inArray(deals.id, dealIds)) : [],
-    dealIds.length ? db.select().from(dealItems).where(inArray(dealItems.dealId, dealIds)) : [],
+    dealIds.length ? dealItemsInOrder(dealIds) : [],
     db.select({ id: staff.id, name: staff.name, active: staff.active }).from(staff).where(inArray(staff.id, staffIds)),
   ]);
 

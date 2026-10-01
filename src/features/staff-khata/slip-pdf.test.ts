@@ -92,7 +92,9 @@ describe("summaryRows (backlog P3.3)", () => {
 
 describe("statusNote", () => {
   it("final once the month is closed, provisional until then", () => {
-    expect(statusNote(info)).toBe("Final: September 2026 was closed on 1 Oct 2026. These figures will not change.");
+    expect(statusNote(info)).toBe(`Final: September 2026 was closed on 1 Oct 2026. These are its figures as of ${info.generatedAt}.`);
+    // It no longer promises what a correction to a closed month would break (QA-16).
+    expect(statusNote(info)).not.toMatch(/will not change/);
     expect(statusNote({ ...info, closedOn: null })).toMatch(/^Provisional: may change at month end/);
   });
 });

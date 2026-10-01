@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, posix } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -85,8 +85,15 @@ describe("every feature has the same shape", () => {
       return; // A feature with no writes has no actions.ts. `overview` is one.
     }
     expect(source.startsWith('"use server";')).toBe(true);
-    // The permission check lives next to the data, not only in the proxy.
-    expect(source).toMatch(/require(User|Role)/);
+    // The permission check lives next to the data, not only in the proxy —
+    // in every action, not somewhere in the file (P7.18, QA-44: one action
+    // could lose its check while another in the file kept the regex happy).
+    const actions = source.split(/^export async function /m).slice(1);
+    expect(actions.length, `${feature}/actions.ts exports no action`).toBeGreaterThan(0);
+    for (const action of actions) {
+      const name = action.slice(0, action.indexOf("("));
+      expect(action, `${feature}/actions.ts: ${name} checks no role`).toMatch(/\brequire(User|Role)\(/);
+    }
   });
 
   it.each(featureNames)("%s: its pure files stay pure", (feature) => {
@@ -116,13 +123,34 @@ describe("every feature has the same shape", () => {
     const crossing: string[] = [];
     for (const feature of featureNames) {
       for (const path of everyFile(feature)) {
-        for (const [, module] of read(path).matchAll(/from\s+"(@\/features\/[^"]+)"/g)) {
-          if (!module.startsWith(`@/features/${feature}/`)) crossing.push(`${path} -> ${module}`);
+        for (const [, module] of read(path).matchAll(/from\s+"([^"]+)"/g)) {
+          // Written `@/features/…`, or relative — `../billing/schemas` (P7.18, QA-44).
+          const target = module.startsWith("@/")
+            ? `src/${module.slice(2)}`
+            : module.startsWith(".")
+              ? posix.join(dirname(path).replaceAll("\\", "/"), module)
+              : null;
+          if (target?.startsWith(`${FEATURES}/`) && !target.startsWith(`${FEATURES}/${feature}/`)) {
+            crossing.push(`${path} -> ${module}`);
+          }
         }
       }
     }
     // Shared pieces move up into components/ or lib/ instead.
     expect(crossing).toEqual([]);
+  });
+
+  it("no component talks to the database (ARCHITECTURE rule 3)", () => {
+    // Pages call queries.ts and forms call actions.ts; a component that
+    // imports the database is a page in hiding — and in a client component, a
+    // secret in the browser. A type from it is fine: it vanishes at build.
+    // The build stopped only client components (P7.18, QA-44).
+    const components = [
+      ...sourcesUnder("src/components"),
+      ...featureNames.flatMap((feature) => everyFile(feature).filter((path) => path.replaceAll("\\", "/").includes("/components/"))),
+    ];
+    const talking = components.filter((path) => valueImports(read(path)).some((module) => /^@\/db(\/|$)/.test(module)));
+    expect(talking).toEqual([]);
   });
 });
 

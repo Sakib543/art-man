@@ -3,7 +3,7 @@
 import { WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { offlineTrust } from "@/lib/offline/session";
-import { readCatalog } from "@/lib/offline/store";
+import { noteClock, readCatalog } from "@/lib/offline/store";
 import { useConnectivity } from "./use-connectivity";
 
 /**
@@ -28,14 +28,21 @@ export function OfflineBanner() {
     document.documentElement.toggleAttribute("data-offline", !online);
   }, [online]);
 
+  // The clock's high-water mark (P7.18, QA-33), noted every minute any screen
+  // is open, online or not: a clock set back while the browser stays open is
+  // caught at the next check, not only after a reload.
+  useEffect(() => {
+    void noteClock();
+    const timer = setInterval(() => void noteClock(), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     if (online) return;
     let cancelled = false;
-    void readCatalog()
-      .catch(() => null)
-      .then((copy) => {
-        if (!cancelled) setCanKeep(offlineTrust(copy?.savedAt ?? null, Date.now()).ok);
-      });
+    void Promise.all([readCatalog().catch(() => null), noteClock()]).then(([copy, seen]) => {
+      if (!cancelled) setCanKeep(offlineTrust(copy?.savedAt ?? null, Date.now(), seen).ok);
+    });
     return () => {
       cancelled = true;
     };

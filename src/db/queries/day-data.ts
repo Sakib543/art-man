@@ -1,5 +1,5 @@
 import { asc, eq, sql } from "drizzle-orm";
-import type { db } from "@/db";
+import { db } from "@/db";
 import { attendance, billCancellations, billLines, bills, cashEntries, khataEntries, staff } from "@/db/schema";
 import { settledStaff, type Bill, type FolderEntry, type PayType, type Rupees, type StaffPay } from "@/lib/accounting";
 
@@ -23,26 +23,42 @@ export interface SettledDay extends LoadedDay {
   present: Record<string, boolean>;
 }
 
+/**
+ * Run the reads at once on the pool, one after another on a transaction (P7.18,
+ * QA-22). A transaction is one connection, and pg warns that queries sent to a
+ * client already running one will be refused from pg 9 — Day close and every
+ * correction read the day inside their transaction.
+ */
+async function each<T extends readonly unknown[]>(reader: Reader, reads: { [K in keyof T]: () => PromiseLike<T[K]> }): Promise<T> {
+  if (reader === db) return (await Promise.all(reads.map((read) => read()))) as unknown as T;
+  const results: unknown[] = [];
+  for (const read of reads) results.push(await read());
+  return results as unknown as T;
+}
+
 /** Everything both loaders read, before either decides whose pay counts. */
 async function readDay(reader: Reader, businessDate: string) {
-  const [billRows, lineRows, cancelRows, entryRows, staffRows] = await Promise.all([
-    reader.select().from(bills).where(eq(bills.businessDate, businessDate)).orderBy(asc(bills.billNo)),
-    reader
-      .select({ billId: billLines.billId, staffId: billLines.staffId, amount: billLines.amount })
-      .from(billLines)
-      .innerJoin(bills, eq(billLines.billId, bills.id))
-      .where(eq(bills.businessDate, businessDate)),
-    reader
-      .select({ billId: billCancellations.billId })
-      .from(billCancellations)
-      .innerJoin(bills, eq(billCancellations.billId, bills.id))
-      .where(eq(bills.businessDate, businessDate)),
-    reader
-      .select({ kind: cashEntries.kind, amount: cashEntries.amount, paidFrom: cashEntries.paidFrom })
-      .from(cashEntries)
-      .where(eq(cashEntries.businessDate, businessDate)),
-    reader.select().from(staff).orderBy(asc(staff.createdAt), asc(staff.name)),
-  ]);
+  const [billRows, lineRows, cancelRows, entryRows, staffRows] = await each(reader, [
+    () => reader.select().from(bills).where(eq(bills.businessDate, businessDate)).orderBy(asc(bills.billNo)),
+    () =>
+      reader
+        .select({ billId: billLines.billId, staffId: billLines.staffId, amount: billLines.amount })
+        .from(billLines)
+        .innerJoin(bills, eq(billLines.billId, bills.id))
+        .where(eq(bills.businessDate, businessDate)),
+    () =>
+      reader
+        .select({ billId: billCancellations.billId })
+        .from(billCancellations)
+        .innerJoin(bills, eq(billCancellations.billId, bills.id))
+        .where(eq(bills.businessDate, businessDate)),
+    () =>
+      reader
+        .select({ kind: cashEntries.kind, amount: cashEntries.amount, paidFrom: cashEntries.paidFrom })
+        .from(cashEntries)
+        .where(eq(cashEntries.businessDate, businessDate)),
+    () => reader.select().from(staff).orderBy(asc(staff.createdAt), asc(staff.name)),
+  ] as const);
 
   const cancelled = new Set(cancelRows.map((row) => row.billId));
   const workedToday = new Set(lineRows.map((line) => line.staffId));

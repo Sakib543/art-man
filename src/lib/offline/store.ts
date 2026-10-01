@@ -45,6 +45,8 @@ const DAY = "day";
  */
 const COUNTERS = "counters";
 const DEVICE = "device";
+/** The latest time this browser's clock has shown (P7.18, QA-33): `noteClock`. */
+const CLOCK = "clock";
 
 /**
  * Bills waiting for the server (P2.2c). Keyed by a number the store counts up
@@ -183,6 +185,33 @@ export async function thisDevice(): Promise<DeviceTag> {
   };
   await finished(tx);
   return device!;
+}
+
+/**
+ * Note the time this browser's clock shows now, and answer the latest it has
+ * ever shown — a mark that only moves forward (P7.18, QA-33). `offlineTrust`
+ * refuses a clock behind it, so setting the clock back can no longer stretch
+ * the 12 hours of working offline. Noted at every check and every minute a
+ * screen is open (`OfflineBanner`); kept in `counters`, which sign-out does not
+ * clear. With no IndexedDB it answers `now`, and the copy's time is the floor.
+ */
+export async function noteClock(now: number = Date.now()): Promise<number> {
+  try {
+    const db = await openDb();
+    const tx = db.transaction(COUNTERS, "readwrite");
+    const store = tx.objectStore(COUNTERS);
+    let latest = now;
+    const found = store.get(CLOCK);
+    found.onsuccess = () => {
+      const kept = typeof found.result === "number" && Number.isFinite(found.result) ? found.result : 0;
+      latest = Math.max(kept, now);
+      if (latest !== kept) store.put(latest, CLOCK);
+    };
+    await finished(tx);
+    return latest;
+  } catch {
+    return now;
+  }
 }
 
 /** Stamped with this computer's tag, unless it already carries one (a refused item sent again keeps its own). */

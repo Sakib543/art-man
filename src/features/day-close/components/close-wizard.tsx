@@ -11,7 +11,7 @@ import { parseRupees } from "@/lib/format";
 import { dayFor } from "@/lib/offline/day";
 import { describeCounts, outboxTally, workOfDay, type OutboxCloseEntry } from "@/lib/offline/outbox";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
-import { queueClose, readCatalog, readDay, readOutbox, removeFromOutbox } from "@/lib/offline/store";
+import { noteClock, queueClose, readCatalog, readDay, readOutbox, removeFromOutbox } from "@/lib/offline/store";
 import { closeDayAction, reviewCloseAction } from "../actions";
 import { closeEntryOf, closeProblem, localDayOf, reviewLocally, type CloseCount, type LocalDay } from "../offline-close";
 import { checkPayouts, overOwedText } from "../payments";
@@ -218,7 +218,7 @@ function Wizard({
   async function keep(review: CloseReview, count: CloseCount) {
     try {
       const stored = await readCatalog().catch(() => null);
-      const trust = offlineTrust(stored?.savedAt ?? null, Date.now());
+      const trust = offlineTrust(stored?.savedAt ?? null, Date.now(), await noteClock());
       if (!trust.ok) return setError(trustRefusal(trust, "close"));
       if (!stored) return setError(trustRefusal({ ok: false, reason: "no-copy" }, "close"));
 

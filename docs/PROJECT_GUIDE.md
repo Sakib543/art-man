@@ -52,6 +52,7 @@ RAAT (Manager) ─► Day close, 5 qadam
   2. Staff ki kamai (commission + daily wage) khud hisaab hoti hai
   3. Staff ko payment
   4. Drawer ki cash gin kar total likhna  (expected abhi CHHUPA rehta hai)
+     "Count note by note": har note kitne hain likhein, total khud ban jata hai (P7.18)
   5. Expected vs counted, farq ki wajah, phir "Close day"
      ─► din lock, security code Owner ko, agla din khulta hai
 

@@ -103,7 +103,7 @@ export function SalarySlip({
             htmlFor="slip-month"
             hint={
               chosen?.closed
-                ? "Final: the month is closed, so these figures will not change."
+                ? "Final: the month is closed. The slip shows its figures as they stand today."
                 : "Provisional: this month is still open, so the figures may change."
             }
           >

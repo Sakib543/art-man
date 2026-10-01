@@ -15,7 +15,7 @@ import { dayFor } from "@/lib/offline/day";
 import { closeOf } from "@/lib/offline/outbox";
 import { OFFLINE_PAGES, offlinePage, type OfflineView } from "@/lib/offline/pages";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
-import { onCatalogSaved, onDaySaved, readCatalog, readDay, type StoredCatalog, type StoredDay } from "@/lib/offline/store";
+import { noteClock, onCatalogSaved, onDaySaved, readCatalog, readDay, type StoredCatalog, type StoredDay } from "@/lib/offline/store";
 import { cn } from "@/lib/utils";
 
 /** What an offline screen is drawn from, once this computer may work offline. */
@@ -38,9 +38,9 @@ const REFUSED_TITLE = "Working offline is not available";
 
 /** Read the copies, and decide whether this computer may work offline on them. */
 async function load(view: OfflineView): Promise<Loaded> {
-  const [copy, day] = await Promise.all([readCatalog().catch(() => null), readDay().catch(() => null)]);
+  const [copy, day, seen] = await Promise.all([readCatalog().catch(() => null), readDay().catch(() => null), noteClock()]);
   const what = view === "folders" ? "entry" : view === "day-close" ? "close" : "bill";
-  const trust = offlineTrust(copy?.savedAt ?? null, Date.now());
+  const trust = offlineTrust(copy?.savedAt ?? null, Date.now(), seen);
   if (!trust.ok) return { status: "refused", message: trustRefusal(trust, what) };
   if (!copy) return { status: "refused", message: trustRefusal({ ok: false, reason: "no-copy" }, what) };
   const businessDate = copy.catalog.businessDate;

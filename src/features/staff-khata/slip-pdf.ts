@@ -103,10 +103,17 @@ export function summaryRows(slip: Slip, info: SlipInfo): SummaryRow[] {
   return rows;
 }
 
-/** The sentence under the heading: final, or provisional and why. */
+/**
+ * The sentence under the heading: final, or provisional and why.
+ *
+ * Final, as of when the slip was made (P7.18, QA-16) — it used to promise
+ * "These figures will not change", and a correction to a closed month, which
+ * the client asked to be worked into it (P1.10), does change them. Which
+ * correction, or whose, is not said: no Owner screen may show that.
+ */
 export function statusNote(info: SlipInfo): string {
   return info.closedOn
-    ? `Final: ${info.monthLabel} was closed on ${info.closedOn}. These figures will not change.`
+    ? `Final: ${info.monthLabel} was closed on ${info.closedOn}. These are its figures as of ${info.generatedAt}.`
     : "Provisional: may change at month end. A day's commission and wage are added when that day is closed.";
 }
 

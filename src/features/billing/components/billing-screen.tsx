@@ -18,7 +18,7 @@ import { formatDate, formatDateTime, paidBy, parseRupees, rs } from "@/lib/forma
 import { closeOf, type OutboxBill, type OutboxEntry } from "@/lib/offline/outbox";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
 import { SLIP_NO_REPEATED, tempNo } from "@/lib/offline/slip";
-import { nextTempNo, queueBill, readCatalog, readOutboxEntry, removeFromOutbox, thisDevice } from "@/lib/offline/store";
+import { nextTempNo, noteClock, queueBill, readCatalog, readOutboxEntry, removeFromOutbox, thisDevice } from "@/lib/offline/store";
 import { createBillAction, editBillAction, findSavedBillAction, lookupCustomerAction } from "../actions";
 import { payModeOf } from "../bill-draft";
 import { cartReducer } from "../cart-state";
@@ -305,7 +305,7 @@ export function BillingScreen({
   async function keep(sent: Sent) {
     try {
       const stored = await readCatalog().catch(() => null);
-      const trust = offlineTrust(stored?.savedAt ?? null, Date.now());
+      const trust = offlineTrust(stored?.savedAt ?? null, Date.now(), await noteClock());
       if (!trust.ok) return setError(trustRefusal(trust));
       if (!stored) return setError(trustRefusal({ ok: false, reason: "no-copy" }));
 

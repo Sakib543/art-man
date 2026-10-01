@@ -23,6 +23,23 @@ describe("offlineTrust", () => {
     expect(offlineTrust(savedAt, savedAt - 4 * 60_000).ok).toBe(true);
     expect(offlineTrust(savedAt, savedAt - 2 * hour)).toEqual({ ok: false, reason: "clock", since: savedAt });
   });
+
+  it("cannot be stretched by setting the clock back after the copy (QA-33)", () => {
+    // Copy at 09:00; at 20:30 the clock is set back to 09:30. The copy alone
+    // allowed it — another 11½ hours, and again, for ever.
+    const sawAt = savedAt + 11.5 * hour;
+    expect(offlineTrust(savedAt, savedAt + 0.5 * hour).ok).toBe(true);
+    // The latest time this browser has shown is the floor now.
+    expect(offlineTrust(savedAt, savedAt + 0.5 * hour, sawAt)).toEqual({ ok: false, reason: "clock", since: sawAt });
+  });
+
+  it("still forgives a few minutes behind the latest time shown, and counts the 12 hours from the copy", () => {
+    const sawAt = savedAt + 3 * hour;
+    expect(offlineTrust(savedAt, sawAt - 4 * 60_000, sawAt)).toEqual({ ok: true, until: savedAt + OFFLINE_TRUST_MS });
+    expect(offlineTrust(savedAt, savedAt + 12 * hour, savedAt + 12 * hour)).toMatchObject({ ok: false, reason: "expired" });
+    // A mark older than the copy changes nothing.
+    expect(offlineTrust(savedAt, savedAt, savedAt - hour).ok).toBe(true);
+  });
 });
 
 describe("trustRefusal", () => {

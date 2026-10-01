@@ -19,7 +19,7 @@ import type { PaidFrom } from "@/lib/accounting";
 import { rs } from "@/lib/format";
 import { closeOf, type OutboxFolder } from "@/lib/offline/outbox";
 import { offlineTrust, trustRefusal } from "@/lib/offline/session";
-import { queueEntry, readCatalog } from "@/lib/offline/store";
+import { noteClock, queueEntry, readCatalog } from "@/lib/offline/store";
 import { addEntryAction } from "../actions";
 import { folderEntryText, offlineEntryOf, offlineEntryProblem } from "../rows";
 import type { StaffOption } from "../types";
@@ -101,7 +101,7 @@ export function EntryForm({
   async function keep(entry: OutboxFolder, lostAnswer = false) {
     try {
       const stored = await readCatalog().catch(() => null);
-      const trust = offlineTrust(stored?.savedAt ?? null, Date.now());
+      const trust = offlineTrust(stored?.savedAt ?? null, Date.now(), await noteClock());
       if (!trust.ok) return setError(trustRefusal(trust, "entry"));
       if (!stored) return setError(trustRefusal({ ok: false, reason: "no-copy" }, "entry"));
 

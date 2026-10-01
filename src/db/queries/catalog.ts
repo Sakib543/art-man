@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { customerSpecialRates, customers, dealItems, deals, services, staff } from "@/db/schema";
 import { offeredDeals, type CatalogDeal, type CatalogService, type StaffOption } from "@/lib/catalog";
@@ -19,6 +19,26 @@ export interface ActiveCatalog {
 }
 
 /**
+ * The services of deals, in one fixed order: as the menu lists the services
+ * (when they were added, then name), then id (P7.18, QA-18). A deal's price is
+ * split by list price, and a tie's spare rupee goes to the first of them —
+ * read with no order, "first" was whatever Postgres returned, which an edit of
+ * the deal, a VACUUM or a restore could change, and the commission with it.
+ * It also keeps the offline copy's version (`versionOf`) from moving on its own.
+ */
+export function dealItemsInOrder(dealIds?: readonly string[]) {
+  const query = db
+    .select({ dealId: dealItems.dealId, serviceId: dealItems.serviceId })
+    .from(dealItems)
+    .innerJoin(services, eq(services.id, dealItems.serviceId));
+  return (dealIds ? query.where(inArray(dealItems.dealId, [...dealIds])) : query).orderBy(
+    asc(services.createdAt),
+    asc(services.name),
+    asc(services.id),
+  );
+}
+
+/**
  * What the counter can sell right now. The billing screen and the browser's
  * offline copy (P2.2b) both read it from here, so the two cannot disagree
  * about what is on offer.
@@ -27,7 +47,7 @@ export async function getActiveCatalog(): Promise<ActiveCatalog> {
   const [serviceRows, dealRows, dealItemRows, staffRows] = await Promise.all([
     db.select().from(services).where(eq(services.active, true)).orderBy(services.createdAt, services.name),
     db.select().from(deals).where(eq(deals.active, true)).orderBy(deals.name),
-    db.select().from(dealItems),
+    dealItemsInOrder(),
     db.select({ id: staff.id, name: staff.name }).from(staff).where(eq(staff.active, true)).orderBy(staff.name),
   ]);
 

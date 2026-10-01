@@ -27,10 +27,19 @@ export type OfflineTrust =
   | { ok: false; reason: "expired"; since: number }
   | { ok: false; reason: "clock"; since: number };
 
-/** May offline billing run now, on a copy saved at `savedAt`? */
-export function offlineTrust(savedAt: number | null, now: number): OfflineTrust {
+/**
+ * May offline billing run now, on a copy saved at `savedAt`?
+ *
+ * `seen` is the latest time this browser's clock has shown (`noteClock`,
+ * `lib/offline/store.ts`) — a mark that only moves forward. Until P7.18
+ * (QA-33) only the copy's own time was the floor: at 19:30 a clock set back to
+ * 08:30 was handed another 11½ hours, and again, for ever. Now a clock behind
+ * the latest it has shown ends the window as one behind the copy does.
+ */
+export function offlineTrust(savedAt: number | null, now: number, seen: number | null = null): OfflineTrust {
   if (savedAt === null) return { ok: false, reason: "no-copy" };
-  if (now < savedAt - CLOCK_SLACK_MS) return { ok: false, reason: "clock", since: savedAt };
+  const latest = Math.max(savedAt, seen ?? savedAt);
+  if (now < latest - CLOCK_SLACK_MS) return { ok: false, reason: "clock", since: latest };
   const until = savedAt + OFFLINE_TRUST_MS;
   return now < until ? { ok: true, until } : { ok: false, reason: "expired", since: savedAt };
 }

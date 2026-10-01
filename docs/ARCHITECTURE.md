@@ -159,16 +159,16 @@ drizzle/              Generated migrations. Never edited by hand.
     and `month-close` has no schemas; empty files to satisfy a rule would be
     worse than the rule.
 
-Rule 9, the "a test beside it" part of the tree above, and most of rules 5
-and 7 are checked by `src/features/conventions.test.ts` — they were written down
-here from the start and drifted anyway, because a document cannot fail a build.
-Each of those checks was confirmed to fail when the rule is broken, not only to
-pass today. What it does not catch yet (backlog P7.18, QA-44): rule 3 — no test
-reads the components, and the build stops only a client component that imports
-the database; rule 5 written as a relative import (`../billing/…`); and rule 7
-for one action in a file whose others check (the test looks for one
-`requireUser`/`requireRole` per `actions.ts`). It also fails on any file but
-`db/financial-edit.ts` naming the developer's hatch (P7.14).
+Rules 3, 5, 7 and 9 and the "a test beside it" part of the tree above are
+checked by `src/features/conventions.test.ts` — they were written down here from
+the start and drifted anyway, because a document cannot fail a build. Each check
+was confirmed to fail when the rule is broken, not only to pass today. Since
+P7.18 (QA-44) rule 3 covers `src/components` and every feature's `components/`
+(a type from `@/db` is allowed — it vanishes at build), rule 5 resolves relative
+imports (`../billing/…`) as well as `@/features/…`, and rule 7 is checked per
+exported action, not once per file. It also fails on any file but
+`db/financial-edit.ts` naming the developer's hatch (P7.14). Rules 1, 2 and 6
+are kept by review.
 
 ## Reference
 

@@ -1,18 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  advanceOutstanding,
   allocate,
-  capitalSummary,
   cashDifference,
   commissionOn,
-  commissionReversal,
   contributionsMatch,
   countedTotal,
   dayEarning,
   dayProfit,
   expectedCash,
   funderPosition,
-  khataBalance,
   netProfit,
   ownerAccount,
   partnerShares,
@@ -98,22 +94,16 @@ describe("work per staff and cancelled bills (spec 11)", () => {
 });
 
 describe("khata (spec 6.2)", () => {
+  // The balance the Staff khata shows is the last line's (P7.18 removed the
+  // helpers nothing called: khataBalance, advanceOutstanding, commissionReversal).
+  const balanceOf = (entries: { amount: number }[]) => withRunningBalance(entries).at(-1)?.balance ?? 0;
+
   it("Sherry ends the day with a zero balance after being paid", () => {
-    expect(
-      khataBalance([
-        { kind: "earning", amount: 1300 },
-        { kind: "payment", amount: -1300 },
-      ]),
-    ).toBe(0);
+    expect(balanceOf([{ amount: 1300 }, { amount: -1300 }])).toBe(0);
   });
 
-  it("taking more than earned shows as an advance", () => {
-    const entries = [
-      { kind: "earning" as const, amount: 1000 },
-      { kind: "advance" as const, amount: -3000 },
-    ];
-    expect(khataBalance(entries)).toBe(-2000);
-    expect(advanceOutstanding(entries)).toBe(2000);
+  it("taking more than earned shows as an advance — a balance below zero", () => {
+    expect(balanceOf([{ amount: 1000 }, { amount: -3000 }])).toBe(-2000);
   });
 
   it("shows the running balance after each line (Sherry's day)", () => {
@@ -134,11 +124,6 @@ describe("khata (spec 6.2)", () => {
       -200,
     );
     expect(rows.map((r) => r.balance)).toEqual([300, -1000]);
-  });
-
-  it("a cancelled bill reverses its commission", () => {
-    const entries = [{ kind: "earning" as const, amount: 150 }, commissionReversal(150)];
-    expect(khataBalance(entries)).toBe(0);
   });
 });
 
@@ -228,6 +213,6 @@ describe("funders and contributions", () => {
 
 describe("capital / outstanding (spec 8.2)", () => {
   it("solar 300,000, one 50,000 installment -> 250,000 remaining", () => {
-    expect(capitalSummary(300000, [50000])).toEqual({ total: 300000, paid: 50000, remaining: 250000 });
+    expect(funderPosition(300000, [50000])).toEqual({ contributed: 300000, repaid: 50000, remaining: 250000 });
   });
 });
