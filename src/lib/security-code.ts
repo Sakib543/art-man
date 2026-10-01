@@ -1,10 +1,15 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 /**
  * The security code a day closes with. It is a hash of the day's figures and
  * the drawer's reason, the day's bills and entries, its staff list with the
  * pay it was settled on, and the previous day's code. If anything from a
  * closed day is changed later, recomputing gives a different code.
+ *
+ * Since P7.8b (QA-26) the hash is keyed — an HMAC — when the server holds a
+ * key (`lib/security-key.ts`). The database never holds it, so someone who can
+ * change the database but has no key cannot work a changed day's code out
+ * again. Without a key the code is the plain hash it always was.
  */
 
 /** JSON with keys sorted, so the same data always produces the same text. */
@@ -85,9 +90,15 @@ function inFixedOrder(lines: readonly SealedLine[]): SealedLine[] {
   return [...lines].sort((a, b) => compare(a.name, b.name) || compare(a.amount, b.amount) || compare(a.staffId, b.staffId));
 }
 
-/** "A3F9-7C21-0B8E": 12 hex characters, easy to read out and compare. */
-function codeOf(value: unknown): string {
-  const hex = createHash("sha256").update(stableStringify(value)).digest("hex").slice(0, 12).toUpperCase();
+/**
+ * "A3F9-7C21-0B8E": 12 hex characters, easy to read out and compare. With a
+ * key, of the HMAC-SHA256 of the same text (P7.8b); without one, of its plain
+ * SHA-256.
+ */
+function codeOf(value: unknown, key: Uint8Array | null = null): string {
+  const text = stableStringify(value);
+  const hash = key ? createHmac("sha256", key).update(text) : createHash("sha256").update(text);
+  const hex = hash.digest("hex").slice(0, 12).toUpperCase();
   return `${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`;
 }
 
@@ -97,13 +108,19 @@ function codeOf(value: unknown): string {
  * without it showing: a bill's discount, discount reason, slip number and
  * cancellation reason, the drawer's reason, and the staff list with the pay
  * the day is settled on — the attendance a correction re-settles from.
+ *
+ * `key` is the server's key, when it has one (P7.8b): what is covered is the
+ * same, only the hash is keyed.
  */
-export function computeSecurityCode(input: SecurityCodeInput): string {
-  return codeOf({
-    ...input,
-    bills: input.bills.map((bill) => ({ ...bill, lines: inFixedOrder(bill.lines) })),
-    attendance: [...input.attendance].sort((a, b) => compare(a.staffId, b.staffId)),
-  });
+export function computeSecurityCode(input: SecurityCodeInput, key: Uint8Array | null = null): string {
+  return codeOf(
+    {
+      ...input,
+      bills: input.bills.map((bill) => ({ ...bill, lines: inFixedOrder(bill.lines) })),
+      attendance: [...input.attendance].sort((a, b) => compare(a.staffId, b.staffId)),
+    },
+    key,
+  );
 }
 
 /** What a code covered before P7.14: the figures, the bills' money and lines, the entries. */

@@ -454,7 +454,8 @@
 }
 
 /*
- * Printing a receipt (backlog P3.6).
+ * Printing a receipt (backlog P3.6), and the Day close slip (P7.8b), which
+ * uses the same marker and the same roll.
  *
  * The slip is drawn inside a dialog, and Base UI portals that dialog to the
  * end of <body> — so it sits outside <main> and the usual "hide the page

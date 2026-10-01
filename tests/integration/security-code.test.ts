@@ -25,8 +25,8 @@ vi.mock("@/lib/security-code", async (importOriginal) => {
   const real = await importOriginal<typeof import("@/lib/security-code")>();
   return {
     ...real,
-    computeSecurityCode: (input: Parameters<typeof real.computeSecurityCode>[0]) =>
-      sealing.beforeP714 ? real.securityCodeBeforeP714(input) : real.computeSecurityCode(input),
+    computeSecurityCode: (...[input, key]: Parameters<typeof real.computeSecurityCode>) =>
+      sealing.beforeP714 ? real.securityCodeBeforeP714(input) : real.computeSecurityCode(input, key),
   };
 });
 

@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   computeSecurityCode,
@@ -134,5 +135,40 @@ describe("what the code covers since P7.14 (QA-12)", () => {
     };
     expect(securityCodeBeforeP714(sealed)).toBe("FE5F-88AD-F45E");
     expect(securityCodeAsBefore(sealed)).toBe("1228-2498-5847");
+  });
+});
+
+describe("sealed with the server's key (P7.8b, QA-26)", () => {
+  const key = Buffer.alloc(32, 7);
+  const other = Buffer.alloc(32, 8);
+
+  it("is the HMAC-SHA256 of what the plain code hashes, so the key is all that is new", () => {
+    // day() has its lines and staff list in the order the code puts them in already.
+    const hex = createHmac("sha256", key).update(stableStringify(day())).digest("hex").slice(0, 12).toUpperCase();
+    expect(computeSecurityCode(day(), key)).toBe(`${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`);
+  });
+
+  it("cannot be worked out without the key: the plain code and another key's are both different", () => {
+    const keyed = computeSecurityCode(day(), key);
+    expect(keyed).toMatch(/^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/);
+    expect(keyed).not.toBe(computeSecurityCode(day()));
+    expect(keyed).not.toBe(computeSecurityCode(day(), other));
+    expect(computeSecurityCode(day(), key)).toBe(keyed);
+  });
+
+  it("covers what the plain code covers, in the same fixed order", () => {
+    const changed = day();
+    changed.figures = { ...changed.figures, counted: 4500 };
+    expect(computeSecurityCode(changed, key)).not.toBe(computeSecurityCode(day(), key));
+
+    const cut = { name: "Haircut", amount: 800, staffId: "arshad" };
+    const wash = { name: "Hair wash", amount: 300, staffId: "sherry" };
+    expect(computeSecurityCode({ ...day(), bills: [bill([cut, wash], 1100)] }, key)).toBe(
+      computeSecurityCode({ ...day(), bills: [bill([wash, cut], 1100)] }, key),
+    );
+  });
+
+  it("leaves the plain code as it was without a key", () => {
+    expect(computeSecurityCode(day(), null)).toBe(computeSecurityCode(day()));
   });
 });

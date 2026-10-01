@@ -78,6 +78,41 @@ To switch the live site over — once, by whoever holds the Neon and Vercel proj
 Until then the triggers still refuse every change and every `TRUNCATE` — even the owner's — but an owner
 could switch them off first. The two developers' `.env.local` may keep the owner: they run the migrations.
 
+## 0.4 Give the server a key for the security codes (backlog P7.8b)
+
+A day's security code is stored in the database it seals. Hashed without a key, anyone who can change the
+database directly — Neon's console, a leaked connection string, a restored backup — can change a closed day,
+work its code out again, write it back, and every day after it, and the Owner's Security codes screen shows
+them all as matching (QA-26). With **`SECURITY_CODE_KEY`** set, every close and every correction is sealed with
+an HMAC under a key that lives in the server's environment and **never in the database or its backups**: a
+code worked out without it does not match.
+
+Once, by whoever holds the Vercel project:
+
+1. On any computer with the repository: `pnpm security-key`. It prints one value, `YYYY-MM-DD.<secret>`, and
+   writes it nowhere. The date is the first business day that must be sealed with the key — tomorrow, Karachi
+   time, by default; `pnpm security-key --since 2026-10-05` for another. Pick a day **no close has happened on
+   yet, after the redeploy in step 3**: a day from it on that was closed without the key shows *Does not match*.
+2. Vercel → Settings → Environment Variables → **Production**: `SECURITY_CODE_KEY` = that value.
+3. Redeploy (step 4) — an environment variable reaches only the deployments made after it is set.
+4. Give the Owner a copy — on paper, kept with the close slips, or in a password manager. A server rebuilt or
+   moved (the VPS, P5.3) needs **the same key**, or every day sealed with it stops matching.
+5. Proof: after the first close on or after the date, the Owner's Security codes screen says, under the list,
+   "From \<date\>, each code is also sealed with a key kept on the server".
+
+Rules:
+
+- **Never change the secret.** Days sealed with it would stop matching. The date may be moved later if it was
+  set too early (days between it and the redeploy were closed without the key) — change only the part before
+  the dot.
+- **Not in `.env.local`.** It runs against live; a day closed from a developer's computer should not carry the
+  server's proof. Without the key a local close is sealed as before, and from the key's date on it shows as not
+  matching — which is right: the server did not seal it.
+- A value in any other form stops Day close with an error (it never seals a day without the key by mistake),
+  and the Security codes screen says the key is not set up right instead of checking.
+- Days closed before the date keep the plain code they were sealed with, and are checked on it. For those,
+  the close slips and the Owner's notes are the check that does not depend on the database.
+
 ---
 
 ## 1. Environment variables
@@ -91,6 +126,8 @@ one is):
 | `DATABASE_URL_UNPOOLED` | the **direct** string of the same branch |
 | `BETTER_AUTH_SECRET` | a long random value, different from the one on your computer |
 | `BETTER_AUTH_URL` | the project's real Production domain, e.g. `https://<project>.vercel.app`, with no slash at the end |
+
+And a fifth once the salon is using the site: **`SECURITY_CODE_KEY`**, from `pnpm security-key` — section 0.4.
 
 Set them for **Production** only, so Preview deployments can never touch the live data.
 
@@ -197,6 +234,7 @@ Measured from the code, because guessing this is how the wrong database gets wri
 |---|---|---|
 | `DATABASE_URL` | the app **and the seed script** | `src/db/index.ts`. On the live site, a login in `art_man_app` once section 0.3 is done — never needed for migrations |
 | `DATABASE_URL_UNPOOLED` | **migrations and backups** (`pnpm db:migrate`, `pnpm db:backup`) | `directDatabaseUrl` in `src/lib/db-target.ts`, from `scripts/migrate.ts`, `scripts/backup.ts` and `drizzle.config.ts`; falling back to `DATABASE_URL` when it is empty |
+| `SECURITY_CODE_KEY` | Day close, corrections and the Security codes screen (P7.8b) | `src/lib/security-key.ts`, from `src/db/day-code.ts`. The live server only — never `.env.local` or the database (section 0.4). `YYYY-MM-DD.<secret>`; left out, codes are a plain hash |
 | `CLIENT_IP_HEADER` | the sign-in flood guard and the audit log (P7.12) | `src/lib/auth/server.ts`. **Not needed on Vercel**, which overwrites `X-Forwarded-For` (the default). Behind nginx on a VPS: `proxy_set_header X-Real-IP $remote_addr;` and `CLIENT_IP_HEADER=x-real-ip` — never a header a visitor can send as they like. The account lock (5 wrong passwords in 15 minutes) does not use it |
 
 A value set on the command line **wins over `.env.local`**: `scripts/load-env.ts` reads the file with

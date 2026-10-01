@@ -16,10 +16,10 @@ const SUBTITLE = "Each closed day's code, worked out again from its records";
 /**
  * The Owner checks the days (backlog P7.8, QA-05). Each closed day's code is
  * worked out again from its bills, entries and figures, chained on the code
- * the day before had when this one was sealed. Until a copy of the codes is
- * kept outside the database (QA-26), the Owner's own note of each night's code
- * is the other half of the check: a code here that differs from the note, or a
- * day that does not match, is what to ask about.
+ * the day before had when this one was sealed. The other half of the check is
+ * outside the database (P7.8b, QA-26): the close slip printed each night, and
+ * the server's key, which the database does not hold. A code here that differs
+ * from the slip, or a day that does not match, is what to ask about.
  */
 export default async function SecurityCodesPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   await requireRole("owner");
@@ -35,7 +35,11 @@ export default async function SecurityCodesPage({ searchParams }: { searchParams
     );
   }
 
-  const summary = checkSummary(data.days, data.monthLabel);
+  // With the key set wrongly nothing can be checked, and the screen says so rather than calling every day changed.
+  const summary =
+    data.key.state === "invalid"
+      ? { ok: false, text: "The days cannot be checked: the server's key for security codes is not set up right. Tell the developer." }
+      : checkSummary(data.days, data.monthLabel);
   const newestFirst = [...data.days].reverse();
 
   return (
@@ -88,11 +92,24 @@ export default async function SecurityCodesPage({ searchParams }: { searchParams
               ))}
             </tbody>
           </table>
-          <p className="border-t px-card py-3 text-xs text-muted-foreground">
-            Compare each code with the one noted when the day closed. A day&apos;s code changes when something in it is
-            corrected after it closed — a bill or an entry cancelled — and then the new code is the one shown here. A
-            day that does not match was changed some other way.
-          </p>
+          <div className="space-y-2 border-t px-card py-3 text-xs text-muted-foreground">
+            <p>
+              Compare each code with the one on the day&apos;s close slip, printed when the day closed. A day&apos;s code
+              changes when something in it is corrected after it closed — a bill or an entry cancelled — and then the new
+              code is the one shown here. A day that does not match was changed some other way.
+            </p>
+            {data.key.state === "set" ? (
+              <p>
+                From {formatDate(data.key.since)}, each code is also sealed with a key kept on the server, not in the
+                database: a day changed in the database cannot be made to match again without it.
+              </p>
+            ) : (
+              <p>
+                Keep every close slip. Someone able to change the database directly could work a changed day&apos;s code out
+                again; the slip keeps the code as it was.
+              </p>
+            )}
+          </div>
         </Panel>
       ) : null}
     </>

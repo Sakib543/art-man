@@ -54,7 +54,8 @@ RAAT (Manager) ─► Day close, 5 qadam
   4. Drawer ki cash gin kar total likhna  (expected abhi CHHUPA rehta hai)
      "Count note by note": har note kitne hain likhein, total khud ban jata hai (P7.18)
   5. Expected vs counted, farq ki wajah, phir "Close day"
-     ─► din lock, security code Owner ko, agla din khulta hai
+     ─► din lock aur security code. "Print close slip" daba kar slip chhaapein
+        aur Owner ke liye rakhein (P7.8b), phir agla din khulta hai
 
 MAHINA (Owner)
   Monthly expenses (rent, bijli, others) ─► Capital (solar jaisi investment)
@@ -73,7 +74,7 @@ MAHINA (Owner)
 |---|---|
 | Billing | Bill banana, customer phone se dhoondna (special rate khud), deals, split payment, aaj ki bills, bill cancel. **"+ Other"**: list se bahar ka extra kaam — amount counter khud likhe, "kya kiya" optional (P3.12) |
 | Daily folders | Expenses, staff advance, Owner cash, online payments |
-| Day close | Raat ka 5-qadam wizard, agla din shuru |
+| Day close | Raat ka 5-qadam wizard. Din band hone ke baad **"Print close slip"**: din ke figures aur security code ki parchi, receipt printer par, Owner ke liye (P7.8b). Phir agla din shuru |
 | Daily report | Kisi bhi din ki saari bills (cancelled bhi). Upar `List \| Register` switch: Register purani Daily worksheet hai — har karigar ka column, Owner/Account column, neeche total. Sirf dekhne ke liye (P6.4) |
 | Staff khata | Har staff ka chalta hisaab (kamai jama, payment/advance kam), **ek waqt mein ek mahina**: sab se upar pichle mahinon ka balance, phir us mahine ki entries, aakhir mein mahine ka balance. Upar se mahina chunein (P7.15). **"Salary slip"**: mahine ki PDF, karigar ke saboot ke liye (P3.3) |
 
@@ -87,6 +88,7 @@ MAHINA (Owner)
 | Capital / Outstanding | Partner ki investment aur kiston mein wapsi |
 | Partners | Profit share %, partner accounts, profit drawn |
 | Staff & rates | Staff (pay type), services, deals |
+| Security codes | Har band din ka code, us din ki entries se dobara bana kar milaya jata hai: "Matches" ya "Does not match". Close slip wale code se milayein (P7.8, P7.8b) |
 | Settings | Password, Owner PIN, Manager ka password reset |
 
 ---
@@ -207,7 +209,7 @@ Purani migration files kabhi edit na karein, hamesha nayi banayein.
 | Galat PIN | Audit log mein (failed), **5 galat par 15 minute lock** (PIN sirf 10,000 mumkin hain) |
 | Password | 8+ characters, sirf numbers nahi; galat try ka lock; badalne par baaki devices sign out |
 | Audit log | Har zaroori kaam: kisne, kab, kya (secret kabhi nahi likha jata) |
-| Security code | Har din band hone par ek code banta hai jo **kal ke code + aaj ki saari bills/entries** se hash hota hai. Purani entry badle to code match nahi karega |
+| Security code | Har din band hone par ek code banta hai jo **kal ke code + aaj ki saari bills/entries** se hash hota hai. Purani entry badle to code match nahi karega. Code ki do copy database se bahar hain (P7.8b): har raat ki **close slip**, jo Owner rakhta hai, aur server ki ek **key** jo database mein kabhi nahi hoti — key lagne ke baad koi database mein din badal kar us ka code dobara nahi bana sakta |
 | Din lock | Band din mein entry nahi ho sakti |
 | Mahina freeze | Month close par report aur partners ke shares **save** ho jate hain. Baad mein salary ya share % badle to purana mahina nahi badalta. Har screen band mahine mein badlaav se inkaar karti hai. Galti ho to Owner **adjustment** likhta hai, jo khule mahine ke profit (aur staff khata) mein aati hai; band mahina waisa hi rehta hai (P3.4) |
 | Secrets | `.env.local` git mein nahi jata |

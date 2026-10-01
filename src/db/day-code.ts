@@ -11,6 +11,7 @@ import {
   type SealedBill,
   type SecurityCodeInput,
 } from "@/lib/security-code";
+import { securityKey } from "@/lib/security-key";
 
 /** Anything that can run selects: the db itself or a transaction. */
 type Reader = Pick<typeof db, "select">;
@@ -114,7 +115,8 @@ const NO_RECORDS: DayRecords = { bills: [], entries: [], attendance: [] };
  * Work out a day's security code from the database: the day's figures and
  * the drawer's reason, its records as they are now, and the previous day's
  * code. Closing a day and settling one again both use this — after the day's
- * staff list is written, which the code covers (P7.14).
+ * staff list is written, which the code covers (P7.14). Sealed with the
+ * server's key when it has one (P7.8b), whatever the day's date.
  */
 export async function computeDayCode(
   reader: Reader,
@@ -130,7 +132,10 @@ export async function computeDayCode(
     .limit(1);
   const records = (await loadRecords(reader, businessDate, businessDate)).get(businessDate) ?? NO_RECORDS;
 
-  return computeSecurityCode({ previousCode: previous?.code ?? FIRST_DAY_CODE, businessDate, figures, diffReason, ...records });
+  return computeSecurityCode(
+    { previousCode: previous?.code ?? FIRST_DAY_CODE, businessDate, figures, diffReason, ...records },
+    securityKey()?.key ?? null,
+  );
 }
 
 /** A closed day checked against its records. */
@@ -140,9 +145,12 @@ export interface DayCheck {
   code: string;
   /**
    * Its records still give the same code — worked out as it is now, or, for a
-   * day sealed before P7.14, as it was then (`securityCodeBeforeP714`).
+   * day sealed before P7.14, as it was then (`securityCodeBeforeP714`). From
+   * the first day of the server's key on, only with the key (P7.8b).
    */
   ok: boolean;
+  /** Its code was sealed with the server's key (P7.8b). */
+  keyed: boolean;
 }
 
 interface CheckRow extends Record<string, unknown> {
@@ -202,6 +210,12 @@ const figuresOf = (row: CheckRow): DayFigures => ({
  * when it was made (`created_at`, `closed_at`) and, archived, when it stopped
  * being the one (`reopened_at` — a reopen or a correction). Compared in SQL,
  * to the microsecond.
+ *
+ * With the server's key (P7.8b, QA-26), a day matches when its code is the
+ * keyed one. A plain hash still matches on a day before the key's first day —
+ * sealed before there was a key — but not from it on: the server sealed every
+ * such day with the key, so a plain code there is one someone worked out
+ * again without it, after changing the day.
  */
 async function inspectDays(executor: Executor, from: string, to: string): Promise<Inspected[]> {
   const { rows } = await executor.execute<CheckRow>(sql`
@@ -230,6 +244,7 @@ async function inspectDays(executor: Executor, from: string, to: string): Promis
   `);
   if (rows.length === 0) return [];
 
+  const key = securityKey();
   const records = await loadRecords(executor, rows[0].business_date, rows[rows.length - 1].business_date);
   const currentCode = new Map(rows.map((row) => [row.business_date, row.security_code]));
 
@@ -247,10 +262,12 @@ async function inspectDays(executor: Executor, from: string, to: string): Promis
       diffReason: row.diff_reason,
       ...(records.get(row.business_date) ?? NO_RECORDS),
     };
-    // A day sealed before P7.14 is checked on what its code covered then; that
-    // cannot give the code of a day sealed since, which covered more.
-    const ok = computeSecurityCode(input) === row.security_code || securityCodeBeforeP714(input) === row.security_code;
-    return { businessDate: row.business_date, code: row.security_code, ok, row, figures, input };
+    const keyed = key !== null && computeSecurityCode(input, key.key) === row.security_code;
+    // Without the key: a day sealed before P7.14 is checked on what its code
+    // covered then; that cannot give the code of a day sealed since, which covered more.
+    const plain = !keyed && (computeSecurityCode(input) === row.security_code || securityCodeBeforeP714(input) === row.security_code);
+    const ok = keyed || (plain && (key === null || row.business_date < key.since));
+    return { businessDate: row.business_date, code: row.security_code, ok, keyed, row, figures, input };
   });
 }
 
@@ -259,7 +276,7 @@ async function inspectDays(executor: Executor, from: string, to: string): Promis
  * out of its records? The Security codes screen shows this, a month at a time.
  */
 export async function checkDayCodes(from: string, to: string): Promise<DayCheck[]> {
-  return (await inspectDays(db, from, to)).map(({ businessDate, code, ok }) => ({ businessDate, code, ok }));
+  return (await inspectDays(db, from, to)).map(({ businessDate, code, ok, keyed }) => ({ businessDate, code, ok, keyed }));
 }
 
 /** Re-check one closed day: does its stored code still match its records? */

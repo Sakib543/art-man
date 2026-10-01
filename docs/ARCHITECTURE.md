@@ -101,7 +101,10 @@ src/
                       slip.ts, `T-` numbers (all pure); store.ts, the browser's
                       IndexedDB that holds them — browser only.
     same-origin.ts    Next's Server Action Origin check, for a Route Handler.
-    security-code.ts · format.ts · chart.ts · alerts.ts · pin.ts · utils.ts
+    security-code.ts  The day's code: a plain hash, or an HMAC under the server's key.
+    security-key.ts   That key, `SECURITY_CODE_KEY`, read from the environment —
+                      never from the database (P7.8b).
+    format.ts · chart.ts · alerts.ts · pin.ts · utils.ts
 
   db/
     index.ts          The pool and the Drizzle instance.

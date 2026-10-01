@@ -30,6 +30,8 @@ process.env.TEST_OWNER_DATABASE_URL = url;
 // Better Auth signs its cookies with this; a fixed value that is only ever used here.
 process.env.BETTER_AUTH_SECRET = "integration-tests-only-not-a-real-secret-0123456789";
 process.env.BETTER_AUTH_URL = "http://localhost:3000";
+// Days are sealed with no key unless a test sets one (P7.8b): never one from the shell running the suite.
+delete process.env.SECURITY_CODE_KEY;
 
 /**
  * Next's request APIs, outside Next. `headers()` answers what the test last

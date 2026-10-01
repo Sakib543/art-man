@@ -1,7 +1,7 @@
 "use client";
 
 import { Panel, PanelHeader } from "@/components/panel";
-import { AlertCircle, ArrowRight, Banknote, ChartColumn, Clock, LockOpen, ShieldCheck, TrendingUp, Users, Wallet } from "lucide-react";
+import { AlertCircle, ArrowRight, Banknote, ChartColumn, Clock, LockOpen, Printer, ShieldCheck, TrendingUp, Users, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { requestCatalogRefresh } from "@/components/catalog-sync";
@@ -14,6 +14,7 @@ import { formatTime, rs } from "@/lib/format";
 import { reopenDayAction, startNextDayAction } from "../actions";
 import type { SnapshotRow } from "../types";
 import { Badge } from "@/components/ui/badge";
+import { CloseSlipDialog } from "./close-slip-dialog";
 
 /** `canReopen` is true only for the Owner: reopening a closed day is theirs alone. */
 export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; canReopen: boolean }) {
@@ -25,6 +26,10 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
   const [reopenError, setReopenError] = useState("");
   // Its own transition, so starting the next day does not look like it is running.
   const [reopenPending, startReopen] = useTransition();
+  // The close slip (P7.8b). When it was last opened is its "Printed" line, kept
+  // after it closes so the slip does not change while the dialog animates out.
+  const [slipOpen, setSlipOpen] = useState(false);
+  const [slipOpenedAt, setSlipOpenedAt] = useState(snapshot.closedAt);
   const { difference } = snapshot;
 
   /**
@@ -70,6 +75,7 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
             <p className="text-base font-semibold">Day closed at {formatTime(snapshot.closedAt)}</p>
             <p className="text-muted-foreground">
               The day&apos;s security code. If any of this day&apos;s entries is changed later, it will no longer match.
+              Print the close slip and keep it for the Owner.
             </p>
             <p className="mt-1.5 inline-block rounded-lg bg-secondary px-3 py-1.5 font-mono text-2xl font-medium tracking-[2px] text-primary">
               {snapshot.securityCode}
@@ -89,6 +95,16 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
                 Reopen this day
               </Button>
             ) : null}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSlipOpenedAt(new Date().toISOString());
+                setSlipOpen(true);
+              }}
+            >
+              <Printer aria-hidden />
+              Print close slip
+            </Button>
             <Button onClick={nextDay} disabled={pending}>
               {pending ? "Starting..." : "Start next business day"}
               {pending ? null : <ArrowRight aria-hidden />}
@@ -132,6 +148,8 @@ export function ClosedView({ snapshot, canReopen }: { snapshot: SnapshotRow; can
         />
         <StatCard icon={Clock} label="Tomorrow's opening cash" value={rs(snapshot.countedCash)} />
       </div>
+
+      <CloseSlipDialog snapshot={snapshot} open={slipOpen} openedAt={slipOpenedAt} onClose={() => setSlipOpen(false)} />
 
       <Dialog open={reopening} onOpenChange={(next) => !next && setReopening(false)}>
         <DialogContent className="max-w-sm">

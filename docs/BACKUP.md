@@ -63,6 +63,17 @@ last hour" better than any file does. It does not cover the account itself going
 away, which is exactly what a file in the salon's own hands does cover. Keep
 both.
 
+### The security code key is not in a backup (P7.8b)
+
+Once the server has a `SECURITY_CODE_KEY` (`docs/DEPLOY_VERCEL.md` 0.4), each
+day's code is sealed with it, and the key lives in the server's environment —
+never in the database, so never in a backup. That is the point: whoever has a
+backup file cannot change a day and work its code out again. It also means a
+database restored onto a new server checks its days only if that server is given
+**the same key**; with none, or another, every day sealed with it shows *Does not
+match*. The Owner's copy of the key is what makes a move (P5.3) or a rebuild
+possible — keep it with the close slips, not with the backup files.
+
 ---
 
 ## Reading a backup without restoring it
