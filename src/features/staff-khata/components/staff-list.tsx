@@ -8,14 +8,17 @@ import { panelClass } from "@/components/panel";
 
 const initials = (name: string) => name.slice(0, 2).toUpperCase();
 
-/** Staff with their balance. Each row is a link, so the chosen person is in the URL. */
-export function StaffList({ staff, selectedId }: { staff: KhataStaff[]; selectedId: string }) {
+/**
+ * Staff with their balance today. Each row is a link, so the chosen person is
+ * in the URL — with the month being looked at, which stays as it is (P7.15).
+ */
+export function StaffList({ staff, selectedId, month }: { staff: KhataStaff[]; selectedId: string; month: string | null }) {
   return (
     <nav aria-label="Staff" className={cn(panelClass)}>
       {staff.map((member) => (
         <Link
           key={member.id}
-          href={`/staff-khata?staff=${member.id}`}
+          href={`/staff-khata?${new URLSearchParams(month ? { staff: member.id, month } : { staff: member.id })}`}
           aria-current={member.id === selectedId ? "page" : undefined}
           className={cn(
             "flex items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-surface-sunken",

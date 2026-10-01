@@ -1,6 +1,7 @@
 import { Panel, PanelHeader } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
 import type { MonthChoice } from "@/db/queries/months";
+import type { Rupees } from "@/lib/accounting";
 import { rs, formatDate, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { KhataStaff, LedgerRow } from "../queries";
@@ -12,22 +13,47 @@ const th = "px-3.5 py-2 text-left text-xs font-medium text-muted-foreground";
 // itself, and a bare utility would beat it (HANDOFF 8.11).
 const td = "md:px-3.5 md:py-2.5";
 
-/** One staff member's running account: earnings add, payments and advances subtract. */
+/**
+ * One month of a staff member's running account (P7.15): what was brought
+ * forward, the month's lines — earnings add, payments and advances subtract —
+ * and the balance at the month's end. The salary slip's shape, so the screen
+ * stays one month long however many years the khata runs.
+ */
 export function Ledger({
   member,
+  month,
+  monthLabel,
+  currentMonth,
+  broughtForward,
   rows,
+  closingBalance,
   monthClosed,
   canGiveBonus,
   months,
 }: {
   member: KhataStaff;
+  /** The month shown ("2026-09") and as it reads; null before the first business day. */
+  month: string | null;
+  monthLabel: string | null;
+  /** The latest business day's month: its closing balance is the balance today. */
+  currentMonth: boolean;
+  broughtForward: Rupees;
   rows: LedgerRow[];
+  closingBalance: Rupees;
   monthClosed: boolean;
-  /** Only the Owner gives bonuses (spec §10.10), so only the Owner sees the button. */
+  /** Only the Owner gives bonuses (spec §10.10), so only the Owner sees the button — on the current month. */
   canGiveBonus: boolean;
   /** The months a salary slip can be made for (P3.3), newest first. */
   months: MonthChoice[];
 }) {
+  // Before the first business day there is no month, and the balance is all there is.
+  const closingLabel =
+    month && !currentMonth
+      ? `Balance at the end of ${monthLabel}`
+      : closingBalance < 0
+        ? `Advance taken by ${member.name}`
+        : `Balance owed to ${member.name}`;
+
   return (
     <Panel>
       <PanelHeader
@@ -39,7 +65,7 @@ export function Ledger({
             ) : (
               <Badge variant="warning">Provisional until month close</Badge>
             )}
-            <SalarySlip staffId={member.id} staffName={member.name} months={months} />
+            <SalarySlip staffId={member.id} staffName={member.name} months={months} shownMonth={month} />
             {canGiveBonus && !monthClosed ? <GiveBonus staffId={member.id} staffName={member.name} /> : null}
           </div>
         }
@@ -56,6 +82,16 @@ export function Ledger({
             </tr>
           </thead>
           <tbody>
+            {month ? (
+              <tr className="border-b bg-surface-sunken text-muted-foreground">
+                <td className={cn(td, "max-md:hidden")} />
+                <td className={td}>Brought forward from before {monthLabel}</td>
+                <td className={cn(td, "max-md:hidden")} />
+                <td className={cn(td, "text-right tabular-nums")} data-label="Balance">
+                  {num(broughtForward)}
+                </td>
+              </tr>
+            ) : null}
             {rows.map((row) => (
               <tr key={row.id} className="border-b">
                 <td className={cn(td, "text-muted-foreground")} data-label="Date">
@@ -83,7 +119,7 @@ export function Ledger({
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
-                  Nothing in the khata yet
+                  {month ? `Nothing in the khata in ${monthLabel}` : "Nothing in the khata yet"}
                 </td>
               </tr>
             ) : null}
@@ -91,15 +127,16 @@ export function Ledger({
                 phone they would be two empty lines in the card. */}
             <tr className="bg-brass-tint font-semibold">
               <td className={cn(td, "max-md:hidden")} />
-              <td className={td}>{member.balance < 0 ? `Advance taken by ${member.name}` : `Balance owed to ${member.name}`}</td>
+              <td className={td}>{closingLabel}</td>
               <td className={cn(td, "max-md:hidden")} />
-              <td className={cn(td, "text-right tabular-nums")}>{rs(member.balance)}</td>
+              <td className={cn(td, "text-right tabular-nums")}>{rs(closingBalance)}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <p className="border-t px-card py-3 text-xs text-muted-foreground">
+        {month && !currentMonth ? `Balance today: ${rs(member.balance)}. ` : ""}
         {member.payType === 3
           ? "Daily wage and commission are added every night at Day Close."
           : member.payType === 2

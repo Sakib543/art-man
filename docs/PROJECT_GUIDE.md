@@ -74,7 +74,7 @@ MAHINA (Owner)
 | Daily folders | Expenses, staff advance, Owner cash, online payments |
 | Day close | Raat ka 5-qadam wizard, agla din shuru |
 | Daily report | Kisi bhi din ki saari bills (cancelled bhi). Upar `List \| Register` switch: Register purani Daily worksheet hai — har karigar ka column, Owner/Account column, neeche total. Sirf dekhne ke liye (P6.4) |
-| Staff khata | Har staff ka chalta hisaab (kamai jama, payment/advance kam). **"Salary slip"**: mahine ki PDF, karigar ke saboot ke liye (P3.3) |
+| Staff khata | Har staff ka chalta hisaab (kamai jama, payment/advance kam), **ek waqt mein ek mahina**: sab se upar pichle mahinon ka balance, phir us mahine ki entries, aakhir mein mahine ka balance. Upar se mahina chunein (P7.15). **"Salary slip"**: mahine ki PDF, karigar ke saboot ke liye (P3.3) |
 
 **Owner**
 

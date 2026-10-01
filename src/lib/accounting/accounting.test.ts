@@ -118,6 +118,17 @@ describe("khata (spec 6.2)", () => {
     expect(rows.map((r) => r.balance)).toEqual([500, 1300, 0]);
   });
 
+  it("carries on from what was brought forward, for one month of the khata (P7.15)", () => {
+    const rows = withRunningBalance(
+      [
+        { label: "Commission", amount: 500 },
+        { label: "Payment", amount: -1300 },
+      ],
+      -200,
+    );
+    expect(rows.map((r) => r.balance)).toEqual([300, -1000]);
+  });
+
   it("a cancelled bill reverses its commission", () => {
     const entries = [{ kind: "earning" as const, amount: 150 }, commissionReversal(150)];
     expect(khataBalance(entries)).toBe(0);

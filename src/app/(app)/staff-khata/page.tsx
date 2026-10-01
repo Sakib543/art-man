@@ -1,6 +1,6 @@
 import { Info } from "lucide-react";
+import { MonthSelect } from "@/components/month-select";
 import { PageHeader } from "@/components/page-header";
-import { getMonthChoices } from "@/db/queries/months";
 import { Ledger } from "@/features/staff-khata/components/ledger";
 import { StaffList } from "@/features/staff-khata/components/staff-list";
 import { getKhataData } from "@/features/staff-khata/queries";
@@ -11,10 +11,10 @@ export const metadata = { title: "Staff khata | Art Men's Salon" };
 
 const SUBTITLE = "Earnings are added, payments and advances are subtracted";
 
-export default async function StaffKhataPage({ searchParams }: { searchParams: Promise<{ staff?: string }> }) {
+export default async function StaffKhataPage({ searchParams }: { searchParams: Promise<{ staff?: string; month?: string }> }) {
   const user = await requireUser();
-  const { staff } = await searchParams;
-  const [data, months] = await Promise.all([getKhataData(staff), getMonthChoices()]);
+  const { staff, month } = await searchParams;
+  const data = await getKhataData(staff, month);
 
   if (!data) {
     return (
@@ -27,7 +27,12 @@ export default async function StaffKhataPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <PageHeader title="Staff khata" subtitle={SUBTITLE} />
+      <PageHeader title="Staff khata" subtitle={SUBTITLE}>
+        {/* One month at a time (P7.15); the person chosen stays chosen. */}
+        {data.month ? (
+          <MonthSelect months={data.months} selected={data.month} basePath="/staff-khata" query={{ staff: data.selected.id }} />
+        ) : null}
+      </PageHeader>
 
       <div className="mb-3.5 flex items-start gap-2.5 rounded-lg border border-info-line bg-info-soft px-3.5 py-3 text-sm text-info">
         <Info className="mt-0.5 size-4.5 shrink-0" aria-hidden />
@@ -35,13 +40,19 @@ export default async function StaffKhataPage({ searchParams }: { searchParams: P
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <StaffList staff={data.staff} selectedId={data.selected.id} />
+        <StaffList staff={data.staff} selectedId={data.selected.id} month={data.month} />
         <Ledger
           member={data.selected}
+          month={data.month}
+          monthLabel={data.monthLabel}
+          currentMonth={data.currentMonth}
+          broughtForward={data.broughtForward}
           rows={data.ledger}
+          closingBalance={data.closingBalance}
           monthClosed={data.monthClosed}
-          canGiveBonus={atLeastOwner(user.role)}
-          months={months?.choices ?? []}
+          // A bonus is dated on the latest business day, so it is given from that day's month.
+          canGiveBonus={atLeastOwner(user.role) && data.currentMonth}
+          months={data.months}
         />
       </div>
     </>

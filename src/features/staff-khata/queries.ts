@@ -1,10 +1,9 @@
 import { and, asc, eq, gte, isNotNull, lt, sum } from "drizzle-orm";
 import { db } from "@/db";
-import { getLatestBusinessDay } from "@/db/queries/business-day";
-import { isMonthClosed } from "@/db/queries/months";
+import { getMonthChoices, type MonthChoice } from "@/db/queries/months";
 import { billLines, bills, businessDays, khataEntries, monthCloses, staff } from "@/db/schema";
 import { withRunningBalance, type PayType, type Rupees } from "@/lib/accounting";
-import { monthOf, monthStart, nextMonth } from "@/lib/business-date";
+import { formatMonth, monthStart, nextMonth } from "@/lib/business-date";
 import type { SlipLine } from "./slip";
 
 export interface KhataStaff {
@@ -29,9 +28,21 @@ export interface LedgerRow {
 export interface KhataData {
   staff: KhataStaff[];
   selected: KhataStaff;
-  ledger: LedgerRow[];
-  /** Has the current month been closed? Until then the khata figures are provisional. */
+  /** The months with a business day, newest first: what the month picker offers. */
+  months: MonthChoice[];
+  /** The month the ledger shows ("2026-09"), and as it reads; null before the first business day. */
+  month: string | null;
+  monthLabel: string | null;
+  /** Is it the latest business day's month — the one a bonus goes into? */
+  currentMonth: boolean;
+  /** Has the month shown been closed? Until then its figures are provisional. */
   monthClosed: boolean;
+  /** The balance before the month began: every earlier line, added up. */
+  broughtForward: Rupees;
+  /** The month's lines, each with the balance after it. */
+  ledger: LedgerRow[];
+  /** The balance at the end of the month shown: brought forward plus the month. */
+  closingBalance: Rupees;
 }
 
 /**
@@ -58,26 +69,30 @@ const inLedgerOrder = (a: LedgerEntry, b: LedgerEntry): number =>
   a.id.localeCompare(b.id);
 
 /**
- * All staff with their balances, plus the ledger of one of them. Null when
- * there is no staff yet.
+ * All staff with their balances, plus one month of one person's ledger. Null
+ * when there is no staff yet.
  *
  * The screen wants two things, and neither of them is the whole table: one
  * number per staff member, and one person's lines. So the sum is grouped in
- * the database and the ledger is asked for by `staff_id` (backlog P4.10).
+ * the database and the ledger is asked for by `staff_id` (backlog P4.10) —
+ * and, since P7.15 (QA-42), for one month, with everything before it summed in
+ * the database as the balance brought forward: the salary slip's shape. The
+ * whole ledger of a daily-wage karigar was 1.4 MB of page after a year, and
+ * grew by as much every year; a month is about a hundred lines.
  *
- * Which member is selected depends on the staff list, because an unknown
- * `?staff=` falls back to the first one — so the ledger cannot be fetched in
- * the same breath. It is still one wait fewer than before, since the month
- * check used to queue up behind both selects instead of beside the ledger.
+ * The month is `?month=` when it has a business day, otherwise the latest
+ * business day's. Which member is selected depends on the staff list, because
+ * an unknown `?staff=` falls back to the first one — so the ledger cannot be
+ * fetched in the same breath as the list, the balances and the months.
  */
-export async function getKhataData(requestedId?: string): Promise<KhataData | null> {
-  const [staffRows, balances, latest] = await Promise.all([
+export async function getKhataData(requestedId?: string, requestedMonth?: string): Promise<KhataData | null> {
+  const [staffRows, balances, monthChoices] = await Promise.all([
     db.select().from(staff).orderBy(asc(staff.createdAt), asc(staff.name)),
     db
       .select({ staffId: khataEntries.staffId, balance: sum(khataEntries.amount).mapWith(Number) })
       .from(khataEntries)
       .groupBy(khataEntries.staffId),
-    getLatestBusinessDay(),
+    getMonthChoices(),
   ]);
   if (staffRows.length === 0) return null;
 
@@ -95,7 +110,16 @@ export async function getKhataData(requestedId?: string): Promise<KhataData | nu
 
   const selected = list.find((member) => member.id === requestedId) ?? list[0];
 
-  const [entries, monthClosed] = await Promise.all([
+  const months = monthChoices?.choices ?? [];
+  const shown = months.find((choice) => choice.month === requestedMonth) ?? months.find((choice) => choice.month === monthChoices?.current);
+  // Before the first business day there is no month, and no khata line either.
+  if (!shown) {
+    const empty = { months, month: null, monthLabel: null, currentMonth: false, monthClosed: false };
+    return { staff: list, selected, ...empty, broughtForward: 0, ledger: [], closingBalance: selected.balance };
+  }
+
+  const start = monthStart(shown.month);
+  const [entries, [forward]] = await Promise.all([
     db
       .select({
         id: khataEntries.id,
@@ -106,17 +130,39 @@ export async function getKhataData(requestedId?: string): Promise<KhataData | nu
         createdAt: khataEntries.createdAt,
       })
       .from(khataEntries)
-      .where(eq(khataEntries.staffId, selected.id)),
-    latest ? isMonthClosed(monthOf(latest.businessDate)) : Promise.resolve(false),
+      .where(
+        and(
+          eq(khataEntries.staffId, selected.id),
+          gte(khataEntries.businessDate, start),
+          lt(khataEntries.businessDate, monthStart(nextMonth(shown.month))),
+        ),
+      ),
+    db
+      .select({ total: sum(khataEntries.amount).mapWith(Number) })
+      .from(khataEntries)
+      .where(and(eq(khataEntries.staffId, selected.id), lt(khataEntries.businessDate, start))),
   ]);
 
+  const broughtForward = forward?.total ?? 0;
   const ledger = withRunningBalance(
     [...entries]
       .sort(inLedgerOrder)
       .map(({ id, businessDate, label, amount }) => ({ id, businessDate, label, amount })),
+    broughtForward,
   );
 
-  return { staff: list, selected, ledger, monthClosed };
+  return {
+    staff: list,
+    selected,
+    months,
+    month: shown.month,
+    monthLabel: formatMonth(shown.month),
+    currentMonth: shown.month === monthChoices?.current,
+    monthClosed: shown.closed,
+    broughtForward,
+    ledger,
+    closingBalance: ledger.at(-1)?.balance ?? broughtForward,
+  };
 }
 
 export interface SlipData {

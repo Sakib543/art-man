@@ -16,9 +16,24 @@ import type { MonthChoice } from "@/db/queries/months";
  * Fetched rather than linked, so that a refusal ("sign in again", "no
  * internet") is said on the screen instead of being saved as a broken file.
  */
-export function SalarySlip({ staffId, staffName, months }: { staffId: string; staffName: string; months: MonthChoice[] }) {
+export function SalarySlip({
+  staffId,
+  staffName,
+  months,
+  shownMonth,
+}: {
+  staffId: string;
+  staffName: string;
+  months: MonthChoice[];
+  /** The month the khata shows (P7.15): its slip is the one offered, once the month is closed. */
+  shownMonth: string | null;
+}) {
   // The last closed month is the one whose slip is final: the one handed over at month end.
-  const initial = months.find((choice) => choice.closed)?.month ?? months[0]?.month ?? "";
+  const initial =
+    months.find((choice) => choice.month === shownMonth && choice.closed)?.month ??
+    months.find((choice) => choice.closed)?.month ??
+    months[0]?.month ??
+    "";
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(initial);
   const [error, setError] = useState("");

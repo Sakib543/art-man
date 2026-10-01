@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-813_unit_%2B_151_integration-2E7D32?logo=vitest&logoColor=white" alt="813 unit and 151 integration tests" />
+  <img src="https://img.shields.io/badge/tests-814_unit_%2B_157_integration-2E7D32?logo=vitest&logoColor=white" alt="814 unit and 157 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,8 +67,8 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 39 routes · ~32,000 lines of TypeScript · 813 unit tests in 57
-files · 151 integration tests against PostgreSQL · 24 database migrations · 34 database triggers.
+**By the numbers:** 19 feature modules · 39 routes · ~32,000 lines of TypeScript · 814 unit tests in 57
+files · 157 integration tests against PostgreSQL · 24 database migrations · 34 database triggers.
 
 ---
 
@@ -175,7 +175,7 @@ files · 151 integration tests against PostgreSQL · 24 database migrations · 3
 | **Daily folders** | Expenses (paid from the drawer or by the owner), staff advances, owner cash in/out confirmed with the Owner's PIN; every entry cancellable with a reversing row |
 | **Day close** | A five-step wizard: attendance for daily-wage staff, staff payments, cash count, expected vs counted cash with the difference explained, then the sealed snapshot and its security code |
 | **Daily report** | The day's bills folded so a correction reads as one line with an "Edited" badge and a link to earlier versions; a read-only register view (per-staff columns, like the paper register); cancellation alerts |
-| **Staff khata** | Each staff member's running ledger — commission, daily wage, monthly salary, bonuses, advances, payments — and a **monthly salary slip PDF** generated on the server |
+| **Staff khata** | Each staff member's running ledger, a month at a time from the balance brought forward — commission, daily wage, monthly salary, bonuses, advances, payments — and a **monthly salary slip PDF** generated on the server |
 
 ### Owner
 
@@ -451,14 +451,14 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **813 unit tests in 57 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **814 unit tests in 57 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
   session, sign-in error messages, the proxy's redirects, role rules and the salary slip.
 - **Property-style checks** where it matters: for example, recalculating a closed month from corrected days
   must equal building the report from scratch, across every shape of month.
-- **151 integration tests in 12 files** run the services, Server Actions, Route Handlers and triggers against a
+- **157 integration tests in 13 files** run the services, Server Actions, Route Handlers and triggers against a
   real PostgreSQL: the Owner-cash PIN and its lock under 20 guesses at once; the same cancellation, installment
   or save sent five times at once changing the books once; a closed day corrected after a pay change, reopened
   and closed again; every one of the 46 Server Actions called as each role, signed out and in maintenance
