@@ -93,7 +93,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P7.15 | Staff khata one month at a time (QA-42) | ✅ | done 2026-10-01 |
 | P7.16 | README and HANDOFF statements that are not so (QA-20) | ✅ | done 2026-10-01 |
 | P7.17 | Small UX, accessibility and header fixes (QA-13, 21, 32, 35, 38, 39, 40, 41) | ✅ | done 2026-10-01 (migration `0024`) |
-| P7.18 | Code health and test-suite gaps (QA-15, 16, 17, 18, 22, 33, 44) | ⬜ | when convenient |
+| P7.18 | Code health and test-suite gaps (QA-15, 16, 17, 18, 22, 33, 44) | 🟡 | Sakib543, 2026-10-01 |
 
 ---
 
@@ -1009,7 +1009,8 @@ The findings as the audit wrote them:
   (`INVALID_USERNAME`) and the screen says "Something went wrong".
 - **QA-35:** no CSP / `frame-ancestors`, `X-Content-Type-Options` or `Referrer-Policy`; `X-Powered-By` sent.
 
-#### ⬜ P7.18 — Code health and test-suite gaps
+#### 🟡 P7.18 — Code health and test-suite gaps
+**Owner:** Sakib543, 2026-10-01
 - **QA-44:** the conventions test misses one action losing its role check (it matches one regex per
   file), a cross-feature import written `../billing/…`, and `@/db` in a component (the build catches
   client components only; 16 server components are unguarded).
