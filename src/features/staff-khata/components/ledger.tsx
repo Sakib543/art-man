@@ -5,7 +5,6 @@ import type { Rupees } from "@/lib/accounting";
 import { rs, formatDate, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { KhataStaff, LedgerRow } from "../queries";
-import { payNote } from "../rules";
 import { GiveBonus } from "./give-bonus";
 import { SalarySlip } from "./salary-slip";
 
@@ -138,7 +137,11 @@ export function Ledger({
 
       <p className="border-t px-card py-3 text-xs text-muted-foreground">
         {month && !currentMonth ? `Balance today: ${rs(member.balance)}. ` : ""}
-        {payNote(member.payType, member.salary)}
+        {member.payType === 3
+          ? "Daily wage and commission are added every night at Day Close."
+          : member.payType === 2
+            ? `Commission is added every night at Day Close. Monthly salary of ${rs(member.salary)} is added at month end.`
+            : `Monthly salary of ${rs(member.salary)} is added at month end.`}
       </p>
     </Panel>
   );

@@ -183,6 +183,13 @@
       "when": 1790900400763,
       "tag": "0025_staff_pay_parts",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790956019066,
+      "tag": "0026_pay_types_back",
+      "breakpoints": true
     }
   ]
 }

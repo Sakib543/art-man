@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-855_unit_%2B_182_integration-2E7D32?logo=vitest&logoColor=white" alt="855 unit and 182 integration tests" />
+  <img src="https://img.shields.io/badge/tests-831_unit_%2B_174_integration-2E7D32?logo=vitest&logoColor=white" alt="831 unit and 174 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,8 +67,8 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 855 unit tests in 60
-files · 182 integration tests against PostgreSQL · 26 database migrations · 34 database triggers.
+**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 831 unit tests in 59
+files · 174 integration tests against PostgreSQL · 27 database migrations · 34 database triggers.
 
 ---
 
@@ -196,7 +196,7 @@ files · 182 integration tests against PostgreSQL · 26 database migrations · 3
 | **Adjustments for a closed month** | A mistake found after a month closed counts in the open month — as a sale, an expense, or what a staff member earned or took — never by editing the closed one |
 | **Monthly expenses** | Recurring fixed lines (rent, electricity…) and one-off expenses, paid by the business or by the owner |
 | **Partners and capital** | Profit shares by percentage, drawings, capital injected and repaid, each partner's net position |
-| **Staff and rates** | Services, deals, price ranges, and pay in parts: any mix of a monthly salary, a daily wage for each day present and a commission % (seven pay types) |
+| **Staff and rates** | Services, deals, price ranges, three pay types (salary, salary + commission, daily wage + commission) |
 | **Customers** | Names, numbers and special rates |
 | **Users** | Create Owner and Manager logins, close and reopen accounts |
 | **Security codes** | Each closed day's code worked out again from its records, a month at a time, to compare with the night's close slip |
@@ -464,14 +464,14 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **855 unit tests in 60 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **831 unit tests in 59 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
   session, sign-in error messages, the proxy's redirects, role rules and the salary slip.
 - **Property-style checks** where it matters: for example, recalculating a closed month from corrected days
   must equal building the report from scratch, across every shape of month.
-- **182 integration tests in 17 files** run the services, Server Actions, Route Handlers and triggers against a
+- **174 integration tests in 16 files** run the services, Server Actions, Route Handlers and triggers against a
   real PostgreSQL: the Owner-cash PIN and its lock under 20 guesses at once; the same cancellation, installment
   or save sent five times at once changing the books once; a closed day corrected after a pay change, reopened
   and closed again; every one of the 46 Server Actions called as each role, signed out and in maintenance

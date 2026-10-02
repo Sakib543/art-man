@@ -87,7 +87,7 @@ MAHINA (Owner)
 | Monthly expenses | Fixed lines (rent...) aur others (reason ke saath) |
 | Capital / Outstanding | Partner ki investment aur kiston mein wapsi |
 | Partners | Profit share %, partner accounts, profit drawn |
-| Staff & rates | Staff, services, deals. Staff ki pay teen hisson se banti hai, jo chahein tick karein: **monthly salary**, **har haazir din ki daily wage** (jaise Rs 200), **commission %** apne din ke kaam par. Misal: salary + Rs 200 roz, salary + 10%, sirf 10% commission, ya teeno (P3.17) |
+| Staff & rates | Staff (pay type), services, deals |
 | Security codes | Har band din ka code, us din ki entries se dobara bana kar milaya jata hai: "Matches" ya "Does not match". Close slip wale code se milayein (P7.8, P7.8b) |
 | Settings | Password, Owner PIN, Manager ka password reset |
 

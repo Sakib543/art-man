@@ -58,11 +58,10 @@ Model these as first-class entities. Field lists are the minimum; add ids, times
 
 - **Service** — `{ id, name, category, price, active }`. Owner-managed (CRUD).
 - **Deal** — `{ id, name, price, serviceIds[], active }`. A bundle sold at a fixed price; the price is **split across its services by list price** so each staff member earns correct commission (see §6.3).
-- **Staff** — `{ id, name, payType (1–7), salary, dailyWage, commissionRate, active }`.
+- **Staff** — `{ id, name, payType (1|2|3), salary, dailyWage, commissionRate, active }`.
   - Type 1: monthly salary only.
   - Type 2: monthly salary + commission.
   - Type 3: daily wage + commission.
-  - Types 4–7 (added 2026-10-02, §6.1): the other mixes of the same three parts.
 - **Customer** — `{ id, phone, name, visits, lastVisit, specialRates:{serviceId:price} }`. Looked up by phone; special rate auto-applies.
 - **Bill** — `{ no, businessDate, time, customerId, lines:[{serviceId, name, amount, staffId}], cash, online, status: active|cancelled, reason, voidOf? }`.
 - **CashFolderEntry** — one of four folders (see §5.2): `{ type: expense|staff|ownerCash|online, amount, businessDate, meta, pinConfirmed?, status, voidOf? }`. `pinConfirmed` applies to Owner cash only.
@@ -162,12 +161,6 @@ If internet/power is down, the counter uses a **numbered manual bill book**; whe
 | 1 — Monthly salary | fixed | — | — |
 | 2 — Salary + commission | fixed | — | % of work |
 | 3 — Daily wage + commission | — | per present day | % of work |
-| 4 — Commission only | — | — | % of work |
-| 5 — Salary + daily wage | fixed | per present day | — |
-| 6 — Salary + daily wage + commission | fixed | per present day | % of work |
-| 7 — Daily wage only | — | per present day | — |
-
-> **Added 2026-10-02 (client request, backlog P3.17).** Pay is any mix of three parts — a fixed monthly salary, a daily wage for each day present, a commission % on the staff member's own day's work — with at least one. Types 1–3 are unchanged; 4–7 are the other mixes. The client's own case is type 5: a fixed salary plus Rs 200 for each day present (26 days present on a salary of 25,000 is 25,000 + 5,200 = 30,200 for the month). The Owner ticks the parts on the Staff & rates form, and each part ticked needs an amount. The rules below apply to each part the same way whatever the mix: the daily wage only for a day marked present, commission on the amount charged, the salary in full at month end (§10.8).
 
 - **Bonus:** Owner can give any staff member any amount at any time, **with a reason**.
 - **Material cost is not deducted** — commission is on the full charged amount.

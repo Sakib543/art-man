@@ -1,6 +1,6 @@
 import type { DayBill } from "@/db/queries/day-bills";
 import type { DayEntry } from "@/db/queries/day-entries";
-import { isPayType, type DayPay, type Rupees } from "@/lib/accounting";
+import type { DayPay, Rupees } from "@/lib/accounting";
 
 /**
  * The counter's copy of the open business day (backlog P2.2e): its bills and
@@ -110,7 +110,7 @@ const isPay = (value: unknown) => {
   if (typeof value !== "object" || value === null) return false;
   const pay = value as Partial<DayPay>;
   return (
-    isPayType(pay.payType) &&
+    (pay.payType === 1 || pay.payType === 2 || pay.payType === 3) &&
     typeof pay.dailyWage === "number" &&
     typeof pay.commissionRate === "number"
   );

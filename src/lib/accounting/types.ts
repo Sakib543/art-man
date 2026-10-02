@@ -12,21 +12,16 @@ export type Rupees = number;
 /** ISO date string, e.g. "2026-09-11". This is the *business* date, not the clock date. */
 export type BusinessDate = string;
 
-/**
- * Which parts a staff member's pay is made of (`PAY_PARTS`): 1 = monthly
- * salary only, 2 = salary + commission, 3 = daily wage + commission,
- * 4 = commission only, 5 = salary + daily wage, 6 = salary + daily wage +
- * commission, 7 = daily wage only (4–7 since P3.17).
- */
-export type PayType = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+/** 1 = monthly salary only, 2 = salary + commission, 3 = daily wage + commission. */
+export type PayType = 1 | 2 | 3;
 
 export interface StaffPay {
   payType: PayType;
-  /** Monthly salary. Used by the pay types with a salary (`paysSalary`). */
+  /** Monthly salary. Used by pay types 1 and 2. */
   salary: Rupees;
-  /** Wage per present day. Used by the pay types with a daily wage (`paysDailyWage`). */
+  /** Wage per present day. Used by pay type 3. */
   dailyWage: Rupees;
-  /** Commission percent, e.g. 10 means 10%. Used by the pay types with commission (`paysCommission`). */
+  /** Commission percent, e.g. 10 means 10%. Ignored for pay type 1. */
   commissionRate: number;
 }
 

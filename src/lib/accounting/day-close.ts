@@ -12,7 +12,7 @@ export interface CloseStaff {
   id: string;
   /** No salary: none is earned by the day (P7.13). */
   pay: DayPay;
-  /** Marked at Day Close. Only staff whose pay has a daily wage are paid for being present. */
+  /** Marked at Day Close. Only daily-wage staff get paid for being present. */
   present: boolean;
 }
 

@@ -22,12 +22,12 @@ interface AttendanceStepProps {
   onNext: () => void;
 }
 
-/** Step 1: who was present. Only staff whose pay has a daily wage are paid for it. */
+/** Step 1: who was present. Only daily-wage staff are paid for it. */
 export function AttendanceStep({ staff, present, onToggle, onNext }: AttendanceStepProps) {
   return (
     <StepCard
       title="Who worked today?"
-      help="A daily wage is paid only to staff whose pay includes one, for a day they were present."
+      help="Daily wage is paid only to staff on the daily wage plan who were present."
       onNext={onNext}
     >
       <div className="overflow-x-auto">
