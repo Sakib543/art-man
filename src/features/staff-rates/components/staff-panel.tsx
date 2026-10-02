@@ -28,6 +28,7 @@ export function StaffPanel({ staff }: { staff: StaffRow[] }) {
               <th className={cn(th, "text-right")}>Salary</th>
               <th className={cn(th, "text-right")}>Daily wage</th>
               <th className={cn(th, "text-right")}>Commission</th>
+              <th className={cn(th, "text-right")}>Overtime / hr</th>
               <th className={th}>Status</th>
               <th className={th} />
             </tr>
@@ -40,6 +41,7 @@ export function StaffPanel({ staff }: { staff: StaffRow[] }) {
                 <td className={cn(td, "text-right tabular-nums")}>{member.salary ? num(member.salary) : "-"}</td>
                 <td className={cn(td, "text-right tabular-nums")}>{member.dailyWage ? num(member.dailyWage) : "-"}</td>
                 <td className={cn(td, "text-right tabular-nums")}>{member.commissionRate ? `${member.commissionRate}%` : "-"}</td>
+                <td className={cn(td, "text-right tabular-nums")}>{member.overtimeRate ? num(member.overtimeRate) : "-"}</td>
                 <td className={td}>
                   <ActiveBadge active={member.active} />
                 </td>
@@ -52,7 +54,7 @@ export function StaffPanel({ staff }: { staff: StaffRow[] }) {
             ))}
             {staff.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   No staff yet
                 </td>
               </tr>

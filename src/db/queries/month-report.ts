@@ -46,20 +46,29 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
   const start = monthStart(month);
   const end = monthStart(nextMonth(month));
 
-  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest, [bonusRow], adjustmentRows] = await Promise.all([
+  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest, extraRows, adjustmentRows] = await Promise.all([
     db.select().from(daySnapshots).where(and(gte(daySnapshots.businessDate, start), lt(daySnapshots.businessDate, end))).orderBy(asc(daySnapshots.businessDate)),
     db.select().from(monthlyExpenses).where(eq(monthlyExpenses.month, start)),
     db.select({ amount: capitalRepayments.amount }).from(capitalRepayments).where(and(gte(capitalRepayments.paidOn, start), lt(capitalRepayments.paidOn, end))),
     db.select({ salary: staff.salary, payType: staff.payType, active: staff.active }).from(staff),
     db.select().from(monthCloses).where(eq(monthCloses.month, start)).limit(1),
     getLatestBusinessDay(),
-    // Bonuses are khata lines, not day-snapshot figures, so they have to be
-    // asked for separately or they would never reach the profit (backlog P3.1).
-    // `sum()` of an integer column comes back as a string -- hence mapWith.
+    // Bonuses (backlog P3.1), overtime and deductions (P3.18) are khata lines,
+    // not day-snapshot figures, so they have to be asked for separately or they
+    // would never reach the profit. A cancellation is a line of the same kind
+    // on the same date, so each sum is already net of it. `sum()` of an
+    // integer column comes back as a string -- hence mapWith.
     db
-      .select({ total: sum(khataEntries.amount).mapWith(Number) })
+      .select({ kind: khataEntries.kind, total: sum(khataEntries.amount).mapWith(Number) })
       .from(khataEntries)
-      .where(and(eq(khataEntries.kind, "bonus"), gte(khataEntries.businessDate, start), lt(khataEntries.businessDate, end))),
+      .where(
+        and(
+          inArray(khataEntries.kind, ["bonus", "overtime", "deduction"]),
+          gte(khataEntries.businessDate, start),
+          lt(khataEntries.businessDate, end),
+        ),
+      )
+      .groupBy(khataEntries.kind),
     // Adjustments for earlier, closed months counted in this one (backlog P3.4),
     // cancellations included: each is its adjustment with the sign turned.
     db
@@ -77,6 +86,8 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
         .from(cashEntries)
         .where(inArray(cashEntries.businessDate, closedDates))
     : [];
+
+  const extra = (kind: "bonus" | "overtime" | "deduction") => extraRows.find((row) => row.kind === kind)?.total ?? 0;
 
   const ownerTookCash = entryRows.filter((e) => e.kind === "owner_took").reduce((sum, e) => sum + e.amount, 0);
   const dailyExpensesPaidByOwner = entryRows
@@ -101,7 +112,10 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
     days,
     monthlyExpenses: expenseRows.map((e) => ({ kind: e.kind, amount: e.amount, paidFrom: e.paidFrom })),
     salaries,
-    bonuses: bonusRow?.total ?? 0,
+    bonuses: extra("bonus"),
+    overtime: extra("overtime"),
+    // Taken off the khata, so negative there; a positive cost saved here.
+    deductions: -extra("deduction"),
     ownerTookCash,
     dailyExpensesPaidByOwner,
     capitalRepaid: repayments.reduce((sum, r) => sum + r.amount, 0),

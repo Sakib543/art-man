@@ -83,6 +83,8 @@ export function summaryRows(slip: Slip, info: SlipInfo): SummaryRow[] {
     rows.push({ label: `Monthly salary${pending}`, value: money(totals.salary), style: "line" });
   }
   if (totals.bonus !== 0) rows.push({ label: "Bonus", value: money(totals.bonus), style: "line" });
+  if (totals.overtime !== 0) rows.push({ label: "Overtime", value: money(totals.overtime), style: "line" });
+  if (totals.deductions !== 0) rows.push({ label: "Deductions", value: money(-totals.deductions), style: "line" });
   rows.push({ label: "Total earned", value: money(totals.earned), style: "subtotal" });
 
   rows.push({ label: `Taken in ${info.monthLabel}`, value: "", style: "heading" });
@@ -316,7 +318,7 @@ export async function renderSlipPdf(slip: Slip, info: SlipInfo): Promise<Uint8Ar
   }
   sheet.rule(sheet.y + 9);
   sheet.y -= 6;
-  sheet.text("Other: salary, bonus and adjustments. Taken: payments and advances. Balance: + owed to them, - taken in advance.", LEFT, { size: 7.5, color: MUTED });
+  sheet.text("Other: salary, bonus, overtime, deductions, adjustments. Taken: payments, advances. Balance: + owed to them, - taken in advance.", LEFT, { size: 7.5, color: MUTED });
 
   sheet.footers(info.generatedAt);
   return doc.save();

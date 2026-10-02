@@ -90,6 +90,8 @@ describe("buildSlip", () => {
       wage: 2400,
       salary: 20000,
       bonus: 1000,
+      overtime: 0,
+      deductions: 0,
       earned: 23700,
       payments: 1000,
       advances: 0,
@@ -152,5 +154,38 @@ describe("slipFileName", () => {
 
   it("still names it when the name has no plain letters at all", () => {
     expect(slipFileName("عارف", "2026-09")).toBe("salary-slip-staff-2026-09.pdf");
+  });
+});
+
+describe("overtime and deductions on the slip (P3.18)", () => {
+  const overtime = line("2026-09-12", "overtime", "Overtime 3 h × Rs 150: wedding party", 450);
+  const wrongOvertime = line("2026-09-13", "overtime", "Overtime 2 h × Rs 150: wrong day", 300);
+  const deduction = line("2026-09-14", "deduction", "Deduction: late two hours", -300);
+  const lines = [
+    line("2026-09-12", "earning", "Commission (on work of 5900)", 590),
+    overtime,
+    wrongOvertime,
+    line("2026-09-13", "overtime", "Cancelled: Overtime 2 h × Rs 150: wrong day (entered twice)", -300, { reversesEntryId: wrongOvertime.id }),
+    deduction,
+    line("2026-09-30", "earning", "Monthly salary (September 2026)", 20000),
+  ];
+  const slip = buildSlip("2026-09", lines);
+
+  it("counts overtime with what was earned and takes a deduction off it, cancellations netted", () => {
+    expect(slip.totals).toMatchObject({ commission: 590, salary: 20000, overtime: 450, deductions: 300, adjustments: 0 });
+    expect(slip.totals.earned).toBe(590 + 20000 + 450 - 300);
+  });
+
+  it("puts them in the day's Other column, and the balance follows", () => {
+    expect(slip.days.find((day) => day.businessDate === "2026-09-13")?.other).toBe(0);
+    expect(slip.days.find((day) => day.businessDate === "2026-09-14")?.other).toBe(-300);
+    expect(slip.closingBalance).toBe(590 + 450 - 300 + 20000);
+    expect(slip.days.at(-1)?.balance).toBe(slip.closingBalance);
+  });
+
+  it("counts a cancellation where the line it cancels counted", () => {
+    const byId = new Map(lines.map((l) => [l.id, l]));
+    expect(categoryOf(lines[3], byId)).toBe("overtime");
+    expect(categoryOf(deduction, byId)).toBe("deduction");
   });
 });

@@ -73,6 +73,8 @@ export const staff = pgTable(
     commissionRate: numeric("commission_rate", { precision: 5, scale: 2, mode: "number" })
       .notNull()
       .default(0),
+    /** Rupees for an hour of overtime (P3.18), whatever the pay type; 0 = none set. */
+    overtimeRate: rupees("overtime_rate").notNull().default(0),
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
   },

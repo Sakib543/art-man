@@ -58,6 +58,16 @@ export interface MonthReportInput {
    * never reach the profit at all.
    */
   bonuses: Rupees;
+  /**
+   * Overtime added to the khata this month (backlog P3.18), net of
+   * cancellations. Like a bonus, a khata line and not a day's figure.
+   */
+  overtime: Rupees;
+  /**
+   * Deductions taken off the khata this month (P3.18), as a positive amount,
+   * net of cancellations. They come off what staff earned.
+   */
+  deductions: Rupees;
   /** Cash the Owner took from the drawer during the month, net of cancellations. */
   ownerTookCash: Rupees;
   /** Daily expenses the Owner paid from his own account. */
@@ -81,6 +91,10 @@ export interface MonthReport {
   salaries: Rupees;
   staffEarned: Rupees;
   bonuses: Rupees;
+  /** Overtime added to the khata (P3.18). */
+  overtime: Rupees;
+  /** Deductions taken off the khata (P3.18), as a positive amount. */
+  deductions: Rupees;
   staffPaid: Rupees;
   /** Sum of the days' own profits, before monthly expenses and salaries. */
   dayProfitTotal: Rupees;
@@ -116,7 +130,7 @@ export function buildMonthReport(input: MonthReportInput): MonthReport {
     totalSales: sales,
     dailyExpenses,
     monthlyExpenses: expenses.total,
-    staffEarnings: staffEarned + input.salaries + input.bonuses,
+    staffEarnings: staffEarned + input.salaries + input.bonuses + input.overtime - input.deductions,
     adjustments: adjustments.profit,
   });
 
@@ -131,6 +145,8 @@ export function buildMonthReport(input: MonthReportInput): MonthReport {
     salaries: input.salaries,
     staffEarned,
     bonuses: input.bonuses,
+    overtime: input.overtime,
+    deductions: input.deductions,
     staffPaid: sum(input.days.map((d) => d.staffPaid)),
     dayProfitTotal: sum(input.days.map((d) => d.dayProfit)),
     netProfit: profit,
@@ -157,7 +173,7 @@ export function buildMonthReport(input: MonthReportInput): MonthReport {
  * settling the day has just rewritten. Everything else stays as the month
  * closed with it — the salaries above all, since the staff settings they came
  * from may have changed since, and with them the monthly expenses, bonuses,
- * the Owner's cash, capital repaid and adjustments. The net profit and the
+ * overtime and deductions, the Owner's cash, capital repaid and adjustments. The net profit and the
  * Owner account move by what the days moved, so the result is what the close
  * would have saved had the days read this way then.
  */
@@ -189,6 +205,8 @@ export function recalculateMonthReport(closed: MonthReport, days: MonthDay[]): M
       heldByBusiness: closed.owner.heldByBusiness + profitMoved - onlineMoved,
     },
     bonuses: closed.bonuses,
+    overtime: closed.overtime,
+    deductions: closed.deductions,
     adjustments: closed.adjustments,
     adjustmentsToOwner: closed.adjustmentsToOwner,
   };

@@ -47,6 +47,8 @@ export interface StaffSpec {
   salary?: number;
   dailyWage?: number;
   commissionRate?: number;
+  /** Rupees an hour of overtime (P3.18). */
+  overtimeRate?: number;
 }
 
 export interface ServiceSpec {
@@ -167,6 +169,7 @@ export async function addStaff(owner: SessionUser, member: StaffSpec): Promise<s
     salary: member.salary ?? 0,
     dailyWage: member.dailyWage ?? 0,
     commissionRate: member.commissionRate ?? 0,
+    overtimeRate: member.overtimeRate ?? 0,
     active: true,
   });
   const [row] = await db.select({ id: staff.id }).from(staff).where(eq(staff.name, member.name));

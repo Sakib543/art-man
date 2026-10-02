@@ -23,7 +23,16 @@ export interface SlipLine {
   cashEntryId: string | null;
 }
 
-export type SlipCategory = "commission" | "wage" | "salary" | "bonus" | "payment" | "advance" | "adjustment";
+export type SlipCategory =
+  | "commission"
+  | "wage"
+  | "salary"
+  | "bonus"
+  | "overtime"
+  | "deduction"
+  | "payment"
+  | "advance"
+  | "adjustment";
 
 /** A reversal points at a line that points at nothing, so this is never reached; it stops a loop in bad data. */
 const MAX_DEPTH = 5;
@@ -53,6 +62,10 @@ export function categoryOf(line: SlipLine, byId: ReadonlyMap<string, SlipLine>, 
       return "adjustment";
     case "bonus":
       return "bonus";
+    case "overtime":
+      return "overtime";
+    case "deduction":
+      return "deduction";
     case "payment":
       return "payment";
     case "advance":
@@ -67,7 +80,11 @@ export interface SlipTotals {
   wage: Rupees;
   salary: Rupees;
   bonus: Rupees;
-  /** Commission + wage + salary + bonus. */
+  /** Overtime (P3.18), net of cancellations. */
+  overtime: Rupees;
+  /** Deductions (P3.18), as a positive amount, net of cancellations. */
+  deductions: Rupees;
+  /** Commission + wage + salary + bonus + overtime − deductions. */
   earned: Rupees;
   /** Money handed over, as a positive amount. */
   payments: Rupees;
@@ -82,7 +99,7 @@ export interface SlipDay {
   businessDate: string;
   commission: Rupees;
   wage: Rupees;
-  /** Salary, bonus and adjustments, signed. */
+  /** Salary, bonus, overtime, deductions and adjustments, signed. */
   other: Rupees;
   /** Payments and advances, as a positive amount. */
   taken: Rupees;
@@ -108,6 +125,8 @@ const EMPTY_TOTALS: SlipTotals = {
   wage: 0,
   salary: 0,
   bonus: 0,
+  overtime: 0,
+  deductions: 0,
   earned: 0,
   payments: 0,
   advances: 0,
@@ -144,9 +163,14 @@ export function buildSlip(month: string, lines: SlipLine[]): Slip {
         break;
       case "salary":
       case "bonus":
+      case "overtime":
+      case "deduction":
       case "adjustment":
         if (category === "salary") totals.salary += line.amount;
         if (category === "bonus") totals.bonus += line.amount;
+        if (category === "overtime") totals.overtime += line.amount;
+        // Taken off the khata, a negative line; the slip shows it as an amount taken off.
+        if (category === "deduction") totals.deductions -= line.amount;
         if (category === "adjustment") totals.adjustments += line.amount;
         day.other += line.amount;
         break;
@@ -161,7 +185,7 @@ export function buildSlip(month: string, lines: SlipLine[]): Slip {
     byDay.set(line.businessDate, day);
   }
 
-  totals.earned = totals.commission + totals.wage + totals.salary + totals.bonus;
+  totals.earned = totals.commission + totals.wage + totals.salary + totals.bonus + totals.overtime - totals.deductions;
   totals.taken = totals.payments + totals.advances;
 
   let balance = broughtForward;

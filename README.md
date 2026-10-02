@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
-  <img src="https://img.shields.io/badge/tests-831_unit_%2B_174_integration-2E7D32?logo=vitest&logoColor=white" alt="831 unit and 174 integration tests" />
+  <img src="https://img.shields.io/badge/tests-854_unit_%2B_185_integration-2E7D32?logo=vitest&logoColor=white" alt="854 unit and 185 integration tests" />
   <img src="https://img.shields.io/badge/PWA-offline_ready-5A0FC8?logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
@@ -67,8 +67,8 @@ It is used by the counter manager on a laptop or tablet and by the owner from a 
 feel like the paper register it replaced — per-person columns, running staff ledgers, month-end settlements —
 so that training takes minutes.
 
-**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 831 unit tests in 59
-files · 174 integration tests against PostgreSQL · 27 database migrations · 34 database triggers.
+**By the numbers:** 19 feature modules · 39 routes · ~36,000 lines of TypeScript · 854 unit tests in 61
+files · 185 integration tests against PostgreSQL · 28 database migrations · 34 database triggers.
 
 ---
 
@@ -152,7 +152,7 @@ files · 174 integration tests against PostgreSQL · 27 database migrations · 3
   outbox let the counter bill, record expenses and even close the day for 6–8 hours without internet. The
   server re-validates every queued item on sync and never trusts a price computed in the browser.
 - **Exactly-once writes over an unreliable connection.** Every bill, cash entry, offline day close and Owner
-  money entry (drawings, expenses, bonuses, capital, adjustments) carries a client-generated UUID backed by
+  money entry (drawings, expenses, bonuses, overtime, deductions, capital, adjustments) carries a client-generated UUID backed by
   a unique index, so a request whose response was lost can be retried — or asked about — without ever
   saving twice. A cancellation is unique on the row it cancels, so two at once can never both land.
 - **A pure, fully tested accounting core.** Pricing, deal splits, discounts, commission, day close, month
@@ -184,7 +184,7 @@ files · 174 integration tests against PostgreSQL · 27 database migrations · 3
 | **Daily folders** | Expenses (paid from the drawer or by the owner), staff advances, owner cash in/out confirmed with the Owner's PIN; every entry cancellable with a reversing row |
 | **Day close** | A five-step wizard: attendance for daily-wage staff, staff payments, cash count, expected vs counted cash with the difference explained, then the sealed snapshot, its security code and a close slip to print for the Owner |
 | **Daily report** | The day's bills folded so a correction reads as one line with an "Edited" badge and a link to earlier versions; a read-only register view (per-staff columns, like the paper register); cancellation alerts |
-| **Staff khata** | Each staff member's running ledger, a month at a time from the balance brought forward — commission, daily wage, monthly salary, bonuses, advances, payments — and a **monthly salary slip PDF** generated on the server |
+| **Staff khata** | Each staff member's running ledger, a month at a time from the balance brought forward — commission, daily wage, monthly salary, bonuses, overtime (hours × the karigar's rate), deductions, advances, payments — and a **monthly salary slip PDF** generated on the server |
 
 ### Owner
 
@@ -227,6 +227,8 @@ Staff (the *karigars*) never sign in; their work is recorded by the counter.
 | Correct a bill on the open day | — | ✓ | ✓ |
 | Cancel in a closed day, reopen the latest day (month still open) | — | ✓ | ✓ |
 | Rates, deals, staff pay, customers, bonuses | — | ✓ | ✓ |
+| Overtime and deductions in the staff khata | ✓ | ✓ | ✓ |
+| Cancel a wrong overtime or deduction | — | ✓ | ✓ |
 | Monthly report, month close, adjustments, partners, capital | — | ✓ | ✓ |
 | Create users | — | ✓ | ✓ |
 | Reset passwords and the Owner's PIN, maintenance mode, audit log | — | — | ✓ |
@@ -257,7 +259,7 @@ flowchart LR
 - **Commission** is paid on what the customer actually paid: a discount is shared across the bill's lines, and
   a deal's price is split across its services by list price, so each staff member's share is exact.
 - **Net profit** = sales − daily expenses − monthly expenses − staff earnings (commission, wages, salaries,
-  bonuses) ± adjustments for earlier months. Advances and owner withdrawals are not costs and never appear.
+  bonuses, overtime, less deductions) ± adjustments for earlier months. Advances and owner withdrawals are not costs and never appear.
 
 ---
 
@@ -464,17 +466,17 @@ where they belong. The first business day is opened from Day close.
 
 ## Testing and quality
 
-- **831 unit tests in 59 files**, all pure — no database, no network — so they run in seconds and in CI with no
+- **854 unit tests in 61 files**, all pure — no database, no network — so they run in seconds and in CI with no
   secrets. They cover pricing (deals, ranges, special rates, discounts), commission and staff pay, the day
   close and expected cash, the security code, month reports and closed-month recalculation, partner shares,
   adjustments, offline outbox ordering and sync outcomes, temporary receipt numbers, the 12-hour offline
   session, sign-in error messages, the proxy's redirects, role rules and the salary slip.
 - **Property-style checks** where it matters: for example, recalculating a closed month from corrected days
   must equal building the report from scratch, across every shape of month.
-- **174 integration tests in 16 files** run the services, Server Actions, Route Handlers and triggers against a
+- **185 integration tests in 17 files** run the services, Server Actions, Route Handlers and triggers against a
   real PostgreSQL: the Owner-cash PIN and its lock under 20 guesses at once; the same cancellation, installment
   or save sent five times at once changing the books once; a closed day corrected after a pay change, reopened
-  and closed again; every one of the 46 Server Actions called as each role, signed out and in maintenance
+  and closed again; every one of the 49 Server Actions called as each role, signed out and in maintenance
   mode, against a permission table that must list them all; partner shares through month close; the
   append-only triggers, `TRUNCATE` refused on every financial table, the maintainer's escape hatch and the
   security-code chain, and the audit's rewritten chain caught by the server's key — with the app connected as

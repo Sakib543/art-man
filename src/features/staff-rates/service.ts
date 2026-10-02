@@ -20,9 +20,10 @@ export async function saveStaff(user: SessionUser, input: StaffInput): Promise<v
   const values = { name: input.name, ...pay, active: input.active };
 
   if (!input.id) {
+    const created = { ...values, overtimeRate: input.overtimeRate ?? 0 };
     await db.transaction(async (tx) => {
-      await tx.insert(staff).values(values);
-      await writeAudit(tx, { actor: actorOf(user), action: "staff.create", target: input.name, after: values });
+      await tx.insert(staff).values(created);
+      await writeAudit(tx, { actor: actorOf(user), action: "staff.create", target: input.name, after: created });
     });
     return;
   }
@@ -35,6 +36,7 @@ export async function saveStaff(user: SessionUser, input: StaffInput): Promise<v
       salary: staff.salary,
       dailyWage: staff.dailyWage,
       commissionRate: staff.commissionRate,
+      overtimeRate: staff.overtimeRate,
       active: staff.active,
     })
     .from(staff)
@@ -42,15 +44,16 @@ export async function saveStaff(user: SessionUser, input: StaffInput): Promise<v
     .limit(1);
   if (!before) throw new UserError("Staff member not found");
 
+  const updated = { ...values, overtimeRate: input.overtimeRate ?? before.overtimeRate };
   await db.transaction(async (tx) => {
-    await tx.update(staff).set(values).where(eq(staff.id, id));
+    await tx.update(staff).set(updated).where(eq(staff.id, id));
 
     await writeAudit(tx, {
       actor: actorOf(user),
       action: "staff.update",
       target: before.name,
       before,
-      after: values,
+      after: updated,
     });
   });
 }

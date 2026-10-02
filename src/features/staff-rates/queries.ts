@@ -14,6 +14,7 @@ export async function getStaffList(): Promise<StaffRow[]> {
       salary: staff.salary,
       dailyWage: staff.dailyWage,
       commissionRate: staff.commissionRate,
+      overtimeRate: staff.overtimeRate,
       active: staff.active,
     })
     .from(staff)

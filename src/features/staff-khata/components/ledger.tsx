@@ -5,6 +5,9 @@ import type { Rupees } from "@/lib/accounting";
 import { rs, formatDate, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { KhataStaff, LedgerRow } from "../queries";
+import { AddDeduction } from "./add-deduction";
+import { AddOvertime } from "./add-overtime";
+import { CancelLine } from "./cancel-line";
 import { GiveBonus } from "./give-bonus";
 import { SalarySlip } from "./salary-slip";
 
@@ -29,6 +32,8 @@ export function Ledger({
   closingBalance,
   monthClosed,
   canGiveBonus,
+  canAddExtras,
+  canCancel,
   months,
 }: {
   member: KhataStaff;
@@ -43,6 +48,10 @@ export function Ledger({
   monthClosed: boolean;
   /** Only the Owner gives bonuses (spec §10.10), so only the Owner sees the button — on the current month. */
   canGiveBonus: boolean;
+  /** Overtime and deductions (P3.18): the Owner and the Manager alike, on the current month. */
+  canAddExtras: boolean;
+  /** Cancelling overtime or a deduction is the Owner's alone (P3.18). */
+  canCancel: boolean;
   /** The months a salary slip can be made for (P3.3), newest first. */
   months: MonthChoice[];
 }) {
@@ -67,6 +76,10 @@ export function Ledger({
             )}
             <SalarySlip staffId={member.id} staffName={member.name} months={months} shownMonth={month} />
             {canGiveBonus && !monthClosed ? <GiveBonus staffId={member.id} staffName={member.name} /> : null}
+            {canAddExtras && !monthClosed && member.active ? (
+              <AddOvertime staffId={member.id} staffName={member.name} rate={member.overtimeRate} />
+            ) : null}
+            {canAddExtras && !monthClosed ? <AddDeduction staffId={member.id} staffName={member.name} /> : null}
           </div>
         }
       />
@@ -99,6 +112,11 @@ export function Ledger({
                 </td>
                 <td className={td} data-row-title="">
                   {row.label}
+                  {canCancel && row.cancellable ? (
+                    <span className="ml-1.5 inline-block align-middle">
+                      <CancelLine entryId={row.id} label={row.label} amount={row.amount} />
+                    </span>
+                  ) : null}
                 </td>
                 <td
                   className={cn(

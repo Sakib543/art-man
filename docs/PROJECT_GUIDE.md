@@ -76,7 +76,7 @@ MAHINA (Owner)
 | Daily folders | Expenses, staff advance, Owner cash, online payments |
 | Day close | Raat ka 5-qadam wizard. Din band hone ke baad **"Print close slip"**: din ke figures aur security code ki parchi, receipt printer par, Owner ke liye (P7.8b). Phir agla din shuru |
 | Daily report | Kisi bhi din ki saari bills (cancelled bhi). Upar `List \| Register` switch: Register purani Daily worksheet hai — har karigar ka column, Owner/Account column, neeche total. Sirf dekhne ke liye (P6.4) |
-| Staff khata | Har staff ka chalta hisaab (kamai jama, payment/advance kam), **ek waqt mein ek mahina**: sab se upar pichle mahinon ka balance, phir us mahine ki entries, aakhir mein mahine ka balance. Upar se mahina chunein (P7.15). **"Salary slip"**: mahine ki PDF, karigar ke saboot ke liye (P3.3) |
+| Staff khata | Har staff ka chalta hisaab (kamai jama, payment/advance kam), **ek waqt mein ek mahina**: sab se upar pichle mahinon ka balance, phir us mahine ki entries, aakhir mein mahine ka balance. Upar se mahina chunein (P7.15). **"Salary slip"**: mahine ki PDF, karigar ke saboot ke liye (P3.3). **"Overtime"**: ghante likhein, karigar ke rate se raqam khud banti hai (3 ghante × Rs 150 = Rs 450); **"Deduction"**: katoti ki raqam aur wajah. Dono Owner aur Manager kar sakte hain; ghalat entry sirf Owner "Cancel" karta hai (P3.18) |
 
 **Owner**
 
@@ -87,7 +87,7 @@ MAHINA (Owner)
 | Monthly expenses | Fixed lines (rent...) aur others (reason ke saath) |
 | Capital / Outstanding | Partner ki investment aur kiston mein wapsi |
 | Partners | Profit share %, partner accounts, profit drawn |
-| Staff & rates | Staff (pay type), services, deals |
+| Staff & rates | Staff (pay type, aur har karigar ka **overtime rate**, Rs per ghanta), services, deals |
 | Security codes | Har band din ka code, us din ki entries se dobara bana kar milaya jata hai: "Matches" ya "Does not match". Close slip wale code se milayein (P7.8, P7.8b) |
 | Settings | Password, Owner PIN, Manager ka password reset |
 

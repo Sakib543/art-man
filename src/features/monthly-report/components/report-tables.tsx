@@ -32,6 +32,8 @@ export function ProfitAndLoss({ report }: { report: MonthReport }) {
           <Row label="Staff earnings from day close (commission, daily wage)" value={minus(report.staffEarned)} />
           <Row label="Monthly salaries (staff on a salary)" value={minus(report.salaries)} />
           <Row label="Bonuses given (Owner)" value={minus(report.bonuses)} />
+          {report.overtime ? <Row label="Overtime" value={minus(report.overtime)} /> : null}
+          {report.deductions ? <Row label="Deductions from staff" value={signed(report.deductions)} /> : null}
           {/* Only a month that has any (P3.4). */}
           {report.adjustments ? (
             <Row label="Adjustments for earlier months (listed below)" value={signed(report.adjustments)} />
@@ -135,6 +137,8 @@ export function ClosedDaysTable({ days, report, openDay }: { days: ClosedDayRow[
         Sum of day profits {rs(report.dayProfitTotal)} − fixed {num(report.fixed)} − others {num(report.others)} − salaries{" "}
         {num(report.salaries)}
         {report.bonuses ? ` − bonuses ${num(report.bonuses)}` : ""}
+        {report.overtime ? ` − overtime ${num(report.overtime)}` : ""}
+        {report.deductions ? ` + deductions ${num(report.deductions)}` : ""}
         {report.adjustments ? ` ${report.adjustments > 0 ? "+" : "−"} adjustments ${num(Math.abs(report.adjustments))}` : ""} = net
         profit {rs(report.netProfit)}.
         {openDay ? ` Today (${formatDayMonth(openDay)}) is added when the day is closed.` : ""}

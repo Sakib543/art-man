@@ -133,3 +133,17 @@ describe("renderSlipPdf", () => {
     await expect(renderSlipPdf(slip, { ...info, staffName: "عارف" })).resolves.toBeInstanceOf(Uint8Array);
   });
 });
+
+describe("summaryRows with overtime and a deduction (P3.18)", () => {
+  it("lists them under what was earned", () => {
+    const slip = buildSlip("2026-09", [
+      line("2026-09-01", "earning", "Commission (on work of 4000)", 400),
+      line("2026-09-02", "overtime", "Overtime 3 h × Rs 150: party", 450),
+      line("2026-09-03", "deduction", "Deduction: late", -300),
+    ]);
+    const rows = summaryRows(slip, info);
+    expect(rows.find((row) => row.label === "Overtime")).toEqual({ label: "Overtime", value: "450", style: "line" });
+    expect(rows.find((row) => row.label === "Deductions")).toEqual({ label: "Deductions", value: "-300", style: "line" });
+    expect(rows.find((row) => row.label === "Total earned")?.value).toBe("550");
+  });
+});

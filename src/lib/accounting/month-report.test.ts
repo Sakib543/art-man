@@ -44,6 +44,8 @@ describe("buildMonthReport", () => {
     monthlyExpenses: [{ kind: "fixed", amount: 10000, paidFrom: "drawer" }] as MonthlyExpenseEntry[],
     salaries: 6000,
     bonuses: 0,
+    overtime: 0,
+    deductions: 0,
     ownerTookCash: 12000,
     dailyExpensesPaidByOwner: 0,
     capitalRepaid: 0,
@@ -64,6 +66,15 @@ describe("buildMonthReport", () => {
     const r = buildMonthReport({ ...base, bonuses: 2000 });
     expect(r.bonuses).toBe(2000);
     expect(r.netProfit).toBe(21000);
+  });
+
+  it("overtime is a staff cost and a deduction comes off it (P3.18)", () => {
+    // 23000 - 1500 of overtime + 400 of deductions.
+    const r = buildMonthReport({ ...base, overtime: 1500, deductions: 400 });
+    expect(r).toMatchObject({ overtime: 1500, deductions: 400, staffEarned: 8000, bonuses: 0 });
+    expect(r.netProfit).toBe(23000 - 1500 + 400);
+    // A deduction is not cash: the Owner's money is moved by the profit alone.
+    expect(r.owner.heldByBusiness).toBe(buildMonthReport(base).owner.heldByBusiness - 1100);
   });
 
   it("a bonus is not folded into what day close earned", () => {
@@ -157,6 +168,8 @@ describe("recalculateMonthReport (P1.10)", () => {
     monthlyExpenses: [{ kind: "fixed", amount: 10000, paidFrom: "drawer" }],
     salaries: 6000,
     bonuses: 0,
+    overtime: 0,
+    deductions: 0,
     ownerTookCash: 12000,
     dailyExpensesPaidByOwner: 0,
     capitalRepaid: 0,
@@ -166,6 +179,7 @@ describe("recalculateMonthReport (P1.10)", () => {
   const closedMonths: [string, MonthReportInput][] = [
     ["a plain month", base],
     ["a bonus", { ...base, bonuses: 2000 }],
+    ["overtime and a deduction", { ...base, overtime: 1500, deductions: 400 }],
     ["rent the Owner paid himself", { ...base, monthlyExpenses: [{ kind: "fixed", amount: 10000, paidFrom: "owner" }] }],
     ["daily expenses the Owner paid", { ...base, dailyExpensesPaidByOwner: 2000 }],
     ["capital repaid", { ...base, capitalRepaid: 5000 }],

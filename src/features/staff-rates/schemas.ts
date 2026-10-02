@@ -10,6 +10,11 @@ export const staffSchema = z.object({
   salary: rupees,
   dailyWage: rupees,
   commissionRate: z.number().min(0, "Cannot be negative").max(100, "Commission cannot be more than 100%"),
+  /**
+   * Rupees for an hour of overtime (P3.18), whatever the pay type; 0 = none.
+   * Left out — a form loaded before P3.18 — it stays as it is.
+   */
+  overtimeRate: rupees.optional(),
   active: z.boolean(),
 });
 

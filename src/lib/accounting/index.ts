@@ -9,6 +9,7 @@ export * from "./folders";
 export * from "./khata";
 export * from "./month";
 export * from "./month-report";
+export * from "./overtime";
 export * from "./partners";
 export * from "./pricing";
 export * from "./staff-pay";

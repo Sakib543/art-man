@@ -190,6 +190,13 @@
       "when": 1790956019066,
       "tag": "0026_pay_types_back",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790961424751,
+      "tag": "0027_overtime_and_deductions",
+      "breakpoints": true
     }
   ]
 }

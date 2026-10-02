@@ -45,7 +45,7 @@ export interface Bill {
   online: Rupees;
 }
 
-export type KhataKind = "earning" | "payment" | "advance" | "bonus" | "adjustment";
+export type KhataKind = "earning" | "payment" | "advance" | "bonus" | "adjustment" | "overtime" | "deduction";
 
 export interface Partner {
   id: string;

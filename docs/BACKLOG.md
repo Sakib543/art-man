@@ -74,7 +74,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.15 | A dropped connection never leaves a bill in doubt — one id per bill, saved once | ✅ | done 2026-09-28 |
 | P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | ✅ | done 2026-09-28 |
 | P3.17 | Staff pay in parts — built and taken back the same day: the pay the user meant was already there (migrations `0025`, `0026` cancel out) | ✖ | **taken back** 2026-10-02 |
-| P3.18 | Overtime (hours × the karigar's rate) and deductions, by the Owner and the Manager; the Owner cancels (client request 2026-10-02) — migration | 🟡 | Claude (Sakib543), 2026-10-02 |
+| P3.18 | Overtime (hours × the karigar's rate) and deductions, by the Owner and the Manager; the Owner cancels (client request 2026-10-02) — migration `0027` | ✅ | done 2026-10-02 |
 | P3.19 | A salaried karigar who leaves mid-month: salary for the days present (client decision 2026-10-02, QA-11) | ⬜ | Claude (Sakib543) next, after P3.18 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
@@ -2560,11 +2560,11 @@ deleted afterwards.
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
 | ✖ P3.17 | **Staff pay in parts** — built 2026-10-02 and taken back the same day, at the user's request. See below | — |
-| 🟡 P3.18 | **Overtime and deductions** — Owner and Manager add them on Staff khata; the Owner cancels a wrong one. See below | medium |
+| ✅ P3.18 | **Overtime and deductions** — Owner and Manager add them on Staff khata; the Owner cancels a wrong one. Done 2026-10-02 (migration `0027`). See below | medium |
 | ⬜ P3.19 | **A leaver's salary for the days present** — see below | medium |
 
-### 🟡 P3.18 — Overtime and deductions
-**Owner:** Claude (Sakib543), started 2026-10-02 · client request 2026-10-02 · needs a migration
+### ✅ P3.18 — Overtime and deductions
+**Done:** 2026-10-02 · client request 2026-10-02 · migration `0027`
 
 The client's answers (2026-10-02), each asked with a worked example:
 
@@ -2576,6 +2576,55 @@ The client's answers (2026-10-02), each asked with a worked example:
 - **A wrong one is cancelled by the Owner only**, as a line of the opposite sign; the first stays.
 - They are khata lines, not cash: handing money over is a staff payment, as with a bonus. They count in
   the month's profit — overtime as staff cost, a deduction against it — and appear on the salary slip.
+
+**What was built**
+
+- **Migration `0027`:** `staff.overtime_rate` (rupees an hour, default 0) and two `khata_kind` values,
+  `overtime` and `deduction`. A khata line of either kind is dated with the latest business day, like a bonus.
+- **Staff & rates:** "Overtime (Rs per hour)" on the staff form, for every pay type, and a column in the
+  list. A form loaded before P3.18 sends no rate; the saved one is kept (`overtimeRate` optional in
+  `staffSchema`), never reset to 0.
+- **Staff khata:** "Overtime" (hours, a reason; the dialog shows "3 h × Rs 150 = Rs 450") and "Deduction"
+  (rupees, a reason) beside Give bonus, for the Owner and the Manager, on the current month while it is open;
+  Overtime only for someone active. The Owner sees "Cancel" beside each overtime or deduction still
+  standing; its dialog asks why, and says "Keep it" rather than a second "Cancel" (`FormDialog`'s new
+  `cancelLabel`).
+- **The rupees are the server's:** `overtimePay(hours, rate)` works in hundredths of an hour as whole
+  numbers and rounds once, half up — as floats 1.13 h × 150 is 169.4999…, which would round to 169; it is
+  170. The browser sends hours; an amount sent beside them is not read.
+- **Cancelling** (`cancelKhataLine`, Owner only): a line of the same kind, sign turned, dated with the first,
+  pointing back at it (`reverses_entry_id`). The first line is locked `FOR UPDATE` and everything is read on
+  the transaction, so five cancels at once make one (HANDOFF trap 8.38). Refused for any other kind, for a
+  cancellation, twice, and in a closed month.
+- **The month:** `MonthReport` has `overtime` and `deductions`; net profit takes off overtime and adds back
+  deductions; the Monthly report shows each row when it is not 0. `recalculateMonthReport` (P1.10) keeps
+  them as closed.
+- **The slip:** `overtime` and `deductions` totals, in "Total earned"; the day table's Other column.
+- Overtime, a deduction and a cancel are audited (`khata.overtime`, `khata.deduction`, `khata.cancel`) with
+  who did it; saved once per client id (P7.2), like a bonus.
+
+**Decisions (left to Claude)** — a reason is required for both (as for a bonus); a deduction may be taken off
+someone who has left (they may owe), overtime only for someone active; hours up to 24 at once, two decimals.
+
+**Verified**
+
+- Unit (854): `overtimePay` and its rounding, hours' decimals; the rules, labels and `checkCancel`; the
+  three schemas (an amount beside the hours is stripped); the month report with overtime and deductions,
+  and P1.10's recalculation of such a month; the slip and its PDF rows.
+- Integration (`tests/integration/overtime.test.ts`, 11; 185 in all): the Manager adds overtime — Rs 450
+  from the rate, the injected amount ignored, the same Save twice saving once, the audit naming the Manager;
+  1.13 h is Rs 170; no rate refused; a pre-P3.18 form keeps the rate; a deduction; five cancels at once
+  making one; a cancellation not cancellable; the ledger's Cancel flags; the month's report (overtime 450,
+  deductions 300) open and frozen at close; everything refused once the month is closed; the slip.
+  `role-matrix` has the three new actions (49 in all).
+- In the browser, a production build on a throwaway local database (proven local first): as the Manager,
+  Overtime and Deduction and no Give bonus or Cancel; the hours dialog showing Rs 450; the khata reading
+  +450, −300, balance 150; as the Owner, Cancel beside both, a deduction cancelled (+300 under it, balance
+  450); the Monthly report's "Overtime −450"; Staff & rates' rate column. 375 px: nothing past the edge.
+
+**Found with it:** the first version read the month's state through the pool while holding the line's lock;
+five cancels at once took all five connections and waited on each other for ever. The test passed alone by
+luck of timing and hung in the full run — trap 8.38.
 
 ### ⬜ P3.19 — A salaried karigar who leaves mid-month: salary for the days present
 **Owner:** Claude (Sakib543), after P3.18 · client decision 2026-10-02 (answers "Still to ask" 4, QA-11)

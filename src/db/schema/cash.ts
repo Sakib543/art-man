@@ -62,9 +62,10 @@ export const khataEntries = pgTable(
     /** Set on a reversal row: the khata line it cancels out (used when a day is reopened). */
     reversesEntryId: uuid("reverses_entry_id").references((): AnyPgColumn => khataEntries.id),
     /**
-     * The id the Staff khata's Give bonus dialog sent this bonus under (P7.2): a Save sent again —
-     * a double press, or a retry after a lost answer — is answered "already saved" rather than
-     * saved twice, as a bill is (P3.15). Null before P7.2 and on every line that is not a bonus.
+     * The id the Staff khata's dialog sent this line under — a bonus (P7.2), overtime or a
+     * deduction (P3.18): a Save sent again — a double press, or a retry after a lost answer — is
+     * answered "already saved" rather than saved twice, as a bill is (P3.15). Null on every other
+     * line.
      */
     clientId: uuid("client_id").unique(),
     createdAt: createdAt(),

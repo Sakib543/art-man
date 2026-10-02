@@ -57,7 +57,13 @@ const MATRIX: Record<string, Record<string, Allowed>> = {
   "month-close": { closeMonthAction: OWNER },
   "monthly-expenses": { setFixedAction: OWNER, addFixedLineAction: OWNER, addOtherAction: OWNER, voidOtherAction: OWNER },
   partners: { saveSharesAction: OWNER, addPartnerAction: OWNER, addDrawingAction: OWNER, voidDrawingAction: OWNER },
-  "staff-khata": { giveBonusAction: OWNER },
+  "staff-khata": {
+    giveBonusAction: OWNER,
+    // P3.18: the client's decision of 2026-10-02 — overtime and deductions by either; cancelling, the Owner's.
+    addOvertimeAction: ANYONE,
+    addDeductionAction: ANYONE,
+    cancelKhataLineAction: OWNER,
+  },
   "staff-rates": { saveStaffAction: OWNER, saveServiceAction: OWNER, saveDealAction: OWNER },
   users: { createUserAction: OWNER, resetUserPasswordAction: OWNER, setUserActiveAction: OWNER },
 };
@@ -127,7 +133,7 @@ describe("the role matrix", () => {
   it("has a row for every Server Action there is, and no other", () => {
     const actual = Object.entries(actions).flatMap(([feature, names]) => Object.keys(names).map((name) => `${feature}/${name}`));
     expect(actual.sort()).toEqual(rows.map((row) => `${row.feature}/${row.name}`).sort());
-    expect(actual).toHaveLength(46);
+    expect(actual).toHaveLength(49);
   });
 
   it.each(["manager", "owner", "developer"] as const)("as the %s, every action allows or refuses as the table says", async (role) => {

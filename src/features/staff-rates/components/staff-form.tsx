@@ -30,6 +30,7 @@ export function StaffForm({ staff, open, onClose }: StaffFormProps) {
   const [salary, setSalary] = useState(String(staff?.salary ?? ""));
   const [dailyWage, setDailyWage] = useState(String(staff?.dailyWage ?? ""));
   const [commission, setCommission] = useState(String(staff?.commissionRate ?? "10"));
+  const [overtimeRate, setOvertimeRate] = useState(staff?.overtimeRate ? String(staff.overtimeRate) : "");
   const [active, setActive] = useState(staff?.active ?? true);
 
   const editing = staff !== null;
@@ -48,6 +49,7 @@ export function StaffForm({ staff, open, onClose }: StaffFormProps) {
           salary: Number(salary) || 0,
           dailyWage: Number(dailyWage) || 0,
           commissionRate: Number(commission) || 0,
+          overtimeRate: Number(overtimeRate) || 0,
           active,
         })
       }
@@ -115,6 +117,19 @@ export function StaffForm({ staff, open, onClose }: StaffFormProps) {
             />
           </Field>
         ) : null}
+        <Field label="Overtime (Rs per hour)" htmlFor="staff-overtime">
+          <Input
+            id="staff-overtime"
+            type="number"
+            min={0}
+            step={1}
+            inputMode="numeric"
+            value={overtimeRate}
+            onChange={(e) => setOvertimeRate(e.target.value)}
+            placeholder="None"
+            className="h-10 tabular-nums"
+          />
+        </Field>
       </div>
 
       {editing ? (

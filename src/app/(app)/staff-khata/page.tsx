@@ -52,6 +52,9 @@ export default async function StaffKhataPage({ searchParams }: { searchParams: P
           monthClosed={data.monthClosed}
           // A bonus is dated on the latest business day, so it is given from that day's month.
           canGiveBonus={atLeastOwner(user.role) && data.currentMonth}
+          // Overtime and deductions (P3.18) are dated the same way, by the Owner or the Manager.
+          canAddExtras={data.currentMonth}
+          canCancel={atLeastOwner(user.role)}
           months={data.months}
         />
       </div>

@@ -9,6 +9,8 @@ export interface StaffRow {
   salary: Rupees;
   dailyWage: Rupees;
   commissionRate: number;
+  /** Rupees for an hour of overtime (P3.18); 0 when none is set. */
+  overtimeRate: Rupees;
   active: boolean;
 }
 

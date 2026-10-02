@@ -44,6 +44,8 @@ Three actors. **Only Owner and Manager log in.** Staff never log in and have no 
 | Reopen a closed day | ✓ | — |
 | Monthly expenses, capital/outstanding, rates/deals/special rates | ✓ | — |
 | Staff salary/commission, bonuses | ✓ | — |
+| Overtime and deductions in the staff khata (added 2026-10-02, §6.1) | ✓ | ✓ |
+| Cancel a wrong overtime or deduction | ✓ | — |
 | Monthly report, net profit, Owner account, Partners, Month close | ✓ | — |
 | **Edit or delete any financial entry** | **No** | **No** |
 
@@ -65,7 +67,7 @@ Model these as first-class entities. Field lists are the minimum; add ids, times
 - **Customer** — `{ id, phone, name, visits, lastVisit, specialRates:{serviceId:price} }`. Looked up by phone; special rate auto-applies.
 - **Bill** — `{ no, businessDate, time, customerId, lines:[{serviceId, name, amount, staffId}], cash, online, status: active|cancelled, reason, voidOf? }`.
 - **CashFolderEntry** — one of four folders (see §5.2): `{ type: expense|staff|ownerCash|online, amount, businessDate, meta, pinConfirmed?, status, voidOf? }`. `pinConfirmed` applies to Owner cash only.
-- **KhataEntry (staff ledger line)** — `{ staffId, businessDate, kind: earning|payment|advance|bonus|adjustment, label, amount(+/−) }`.
+- **KhataEntry (staff ledger line)** — `{ staffId, businessDate, kind: earning|payment|advance|bonus|adjustment|overtime|deduction, label, amount(+/−) }`.
 - **DaySnapshot** — created at Day Close: `{ businessDate, sale, cash, online, expenses, staffPaid, dayProfit, openingCash, expectedCash, countedCash, difference, diffReason, securityCode, locked:true }`.
 - **MonthlyExpense** — `{ month, kind: fixed|other, label, amount, reason? }`.
 - **CapitalItem** — `{ id, name, totalCost, contributions:[{partnerId, amount}], repayments:[{date, partnerId, amount}] }`.
@@ -163,6 +165,9 @@ If internet/power is down, the counter uses a **numbered manual bill book**; whe
 | 3 — Daily wage + commission | — | per present day | % of work |
 
 - **Bonus:** Owner can give any staff member any amount at any time, **with a reason**.
+- **Overtime** *(added 2026-10-02, client decision, backlog P3.18)*: hours × the staff member's own overtime rate (Rs per hour, set by the Owner on Staff & rates), **with a reason**. Hamid at Rs 150 an hour, 3 hours: Rs 450 into his khata.
+- **Deduction** *(same)*: an amount in rupees taken off the khata, **with a reason** ("Rs 300, came late").
+- Overtime and deductions are added by the **Owner or the Manager**; only the **Owner** cancels a wrong one, as a line of the opposite sign (the first stays). Like a bonus they are khata lines, not cash, and count in the month's net profit (§7.1).
 - **Material cost is not deducted** — commission is on the full charged amount.
 - Commission + daily wage compute **nightly at Day Close**; monthly salary is added at month end.
 
@@ -213,7 +218,7 @@ Changing a staff member's rate/salary affects **future** calculations only; past
 Total sales (cash + online)
 − daily expenses (sum of daily snapshots)
 − monthly expenses (rent, bills, supplies, others)     [§8]
-− staff earnings (salary + commission + wage + bonus)
+− staff earnings (salary + commission + wage + bonus + overtime − deductions)
 = Net profit
 ```
 **Two rules that keep the maths honest:**

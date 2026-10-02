@@ -17,6 +17,10 @@ export const khataKindEnum = pgEnum("khata_kind", [
   "advance",
   "bonus",
   "adjustment",
+  // P3.18: hours of overtime at the karigar's rate, and an amount taken off
+  // for a reason; a cancelled one is a line of the same kind, sign turned.
+  "overtime",
+  "deduction",
 ]);
 
 export const monthlyExpenseKindEnum = pgEnum("monthly_expense_kind", ["fixed", "other"]);

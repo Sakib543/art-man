@@ -2,7 +2,8 @@ import { and, asc, eq, gte, isNotNull, lt, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { getMonthChoices, type MonthChoice } from "@/db/queries/months";
 import { billLines, bills, businessDays, khataEntries, monthCloses, staff } from "@/db/schema";
-import { withRunningBalance, type PayType, type Rupees } from "@/lib/accounting";
+import { withRunningBalance, type KhataKind, type PayType, type Rupees } from "@/lib/accounting";
+import { cancellableKinds } from "./rules";
 import { formatMonth, monthStart, nextMonth } from "@/lib/business-date";
 import type { SlipLine } from "./slip";
 
@@ -12,6 +13,8 @@ export interface KhataStaff {
   payType: PayType;
   salary: Rupees;
   commissionRate: number;
+  /** Rupees for an hour of overtime (P3.18); 0 when none is set. */
+  overtimeRate: Rupees;
   active: boolean;
   balance: Rupees;
 }
@@ -23,6 +26,11 @@ export interface LedgerRow {
   /** Positive = owed to the staff member, negative = taken. */
   amount: Rupees;
   balance: Rupees;
+  /**
+   * Overtime or a deduction (P3.18) that has not been cancelled, in a month
+   * still open: the Owner may cancel it from the ledger.
+   */
+  cancellable: boolean;
 }
 
 export interface KhataData {
@@ -49,10 +57,18 @@ export interface KhataData {
  * Within one day, money in comes before money out. Entries made in the same
  * transaction (Day Close) share one timestamp, so the time alone cannot order them.
  */
-const KIND_ORDER: Record<string, number> = { earning: 0, bonus: 0, adjustment: 1, advance: 2, payment: 3 };
+const KIND_ORDER: Record<string, number> = { earning: 0, bonus: 0, overtime: 0, adjustment: 1, deduction: 1, advance: 2, payment: 3 };
 
 /** One person's lines, in the order the ledger reads them. */
-type LedgerEntry = { id: string; businessDate: string; label: string; amount: Rupees; kind: string; createdAt: Date };
+type LedgerEntry = {
+  id: string;
+  businessDate: string;
+  label: string;
+  amount: Rupees;
+  kind: KhataKind;
+  reversesEntryId: string | null;
+  createdAt: Date;
+};
 
 /**
  * Within a day, money in before money out; then the clock; then the id, so the
@@ -104,6 +120,7 @@ export async function getKhataData(requestedId?: string, requestedMonth?: string
     payType: row.payType as PayType,
     salary: row.salary,
     commissionRate: row.commissionRate,
+    overtimeRate: row.overtimeRate,
     active: row.active,
     balance: balanceOf.get(row.id) ?? 0,
   }));
@@ -127,6 +144,7 @@ export async function getKhataData(requestedId?: string, requestedMonth?: string
         label: khataEntries.label,
         amount: khataEntries.amount,
         kind: khataEntries.kind,
+        reversesEntryId: khataEntries.reversesEntryId,
         createdAt: khataEntries.createdAt,
       })
       .from(khataEntries)
@@ -144,10 +162,16 @@ export async function getKhataData(requestedId?: string, requestedMonth?: string
   ]);
 
   const broughtForward = forward?.total ?? 0;
+  // A cancellation is dated with the line it cancels (P3.18), so both are in this month.
+  const cancelled = new Set(entries.flatMap((entry) => (entry.reversesEntryId ? [entry.reversesEntryId] : [])));
   const ledger = withRunningBalance(
-    [...entries]
-      .sort(inLedgerOrder)
-      .map(({ id, businessDate, label, amount }) => ({ id, businessDate, label, amount })),
+    [...entries].sort(inLedgerOrder).map(({ id, businessDate, label, amount, kind, reversesEntryId }) => ({
+      id,
+      businessDate,
+      label,
+      amount,
+      cancellable: !shown.closed && cancellableKinds.includes(kind) && reversesEntryId === null && !cancelled.has(id),
+    })),
     broughtForward,
   );
 

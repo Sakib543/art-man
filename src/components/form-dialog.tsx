@@ -12,6 +12,8 @@ interface FormDialogProps {
   title: string;
   description?: string;
   submitLabel?: string;
+  /** The button that closes it unsaved. "Cancel", unless the form itself cancels something. */
+  cancelLabel?: string;
   onClose: () => void;
   /** Runs the save. The dialog closes on success and shows the error otherwise. */
   onSubmit: () => Promise<ActionResult<unknown>>;
@@ -21,7 +23,17 @@ interface FormDialogProps {
 }
 
 /** A dialog around a form: handles the saving state, the error line and closing. */
-export function FormDialog({ open, title, description, submitLabel = "Save", onClose, onSubmit, savesOnce = false, children }: FormDialogProps) {
+export function FormDialog({
+  open,
+  title,
+  description,
+  submitLabel = "Save",
+  cancelLabel = "Cancel",
+  onClose,
+  onSubmit,
+  savesOnce = false,
+  children,
+}: FormDialogProps) {
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -60,7 +72,7 @@ export function FormDialog({ open, title, description, submitLabel = "Save", onC
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {cancelLabel}
             </Button>
             <Button type="submit" disabled={pending}>
               {pending ? "Saving..." : submitLabel}
