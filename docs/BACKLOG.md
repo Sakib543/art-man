@@ -74,6 +74,8 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.15 | A dropped connection never leaves a bill in doubt — one id per bill, saved once | ✅ | done 2026-09-28 |
 | P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | ✅ | done 2026-09-28 |
 | P3.17 | Staff pay in parts — built and taken back the same day: the pay the user meant was already there (migrations `0025`, `0026` cancel out) | ✖ | **taken back** 2026-10-02 |
+| P3.18 | Overtime (hours × the karigar's rate) and deductions, by the Owner and the Manager; the Owner cancels (client request 2026-10-02) — migration | 🟡 | Claude (Sakib543), 2026-10-02 |
+| P3.19 | A salaried karigar who leaves mid-month: salary for the days present (client decision 2026-10-02, QA-11) | ⬜ | Claude (Sakib543) next, after P3.18 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 | P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | ✅ | done 2026-09-30 |
@@ -2558,6 +2560,31 @@ deleted afterwards.
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
 | ✖ P3.17 | **Staff pay in parts** — built 2026-10-02 and taken back the same day, at the user's request. See below | — |
+| 🟡 P3.18 | **Overtime and deductions** — Owner and Manager add them on Staff khata; the Owner cancels a wrong one. See below | medium |
+| ⬜ P3.19 | **A leaver's salary for the days present** — see below | medium |
+
+### 🟡 P3.18 — Overtime and deductions
+**Owner:** Claude (Sakib543), started 2026-10-02 · client request 2026-10-02 · needs a migration
+
+The client's answers (2026-10-02), each asked with a worked example:
+
+- **Overtime** is hours × the karigar's own **overtime rate** (Rs per hour), which the Owner sets on Staff &
+  rates. Hamid at Rs 150 an hour, 3 hours: Rs 450 into his khata, with a reason.
+- **A deduction** is an amount in rupees with a reason ("Rs 300, late"), taken off the khata.
+- **Both the Owner and the Manager** add them, on Staff khata. A change to spec §2/§10.10, where staff pay
+  was the Owner's alone — the client's call.
+- **A wrong one is cancelled by the Owner only**, as a line of the opposite sign; the first stays.
+- They are khata lines, not cash: handing money over is a staff payment, as with a bonus. They count in
+  the month's profit — overtime as staff cost, a deduction against it — and appear on the salary slip.
+
+### ⬜ P3.19 — A salaried karigar who leaves mid-month: salary for the days present
+**Owner:** Claude (Sakib543), after P3.18 · client decision 2026-10-02 (answers "Still to ask" 4, QA-11)
+
+Today Month close pays a salary only to staff active at close, so a karigar on a salary who leaves on the
+15th gets none for the month (QA-11). The client's answers (2026-10-02): the salary is paid for the **days
+present** in the month — salary × days marked present at Day close ÷ days in the month (30,000 × 12 / 31 =
+11,613) — the **Owner picks the last working day** when making the karigar inactive, and it goes into the
+khata then.
 
 ### ✖ P3.17 — Staff pay in parts (taken back)
 **Built and taken back:** 2026-10-02 · migrations `0025` (widen) and `0026` (narrow back) — they cancel out
@@ -4400,7 +4427,8 @@ offers a toggle, so nothing reaches it. It is a task of its own. **Removed entir
    audit.) The Owner account counts `owner_took` only (`db/queries/month-report.ts:80-83`): Rs 5,000
    added as change and Rs 20,000 taken shows 20,000 reached and 5,000 too little held by the business.
    The spec is silent.
-4. **A salaried karigar who leaves mid-month — full, part or no salary?** (QA-11.) Month close pays only
+4. **A salaried karigar who leaves mid-month — full, part or no salary?** (QA-11.) *(Answered 2026-10-02:
+   for the days present — backlog P3.19.)* Month close pays only
    staff active at close (`features/month-close/queries.ts:55-57`), so a leaver gets nothing and the
    month's profit is overstated by that salary. Spec §10.8 left it to be confirmed.
 5. **Will more than one device ever bill offline on the same day?** (QA-37, P7.10.) The design assumes
