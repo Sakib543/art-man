@@ -12,7 +12,15 @@ import {
   monthlyExpenses,
   staff,
 } from "@/db/schema";
-import { adjustmentTotals, buildMonthReport, isLeaverSalaryLabel, type MonthDay, type MonthReport } from "@/lib/accounting";
+import {
+  adjustmentTotals,
+  buildMonthReport,
+  isLeaverSalaryLabel,
+  monthlySalaryOf,
+  type MonthDay,
+  type MonthReport,
+  type PayType,
+} from "@/lib/accounting";
 import { formatMonth, monthOf, monthStart, nextMonth } from "@/lib/business-date";
 
 export interface ClosedDayRow extends MonthDay {
@@ -109,10 +117,12 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
     .filter((e) => e.kind === "expense" && e.paidFrom === "owner")
     .reduce((sum, e) => sum + e.amount, 0);
 
-  // Monthly salaries of the active staff on pay types 1 and 2 — provisional until the month is closed —
-  // and of anyone who left during it, already paid for their days present (P3.19).
+  // Monthly salaries of the active staff whose pay has one — what Month close
+  // will add (`getCloseState`, the same `monthlySalaryOf`), provisional until
+  // then — and of anyone who left during the month, already paid for their
+  // days present (P3.19).
   const salaries =
-    staffRows.filter((s) => s.active && (s.payType === 1 || s.payType === 2)).reduce((sum, s) => sum + s.salary, 0) +
+    staffRows.filter((s) => s.active).reduce((sum, s) => sum + monthlySalaryOf({ payType: s.payType as PayType, salary: s.salary }), 0) +
     salaryLines.filter((line) => isLeaverSalaryLabel(line.label)).reduce((sum, line) => sum + line.amount, 0);
 
   const days: ClosedDayRow[] = snapshots.map((s) => ({

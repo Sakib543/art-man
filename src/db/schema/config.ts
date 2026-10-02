@@ -65,7 +65,11 @@ export const staff = pgTable(
   {
     id: id(),
     name: text("name").notNull(),
-    /** 1 = monthly salary, 2 = salary + commission, 3 = daily wage + commission. */
+    /**
+     * 1 = monthly salary, 2 = salary + commission, 3 = daily wage + commission,
+     * 4 = commission only, 5 = salary + daily wage, 6 = salary + daily wage +
+     * commission, 7 = daily wage only (`PAY_PARTS`; 4–7 since P3.17).
+     */
     payType: smallint("pay_type").notNull(),
     salary: rupees("salary").notNull().default(0),
     dailyWage: rupees("daily_wage").notNull().default(0),
@@ -78,7 +82,7 @@ export const staff = pgTable(
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
   },
-  (t) => [check("staff_pay_type_chk", sql`${t.payType} in (1, 2, 3)`)],
+  (t) => [check("staff_pay_type_chk", sql`${t.payType} between 1 and 7`)],
 );
 
 export const customers = pgTable(

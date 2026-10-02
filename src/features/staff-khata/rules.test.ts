@@ -8,6 +8,7 @@ import {
   checkOvertime,
   deductionLabel,
   overtimeLabel,
+  payNote,
 } from "./rules";
 
 describe("checkBonus", () => {
@@ -75,5 +76,22 @@ describe("checkCancel (P3.18)", () => {
     for (const kind of ["earning", "payment", "advance", "bonus", "adjustment"] as const) {
       expect(checkCancel({ ...open, kind })).toContain("Only overtime and deductions");
     }
+  });
+});
+
+describe("payNote: when each part of the pay reaches the khata (P3.17)", () => {
+  it("says the same as before for the spec's three types", () => {
+    expect(payNote(1, 25000)).toBe("Monthly salary of Rs 25,000 is added at month end.");
+    expect(payNote(2, 25000)).toBe("Commission is added every night at Day Close. Monthly salary of Rs 25,000 is added at month end.");
+    expect(payNote(3, 0)).toBe("Daily wage and commission are added every night at Day Close.");
+  });
+
+  it("covers the new mixes", () => {
+    expect(payNote(4, 0)).toBe("Commission is added every night at Day Close.");
+    expect(payNote(5, 25000)).toBe("Daily wage is added every night at Day Close. Monthly salary of Rs 25,000 is added at month end.");
+    expect(payNote(6, 25000)).toBe(
+      "Daily wage and commission are added every night at Day Close. Monthly salary of Rs 25,000 is added at month end.",
+    );
+    expect(payNote(7, 0)).toBe("Daily wage is added every night at Day Close.");
   });
 });

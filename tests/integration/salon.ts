@@ -9,6 +9,7 @@ import { resetPin } from "@/features/developer/service";
 import { addPartner, saveShares } from "@/features/partners/service";
 import { saveService, saveStaff } from "@/features/staff-rates/service";
 import { createUser } from "@/features/users/service";
+import type { PayType } from "@/lib/accounting";
 import { auth } from "@/lib/auth/server";
 import type { SessionUser } from "@/lib/auth/session";
 import { DATABASE_PREFIX } from "./database-names";
@@ -42,8 +43,8 @@ export const OWNER_PIN = "2468";
 
 export interface StaffSpec {
   name: string;
-  /** 1 monthly salary · 2 salary + commission · 3 daily wage + commission. */
-  payType: 1 | 2 | 3;
+  /** Which parts the pay has (`PAY_PARTS`): 1 salary · 2 salary + commission · 3 daily wage + commission · 4–7 since P3.17. */
+  payType: PayType;
   salary?: number;
   dailyWage?: number;
   commissionRate?: number;

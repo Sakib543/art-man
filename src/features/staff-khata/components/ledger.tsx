@@ -5,6 +5,7 @@ import type { Rupees } from "@/lib/accounting";
 import { rs, formatDate, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { KhataStaff, LedgerRow } from "../queries";
+import { payNote } from "../rules";
 import { AddDeduction } from "./add-deduction";
 import { AddOvertime } from "./add-overtime";
 import { CancelLine } from "./cancel-line";
@@ -156,13 +157,7 @@ export function Ledger({
       <p className="border-t px-card py-3 text-xs text-muted-foreground">
         {month && !currentMonth ? `Balance today: ${rs(member.balance)}. ` : ""}
         {/* Someone made inactive earns nothing more; a salary was settled when they left (P3.19). */}
-        {!member.active
-          ? "No longer active: nothing more is added at Day Close or at month end."
-          : member.payType === 3
-            ? "Daily wage and commission are added every night at Day Close."
-            : member.payType === 2
-              ? `Commission is added every night at Day Close. Monthly salary of ${rs(member.salary)} is added at month end.`
-              : `Monthly salary of ${rs(member.salary)} is added at month end.`}
+        {member.active ? payNote(member.payType, member.salary) : "No longer active: nothing more is added at Day Close or at month end."}
       </p>
     </Panel>
   );

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore, useTransition } fro
 import { requestCatalogRefresh } from "@/components/catalog-sync";
 import { requestDayRefresh } from "@/components/day-sync";
 import { useConnectivity } from "@/components/use-connectivity";
-import { dayEarning, type DayEarning } from "@/lib/accounting";
+import { dayEarning, paysSalary, type DayEarning } from "@/lib/accounting";
 import type { ActionResult } from "@/lib/action-result";
 import { parseRupees } from "@/lib/format";
 import { dayFor } from "@/lib/offline/day";
@@ -115,7 +115,7 @@ function Wizard({
   const [present, setPresent] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(staff.map((s) => [s.id, start?.close.attendance[s.id] ?? kept?.present[s.id] ?? true])),
   );
-  // null until step 3 opens, then pre-filled with what daily-wage staff earned.
+  // null until step 3 opens, then pre-filled with what staff with no salary earned.
   const [payouts, setPayouts] = useState<Record<string, string> | null>(() =>
     start ? Object.fromEntries(staff.map((s) => [s.id, String(start.close.payouts[s.id] ?? 0)])) : (kept?.payouts ?? null),
   );
@@ -167,9 +167,12 @@ function Wizard({
   }
 
   function toPayments() {
-    // Daily-wage staff usually take their day's earning in hand, so start from that.
+    // Staff with no monthly salary usually take their day's earning in hand, so
+    // start from that. A salaried person's earnings wait in the khata to be
+    // paid with the salary (spec §6.2) — a salary + daily wage too (P3.17):
+    // whatever is handed over tonight is typed in.
     if (payouts === null) {
-      setPayouts(Object.fromEntries(staff.map((row) => [row.id, String(row.payType === 3 ? earnings[row.id].total : 0)])));
+      setPayouts(Object.fromEntries(staff.map((row) => [row.id, String(paysSalary(row.payType) ? 0 : earnings[row.id].total)])));
     }
     go(3);
   }

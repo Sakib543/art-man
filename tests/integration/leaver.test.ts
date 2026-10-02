@@ -51,7 +51,7 @@ beforeAll(async () => {
     staff: [
       { name: "Bilal", payType: 1, salary: 31_000 },
       { name: "Hamid", payType: 2, salary: 20_000, commissionRate: 10 },
-      { name: "Sadiq", payType: 3, dailyWage: 700 },
+      { name: "Sadiq", payType: 7, dailyWage: 700 },
     ],
     firstDay: { date: "2026-10-27", openingCash: 5_000 },
   });
@@ -185,5 +185,28 @@ describe("the month", () => {
     });
     expect(await saveStaffAction({ ...(await form("Hamid")), active: false, lastDay: "2026-10-31" })).toEqual({ ok: true, data: null });
     expect(await salaryLines("Hamid")).toHaveLength(1);
+  });
+});
+
+describe("a leaver on a salary and a daily wage (P3.17 with P3.19)", () => {
+  it("keeps the wages each day earned and is paid the salary for the days present", async () => {
+    // Jawad starts in November: 30,000 a month — 1,000 a day of its 30 — and Rs 200 for each day present.
+    await signIn(salon.owner);
+    expect(
+      await saveStaffAction({ name: "Jawad", payType: 5, salary: 30_000, dailyWage: 200, commissionRate: 0, overtimeRate: 0, active: true }),
+    ).toEqual({ ok: true, data: null });
+    await startNextDay(salon.manager);
+    await closeToday(salon.manager);
+
+    const jawad = await form("Jawad");
+    expect(await saveStaffAction({ ...jawad, active: false, lastDay: "2026-11-02" })).toEqual({ ok: true, data: null });
+
+    const lines = await db.select().from(khataEntries).where(eq(khataEntries.staffId, jawad.id));
+    expect(lines.map((line) => [line.label, line.amount]).sort()).toEqual([
+      ["Daily wage", 200],
+      ["Monthly salary (November 2026): 1 of 30 days present, last day 2 Nov", 1_000],
+    ]);
+    // November's salaries: Jawad's 1,000 and nobody else's — Bilal and Hamid have left.
+    expect((await getMonthlyReport("2026-11"))!.live.salaries).toBe(1_000);
   });
 });

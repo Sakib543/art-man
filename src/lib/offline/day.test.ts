@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PAY_TYPES } from "@/lib/accounting";
 import { closeCopyOf, dayFor, isDayCopy, knownIds, type DayCopy } from "./day";
 
 const copy: DayCopy = {
@@ -57,6 +58,13 @@ describe("closeCopyOf (P2.2f)", () => {
     expect(closeCopyOf({ ...copy, close: before })).toEqual(before);
   });
 
+  it("reads every pay type, the mixes P3.17 added among them", () => {
+    for (const payType of PAY_TYPES) {
+      const mixed = { ...close, pay: { "st-arshad": { payType, dailyWage: 200, commissionRate: 10 } } };
+      expect(closeCopyOf({ ...copy, close: mixed })).toEqual(mixed);
+    }
+  });
+
   it("gives nothing for a copy kept before P2.2f, or read when no day was open", () => {
     expect(closeCopyOf(copy)).toBeNull();
     expect(closeCopyOf({ ...copy, close: null })).toBeNull();
@@ -64,7 +72,7 @@ describe("closeCopyOf (P2.2f)", () => {
 
   it.each([
     ["no opening cash", { ...close, openingCash: undefined }],
-    ["a pay type that does not exist", { ...close, pay: { st: { ...close.pay["st-arshad"], payType: 4 } } }],
+    ["a pay type that does not exist", { ...close, pay: { st: { ...close.pay["st-arshad"], payType: 8 } } }],
     ["a pay without its wage", { ...close, pay: { st: { payType: 3, commissionRate: 10 } } }],
     ["a khata balance that is not a number", { ...close, khata: { st: "30" } }],
   ])("refuses one with %s", (_, broken) => {

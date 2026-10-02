@@ -1,5 +1,5 @@
 {
-  "id": "e30ce8c4-73c1-40f8-8aec-442895920b21",
+  "id": "cfeca5b6-ba7d-4f0f-abb4-8fcd38ee24e9",
   "prevId": "a9b5d34c-47ce-41d8-8f07-c02d58d68581",
   "version": "7",
   "dialect": "postgresql",
@@ -2284,6 +2284,13 @@
           "notNull": true,
           "default": 0
         },
+        "overtime_rate": {
+          "name": "overtime_rate",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "active": {
           "name": "active",
           "type": "boolean",
@@ -2307,7 +2314,7 @@
       "checkConstraints": {
         "staff_pay_type_chk": {
           "name": "staff_pay_type_chk",
-          "value": "\"staff\".\"pay_type\" in (1, 2, 3)"
+          "value": "\"staff\".\"pay_type\" between 1 and 7"
         }
       },
       "isRLSEnabled": false
@@ -2402,7 +2409,7 @@
       "checkConstraints": {
         "attendance_pay_type_chk": {
           "name": "attendance_pay_type_chk",
-          "value": "\"attendance\".\"pay_type\" in (1, 2, 3)"
+          "value": "\"attendance\".\"pay_type\" between 1 and 7"
         }
       },
       "isRLSEnabled": false
@@ -2725,7 +2732,9 @@
         "payment",
         "advance",
         "bonus",
-        "adjustment"
+        "adjustment",
+        "overtime",
+        "deduction"
       ]
     },
     "public.month_adjustment_kind": {
