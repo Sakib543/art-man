@@ -41,7 +41,7 @@ export const attendance = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.businessDate, t.staffId] }),
-    check("attendance_pay_type_chk", sql`${t.payType} in (1, 2, 3)`),
+    check("attendance_pay_type_chk", sql`${t.payType} between 1 and 7`),
   ],
 );
 

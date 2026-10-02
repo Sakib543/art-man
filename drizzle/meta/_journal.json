@@ -176,6 +176,13 @@
       "when": 1790816047688,
       "tag": "0024_bill_line_position",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790900400763,
+      "tag": "0025_staff_pay_parts",
+      "breakpoints": true
     }
   ]
 }

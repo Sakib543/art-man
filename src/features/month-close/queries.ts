@@ -2,7 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { getMonthlyReport } from "@/db/queries/month-report";
 import { businessDays, monthCloses, partners, staff } from "@/db/schema";
-import { checkShares, type Rupees } from "@/lib/accounting";
+import { checkShares, monthlySalaryOf, type PayType, type Rupees } from "@/lib/accounting";
 import { monthOf } from "@/lib/business-date";
 import { closeBlockers } from "./rules";
 
@@ -52,9 +52,11 @@ export async function getCloseState(month: string): Promise<CloseState> {
     month,
     closed: closedMonths.has(month),
     blockers,
+    // Everyone active whose pay has a salary (`monthlySalaryOf`, which the
+    // Monthly report's provisional figure sums too): types 1, 2, 5 and 6.
     salaries: staffRows
-      .filter((s) => (s.payType === 1 || s.payType === 2) && s.salary > 0)
-      .map((s) => ({ staffId: s.id, name: s.name, salary: s.salary })),
+      .map((s) => ({ staffId: s.id, name: s.name, salary: monthlySalaryOf({ payType: s.payType as PayType, salary: s.salary }) }))
+      .filter((line) => line.salary > 0),
     closedDays: inMonth.filter((day) => day.closedAt !== null).length,
     netProfit: report?.live.netProfit ?? 0,
     lastDay: inMonth.at(-1)?.date ?? null,

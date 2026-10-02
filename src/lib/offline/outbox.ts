@@ -132,7 +132,7 @@ export interface OutboxFolderEntry {
  * that is no longer the day's, and the day has to be closed again.
  */
 export interface OutboxClose {
-  /** Who was present, by staff id. Only daily-wage staff are paid for it. */
+  /** Who was present, by staff id. Only staff whose pay has a daily wage are paid for it. */
   attendance: Record<string, boolean>;
   /** Cash handed to staff at close, by staff id — only those paid something. */
   payouts: Record<string, Rupees>;

@@ -1,17 +1,39 @@
 import { z } from "zod";
+import { hasShareDecimals, isPayType, paysCommission, paysDailyWage, paysSalary } from "@/lib/accounting";
 
 const rupees = z.number().int("Use whole rupees").min(0, "Cannot be negative").max(10_000_000);
 
-export const staffSchema = z.object({
-  /** Present when editing an existing staff member. */
-  id: z.uuid().optional(),
-  name: z.string().trim().min(1, "Enter a name").max(60),
-  payType: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  salary: rupees,
-  dailyWage: rupees,
-  commissionRate: z.number().min(0, "Cannot be negative").max(100, "Commission cannot be more than 100%"),
-  active: z.boolean(),
-});
+export const staffSchema = z
+  .object({
+    /** Present when editing an existing staff member. */
+    id: z.uuid().optional(),
+    name: z.string().trim().min(1, "Enter a name").max(60),
+    payType: z.literal([1, 2, 3, 4, 5, 6, 7], { error: "Choose how this person is paid" }),
+    salary: rupees,
+    dailyWage: rupees,
+    commissionRate: z
+      .number()
+      .min(0, "Cannot be negative")
+      .max(100, "Commission cannot be more than 100%")
+      // The column keeps two decimals, as a partner's share does: 12.345 would be saved as 12.35.
+      .refine(hasShareDecimals, "Use at most two decimals in the commission, e.g. 12.5"),
+    active: z.boolean(),
+  })
+  // A part of the pay that is chosen has an amount (P3.17): a salary of 0
+  // would leave the month's salary out without a word, and a commission of
+  // 0% would pay nothing for any day's work.
+  .superRefine((input, ctx) => {
+    if (!isPayType(input.payType)) return; // Refused above already.
+    if (paysSalary(input.payType) && input.salary <= 0) {
+      ctx.addIssue({ code: "custom", path: ["salary"], message: "Enter the monthly salary" });
+    }
+    if (paysDailyWage(input.payType) && input.dailyWage <= 0) {
+      ctx.addIssue({ code: "custom", path: ["dailyWage"], message: "Enter the daily wage" });
+    }
+    if (paysCommission(input.payType) && input.commissionRate <= 0) {
+      ctx.addIssue({ code: "custom", path: ["commissionRate"], message: "Enter the commission %" });
+    }
+  });
 
 export const serviceSchema = z
   .object({
