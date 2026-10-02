@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lt, sum } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, like, lt, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { getLatestBusinessDay } from "@/db/queries/business-day";
 import { getMonthChoices, type MonthChoice } from "@/db/queries/months";
@@ -12,7 +12,7 @@ import {
   monthlyExpenses,
   staff,
 } from "@/db/schema";
-import { adjustmentTotals, buildMonthReport, type MonthDay, type MonthReport } from "@/lib/accounting";
+import { adjustmentTotals, buildMonthReport, isLeaverSalaryLabel, type MonthDay, type MonthReport } from "@/lib/accounting";
 import { formatMonth, monthOf, monthStart, nextMonth } from "@/lib/business-date";
 
 export interface ClosedDayRow extends MonthDay {
@@ -46,7 +46,7 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
   const start = monthStart(month);
   const end = monthStart(nextMonth(month));
 
-  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest, extraRows, adjustmentRows] = await Promise.all([
+  const [snapshots, expenseRows, repayments, staffRows, [closeRow], latest, extraRows, adjustmentRows, salaryLines] = await Promise.all([
     db.select().from(daySnapshots).where(and(gte(daySnapshots.businessDate, start), lt(daySnapshots.businessDate, end))).orderBy(asc(daySnapshots.businessDate)),
     db.select().from(monthlyExpenses).where(eq(monthlyExpenses.month, start)),
     db.select({ amount: capitalRepayments.amount }).from(capitalRepayments).where(and(gte(capitalRepayments.paidOn, start), lt(capitalRepayments.paidOn, end))),
@@ -75,6 +75,21 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
       .select({ kind: monthAdjustments.kind, amount: monthAdjustments.amount, online: monthAdjustments.online, paidFrom: monthAdjustments.paidFrom })
       .from(monthAdjustments)
       .where(eq(monthAdjustments.month, start)),
+    // Salaries already in the khata this month (P3.19): a karigar made inactive
+    // was paid for their days present then, and is no longer among the active
+    // staff whose salaries Month close adds. Month close's own lines are told
+    // apart by their label, and are not counted here.
+    db
+      .select({ label: khataEntries.label, amount: khataEntries.amount })
+      .from(khataEntries)
+      .where(
+        and(
+          eq(khataEntries.kind, "earning"),
+          like(khataEntries.label, "Monthly salary (%"),
+          gte(khataEntries.businessDate, start),
+          lt(khataEntries.businessDate, end),
+        ),
+      ),
   ]);
 
   // Owner cash and owner-paid expenses come from the entries of the closed days only,
@@ -94,8 +109,11 @@ export async function getMonthlyReport(requestedMonth?: string): Promise<Monthly
     .filter((e) => e.kind === "expense" && e.paidFrom === "owner")
     .reduce((sum, e) => sum + e.amount, 0);
 
-  // Monthly salaries of staff on pay types 1 and 2. Provisional until the month is closed.
-  const salaries = staffRows.filter((s) => s.active && (s.payType === 1 || s.payType === 2)).reduce((sum, s) => sum + s.salary, 0);
+  // Monthly salaries of the active staff on pay types 1 and 2 — provisional until the month is closed —
+  // and of anyone who left during it, already paid for their days present (P3.19).
+  const salaries =
+    staffRows.filter((s) => s.active && (s.payType === 1 || s.payType === 2)).reduce((sum, s) => sum + s.salary, 0) +
+    salaryLines.filter((line) => isLeaverSalaryLabel(line.label)).reduce((sum, line) => sum + line.amount, 0);
 
   const days: ClosedDayRow[] = snapshots.map((s) => ({
     businessDate: s.businessDate,

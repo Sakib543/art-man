@@ -87,7 +87,7 @@ MAHINA (Owner)
 | Monthly expenses | Fixed lines (rent...) aur others (reason ke saath) |
 | Capital / Outstanding | Partner ki investment aur kiston mein wapsi |
 | Partners | Profit share %, partner accounts, profit drawn |
-| Staff & rates | Staff (pay type, aur har karigar ka **overtime rate**, Rs per ghanta), services, deals |
+| Staff & rates | Staff (pay type, aur har karigar ka **overtime rate**, Rs per ghanta), services, deals. Salary wala karigar beech mahine chhor jaye to "Active" ka tick hatayein aur **aakhri din** chunein: us mahine ki salary sirf **haazir dinon** ki (salary × haazir din ÷ mahine ke din) Save se pehle dikhti hai aur khata mein chali jati hai; month close usay dobara salary nahi deta (P3.19) |
 | Security codes | Har band din ka code, us din ki entries se dobara bana kar milaya jata hai: "Matches" ya "Does not match". Close slip wale code se milayein (P7.8, P7.8b) |
 | Settings | Password, Owner PIN, Manager ka password reset |
 

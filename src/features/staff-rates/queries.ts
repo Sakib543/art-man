@@ -1,7 +1,7 @@
-import { asc } from "drizzle-orm";
+import { asc, desc, isNotNull } from "drizzle-orm";
 import { db } from "@/db";
 import { dealItemsInOrder } from "@/db/queries/catalog";
-import { deals, services, staff } from "@/db/schema";
+import { businessDays, deals, services, staff } from "@/db/schema";
 import type { PayType } from "@/lib/accounting";
 import type { DealRow, ServiceRow, StaffRow } from "./types";
 
@@ -21,6 +21,17 @@ export async function getStaffList(): Promise<StaffRow[]> {
     .orderBy(asc(staff.createdAt), asc(staff.name));
 
   return rows.map((row) => ({ ...row, payType: row.payType as PayType }));
+}
+
+/** The latest closed business day, or null: the latest a leaver's last working day can be (P3.19). */
+export async function getLatestClosedDay(): Promise<string | null> {
+  const [row] = await db
+    .select({ date: businessDays.businessDate })
+    .from(businessDays)
+    .where(isNotNull(businessDays.closedAt))
+    .orderBy(desc(businessDays.businessDate))
+    .limit(1);
+  return row?.date ?? null;
 }
 
 export async function getServiceList(): Promise<ServiceRow[]> {

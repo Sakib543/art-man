@@ -64,7 +64,7 @@ const MATRIX: Record<string, Record<string, Allowed>> = {
     addDeductionAction: ANYONE,
     cancelKhataLineAction: OWNER,
   },
-  "staff-rates": { saveStaffAction: OWNER, saveServiceAction: OWNER, saveDealAction: OWNER },
+  "staff-rates": { saveStaffAction: OWNER, saveServiceAction: OWNER, saveDealAction: OWNER, previewLeaverAction: OWNER },
   users: { createUserAction: OWNER, resetUserPasswordAction: OWNER, setUserActiveAction: OWNER },
 };
 
@@ -133,7 +133,7 @@ describe("the role matrix", () => {
   it("has a row for every Server Action there is, and no other", () => {
     const actual = Object.entries(actions).flatMap(([feature, names]) => Object.keys(names).map((name) => `${feature}/${name}`));
     expect(actual.sort()).toEqual(rows.map((row) => `${row.feature}/${row.name}`).sort());
-    expect(actual).toHaveLength(49);
+    expect(actual).toHaveLength(50);
   });
 
   it.each(["manager", "owner", "developer"] as const)("as the %s, every action allows or refuses as the table says", async (role) => {

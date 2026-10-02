@@ -306,7 +306,7 @@ Each phase must be independently usable — never ship a half-finished flow live
 5. One Manager at the counter; **one Day Close per day.**
 6. "Extra cash" = cash found **over** the expected count.
 7. Manager **can** see past **daily** reports, but not monthly.
-8. Monthly-salary staff: **full salary** on leave / mid-month join (confirm edge cases in build).
+8. Monthly-salary staff: **full salary** on leave / mid-month join (confirm edge cases in build). *Leaving mid-month (client decision 2026-10-02, backlog P3.19):* the month's salary for the **days marked present** at Day close up to the last working day the Owner picks — salary × days present ÷ days in the month (30,000 × 12 ÷ 31 = 11,613) — into the khata when they are made inactive; Month close pays them nothing more for that month.
 9. Daily-wage staff who showed up but got no work: **full daily wage.**
 10. Only the **Owner** can give bonuses.
 

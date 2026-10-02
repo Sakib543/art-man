@@ -1,4 +1,4 @@
-import type { DayPay, PayType, StaffPay } from "./types";
+import type { DayPay, PayType, Rupees, StaffPay } from "./types";
 
 export const PAY_TYPES: readonly PayType[] = [1, 2, 3];
 
@@ -16,6 +16,34 @@ export const PAY_TYPE_LABEL: Record<PayType, string> = {
  */
 export const monthlySalaryLabel = (monthName: string): string => `Monthly salary (${monthName})`;
 export const isMonthlySalaryLabel = (label: string): boolean => label.startsWith("Monthly salary");
+
+/**
+ * A karigar on a salary who leaves before the month is over (backlog P3.19,
+ * the client's decision of 2026-10-02): the month's salary for the days they
+ * were marked present at Day close — salary × days present ÷ days in the
+ * month, rounded once, half up. 30,000 for 12 days of October is 11,613.
+ */
+export function leaverSalary(salary: Rupees, daysPresent: number, daysInMonth: number): Rupees {
+  return Math.round((salary * daysPresent) / daysInMonth);
+}
+
+/**
+ * "Monthly salary (October 2026): 12 of 31 days present, last day 15 Oct" —
+ * still a monthly salary to `isMonthlySalaryLabel`, so no correction or reopen
+ * of its day takes it out, and the slip counts it as salary.
+ */
+export const leaverSalaryLabel = (monthName: string, daysPresent: number, daysInMonth: number, lastDay: string): string =>
+  `${monthlySalaryLabel(monthName)}: ${daysPresent} of ${daysInMonth} days present, last day ${lastDay}`;
+
+/** Taken back when the karigar is made active again while that month is open (P3.19). */
+export const leaverSalaryTakenBackLabel = (monthName: string): string => `${monthlySalaryLabel(monthName)}: taken back, active again`;
+
+/**
+ * A leaver's salary line, or its taking back — a month's salary written when
+ * someone was made inactive, not by Month close. The Monthly report adds these
+ * to the salaries of the staff still active.
+ */
+export const isLeaverSalaryLabel = (label: string): boolean => /^Monthly salary \([^)]+\): /.test(label);
 
 export const paysSalary = (type: PayType): boolean => type === 1 || type === 2;
 export const paysDailyWage = (type: PayType): boolean => type === 3;

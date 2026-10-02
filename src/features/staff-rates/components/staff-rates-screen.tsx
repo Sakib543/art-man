@@ -11,11 +11,13 @@ type TabId = "staff" | "services" | "deals";
 
 interface StaffRatesScreenProps {
   staff: StaffRow[];
+  /** The latest closed business day, for a leaver's last working day (P3.19). */
+  latestClosedDay: string | null;
   services: ServiceRow[];
   deals: DealRow[];
 }
 
-export function StaffRatesScreen({ staff, services, deals }: StaffRatesScreenProps) {
+export function StaffRatesScreen({ staff, latestClosedDay, services, deals }: StaffRatesScreenProps) {
   const [tab, setTab] = useState<TabId>("staff");
 
   const tabs: { id: TabId; label: string; count: number }[] = [
@@ -45,7 +47,7 @@ export function StaffRatesScreen({ staff, services, deals }: StaffRatesScreenPro
         ))}
       </div>
 
-      {tab === "staff" ? <StaffPanel staff={staff} /> : null}
+      {tab === "staff" ? <StaffPanel staff={staff} latestClosedDay={latestClosedDay} /> : null}
       {tab === "services" ? <ServicesPanel services={services} /> : null}
       {tab === "deals" ? <DealsPanel deals={deals} services={services} /> : null}
     </div>

@@ -9,7 +9,7 @@ import type { StaffRow } from "../types";
 import { ActiveBadge, PanelCard, td, th } from "./panel-card";
 import { StaffForm } from "./staff-form";
 
-export function StaffPanel({ staff }: { staff: StaffRow[] }) {
+export function StaffPanel({ staff, latestClosedDay }: { staff: StaffRow[]; latestClosedDay: string | null }) {
   // undefined = closed, null = adding, a row = editing that row.
   const [editing, setEditing] = useState<StaffRow | null | undefined>(undefined);
 
@@ -64,7 +64,13 @@ export function StaffPanel({ staff }: { staff: StaffRow[] }) {
       </PanelCard>
 
       {editing !== undefined ? (
-        <StaffForm key={editing?.id ?? "new"} staff={editing} open onClose={() => setEditing(undefined)} />
+        <StaffForm
+          key={editing?.id ?? "new"}
+          staff={editing}
+          latestClosedDay={latestClosedDay}
+          open
+          onClose={() => setEditing(undefined)}
+        />
       ) : null}
     </>
   );

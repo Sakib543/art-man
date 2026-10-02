@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
 import { getLatestBusinessDay, getOpenBusinessDay } from "@/db/queries/business-day";
 import { attendance, auditLog, businessDays, cashEntries, daySnapshotHistory, daySnapshots, khataEntries } from "@/db/schema";
-import { cashDifference, expectedCashBreakdown } from "@/lib/accounting";
+import { cashDifference, expectedCashBreakdown, isMonthlySalaryLabel } from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
 import { nextDate } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
@@ -391,6 +391,10 @@ export async function reopenDay(user: SessionUser, reason: string): Promise<void
     for (const line of dayLines) {
       if (line.kind !== "earning" && line.kind !== "payment") continue;
       if (reversed.has(line.id)) continue;
+      // A salary is not the close's: a karigar who left on this day was paid
+      // theirs when made inactive (P3.19), and the next close would not post
+      // it again — as `resettleDay` leaves it too.
+      if (isMonthlySalaryLabel(line.label)) continue;
       await tx.insert(khataEntries).values({
         staffId: line.staffId,
         businessDate: date,

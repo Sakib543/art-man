@@ -13,18 +13,21 @@ import {
   paysSalary,
   type PayType,
 } from "@/lib/accounting";
-import { saveStaffAction } from "../actions";
+import { previewLeaverAction, saveStaffAction } from "../actions";
+import { settlementText } from "../leaver";
 import type { StaffRow } from "../types";
 
 interface StaffFormProps {
   /** The staff member being edited, or null to add a new one. */
   staff: StaffRow | null;
+  /** The latest business day that is closed: a leaver's last working day can be no later (P3.19). */
+  latestClosedDay: string | null;
   open: boolean;
   onClose: () => void;
 }
 
 /** Mount this only while open so the fields start fresh each time. */
-export function StaffForm({ staff, open, onClose }: StaffFormProps) {
+export function StaffForm({ staff, latestClosedDay, open, onClose }: StaffFormProps) {
   const [name, setName] = useState(staff?.name ?? "");
   const [payType, setPayType] = useState<PayType>(staff?.payType ?? 2);
   const [salary, setSalary] = useState(String(staff?.salary ?? ""));
@@ -32,8 +35,21 @@ export function StaffForm({ staff, open, onClose }: StaffFormProps) {
   const [commission, setCommission] = useState(String(staff?.commissionRate ?? "10"));
   const [overtimeRate, setOvertimeRate] = useState(staff?.overtimeRate ? String(staff.overtimeRate) : "");
   const [active, setActive] = useState(staff?.active ?? true);
+  // Making a karigar on a salary inactive (P3.19): their last working day, and what it settles.
+  const [lastDay, setLastDay] = useState(latestClosedDay ?? "");
+  const [settles, setSettles] = useState("");
 
   const editing = staff !== null;
+  const leaving = editing && staff.active && !active && paysSalary(staff.payType);
+
+  /** Ask the server what the Save would post, from the attendance it holds. */
+  function preview(day: string) {
+    setSettles("");
+    if (!staff || !day) return;
+    previewLeaverAction({ staffId: staff.id, lastDay: day })
+      .then((result) => setSettles(result.ok ? settlementText(result.data.settlement, result.data.salary) : result.error))
+      .catch(() => setSettles("Could not work it out. Check the internet and choose the date again."));
+  }
 
   return (
     <FormDialog
@@ -51,6 +67,7 @@ export function StaffForm({ staff, open, onClose }: StaffFormProps) {
           commissionRate: Number(commission) || 0,
           overtimeRate: Number(overtimeRate) || 0,
           active,
+          lastDay: leaving ? lastDay : undefined,
         })
       }
     >
@@ -137,11 +154,34 @@ export function StaffForm({ staff, open, onClose }: StaffFormProps) {
           <input
             type="checkbox"
             checked={active}
-            onChange={(e) => setActive(e.target.checked)}
+            onChange={(e) => {
+              setActive(e.target.checked);
+              if (!e.target.checked && staff.active && paysSalary(staff.payType)) preview(lastDay);
+            }}
             className="size-4 accent-primary"
           />
           Active (can be chosen on new bills)
         </label>
+      ) : null}
+
+      {leaving ? (
+        <Field
+          label="Last working day"
+          htmlFor="staff-last-day"
+          hint={settles || "Their salary for this month is paid for the days they were present, up to this day."}
+        >
+          <Input
+            id="staff-last-day"
+            type="date"
+            max={latestClosedDay ?? undefined}
+            value={lastDay}
+            onChange={(e) => {
+              setLastDay(e.target.value);
+              preview(e.target.value);
+            }}
+            className="h-10"
+          />
+        </Field>
       ) : null}
     </FormDialog>
   );

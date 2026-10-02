@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const rupees = z.number().int("Use whole rupees").min(0, "Cannot be negative").max(10_000_000);
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date");
 
 export const staffSchema = z.object({
   /** Present when editing an existing staff member. */
@@ -16,6 +17,11 @@ export const staffSchema = z.object({
    */
   overtimeRate: rupees.optional(),
   active: z.boolean(),
+  /**
+   * Their last working day, when this Save makes a karigar on a salary
+   * inactive (P3.19): their salary is paid up to it, for the days present.
+   */
+  lastDay: isoDate.optional(),
 });
 
 export const serviceSchema = z
@@ -48,6 +54,13 @@ export const dealSchema = z.object({
   active: z.boolean(),
 });
 
+/** What the form asks before making a karigar inactive (P3.19). */
+export const leaverPreviewSchema = z.object({
+  staffId: z.uuid(),
+  lastDay: isoDate,
+});
+
 export type StaffInput = z.infer<typeof staffSchema>;
+export type LeaverPreviewInput = z.infer<typeof leaverPreviewSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type DealInput = z.infer<typeof dealSchema>;

@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   dayEarning,
   dayPayOf,
+  isLeaverSalaryLabel,
   isMonthlySalaryLabel,
+  leaverSalary,
+  leaverSalaryLabel,
+  leaverSalaryTakenBackLabel,
   monthlySalaryLabel,
   normalizeStaffPay,
   paysCommission,
@@ -81,5 +85,26 @@ describe("the monthly salary's khata label (P1.10)", () => {
     expect(isMonthlySalaryLabel(monthlySalaryLabel("September 2026"))).toBe(true);
     expect(isMonthlySalaryLabel("Commission (on work of 4000)")).toBe(false);
     expect(isMonthlySalaryLabel("Daily wage")).toBe(false);
+  });
+});
+
+describe("a leaver's salary (P3.19)", () => {
+  it("is the salary for the days present, rounded once", () => {
+    expect(leaverSalary(30_000, 12, 31)).toBe(11_613);
+    expect(leaverSalary(30_000, 31, 31)).toBe(30_000);
+    expect(leaverSalary(30_000, 0, 31)).toBe(0);
+    // 25,000 × 1 ÷ 30 = 833.33…
+    expect(leaverSalary(25_000, 1, 30)).toBe(833);
+  });
+
+  it("is a monthly salary to every reader that keeps salaries apart, and told from Month close's", () => {
+    const left = leaverSalaryLabel("October 2026", 12, 31, "15 Oct");
+    expect(left).toBe("Monthly salary (October 2026): 12 of 31 days present, last day 15 Oct");
+    expect(isMonthlySalaryLabel(left)).toBe(true);
+    expect(isLeaverSalaryLabel(left)).toBe(true);
+    expect(isLeaverSalaryLabel(leaverSalaryTakenBackLabel("October 2026"))).toBe(true);
+    // Month close's own line is not a leaver's.
+    expect(isLeaverSalaryLabel(monthlySalaryLabel("October 2026"))).toBe(false);
+    expect(isLeaverSalaryLabel("Daily wage")).toBe(false);
   });
 });

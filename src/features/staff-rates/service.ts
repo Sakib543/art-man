@@ -1,15 +1,88 @@
-import { eq } from "drizzle-orm";
+import { and, between, count, desc, eq, isNotNull, like } from "drizzle-orm";
 import { db } from "@/db";
 import { writeAudit } from "@/db/audit";
-import { dealItems, deals, services, staff } from "@/db/schema";
-import { normalizeStaffPay } from "@/lib/accounting";
+import { attendance, businessDays, dealItems, deals, khataEntries, monthCloses, services, staff } from "@/db/schema";
+import {
+  isLeaverSalaryLabel,
+  leaverSalaryLabel,
+  leaverSalaryTakenBackLabel,
+  normalizeStaffPay,
+  paysSalary,
+  type PayType,
+} from "@/lib/accounting";
 import type { SessionUser } from "@/lib/auth/session";
+import { formatMonth, monthOf, monthStart } from "@/lib/business-date";
 import { UserError } from "@/lib/errors";
-import type { DealInput, ServiceInput, StaffInput } from "./schemas";
+import { formatDayMonth } from "@/lib/format";
+import { settleLeaver, type LeaverSettlement } from "./leaver";
+import type { DealInput, LeaverPreviewInput, ServiceInput, StaffInput } from "./schemas";
 
 const actorOf = (user: SessionUser) => user.username || user.name;
 
-/** Add or edit a staff member. Edits apply from now on; past records never change. */
+/** Anything that can run selects: the db itself or a transaction. */
+type Reader = Pick<typeof db, "select">;
+
+/**
+ * What making this karigar inactive with `lastDay` as their last working day
+ * settles (backlog P3.19): read on `reader` — the save's own transaction, so
+ * nothing waits on the pool while the staff row is locked (trap 8.38).
+ */
+async function leaverSettlement(
+  reader: Reader,
+  member: { id: string; payType: number; salary: number },
+  lastDay: string,
+): Promise<LeaverSettlement> {
+  const month = monthOf(lastDay);
+  const [[latestClosed], dayRows, closedRows, [present]] = [
+    await reader
+      .select({ date: businessDays.businessDate })
+      .from(businessDays)
+      .where(isNotNull(businessDays.closedAt))
+      .orderBy(desc(businessDays.businessDate))
+      .limit(1),
+    await reader.select({ date: businessDays.businessDate }).from(businessDays),
+    await reader.select({ month: monthCloses.month }).from(monthCloses),
+    await reader
+      .select({ days: count() })
+      .from(attendance)
+      .where(
+        and(
+          eq(attendance.staffId, member.id),
+          eq(attendance.present, true),
+          between(attendance.businessDate, monthStart(month), lastDay),
+        ),
+      ),
+  ];
+  const closed = new Set(closedRows.map((row) => monthOf(row.month)));
+  const openMonths = [...new Set(dayRows.map((row) => monthOf(row.date)))].filter((m) => !closed.has(m)).sort();
+
+  return settleLeaver({
+    salaried: paysSalary(member.payType as PayType),
+    salary: member.salary,
+    lastDay,
+    latestClosedDay: latestClosed?.date ?? null,
+    lastDayMonthClosed: closed.has(month),
+    earliestOpenMonth: openMonths[0] ?? null,
+    daysPresent: present?.days ?? 0,
+  });
+}
+
+/** What the Staff & rates form shows before making a karigar inactive (P3.19): the same sum the Save will post. */
+export async function previewLeaver(input: LeaverPreviewInput): Promise<{ settlement: LeaverSettlement; salary: number }> {
+  const [member] = await db.select().from(staff).where(eq(staff.id, input.staffId)).limit(1);
+  if (!member) throw new UserError("Staff member not found");
+  return { settlement: await leaverSettlement(db, member, input.lastDay), salary: member.salary };
+}
+
+/**
+ * Add or edit a staff member. Edits apply from now on; past records never change.
+ *
+ * Making a karigar on a salary inactive (P3.19) posts the month's salary for
+ * the days they were present up to their last working day, in the same
+ * transaction; making them active again while that month is open takes it
+ * back, since Month close will pay them the month in full. The staff row is
+ * locked first, so two Saves at once settle once.
+ */
 export async function saveStaff(user: SessionUser, input: StaffInput): Promise<void> {
   const pay = normalizeStaffPay({
     payType: input.payType,
@@ -29,33 +102,90 @@ export async function saveStaff(user: SessionUser, input: StaffInput): Promise<v
   }
 
   const id = input.id;
-  const [before] = await db
-    .select({
-      name: staff.name,
-      payType: staff.payType,
-      salary: staff.salary,
-      dailyWage: staff.dailyWage,
-      commissionRate: staff.commissionRate,
-      overtimeRate: staff.overtimeRate,
-      active: staff.active,
-    })
-    .from(staff)
-    .where(eq(staff.id, id))
-    .limit(1);
-  if (!before) throw new UserError("Staff member not found");
-
-  const updated = { ...values, overtimeRate: input.overtimeRate ?? before.overtimeRate };
   await db.transaction(async (tx) => {
+    const [before] = await tx
+      .select({
+        name: staff.name,
+        payType: staff.payType,
+        salary: staff.salary,
+        dailyWage: staff.dailyWage,
+        commissionRate: staff.commissionRate,
+        overtimeRate: staff.overtimeRate,
+        active: staff.active,
+      })
+      .from(staff)
+      .where(eq(staff.id, id))
+      .limit(1)
+      .for("update");
+    if (!before) throw new UserError("Staff member not found");
+
+    // Settled on the pay they left on, before this Save changes it.
+    const leaving = before.active && !input.active && paysSalary(before.payType as PayType);
+    let settlement: LeaverSettlement | null = null;
+    if (leaving) {
+      if (!input.lastDay) throw new UserError("Choose their last working day.");
+      settlement = await leaverSettlement(tx, { id, payType: before.payType, salary: before.salary }, input.lastDay);
+      if (settlement.kind === "refuse") throw new UserError(settlement.problem);
+    }
+
+    const updated = { ...values, overtimeRate: input.overtimeRate ?? before.overtimeRate };
     await tx.update(staff).set(updated).where(eq(staff.id, id));
+
+    if (settlement?.kind === "pay" && settlement.amount > 0) {
+      await tx.insert(khataEntries).values({
+        staffId: id,
+        businessDate: input.lastDay!,
+        kind: "earning",
+        label: leaverSalaryLabel(formatMonth(settlement.month), settlement.daysPresent, settlement.daysInMonth, formatDayMonth(input.lastDay!)),
+        amount: settlement.amount,
+      });
+    }
+    const takenBack = !before.active && input.active ? await takeBackLeaverSalary(tx, id) : [];
 
     await writeAudit(tx, {
       actor: actorOf(user),
       action: "staff.update",
       target: before.name,
       before,
-      after: updated,
+      after: {
+        ...updated,
+        ...(settlement ? { lastDay: input.lastDay, leaverSalary: settlement } : {}),
+        ...(takenBack.length > 0 ? { leaverSalaryTakenBack: takenBack } : {}),
+      },
     });
   });
+}
+
+/**
+ * A karigar made active again (P3.19): the salary posted when they were made
+ * inactive is taken back while its month is open — Month close pays the
+ * active staff the month in full, and the two together would pay it twice.
+ * In a closed month it stays: that month was paid as it was.
+ */
+async function takeBackLeaverSalary(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], staffId: string): Promise<number[]> {
+  const lines = await tx
+    .select()
+    .from(khataEntries)
+    .where(and(eq(khataEntries.staffId, staffId), eq(khataEntries.kind, "earning"), like(khataEntries.label, "Monthly salary (%")));
+  const reversed = new Set(lines.flatMap((line) => (line.reversesEntryId ? [line.reversesEntryId] : [])));
+  const closedRows = await tx.select({ month: monthCloses.month }).from(monthCloses);
+  const closed = new Set(closedRows.map((row) => monthOf(row.month)));
+
+  const amounts: number[] = [];
+  for (const line of lines) {
+    if (!isLeaverSalaryLabel(line.label) || line.reversesEntryId || reversed.has(line.id)) continue;
+    if (closed.has(monthOf(line.businessDate))) continue;
+    await tx.insert(khataEntries).values({
+      staffId,
+      businessDate: line.businessDate,
+      kind: "earning",
+      label: leaverSalaryTakenBackLabel(formatMonth(monthOf(line.businessDate))),
+      amount: -line.amount,
+      reversesEntryId: line.id,
+    });
+    amounts.push(line.amount);
+  }
+  return amounts;
 }
 
 export async function saveService(user: SessionUser, input: ServiceInput): Promise<void> {
