@@ -1438,7 +1438,8 @@ to keep it small, is under "Owed by the user" above.
    "Still to ask" 3–6: does cash the Owner adds offset what "reached the Owner" (QA-09); a salaried
    karigar who leaves mid-month — full, part or no salary (QA-11); will more than one device ever
    bill offline on one day (QA-37); is half-up commission rounding per day the policy (QA-19). None
-   blocks P7.1–P7.9.
+   blocks P7.1–P7.9. **QA-19 answered 2026-10-02:** one rate for every service, on the karigar's whole
+   day's work (5,900 → 590) — the app's rule as it stands.
 
 **Answered:**
 - **Does a Vercel project already exist?** Yes (2026-09-22) — connected to this same repo, but

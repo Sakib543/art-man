@@ -4408,6 +4408,10 @@ offers a toggle, so nothing reaches it. It is a task of its own. **Removed entir
 6. **Commission rounding** (QA-19): it is rounded half-up per karigar per day, so a month's commission
    can be a few rupees above the rate × the month's work (30 × 125 = 3,750 against 3,735). Fine to keep,
    but it should be the client's stated policy.
+   *(Answered 2026-10-02 by the user: one rate for every service — 10%, never different per service — on
+   the karigar's whole day's work: ten services totalling 5,900 earn 590. That is what the app does, once
+   per karigar per day; checked by running `summarizeDay` on those ten (455 + 445 + … = 5,900 → 590,
+   where rounding each service would give 591). No change.)*
 7. **May the Manager see a karigar's pay terms?** (Found with P7.13, QA-08.) Spec §2 gives "Staff
    salary/commission, bonuses" to the Owner alone, and the app reads that as *setting* them: Staff & rates
    and bonuses are the Owner's. But Staff khata, a Manager screen, says "Monthly salary of Rs … is added at
