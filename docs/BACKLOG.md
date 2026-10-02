@@ -73,6 +73,7 @@ P4.6, P4.7, P4.8, P4.9, P4.10, P5.2 done; P4.1 and P4.3 done 2026-09-23; P3.7 ha
 | P3.14 | A corrected bill keeps its deals' split | ✅ | done 2026-09-25 |
 | P3.15 | A dropped connection never leaves a bill in doubt — one id per bill, saved once | ✅ | done 2026-09-28 |
 | P3.16 | The customer box keeps the last bill's number after a save (found in P3.15) | ✅ | done 2026-09-28 |
+| P3.17 | Staff pay in parts: any mix of monthly salary, a daily amount per present day, and commission (client request 2026-10-02) — migration | 🟡 | Claude (Sakib543), 2026-10-02 |
 | P6.7 | Folders and Staff khata tables on a phone | ✅ | done 2026-09-26 |
 | P6.8 | Login footer back at the bottom · BrandLockup comment · dark mode removed | ✅ | done 2026-09-26 |
 | P7.1 | Owner cash: cancelling it needs the Owner's PIN (QA-02 **Critical**, QA-07, QA-10) | ✅ | done 2026-09-30 |
@@ -2556,6 +2557,16 @@ deleted afterwards.
 | ✅ P3.7 | **Backup and restore** — done 2026-09-29: the backup since 2026-09-23, restored twice into a local copy, which the user accepted; no restore into Neon. A schedule moved to P5.3. See below | medium |
 | ✅ P3.8 | **Customer's last visit on the billing screen** (spec §5.1) — done 2026-09-22. See below | small |
 | ✅ P3.9 | **Audit failed logins** — done 2026-09-23. See below | small |
+| 🟡 P3.17 | **Staff pay in parts** — any mix of salary, a daily amount per present day and commission. See below | medium |
+
+### 🟡 P3.17 — Staff pay in parts: salary, a daily amount, commission
+**Owner:** Claude (Sakib543), started 2026-10-02 · client request 2026-10-02 · needs a migration
+
+The client's karigars are paid in ways the three pay types do not cover. Two named on 2026-10-02:
+a fixed monthly salary **plus Rs 200 for each day present**, and a fixed salary plus 10% of the day's
+work (type 2, which exists). Rather than add one type per case, a staff member's pay is any mix of
+three parts — a monthly salary, a daily amount for each present day, a commission % on their own day's
+work — with at least one. The three existing types are three of those mixes and keep their numbers.
 
 ### ✅ P3.3 — Staff monthly salary slip
 **Done:** 2026-09-29 · no migration · new dependency `pdf-lib` (server only)
